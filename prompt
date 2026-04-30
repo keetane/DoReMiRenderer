@@ -1,0 +1,25 @@
+`DoReMiRenderer_final.md` と `AGENTS.md` を読んでください。
+
+今回は Phase 0 と Phase 1 だけを実装してください。
+Phase 2以降には着手しないでください。
+
+目的:
+- Swift Package `DoReMiRendererKit` を初期化する
+- Domain model の最小型を実装する
+- NoteID / ScoreElementID / MusicalTime / Pitch / ClefKind / MeasureID などを定義する
+- ColorRule設計の型だけを追加する
+- MusicXML parser、layout engine、renderer本体はまだ実装しない
+- Phase 1の完了条件に必要な単体テストを追加する
+
+実装後:
+- 変更ファイル一覧を報告してください
+- `swift test` を実行してください
+- 失敗した場合は原因を parser / domain / layout / rendering / interaction / playback / platform / legal に分類してください
+
+1. Phase 0〜1: Swift Package + domain model + ColorRule型
+2. Phase 2: MusicXML parser 最小対応
+3. Phase 3: Layout engine 最小対応
+4. Phase 4: Canvas/CoreGraphics renderer
+5. Phase 5: hit test
+6. Phase 6: playback events
+7. Phase 7以降: MXL、DocC、外部SDK化準備

@@ -1,0 +1,42 @@
+`AGENTS.md` と `DoReMiRenderer_final.md` を読んでください。
+
+今回は subagent workflow を使って Phase 2〜3 を実装してください。
+
+main agent は最終統合責任を持ってください。
+subagent は以下の分担にしてください。
+
+1. Parser agent
+   - MusicXMLParser
+   - score-partwise
+   - note / pitch / rest / duration / voice / staff / chord / backup / forward
+   - diagnostics
+   - parser tests
+
+2. Layout agent
+   - ScoreLayoutEngine
+   - staffPosition
+   - SystemLayout / StaffLayout / MeasureLayout / NoteLayout / StaffLineLayout
+   - noteByID / elementByID
+   - layout tests
+
+3. Review agent
+   - ParserとLayoutのAPI整合性レビュー
+   - NoteID / MusicalTime / diagnostics の整合性確認
+   - 仕様逸脱とテスト不足の指摘
+
+制約:
+- Phase 0〜1 の既存型定義を勝手に変更しない
+- 変更が必要な場合は、まず理由を報告する
+- Phase 4以降には着手しない
+- Rendererに色判定を持たせない
+- 色は ColorRule / ColorContext / ScoreColorResolver 経由で解決する
+- 未対応MusicXML要素は diagnostics に出す
+- 実装後は `swift test` を実行する
+
+最後に以下を報告してください。
+
+- subagentごとの担当内容
+- 変更ファイル一覧
+- テスト結果
+- 未完了項目
+- 次に実装すべきPhase
