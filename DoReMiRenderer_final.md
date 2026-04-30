@@ -1,0 +1,1952 @@
+# DoReMi Palette Renderer SDK 新規開発指示書
+
+## 0. 目的
+
+DoReMi Palette Renderer SDK は、MusicXMLを読み込み、音符と五線譜を音名対応カラーで安定描画するための、Swift製の譜面レンダリングSDKである。
+
+このSDKは、DoReMi Palette iOSアプリで利用することを第一目的とするが、将来的に外部アプリでも利用できる独立SDKとして公開・販売できる構成を目指す。
+
+本SDKは、既存の譜面SDKや譜面レンダラーのコード、API、内部構造をコピーしない。SeeScoreLib、OSMD、VexFlow、Verovio、MuseScore等は、機能ベンチマークと公開仕様の比較対象としてのみ扱う。
+
+## 1. 最重要方針
+
+SDKは、音符の論理データ、譜面レイアウト、描画座標、色指定、タップ判定、再生イベントを自前で所有する。
+
+### 禁止する方式
+
+- 外部SDKのコードをコピーする。
+- SeeScoreLibのAPI名、型名、ヘッダ構造、ドキュメント表現を模倣する。
+- OSMDや他レンダラーが生成したSVG DOMを解析して音符座標を推定する。
+- 描画後の画像・SVG・DOMから音符位置を復元する。
+- MusicXML note と描画音符の対応を推定にする。
+- GPL系コードを組み込む。
+- LGPLコードをiOS SDK本体に静的リンクする。
+- 商用利用条件が不明なフォント、サンプル譜面、画像、音源を同梱する。
+
+### 採用する方式
+
+- MusicXML公開仕様を一次情報として実装する。
+- SMuFL等の公開仕様を参照して譜面記号を扱う。
+- 自前の内部モデルを作る。
+- 自前のレイアウトエンジンで座標を計算する。
+- 自前のレンダリング層で音符・五線・記号を描画する。
+- 各音符・各譜面要素に安定IDを付与する。
+- 色指定は座標推定ではなく、論理要素IDに対するスタイル指定として扱う。
+- 描画座標、タップ判定、再生ガイド、カラーリングは同一レイアウト結果を参照する。
+
+## 2. 法的安全性の基本ルール
+
+これは法律助言ではない。実際に外部SDKとして販売・配布する段階では、弁護士または知財に詳しい専門家による確認を行うこと。
+
+### 2.1 クリーンルーム原則
+
+開発者は、以下を守る。
+
+- SeeScoreLibなど商用SDKのヘッダ、サンプルコード、バイナリ、内部ドキュメントをコピーしない。
+- API名、型名、関数名、引数構造、エラーコード体系を似せない。
+- 公開Webページに書かれている一般的な機能説明だけを参考にする。
+- 実装判断は、MusicXML、SMuFL、Unicode、Core Graphics、Swift標準APIなどの公開仕様に基づく。
+- 既存ライブラリの挙動をリバースエンジニアリングしない。
+- 既存SDKと互換APIを名乗らない。
+- 「SeeScore互換」「MuseScore互換SDK」など、誤認を招く表現を使わない。
+
+### 2.2 名称・商標
+
+SDK名は独自名称にする。
+
+仮称:
+
+- `DoReMiRendererKit`
+- `DMPScoreKit`
+- `DoReMiPaletteCore`
+- `PaletteScoreSDK`
+
+禁止:
+
+- `SeeScoreLike`
+- `SeeScoreCompatible`
+- `MuseScoreKit`
+- `OSMDKit`
+- 既存製品名に依拠した名称
+
+### 2.3 ライセンス方針
+
+SDKを外部公開する場合、候補は以下とする。
+
+推奨:
+
+- 商用販売: 独自商用ライセンス
+- オープンソース公開: Apache License 2.0 または MIT License
+- フォント同梱: SIL Open Font Licenseの条件を遵守
+- サンプル譜面: 自作、CC0、または明示的に商用利用可能なもののみ
+
+避ける:
+
+- GPL依存
+- LGPL依存の静的リンク
+- ライセンス不明のMusicXMLサンプル
+- 著作権が残る楽曲の譜面同梱
+- 商用利用不可の音源、フォント、画像
+
+### 2.4 サードパーティ依存
+
+MVPでは依存を最小限にする。
+
+許可候補:
+
+- Swift Foundation
+- SwiftUI
+- Core Graphics
+- Core Text
+- AVFoundation
+- XCTest / Swift Testing
+- Apple標準XML parser
+- Apple標準ZIP関連機能、またはライセンス確認済みZIPライブラリ
+
+依存を追加する場合:
+
+- ライセンス名を `THIRD_PARTY_NOTICES.md` に記録する。
+- 商用利用可否を確認する。
+- 再配布条件を確認する。
+- ソース公開義務の有無を確認する。
+- iOS App Store配布と矛盾しないか確認する。
+
+## 3. SDKの目的
+
+本SDKは、以下を実現する。
+
+- MusicXML / XML / MXL を読み込む。
+- MusicXMLを内部の譜面モデルに変換する。
+- 音符、休符、小節、譜表、声部、音高、音価、onsetを管理する。
+- 各音符に安定した `NoteID` を付与する。
+- 各譜面要素に安定した `ScoreElementID` を付与する。
+- 自前レイアウトエンジンで音符・五線・小節・記号の座標を計算する。
+- 音名に対応した音符カラーを描画する。
+- 音名に対応した五線カラーを描画する。
+- 音符、休符、加線、臨時記号、符尾、符幹、連桁を描画する。
+- タップ位置から譜面要素を取得する。
+- 再生・ステップ移動用のイベント列を生成する。
+- iOSアプリから利用しやすい公開APIを提供する。
+- 将来、macOS、visionOS、WebAssembly、Android移植を見越したコア設計にする。
+
+## 4. スコープ
+
+### 4.1 MVP0で必須
+
+- `.musicxml`
+- `.xml`
+- score-partwise
+- part
+- measure
+- attributes
+- divisions
+- key
+- time
+- clef
+- note
+- pitch
+- rest
+- duration
+- type
+- voice
+- staff
+- chord
+- accidental
+- backup
+- forward
+- tie start / stop
+- treble clef
+- bass clef
+- 単旋律
+- 簡単なピアノ大譜表
+- 簡単な和音
+- 休符
+- 加線
+- 音符カラー
+- 五線カラー
+- 現在音ハイライト
+- タップ判定
+- print表示
+
+### 4.2 MVP1で必須
+
+- `.mxl`
+- 複数ページ
+- horizontal表示
+- scroll follow
+- tempo
+- repeatの基本対応
+- MIDI風 playback event
+- 音名ラベル
+- fingeringの読み取りと表示
+- lyricsの基本表示
+- SDKサンプルアプリ
+
+### 4.3 MVP2以降
+
+- vertical練習ビュー
+- 複雑な連桁
+- 複雑な多声部衝突回避
+- tuplets
+- slur
+- ornaments
+- grace note
+- cross-staff
+- transposition
+- part extraction
+- external SDK packaging
+- DocC documentation
+- Swift Package公開
+- 商用ライセンスキー機構
+
+## 5. アーキテクチャ
+
+SDKは以下のレイヤーに分ける。
+
+```text
+DoReMiRendererKit
+  Sources/
+    DoReMiRendererKit/
+      PublicAPI/
+      MusicXML/
+      Domain/
+      Layout/
+      Rendering/
+      Styling/
+      Interaction/
+      Playback/
+      Diagnostics/
+      Resources/
+  Tests/
+    MusicXMLTests/
+    LayoutTests/
+    RenderingSnapshotTests/
+    InteractionTests/
+    PlaybackTests/
+  Examples/
+    iOSScoreViewerExample/
+    DoReMiPaletteIntegrationExample/
+```
+
+### 5.1 PublicAPI
+
+外部アプリが直接触るAPIを置く。
+
+- 公開APIは小さく保つ。
+- 内部実装型を漏らさない。
+- 破壊的変更に備えてSemVerを採用する。
+
+### 5.2 MusicXML layer
+
+責務:
+
+- XMLを読み込む。
+- MusicXMLの構造を内部中間表現へ変換する。
+- unsupported要素をwarning化する。
+- MusicXML由来の順序情報を保持する。
+- backup / forward / chord / voice / staff を解決する。
+
+### 5.3 Domain layer
+
+責務:
+
+- 音楽的意味を持つモデルを定義する。
+- pitch, duration, onset, measure, voice, staffを保持する。
+- NoteIDを決定的に生成する。
+
+> **[追加] CGPoint/CGRect の Sendable 方針:**
+>
+> Swift の `CGPoint`, `CGRect`, `CGSize` は iOS/macOS では `Sendable` 準拠しているが、
+> Linux / WebAssembly では準拠していない可能性がある。
+>
+> **MVP0（iOS専用）では** struct 内で `CGPoint`/`CGRect` を保持し、
+> `Sendable` conformance をコンパイラに委ねる。`@unchecked Sendable` は使わない。
+>
+> **将来のクロスプラットフォーム対応時（MVP2以降）は**、
+> Layout 層の内部座標型として `struct ScorePoint: Sendable { let x: Double; let y: Double }` を用意し、
+> Rendering 層でのみ `CGPoint` に変換する設計に移行する。
+> この変換は MVP2 以降の課題とし、現時点では iOS 専用と明記する。
+>
+> `NoteLayout`, `ElementLayout`, `StaffLayout`, `SystemLayout`, `MeasureLayout` は
+> すべて `struct` として実装し、`Sendable` 準拠を明示すること。
+
+### 5.4 Layout layer
+
+責務:
+
+- 譜面座標を計算する。
+- system, staff, measure, note, rest, accidental, stem, beam, ledger lineの位置を決める。
+- 描画とタップ判定の唯一の座標源になる。
+
+### 5.5 Rendering layer
+
+責務:
+
+- LayoutResultを入力にして描画する。
+- MusicXMLを直接読まない。
+- 論理モデルを直接変更しない。
+- SwiftUI Canvas / Core Graphics / Core Textで描画する。
+
+### 5.6 Styling layer
+
+責務:
+
+- 音名カラーを定義する。
+- 音符、五線、加線、ハイライト、背景、選択状態の色を管理する。
+- SDK利用側からスタイルを注入できるようにする。
+- **Rendererに色判定ロジックを持たせない。** Rendererは、解決済みの `ResolvedVisualStyle` を受け取り、その色で描画するだけにする。
+- 音符色、五線色、加線色、臨時記号色、ハイライト色は、すべて `ScoreStyle` と `ColorRule` から解決する。
+- カラーロジックはアプリ側またはSDK利用側から差し替え可能にする。
+- MVP0では pitch class based color を標準実装するが、SDK設計としては solfege / scale degree / key-aware / accidental-aware / voice-based / staff-based / difficulty-based / per-note custom color を後から追加できる構造にする。
+
+### 5.7 Interaction layer
+
+責務:
+
+- 点座標から譜面要素をhit testする。
+- タップ位置からNoteIDやScoreElementIDを返す。
+- 選択、ハイライト、注釈のための入力を提供する。
+
+### 5.8 Playback layer
+
+責務:
+
+- ScoreDocumentから再生イベント列を作る。
+- onset順にNoteIDを並べる。
+- tempo, repeat, tieを段階的に扱う。
+
+### 5.9 Diagnostics layer
+
+責務:
+
+- parse warning
+- layout warning
+- unsupported feature
+- license notice
+- debug overlay
+- layout validation result
+
+## 6. 公開API設計
+
+SeeScoreLibのAPI名は使わない。独自の概念名を使う。
+
+### 6.1 基本API
+
+> **[修正]** エントリポイント型名を `ScoreRendererKit` から `DoReMiRenderer` に変更した。
+> `ScoreRendererKit` はパッケージ名 `DoReMiRendererKit` と一致せず、
+> 汎用ライブラリと混同されるリスクがあるため。
+
+```swift
+public struct DoReMiRenderer {
+    public init(configuration: RendererConfiguration = .default)
+
+    public func parseMusicXML(data: Data) throws -> ScoreDocument
+
+    public func layout(
+        score: ScoreDocument,
+        options: LayoutOptions
+    ) throws -> ScoreLayout
+
+    public func makePlaybackSequence(
+        score: ScoreDocument,
+        options: PlaybackOptions
+    ) -> [PlaybackEvent]
+}
+```
+
+> **[追加] PlaybackOptions の最小定義（必須）:**
+>
+> `makePlaybackSequence(score:options:)` の引数として使われるが、型定義が仕様書に存在しなかった。
+>
+> ```swift
+> public struct PlaybackOptions: Sendable {
+>     /// rest を PlaybackEvent に含めるか。false の場合は rest を除外してステップ移動のみに使う。
+>     public var includeRests: Bool = false
+>     /// テンポの上書き（BPM）。nil の場合は MusicXML の <sound tempo> または 120 BPM を使う。
+>     /// MVP0 では tempo 解析未実装のため、nil 時は 120 BPM 固定とする。
+>     public var tempoOverride: Double? = nil
+>
+>     public static let `default` = PlaybackOptions()
+> }
+> ```
+
+### 6.2 描画API
+
+```swift
+public protocol ScoreDrawingContext {
+    func drawLine(from: CGPoint, to: CGPoint, style: StrokeStyleSpec)
+    func drawEllipse(in rect: CGRect, style: FillStrokeStyleSpec)
+    func drawPath(_ path: ScorePath, style: FillStrokeStyleSpec)
+    func drawText(_ text: String, at point: CGPoint, style: TextStyleSpec)
+    func drawGlyph(_ glyph: MusicGlyph, at point: CGPoint, style: GlyphStyleSpec)
+}
+```
+
+```swift
+public struct ScorePainter {
+    public init()
+
+    public func draw(
+        layout: ScoreLayout,
+        style: ScoreStyle,
+        selection: ScoreSelection?,
+        into context: ScoreDrawingContext
+    )
+}
+```
+
+### 6.3 SwiftUI連携API
+
+```swift
+public struct ScoreCanvasView: View {
+    public init(
+        layout: ScoreLayout,
+        style: ScoreStyle,
+        selection: ScoreSelection?,
+        interactionHandler: ScoreInteractionHandler?
+    )
+}
+```
+
+### 6.4 ID API
+
+```swift
+public struct NoteID: Hashable, Codable, Sendable {
+    public let rawValue: String
+}
+
+public struct ScoreElementID: Hashable, Codable, Sendable {
+    public let rawValue: String
+}
+
+public enum ScoreElementKind: Hashable, Codable, Sendable {
+    case notehead
+    case rest
+    case stem
+    case beam
+    case accidental
+    case dot
+    case ledgerLine
+    case staffLine
+    case clef
+    case timeSignature
+    case keySignature
+    case barline
+    case lyric
+    case fingering
+}
+```
+
+### 6.5 レイアウト取得API
+
+```swift
+public struct ScoreLayout: Sendable {
+    public let canvasSize: CGSize
+    public let systems: [SystemLayout]
+    public let staves: [StaffLayout]
+    public let measures: [MeasureLayout]
+    public let elements: [ElementLayout]
+
+    public let noteByID: [NoteID: NoteLayout]
+    public let elementByID: [ScoreElementID: ElementLayout]
+
+    public func noteLayout(for id: NoteID) -> NoteLayout?
+    public func elementLayout(for id: ScoreElementID) -> ElementLayout?
+    public func elements(at point: CGPoint, radius: CGFloat) -> [ElementLayout]
+}
+```
+
+### 6.6 カラーリングAPI
+
+色指定は座標ではなくIDと音楽的文脈に対して行う。
+Rendererは「どのpitchを何色にするか」を判断しない。Rendererは `ScoreLayout` と `ScoreStyle` から解決済みの色を受け取り、描画だけを行う。
+
+MVP0では `NoteColorStyle.pitchClass` と `StaffLineColorStyle.pitchClass` を実装する。外部SDK化を見据え、MVP0時点から `ColorRule` プロトコルを定義し、後からカラーロジックを差し替え可能にする。
+
+```swift
+public struct ScoreStyle: Sendable {
+    public var backgroundColor: ScoreColor
+    public var defaultInkColor: ScoreColor
+    public var staffLineStyle: StaffLineColorStyle
+    public var noteColorStyle: NoteColorStyle
+    public var ledgerLineStyle: LedgerLineColorStyle
+    public var accidentalStyle: AccidentalColorStyle
+    public var highlightStyle: HighlightStyle
+    public var glyphStyle: GlyphStyle
+    public var colorResolver: ScoreColorResolver
+}
+```
+
+```swift
+public enum NoteColorStyle: Sendable {
+    case monochrome(ScoreColor)
+    case pitchClass(ScaleColorPalette)
+    case rule(any NoteColorRule)
+    case custom([NoteID: NoteVisualStyle])
+}
+```
+
+```swift
+public enum StaffLineColorStyle: Sendable {
+    case monochrome(ScoreColor)
+    case pitchClass(defaultPalette: ScaleColorPalette, clefOverrides: [ClefKind: ScaleColorPalette])
+    case rule(any StaffLineColorRule)
+    case custom([ScoreElementID: StaffLineVisualStyle])
+}
+```
+
+```swift
+public enum LedgerLineColorStyle: Sendable {
+    case defaultInk
+    case matchNotePitch
+    case matchStaffPitch
+    case rule(any LedgerLineColorRule)
+}
+```
+
+```swift
+public enum AccidentalColorStyle: Sendable {
+    case defaultInk
+    case matchNotePitch
+    case rule(any AccidentalColorRule)
+}
+```
+
+```swift
+public struct ScaleColorPalette: Hashable, Codable, Sendable {
+    public var c: ScoreColor
+    public var d: ScoreColor
+    public var e: ScoreColor
+    public var f: ScoreColor
+    public var g: ScoreColor
+    public var a: ScoreColor
+    public var b: ScoreColor
+
+    public func color(for pitch: Pitch) -> ScoreColor
+    public func color(for pitchClass: PitchClass) -> ScoreColor
+}
+```
+
+> **[最終修正]** 最終版では、色の決定を `ColorRule` / `ScoreColorResolver` に分離し、Rendererから色判定を排除する。
+> これにより、将来ユーザー設定、色覚対応、調号対応、声部別、練習モード別、難易度別、特定NoteID別の色分けを追加しても、Parser / Layout / Rendering の責務が混ざらない。
+
+#### 6.6.1 ColorRule API
+
+`ColorRule` は、音楽的文脈とIDから最終色を返す差し替え可能なルールである。MVP0では標準実装として `PitchClassNoteColorRule` と `ClefAwareStaffLineColorRule` を提供する。
+
+```swift
+public protocol NoteColorRule: Sendable {
+    func color(
+        for note: ScoreNote,
+        layout: NoteLayout?,
+        context: ColorContext
+    ) -> ScoreColor
+}
+
+public protocol StaffLineColorRule: Sendable {
+    func color(
+        for staffLine: StaffLineLayout,
+        context: ColorContext
+    ) -> ScoreColor
+}
+
+public protocol LedgerLineColorRule: Sendable {
+    func color(
+        for ledgerLine: LedgerLineLayout,
+        note: ScoreNote?,
+        context: ColorContext
+    ) -> ScoreColor
+}
+
+public protocol AccidentalColorRule: Sendable {
+    func color(
+        for accidental: ElementLayout,
+        note: ScoreNote?,
+        context: ColorContext
+    ) -> ScoreColor
+}
+```
+
+#### 6.6.2 ColorContext
+
+`ColorContext` は、色決定に必要な情報をまとめる。Rendererは `ColorContext` を生成してもよいが、色の判断自体は `ColorRule` に委譲する。
+
+```swift
+public struct ColorContext: Sendable {
+    public let score: ScoreDocument
+    public let layout: ScoreLayout
+    public let measureID: MeasureID?
+    public let staffID: StaffID?
+    public let voiceID: VoiceID?
+    public let clef: Clef?
+    public let keySignature: KeySignature?
+    public let timeSignature: TimeSignature?
+    public let selection: ScoreSelection?
+    public let currentNoteIDs: Set<NoteID>
+    public let userPalette: ScaleColorPalette?
+    public let colorPolicy: ColorPolicy
+}
+```
+
+```swift
+public struct ColorPolicy: Hashable, Codable, Sendable {
+    public var ignoreAccidentalForPitchClassColor: Bool
+    public var useKeyAwareColor: Bool
+    public var useAccidentalAwareColor: Bool
+    public var useVoiceAwareColor: Bool
+
+    public static let mvp0Default = ColorPolicy(
+        ignoreAccidentalForPitchClassColor: true,
+        useKeyAwareColor: false,
+        useAccidentalAwareColor: false,
+        useVoiceAwareColor: false
+    )
+}
+```
+
+#### 6.6.3 ScoreColorResolver
+
+`ScoreColorResolver` は、`ScoreStyle` と `ColorRule` を統合して描画用の最終色を返す。
+
+```swift
+public struct ScoreColorResolver: Sendable {
+    public init()
+
+    public func resolvedStyle(
+        for element: ElementLayout,
+        score: ScoreDocument,
+        layout: ScoreLayout,
+        style: ScoreStyle,
+        selection: ScoreSelection?
+    ) -> ResolvedVisualStyle
+}
+
+public struct ResolvedVisualStyle: Hashable, Codable, Sendable {
+    public let fillColor: ScoreColor?
+    public let strokeColor: ScoreColor?
+    public let lineWidth: Double?
+    public let opacity: Double
+}
+```
+
+要件:
+
+- Rendererは `ResolvedVisualStyle` を使って描画する。
+- Renderer内で `pitch.step == .c` なら赤、のような分岐を書かない。
+- 色変更によって `ScoreLayout.notes.count`, `ScoreLayout.elements.count`, `noteByID`, `elementByID` が変わってはいけない。
+- 色変更は再レイアウトを必須にしない。ただし五線の太さやnoteheadサイズを変えるStyle拡張は、LayoutOptions変更として別管理する。
+- `ColorRule` は副作用を持たない純粋関数として実装する。
+- `ColorRule` はUI状態を直接参照しない。必要情報は `ColorContext` で渡す。
+
+#### 6.6.4 標準ColorRule
+
+MVP0で実装する標準ColorRule:
+
+```swift
+public struct PitchClassNoteColorRule: NoteColorRule {
+    public let palette: ScaleColorPalette
+    public let policy: ColorPolicy
+
+    public func color(
+        for note: ScoreNote,
+        layout: NoteLayout?,
+        context: ColorContext
+    ) -> ScoreColor
+}
+
+public struct ClefAwareStaffLineColorRule: StaffLineColorRule {
+    public let defaultPalette: ScaleColorPalette
+    public let clefOverrides: [ClefKind: ScaleColorPalette]
+
+    public func color(
+        for staffLine: StaffLineLayout,
+        context: ColorContext
+    ) -> ScoreColor
+}
+
+public struct MatchNoteLedgerLineColorRule: LedgerLineColorRule {
+    public func color(
+        for ledgerLine: LedgerLineLayout,
+        note: ScoreNote?,
+        context: ColorContext
+    ) -> ScoreColor
+}
+```
+
+MVP1以降で追加可能なColorRule候補:
+
+```text
+- SolfegeNoteColorRule
+- ScaleDegreeColorRule
+- KeyAwarePitchColorRule
+- AccidentalAwareColorRule
+- VoiceAwareColorRule
+- StaffAwareColorRule
+- DifficultyAwareColorRule
+- PerNoteOverrideColorRule
+- AccessibilityPaletteColorRule
+```
+
+#### 6.6.5 ユーザー設定との接続
+
+DoReMi Paletteアプリ側では、ユーザー設定を `ScaleColorPalette` と `ColorPolicy` に変換してSDKへ渡す。SDKは設定保存を担当しない。
+
+```text
+DoReMi Palette App Settings
+  ↓
+ScaleColorPalette / ColorPolicy / ColorRule
+  ↓
+ScoreStyle
+  ↓
+ScoreColorResolver
+  ↓
+ResolvedVisualStyle
+  ↓
+ScorePainter
+```
+
+この分離により、アプリ側でカラールールを変更してもSDKのParser/Layout/Interaction/Playbackは変更不要になる。
+
+### 6.6a ClefKind
+
+> **[追加]** `StaffLineColorStyle.pitchClass` の clefOverrides キーとして使用する。
+> `staffPosition(pitch:clef:)` の引数 `Clef` とも対応させること。
+
+```swift
+public enum ClefKind: String, Hashable, Codable, Sendable {
+    case treble
+    case bass
+    case alto
+    case tenor
+    case unknown
+}
+```
+
+### 6.7 Interaction API
+
+```swift
+public struct HitTestResult: Sendable {
+    public let point: CGPoint
+    public let elements: [ElementLayout]
+    /// radius 内に音符が存在しない場合は nil。
+    /// radius 内に複数の音符が存在する場合は noteheadCenter が最も近いものを返す。
+    public let nearestNoteID: NoteID?
+}
+```
+
+```swift
+public protocol ScoreInteractionHandler {
+    func scoreDidTap(_ result: HitTestResult)
+    func scoreDidSelect(noteID: NoteID)
+}
+```
+
+> **[追加] MVP0 のインタラクション API 方針:**
+>
+> `ScoreInteractionHandler` プロトコルは将来拡張のために定義するが、
+> MVP0 では `ScoreCanvasView` に `onTap: ((HitTestResult) -> Void)?` クロージャを優先して実装する。
+> `ScoreInteractionHandler` プロトコルの完全実装（`scoreDidSelect` を含む選択状態管理）は MVP1 以降とする。
+>
+> ```swift
+> // MVP0 での ScoreCanvasView 最小シグネチャ
+> public struct ScoreCanvasView: View {
+>     public init(
+>         layout: ScoreLayout,
+>         style: ScoreStyle,
+>         onTap: ((HitTestResult) -> Void)? = nil
+>     )
+> }
+> ```
+
+### 6.8 Diagnostics API
+
+```swift
+public struct RendererDiagnostic: Hashable, Sendable {
+    public let severity: DiagnosticSeverity
+    public let code: String
+    public let message: String
+    public let location: MusicXMLLocation?
+}
+
+public enum DiagnosticSeverity: String, Sendable {
+    case info
+    case warning
+    case error
+}
+```
+
+## 7. NoteID生成規則
+
+NoteIDは決定的に生成する。
+
+推奨キー:
+
+```text
+documentIndex.partIndex.measureIndex.xmlNoteOrdinal.voiceID.staffIndex.onset.chordOrdinal
+```
+
+要件:
+
+- 同じMusicXMLからは常に同じNoteIDを生成する。
+- レイアウト変更、ズーム、ページ幅変更、画面回転でNoteIDは変わらない。
+- `xmlNoteOrdinal` はMusicXML内の `<note>` 出現順を安定して数える。
+  **`xmlNoteOrdinal` の定義: 各 `<part>` ブロック内で `<note>` 要素が出現するXML上の通し番号（0始まり）。`<backup>` / `<forward>` / `<chord>` の有無に関わらず、XML要素の出現順で決まる。**
+- `onset` はdivisions単位の有理数で保持する。
+- `backup` / `forward` / `chord` を正しく反映する。
+- 和音内の各音は同じonsetを持つ。
+- 和音内の各音は `chordOrdinal` で区別する。
+- restも内部IDを持つが、音符カラー対象からは除外できる。
+- grace noteやornamentは未対応ならwarningにする。
+
+> **[追加] NoteID衝突防止の必須テストケース:**
+>
+> ピアノ大譜表（staff=1, staff=2）で同一 measure に同一 voiceID・同一 onset の音符が
+> 両譜表に存在するとき、NoteID が衝突しないこと。
+> これは `staffIndex` がキーに含まれていても、`xmlNoteOrdinal` の定義が曖昧なままだと
+> 衝突する可能性があるため、以下のテストを `MusicXMLTests` に必須追加する。
+>
+> ```swift
+> // ピアノ大譜表: staff=1 と staff=2 に同一 onset の音符が両方存在するケース
+> func testNoteIDUniquenessInGrandStaff() {
+>     let ids = parsedNotes(from: "grand_staff_simple.musicxml").map(\.id)
+>     XCTAssertEqual(ids.count, Set(ids).count, "NoteID に重複がある")
+> }
+>
+> // 100音以上のファイルで全NoteIDがユニークであることを保証
+> func testNoteIDGlobalUniqueness() {
+>     let ids = parsedNotes(from: "long_piece.musicxml").map(\.id)
+>     XCTAssertEqual(ids.count, Set(ids).count)
+> }
+>
+> // 同一MusicXMLを2回パースしたとき、NoteIDが完全一致すること（永続性保証）
+> func testNoteIDDeterminism() {
+>     let ids1 = parsedNotes(from: "single_melody.musicxml").map(\.id)
+>     let ids2 = parsedNotes(from: "single_melody.musicxml").map(\.id)
+>     XCTAssertEqual(ids1, ids2)
+> }
+> ```
+
+## 8. ScoreElementID生成規則
+
+ScoreElementIDは、描画対象ごとに生成する。
+
+例:
+
+```text
+noteID.notehead
+noteID.stem
+noteID.accidental
+noteID.dot.0
+noteID.ledgerLine.-1
+staffID.measureID.staffLine.0
+measureID.barline.left
+measureID.barline.right
+```
+
+五線カラーを安定させるため、五線の各線にもIDを付与する。
+
+```swift
+public struct StaffLineLayout: Sendable {
+    public let id: ScoreElementID
+    public let staffID: StaffID
+    public let measureID: MeasureID
+    public let lineIndex: Int
+    public let pitchClassHint: PitchClass?
+    public let start: CGPoint
+    public let end: CGPoint
+    public let frame: CGRect
+}
+```
+
+## 9. 五線カラー設計
+
+五線譜の線は、通常の黒線として描くのではなく、レイアウト上の独立要素として扱う。
+
+### 9.1 音名対応
+
+treble clef, bass clefごとに、各線・各間が対応するpitchを計算する。
+
+五線の線色を音名に対応させる場合:
+
+- treble clefの下から1線目はE
+- treble clefの下から2線目はG
+- treble clefの下から3線目はB
+- treble clefの下から4線目はD
+- treble clefの下から5線目はF
+
+- bass clefの下から1線目はG
+- bass clefの下から2線目はB
+- bass clefの下から3線目はD
+- bass clefの下から4線目はF
+- bass clefの下から5線目はA
+
+ただし、調号に応じて色を変えるかどうかは設定で切り替え可能にする。
+
+初期仕様:
+
+- 臨時記号や調号に関係なく、基本音名 C/D/E/F/G/A/B で色を決める。
+
+### 9.2 五線カラー描画順
+
+描画順は以下とする。
+
+```text
+1. background
+2. staff lines
+3. colored staff overlay, if enabled
+4. ledger lines
+5. barlines
+6. clef / key signature / time signature
+7. rests
+8. noteheads
+9. accidentals
+10. stems
+11. beams
+12. dots
+13. ties / slurs
+14. lyrics / fingering
+15. current note highlight
+16. debug overlay
+```
+
+五線カラーON/OFFで、音符や記号の描画数・座標・IDが変化してはいけない。
+
+## 10. 音符カラー設計
+
+音符カラーは `NoteID` と `ScoreNote` に対するスタイルとして指定する。描画後の座標に色を重ねる方式は禁止する。
+
+音符カラー対象:
+
+- notehead
+- stem
+- beam
+- accidental
+- dot
+- ledger line
+
+初期設定:
+
+```text
+C: red
+D: yellow
+E: green
+F: orange
+G: blue
+A: purple
+B: pink
+```
+
+ただしSDK内部では、色名ではなくRGBA値を保持する。
+
+```swift
+public struct ScoreColor: Hashable, Codable, Sendable {
+    public let red: Double
+    public let green: Double
+    public let blue: Double
+    public let alpha: Double
+}
+```
+
+### 10.1 カラーロジック変更可能性
+
+本SDKでは、カラーロジックを後から変更できることを必須要件とする。
+
+禁止:
+
+- Rendererに `PitchClass` や `ClefKind` に基づく色分岐を直書きする。
+- `NoteLayout` 生成時に最終色を固定し、Style変更後に再利用できなくする。
+- 色変更のために再パースを要求する。
+- 色変更のためにDOM、SVG、画像、座標推定を使う。
+
+許可:
+
+- `ScoreStyle` を差し替えて再描画する。
+- `ScaleColorPalette` を差し替えて再描画する。
+- `ColorRule` を差し替えて再描画する。
+- `NoteID` / `ScoreElementID` 単位のcustom styleを適用する。
+
+### 10.2 色解決タイミング
+
+色解決は、原則として描画直前に行う。
+
+```text
+ScoreDocument
+  ↓
+ScoreLayout
+  ↓
+ScoreStyle + ColorRule + ColorContext
+  ↓
+ResolvedVisualStyle
+  ↓
+ScorePainter
+```
+
+`ScoreLayout` は座標とIDを持つが、最終色を永続的に保持しない。必要に応じて `ElementLayout` に `defaultElementKind` や `pitchClassHint` を持たせることは許可するが、色そのものは `ScoreStyle` と `ColorRule` で決める。
+
+### 10.3 色変更時の不変条件
+
+以下はテストで保証する。
+
+- パレット変更前後で `ScoreLayout.notes.count` が同じ。
+- パレット変更前後で `ScoreLayout.elements.count` が同じ。
+- パレット変更前後で `noteByID.keys` が同じ。
+- パレット変更前後で `elementByID.keys` が同じ。
+- パレット変更前後で `noteheadCenter` が変わらない。
+- `ColorRule` 変更前後で hit test の結果が変わらない。
+- 色変更を10回繰り返しても、現在NoteIDとPlaybackEvent列が変わらない。
+
+### 10.4 臨時記号・調号・黒鍵の扱い
+
+MVP0では、臨時記号や調号に関係なく基本音名 C/D/E/F/G/A/B の色を使う。
+
+例:
+
+```text
+C, C#, Cb → C の色
+D, D#, Db → D の色
+```
+
+MVP1以降で `ColorPolicy.useAccidentalAwareColor` または `ColorPolicy.useKeyAwareColor` を有効化し、臨時記号・調号・スケール度数を反映したカラールールを追加できるようにする。
+
+### 10.5 五線カラーとの関係
+
+五線カラーは音符カラーとは独立した `StaffLineColorRule` で決める。
+
+- 音符カラーをOFFにしても、五線カラーON/OFFは独立して動作する。
+- 五線カラーをOFFにしても、音符カラーON/OFFは独立して動作する。
+- 五線カラーは `StaffLineLayout.pitchClassHint` と `ClefKind` に基づき解決する。
+- 五線カラーのON/OFFで、音符座標・音符数・NoteIDは変化しない。
+
+## 11. MusicXML parser仕様
+
+### 11.1 入力
+
+```swift
+public enum ScoreInput {
+    case musicXMLData(Data)
+    case mxlData(Data)
+    /// MVP0 では未実装。MVP1 以降で追加する。
+    /// MVP0 で渡された場合は UnsupportedFeaturePolicy に従い error または warning を出す。
+    case url(URL)
+}
+```
+
+> **[追加] score-timewise の扱い:**
+>
+> MusicXML には `score-partwise`（パート優先）と `score-timewise`（時間優先）の2形式がある。
+> MVP0 では `score-partwise` のみ対応する。
+> `score-timewise` のファイルをロードした場合は、`UnsupportedFeaturePolicy` に従い
+> `fail` モードでは `throws`、`ignoreWithWarning` モードでは diagnostic warning を出し
+> 空の `ScoreDocument` を返す。
+> この挙動を parser tests に追加すること。
+>
+> **[追加] `<transpose>` 要素の扱い:**
+>
+> MVP0 では `<transpose>` 要素を無視するが、warning として diagnostics に出力する。
+> これにより、クラリネット等の移調楽器を含む譜面で音名カラーが誤る可能性をユーザーに通知できる。
+
+### 11.2 出力
+
+```swift
+public struct ParseResult: Sendable {
+    public let score: ScoreDocument
+    public let diagnostics: [RendererDiagnostic]
+}
+```
+
+### 11.3 対応要素
+
+MVP0で実装するMusicXML要素:
+
+```text
+score-partwise
+part-list
+score-part
+part
+measure
+attributes
+divisions
+key
+fifths
+time
+beats
+beat-type
+clef
+sign
+line
+note
+pitch
+step
+alter
+octave
+rest
+duration
+type
+dot
+voice
+staff
+chord
+accidental
+backup
+forward
+tie
+notations
+tied
+barline
+```
+
+### 11.4 未対応要素
+
+未対応要素は黙って無視しない。
+
+```swift
+public enum UnsupportedFeaturePolicy: Sendable {
+    case ignoreWithWarning
+    case fail
+}
+```
+
+初期設定は `ignoreWithWarning` とする。
+
+## 12. レイアウトエンジン仕様
+
+### 12.1 入力
+
+```swift
+public struct LayoutOptions: Sendable {
+    public var pageWidth: CGFloat
+    /// nil の場合は単一ページ（高さ無制限）として扱い、全段を縦方向に並べる。
+    /// MVP0 では nil を標準とし、ページ折り返しは実装しない。
+    public var pageHeight: CGFloat?
+    public var staffSpace: CGFloat
+    public var systemSpacing: CGFloat
+    public var measureSpacing: CGFloat
+    public var displayMode: DisplayMode
+    public var showPageMargins: Bool
+}
+```
+
+```swift
+public enum DisplayMode: Sendable {
+    case print
+    case horizontal
+    case verticalPractice
+}
+```
+
+MVP0では `print` のみ実装する。
+
+> **[追加] DisplayMode の MVP0 挙動:**
+>
+> `horizontal` または `verticalPractice` を `LayoutOptions.displayMode` に指定した場合、
+> `UnsupportedFeaturePolicy` に従い `fail` モードでは `layout()` が `throws`、
+> `ignoreWithWarning` モードでは diagnostic warning を出して `print` モードにフォールバックする。
+> この挙動を layout tests に追加すること。
+
+### 12.2 横位置
+
+横位置はMusicXMLのonsetとdurationを基準に決める。
+
+MVP0:
+
+- 小節単位で必要幅を計算する。
+- 各onsetにx座標を割り当てる。
+- 和音は同じx座標に配置する。
+- 休符もdurationに応じたx座標に配置する。
+- 臨時記号のための左余白を確保する。
+- 小節内で音符が重ならない最小幅を確保する。
+
+### 12.3 縦位置
+
+縦位置はclefとpitchから計算する。
+
+```swift
+public struct StaffPosition: Sendable {
+    public let stepsFromMiddleLine: Int
+}
+```
+
+音高からstaff positionへ変換する関数を必須実装する。
+
+```swift
+public func staffPosition(
+    pitch: Pitch,
+    clef: Clef
+) -> StaffPosition
+```
+
+#### 12.3.1 StaffPosition の数学的定義
+
+> **[追加]** `staffPosition(pitch:clef:)` の実装を一意に決めるため、数学的定義を明記する。
+
+`stepsFromMiddleLine` は **diatonic step（半音ではなく音名C/D/E/F/G/A/B単位）** で数える整数値である。
+
+- 正値は上方向（高音）、負値は下方向（低音）。
+- 1 step の画面距離は `staffSpace / 2` である。
+- 変化記号（シャープ・フラット）は step 数に影響しない。
+
+**基準値（各 clef の五線第3線 = stepsFromMiddleLine 0）:**
+
+| Clef   | stepsFromMiddleLine = 0 | 対応音高 |
+|--------|-------------------------|---------|
+| treble | 0                       | B4      |
+| bass   | 0                       | D3      |
+
+**具体例（treble clef）:**
+
+| 音高 | stepsFromMiddleLine |
+|------|---------------------|
+| C4   | -6                  |
+| D4   | -5                  |
+| E4   | -4                  |
+| F4   | -3                  |
+| G4   | -2                  |
+| A4   | -1                  |
+| B4   |  0                  |
+| C5   | +1                  |
+| D5   | +2                  |
+| E5   | +3                  |
+
+**具体例（bass clef）:**
+
+| 音高 | stepsFromMiddleLine |
+|------|---------------------|
+| E2   | -6                  |
+| F2   | -5                  |
+| G2   | -4                  |
+| A2   | -3                  |
+| B2   | -2                  |
+| C3   | -1                  |
+| D3   |  0                  |
+| E3   | +1                  |
+| F3   | +2                  |
+
+このテーブルを **パラメトリックテスト** として `LayoutTests/StaffPositionTests.swift` に追加すること。
+各行を1テストケースとし、treble/bass それぞれ最低10音を網羅する。
+
+**加線の判定基準:**
+
+| stepsFromMiddleLine | 状態                    |
+|--------------------|-------------------------|
+| -6 以下            | 五線下方の加線が必要      |
+| -5 〜 +5           | 五線内（加線不要）        |
+| +6 以上            | 五線上方の加線が必要      |
+
+### 12.4 加線
+
+五線外の音符には加線を描画する。
+
+加線も `ScoreElementID` を持つ。
+
+加線の色は設定で切り替える。
+
+```swift
+public enum LedgerLineColorMode: Sendable {
+    case defaultInk
+    case matchNotePitch
+    case matchStaffPitch
+}
+```
+
+MVP0では `matchNotePitch` を推奨する。
+
+## 13. レンダリング仕様
+
+### 13.1 描画技術
+
+iOS版では以下を使用する。
+
+- SwiftUI Canvas
+- Core Graphics
+- Core Text
+- 必要に応じてSMuFLフォント
+
+ただしMVP0では、音符記号を単純図形で描画してよい。
+
+MVP0の図形描画:
+
+- notehead: 楕円（**幅 = staffSpace × 1.4、高さ = staffSpace × 1.0** を基準値とする。`RendererConfiguration` で変更可能にする）
+- stem: 線
+- beam: 太線または矩形
+- rest: 簡易記号または代替図形
+- accidental: テキストまたは簡易パス
+- clef: テキストまたはSMuFL glyph
+- time signature: テキスト
+- key signature: accidental glyphの並び
+
+出版品質より、ID・座標・色の安定性を優先する。
+
+### 13.2 レンダラー入力
+
+Rendererは `ScoreLayout` のみを座標源とする。
+
+```swift
+public func render(
+    layout: ScoreLayout,
+    style: ScoreStyle,
+    selection: ScoreSelection?,
+    diagnostics: inout [RendererDiagnostic]
+)
+```
+
+RendererがMusicXMLを直接読むことは禁止する。
+
+### 13.3 デバッグ表示
+
+SDKにはdebug overlayを用意する。
+
+表示項目:
+
+- NoteID
+- onset
+- staffIndex
+- voiceID
+- noteheadCenter
+- element frame
+- hit test area
+- measure bounds
+- system bounds
+
+## 14. タップ判定仕様
+
+Hit testは `ScoreLayout.elements` のframeから行う。
+
+優先順位:
+
+```text
+1. notehead
+2. accidental
+3. rest
+4. stem
+5. beam
+6. lyric
+7. fingering
+8. staff line
+9. measure
+```
+
+```swift
+public func hitTest(
+    point: CGPoint,
+    radius: CGFloat,
+    in layout: ScoreLayout
+) -> HitTestResult
+```
+
+## 15. Playback仕様
+
+MVP0では音声再生は不要。ただし、再生・ステップ操作用のイベント列は生成する。
+
+```swift
+public struct PlaybackEvent: Hashable, Sendable {
+    public let noteIDs: [NoteID]
+    public let onset: MusicalTime
+    /// tie chain を含めた実効発音長。
+    /// 単音の場合は note duration と等しい。
+    /// tie で結合された音符群の場合は chain 全体の合計 duration になる。
+    public let nominalDuration: MusicalTime
+    public let midiPitches: [Int]
+    public let measureID: MeasureID
+    public let staffIDs: [StaffID]
+    /// この PlaybackEvent が tie の継続音（tie stop のみ）である場合は true。
+    /// tie continuation は原則として新規発音しない。
+    public let isTiedContinuation: Bool
+}
+```
+
+> **[修正]** 旧 `duration` を `nominalDuration` に改名し、tie chain 全体の長さを持つと明記した。
+> `isTiedContinuation` を追加し、tie stop のみの音符を鍵盤ハイライト側で区別できるようにした。
+
+要件:
+
+- onset順に並ぶ。
+- 和音は同一PlaybackEventにまとめる。
+- tie stopのみの音は必要に応じて発音対象から除外する。
+- restはstep対象に含めるか設定で切り替える。
+
+## 16. SDK外部公開を見据えた設計
+
+### 16.1 モジュール分割
+
+```text
+DoReMiRendererKit
+  - Public API
+  - MusicXML parser
+  - Layout engine
+  - Renderer
+  - Interaction
+  - Playback model
+
+DoReMiRendererKitUI
+  - SwiftUI ScoreCanvasView
+  - UIKit wrapper
+  - sample controls
+
+DoReMiRendererKitTesting
+  - fixtures
+  - snapshot utilities
+  - layout assertions
+```
+
+### 16.2 SemVer
+
+バージョン管理はSemVerにする。
+
+```text
+0.x:
+  API破壊的変更あり
+
+1.0:
+  MusicXML basic rendering
+  note/staff coloring
+  hit testing
+  playback events
+  public documentation
+
+1.x:
+  後方互換を維持
+
+2.0:
+  大規模API変更時のみ
+```
+
+### 16.3 DocC
+
+外部SDK化前にDocCを用意する。
+
+必須ドキュメント:
+
+- Getting Started
+- Load MusicXML
+- Render Score
+- Color Notes
+- Color Staff Lines
+- Hit Testing
+- Playback Events
+- Diagnostics
+- Unsupported MusicXML Features
+- License Notices
+
+### 16.4 サンプルアプリ
+
+SDKにはサンプルアプリを付ける。
+
+```text
+Examples/
+  MinimalScoreViewer
+  ColorNoteDemo
+  StaffColorDemo
+  HitTestDemo
+  PlaybackCursorDemo
+```
+
+サンプル譜面は自作する。著作権保護された楽曲を含めない。
+
+## 17. テスト仕様
+
+### 17.1 Parser tests
+
+必須テスト:
+
+- noteの出現順を安定して数える。
+- backup / forwardでonsetが正しく変化する。
+- chordが同一onsetになる。
+- voiceが異なる音符でIDが衝突しない。
+- staffが異なる音符でIDが衝突しない。
+- restがpitchなしで扱われる。
+- tie start / stopを読み取れる。
+- 未対応要素がwarningになる。
+- ピアノ大譜表（staff=1, staff=2）で同一measure・同一onset・同一voiceに音符が両譜表に存在するとき、NoteIDが衝突しない。
+- 100音以上のMusicXMLをパースしてNoteID配列をSetに変換したとき、Set.count == Array.count である（重複ゼロ保証）。
+- 同一MusicXMLを2回パースしたとき、NoteIDの配列が完全一致する（決定性保証）。
+  **この保証がないと、将来ユーザーの練習進捗をNoteIDで保存した際にデータが壊れる。**
+- `score-timewise` 形式のMusicXMLをロードしたとき、 `UnsupportedFeaturePolicy.fail` でエラーになる。
+
+### 17.2 Layout tests
+
+必須テスト:
+
+- treble clefのC4, E4, G4などが期待y座標になる。
+- bass clefのC3, E3, G3などが期待y座標になる。
+- noteheadCenterが決定的に計算される。
+- layout再計算後もNoteIDとNoteLayoutの対応が変わらない。
+- 和音の各音が同一x座標になる。
+- 五線各線にScoreElementIDが付与される。
+- 五線カラーON/OFFでnote countが変化しない。
+- 音符カラーON/OFFでnote countが変化しない。
+- `ScoreStyle` / `ScaleColorPalette` / `ColorRule` を変更しても `noteByID.keys` と `elementByID.keys` が変化しない。
+- `PitchClassNoteColorRule` が C/D/E/F/G/A/B を指定パレットに解決する。
+- `ClefAwareStaffLineColorRule` が treble / bass の五線各線を期待pitch classに解決する。
+- `ColorPolicy.ignoreAccidentalForPitchClassColor = true` のとき、C/C#/Cb が同じ色になる。
+
+### 17.3 Rendering tests
+
+MVP0では画像スナップショットを使う。
+
+> **[追加] スナップショットテストの実行環境注意:**
+>
+> スナップショットテストは iOS Simulator 上でのみ実行する。
+> macOS / Linux の `swift test` コマンドラインではフォントレンダリングが異なるため、
+> スナップショット比較は Xcode / `xcodebuild test` 経由で行う。
+> CI では `xcodebuild test -destination 'platform=iOS Simulator,...'` を使用する。
+> pixel tolerance（許容差分率）は初期値 **1%** とし、`RendererConfiguration` または
+> テストヘルパーで設定可能にする。
+
+必須サンプル:
+
+```text
+1. single_melody.musicxml
+2. grand_staff_simple.musicxml
+3. chord_and_rest.musicxml
+4. accidentals.musicxml
+5. ledger_lines.musicxml
+```
+
+検証:
+
+- 音符色がpitch classに一致する。
+- 五線色がclef別の音名に一致する。
+- noteheadCenterと描画楕円中心が一致する。
+- ハイライトが対象NoteIDに一致する。
+- 10回再描画しても要素数が変わらない。
+- `ColorRule` を10回差し替えても座標・ID・hit test結果が変わらない。
+
+### 17.4 Interaction tests
+
+必須テスト:
+
+- noteheadCenterをtapすると対象NoteIDが返る。
+- accidentals近傍をtapしても対象NoteIDに到達できる。
+- staff lineをtapするとStaffLine IDが返る。
+- 空白をtapするとnearestNoteIDのみ返るか、空結果になる。
+
+### 17.5 Legal hygiene tests
+
+リポジトリに以下を置く。
+
+```text
+LICENSE
+THIRD_PARTY_NOTICES.md
+NOTICE.md
+ASSET_LICENSES.md
+LEGAL_GUIDELINES.md
+```
+
+CIで以下を確認する。
+
+- 禁止ライセンス依存がない。
+- サンプル譜面に出典とライセンスがある。
+- 同梱フォントにOFL等のライセンスが含まれる。
+- GPLコードが含まれていない。
+
+> **[追加] CI でのライセンス検査ツール候補:**
+>
+> `swift package show-dependencies --format json` の出力を解析して
+> GPL/LGPL 依存を検出するスクリプトを `Scripts/check-licenses.sh` として用意する。
+> 必要に応じて [licenseplist](https://github.com/mono0926/LicensePlist)（MIT）または
+> [trivy](https://github.com/aquasecurity/trivy)（Apache-2.0）を補助ツールとして使用できる。
+> どちらを採用する場合も `THIRD_PARTY_NOTICES.md` にライセンスを記録すること。
+>
+> **[追加] LEGAL_GUIDELINES.md に記載すること（外部SDK化を見据えた運用）:**
+>
+> - SeeScoreLib の試用版・評価版を過去に触れたことがある開発者は、
+>   意図せずその知識が実装に影響するリスク（subconscious contamination）がある。
+>   外部SDK公開前に、SeeScoreLib を触ったことがないレビュワーによるコードレビューを
+>   少なくとも1回実施することを推奨する（断定ではなく実務上の注意として記載）。
+> - これは法的助言ではない。外部SDK販売時は弁護士または知財専門家に確認すること（Section 2 の再掲）。
+
+## 18. 開発フェーズ
+
+### Phase 0: リポジトリ初期化
+
+- Swift Packageを新規作成する。
+- iOS example appを作る。
+- license関連ファイルを作る。
+- CIでtestを走らせる。
+- 依存を最小限にする。
+
+### Phase 1: Domain model
+
+実装:
+
+- ScoreDocument
+- ScorePart
+- Measure
+- ScoreNote
+- Pitch
+- MusicalTime
+- VoiceID
+- StaffID
+- NoteID
+- ScoreElementID
+- MeasureID
+- ClefKind
+- KeySignature
+- TimeSignature
+- ScaleColorPalette
+- ColorPolicy
+- NoteColorRule
+- StaffLineColorRule
+- ScoreColorResolver
+- ResolvedVisualStyle
+
+> **[追加] MusicalTime の型定義（必須）:**
+>
+> `MusicalTime` は以下の構造体として実装する。
+> 型が未定義のまま実装を進めると、Layout / Playback 全層に影響する。
+>
+> ```swift
+> public struct MusicalTime: Hashable, Codable, Sendable, Comparable {
+>     /// MusicXML の <divisions> 単位での tick 数（累積 onset 値）
+>     public let ticks: Int
+>     /// 四分音符あたりの tick 数（MusicXML <divisions> の値）
+>     public let ticksPerQuarterNote: Int
+>
+>     public static func < (lhs: MusicalTime, rhs: MusicalTime) -> Bool
+>
+>     /// onset の加算（forward / duration 加算に使用）
+>     public static func + (lhs: MusicalTime, rhs: MusicalTime) -> MusicalTime
+>
+>     /// onset の減算（backup に使用）
+>     public static func - (lhs: MusicalTime, rhs: MusicalTime) -> MusicalTime
+> }
+> ```
+>
+> `onset` 計算規則:
+> - 各 `<note>` の onset = 直前までの duration 累積値（ticks）
+> - `<backup value>` は onset を `value` ticks 分減算する
+> - `<forward value>` は onset を `value` ticks 分加算する
+> - `<chord>` 要素の音符は直前の `<note>` と同じ onset を持つ（duration を加算しない）
+
+> **[追加] MeasureID の型定義（必須）:**
+>
+> `PlaybackEvent.measureID` で参照されるが型定義が仕様書に存在しなかった。
+>
+> ```swift
+> public struct MeasureID: Hashable, Codable, Sendable {
+>     public let rawValue: String
+> }
+> ```
+>
+> 生成規則: `partIndex.measureNumber`（例: `"0.1"`, `"0.2"`）
+
+完了条件:
+
+- モデルがSendable/Codable/Hashableに対応する。
+- NoteID生成テストが通る。
+- NoteID衝突テスト（重複ゼロ保証）が通る。
+- NoteID決定性テスト（同一ファイル2回パースで一致）が通る。
+- `staffPosition(pitch:clef:)` の変換テーブルテストが通る（treble/bass 各10音以上）。
+
+### Phase 2: MusicXML parser
+
+実装:
+
+- MusicXMLParser
+- divisions
+- attributes
+- note
+- backup / forward
+- chord
+- voice / staff
+- pitch / rest
+- accidental
+- tie
+
+完了条件:
+
+- 最低5つのfixtureをparseできる。
+- diagnosticsが出力される。
+- parser testsが通る。
+
+### Phase 3: Layout engine
+
+実装:
+
+- ScoreLayoutEngine
+- SystemLayout
+- StaffLayout
+- MeasureLayout
+- NoteLayout
+- StaffLineLayout
+- LedgerLineLayout
+- ElementLayout
+- noteByID
+- elementByID
+- pitchClassHint
+- ColorContext生成に必要なmeasure/staff/clef/keySignature参照
+
+完了条件:
+
+- noteheadCenterを取得できる。
+- 五線各線にIDとpitchClassHintがある。
+- layout testsが通る。
+
+### Phase 4: Renderer
+
+実装:
+
+- ScorePainter
+- SwiftUI ScoreCanvasView
+- CoreGraphics adapter
+- notehead
+- stem
+- beam簡易
+- rest簡易
+- accidental簡易
+- staff lines
+- colored staff lines
+- ledger lines
+- highlight
+- ScoreColorResolver
+- PitchClassNoteColorRule
+- ClefAwareStaffLineColorRule
+- ColorRule差し替え再描画
+
+完了条件:
+
+- iPad simulatorで表示できる。
+- 音符カラーが反映される。
+- 五線カラーが反映される。
+- Renderer内にpitch/classごとの色分岐が存在しない。
+- ColorRuleを変更して再描画できる。
+- screenshotを保存できる。
+
+### Phase 5: Interaction
+
+実装:
+
+- hitTest
+- nearest note
+- tap callback
+- debug overlay
+
+完了条件:
+
+- notehead tapでNoteIDが返る。
+- staff line tapでScoreElementIDが返る。
+- interaction testsが通る。
+
+### Phase 6: Playback events
+
+実装:
+
+- PlaybackSequenceBuilder
+- onset順イベント
+- chord grouping
+- rest step option
+
+完了条件:
+
+- 前/次ステップでcurrentNoteIDを進められる。
+- DoReMi Palette側の鍵盤ハイライトに接続できる。
+
+### Phase 7: MXL対応
+
+実装:
+
+- zip展開
+- container.xml
+- rootfile解決
+- .mxl parse
+
+完了条件:
+
+- MXL fixtureを読み込める。
+- zip依存のライセンスを記録する。
+
+### Phase 8: 外部SDK化準備
+
+実装:
+
+- DocC
+- public API整理
+- example app
+- CHANGELOG
+- README
+- API stability audit
+- asset license audit
+
+完了条件:
+
+- Swift Packageとして外部プロジェクトからimportできる。
+- example appが動く。
+- THIRD_PARTY_NOTICESが完成する。
+
+## 19. Codex作業ルール
+
+Codexは以下を守る。
+
+1. 既存Flutter/WebView/OSMD実装を流用しない。
+2. SeeScoreLibや他SDKのAPIを模倣しない。
+3. MusicXML仕様と自前設計をもとに実装する。
+4. 実装前に小さな作業計画を提示する。
+5. 一度に巨大実装をしない。
+6. parser、layout、rendering、interaction、playbackを分けて実装する。
+7. 各Phaseでテストを追加する。
+8. 未対応要素をsilent failureにしない。
+9. warningまたはerrorとしてdiagnosticsに出す。
+10. すべての座標はScoreLayout由来にする。
+11. 色はIDベースのstyleとして適用する。
+12. 描画後座標推定を禁止する。
+13. 実装後に `swift test` を実行する。
+14. iOS example appでは `xcodebuild build` を実行する。
+15. 失敗した場合は parser/layout/rendering/interaction/playback/platform/legal のどこで失敗したか分類する。
+
+## 20. 検証コマンド
+
+Swift Package:
+
+```sh
+swift test
+```
+
+iOS example app:
+
+```sh
+xcodebuild build \
+  -scheme DoReMiRendererExample \
+  -destination 'platform=iOS Simulator,name=iPad Pro 13-inch (M5)'
+```
+
+スクリーンショット:
+
+```sh
+xcrun simctl io booted screenshot /tmp/doremirenderer_example.png
+```
+
+## 21. 受け入れ条件 MVP0
+
+MVP0完了条件:
+
+- Swift Packageとしてビルドできる。
+- iOS example appで譜面を表示できる。
+- MusicXML fixtureを読み込める。
+- NoteIDが安定生成される。
+- ScoreLayoutがnoteByIDを持つ。
+- 五線各線がScoreElementIDを持つ。
+- 音符がpitch classに応じて色付けされる。
+- 五線がpitch classに応じて色付けされる。
+- `ColorRule` によりカラーロジックを差し替えできる。
+- 色変更で `ScoreLayout` の座標・ID・要素数が変化しない。
+- タップ位置からNoteIDを取得できる。
+- 現在音ハイライトがNoteIDに追従する。
+- parser/layout/interaction testsが通る。
+- `THIRD_PARTY_NOTICES.md` が存在する。
+- サンプル譜面が自作または商用利用可能である。
+- GPL/LGPL依存がない。
+
+## 22. 非目標
+
+MVP0では以下を目標にしない。
+
+- 出版品質の完全浄書
+- MuseScoreやDorico相当の表示品質
+- 任意のMusicXML完全対応
+- 複雑なオーケストラスコア
+- 複雑な連符・装飾音・クロススタッフ
+- 複雑なリピート完全再生
+- 外部向け商用ライセンス販売
+- Android対応
+- Web対応
+
+## 23. 最終設計判断
+
+このSDKは、一般的な譜面浄書エンジンではなく、DoReMi Paletteのための色付き教育譜面レンダラーである。
+
+最優先する品質は以下である。
+
+```text
+1. NoteIDが安定していること
+2. MusicXML note と描画音符が1対1で対応すること
+3. 音符色が正しいこと
+4. 五線色が正しいこと
+5. タップ判定が正しいこと
+6. 再レイアウト後もIDと座標対応が壊れないこと
+7. カラーロジックをRendererから分離し、後から差し替え可能であること
+8. 法的に安全な独自実装であること
+```
+
+商用譜面SDKに似た完成度を目指すのはMVP2以降でよい。
+MVP0では、限定されたMusicXMLを正確に読み、安定したIDと座標を持ち、色付き音符と色付き五線を確実に描けることを完了条件とする。
+
+## 24. 参考情報の扱い
+
+SeeScoreLibから直接取り入れるのは次の抽象概念だけである。
+
+```text
+- 譜面要素単位で色を指定できる
+- 譜面要素の位置情報を取得できる
+- タップ位置から譜面要素を特定できる
+- 再生用イベント列を取得できる
+```
+
+法的リスクを避けるため、以下は禁止する。
+
+```text
+- SeeScoreLibのAPI名を使う
+- SeeScoreLibの型構造を真似る
+- SeeScoreLibのサンプルコードを写す
+- 既存SDKの内部挙動をリバースエンジニアリングする
+- GPL/LGPL系譜面エンジンをSDK本体に組み込む
+```
+
+既存のDoReMi Palette指示書で整理されていた失敗原因、つまりOSMD SVG DOM順とMusicXML note順の不一致、座標系混在、SVG改変による消失、外部DOM依存を避ける判断と整合させる。
+
+---
+
+## 25. 変更履歴（技術レビューによる追記）
+
+このセクションは、初版 `DoReMiRenderer.md` に対して実施した技術レビューに基づく修正・追記の一覧である。
+各変更は `> [追加]` / `> [修正]` マーカーとして本文中に inline で記載してある。
+
+| # | 分類 | 変更箇所 | 内容 |
+|---|------|----------|------|
+| 1 | 修正 | Section 6.1 | エントリポイント型名を `ScoreRendererKit` → `DoReMiRenderer` に変更 |
+| 2 | 修正 | Section 6.6 | `StaffLineColorStyle.pitchClass` を clef-aware に変更（`[ClefKind: ScaleColorPalette]`） |
+| 3 | 追加 | Section 6.6a | `ClefKind` enum を新規定義 |
+| 4 | 追加 | Section 6.7 | `HitTestResult.nearestNoteID` の nil 契約を明記 |
+| 5 | 追加 | Section 6.1 | `PlaybackOptions` の最小型定義を追記 |
+| 6 | 追加 | Section 6.3 | `ScoreInteractionHandler` の MVP0 スコープを明記（クロージャ優先） |
+| 7 | 追加 | Section 7 | `xmlNoteOrdinal` の定義を明確化、NoteID 衝突防止テストケース3件を追記 |
+| 8 | 追加 | Section 5.3 | CGPoint/CGRect の Sendable 方針を追記 |
+| 9 | 追加 | Section 11.1 | `ScoreInput.url` の MVP0 未実装明記、`score-timewise` / `<transpose>` の扱いを追記 |
+| 10 | 追加 | Section 12.1 | `LayoutOptions.pageHeight = nil` の挙動を明記 |
+| 11 | 追加 | Section 12.2 | `DisplayMode` の MVP0 フォールバック挙動を明記 |
+| 12 | 追加 | Section 12.3 | `StaffPosition` の数学的定義テーブルを新規追加（12.3.1）、加線判定基準も追記 |
+| 13 | 追加 | Section 13.1 | notehead 楕円の基準サイズを明記（staffSpace × 1.4 / 1.0） |
+| 14 | 修正 | Section 15 | `PlaybackEvent.duration` → `nominalDuration`（tie chain 全体長）に変更、`isTiedContinuation` を追加 |
+| 15 | 追加 | Section 17.1 | NoteID 一意性・決定性テストを必須テストに追加、score-timewise rejection テストを追加 |
+| 16 | 追加 | Section 17.3 | スナップショットテストの実行環境（iOS Simulator 限定）と pixel tolerance（1%）を明記 |
+| 17 | 追加 | Section 17.5 | ライセンス検査 CI ツール候補（licenseplist / trivy）を追記、subconscious contamination 運用注意を追記 |
+| 18 | 追加 | Phase 1 | `MusicalTime` 型定義・onset 計算規則、`MeasureID` 型定義を Phase 1 必須実装に追加 |
+| 19 | 追加 | Phase 1 | `ClefKind`, `KeySignature`, `TimeSignature`, `MeasureID` を Phase 1 実装対象に追加 |
+| 20 | 修正 | Phase 1 完了条件 | NoteID 衝突テスト・決定性テスト・staffPosition 変換テーブルテストを完了条件に追加 |
+
+
+
+## 26. 最終レビューによる追加変更
+
+この最終版では、Claudeレビュー反映版に対して、DoReMi Palette の長期運用に必要なカラールール差し替え設計を追加した。
+
+追加・修正内容:
+
+| # | 分類 | 変更箇所 | 内容 |
+|---|------|----------|------|
+| 21 | 追加 | Section 5.6 | Styling layer に「Rendererへ色判定を持たせない」原則を追加 |
+| 22 | 修正 | Section 6.6 | `ScoreStyle` に `ScoreColorResolver` を追加し、`ColorRule` ベースの色解決に変更 |
+| 23 | 追加 | Section 6.6.1 | `NoteColorRule`, `StaffLineColorRule`, `LedgerLineColorRule`, `AccidentalColorRule` を追加 |
+| 24 | 追加 | Section 6.6.2 | `ColorContext` と `ColorPolicy` を追加 |
+| 25 | 追加 | Section 6.6.3 | `ScoreColorResolver` と `ResolvedVisualStyle` を追加 |
+| 26 | 追加 | Section 6.6.4 | MVP0標準ColorRuleとMVP1以降の拡張候補を追加 |
+| 27 | 追加 | Section 10.1-10.5 | カラーロジック変更可能性、色解決タイミング、不変条件、臨時記号・調号・五線カラーとの関係を追加 |
+| 28 | 追加 | Section 17 | ColorRule差し替え時のID・座標・hit test不変性テストを追加 |
+| 29 | 追加 | Phase 1/3/4 | ColorRule関連型、pitchClassHint、ScoreColorResolver実装を開発フェーズに追加 |
+
+最終判断:
+
+- MVP0では `PitchClassNoteColorRule` と `ClefAwareStaffLineColorRule` のみ必須実装とする。
+- Key-aware / accidental-aware / voice-aware / solfege / scale degree は、APIの拡張余地だけ確保し、MVP0では実装しない。
+- Rendererは色を判断しない。Rendererは `ResolvedVisualStyle` を受け取り描画する。
+- 色変更は再パース・再レイアウトを要求しない。
+- 色変更によってNoteID、ScoreElementID、座標、hit test、PlaybackEventが変化してはいけない。
