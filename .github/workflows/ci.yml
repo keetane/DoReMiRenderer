@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build-test-docs:
+    name: Build, Test, Docs
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show Swift and Xcode versions
+        run: |
+          swift --version
+          xcodebuild -version
+
+      - name: Resolve packages
+        run: swift package resolve
+
+      - name: Run Swift tests
+        run: swift test
+
+      - name: Check licenses
+        run: Scripts/check-licenses.sh
+
+      - name: Show available iOS Simulator destinations
+        run: |
+          # Keep this visible because GitHub-hosted macOS images change installed
+          # simulator names and OS versions over time.
+          xcrun simctl list devices available
+          xcodebuild -project Examples/DoReMiRendererExample/DoReMiRendererExample.xcodeproj \
+            -scheme DoReMiRendererExample \
+            -showdestinations
+
+      - name: Build Example App
+        run: |
+          xcodebuild build \
+            -project Examples/DoReMiRendererExample/DoReMiRendererExample.xcodeproj \
+            -scheme DoReMiRendererExample \
+            -destination "${IOS_SIMULATOR_DESTINATION:-generic/platform=iOS Simulator}"
+
+      - name: Run iOS snapshot tests
+        run: |
+          if [ -z "${IOS_SIMULATOR_DESTINATION:-}" ]; then
+            SIMULATOR_ID="$(xcrun simctl list devices available | awk -F '[()]' '/iPad|iPhone/ { print $2; exit }')"
+            IOS_SIMULATOR_DESTINATION="platform=iOS Simulator,id=${SIMULATOR_ID}"
+          fi
+          xcodebuild test \
+            -project Examples/DoReMiRendererExample/DoReMiRendererExample.xcodeproj \
+            -scheme DoReMiRendererExample \
+            -destination "$IOS_SIMULATOR_DESTINATION"
+
+      - name: Build DocC archive
+        run: Scripts/build-docc.sh

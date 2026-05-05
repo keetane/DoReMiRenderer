@@ -1,2 +1,7 @@
 *.mxl
 *.pdf
+.build/
+.swiftpm/
+DerivedData/
+LocalSamples/
+LocalSamples/**
