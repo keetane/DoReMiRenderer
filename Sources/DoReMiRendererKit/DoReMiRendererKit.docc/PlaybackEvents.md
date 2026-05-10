@@ -1,6 +1,6 @@
 # Playback Events
 
-Generate playback step events without audio output:
+Generate playback step events from score data:
 
 ```swift
 let events = DoReMiRenderer().makePlaybackSequence(
@@ -12,6 +12,6 @@ let events = DoReMiRenderer().makePlaybackSequence(
 Events are sorted by onset. Notes with the same onset are grouped into one event.
 Rests are included only when ``PlaybackOptions/includeRests`` is true.
 
-Audio playback, AVFoundation, MIDI, and realtime scheduling are not implemented
-in MVP0.
-
+DoReMiRendererKit does not implement audio output or import AVFoundation. Apps
+can consume these events in their own playback runtime. DoReMi Palette Phase 15
+uses app-side generated-tone audio for MVP playback.

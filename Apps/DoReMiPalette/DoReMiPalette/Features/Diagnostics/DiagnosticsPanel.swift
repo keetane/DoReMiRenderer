@@ -4,6 +4,9 @@ import SwiftUI
 struct DiagnosticsPanel: View {
     let diagnostics: [RendererDiagnostic]
     @Environment(\.dismiss) private var dismiss
+    private var presentation: DiagnosticsPresentation {
+        DiagnosticsPresentation(diagnostics: diagnostics)
+    }
 
     var body: some View {
         NavigationStack {
@@ -16,7 +19,7 @@ struct DiagnosticsPanel: View {
                     )
                 } else {
                     Section("概要") {
-                        Text(summaryText)
+                        Text(presentation.summaryText)
                             .font(.callout)
                     }
                     Section("診断") {
@@ -35,12 +38,6 @@ struct DiagnosticsPanel: View {
                 }
             }
         }
-    }
-
-    private var summaryText: String {
-        let errors = diagnostics.filter { $0.severity == .error }.count
-        let warnings = diagnostics.filter { $0.severity == .warning }.count
-        return "エラー \(errors) 件、警告 \(warnings) 件"
     }
 }
 
@@ -68,22 +65,48 @@ private struct DiagnosticRow: View {
     }
 
     private var severityText: String {
-        switch diagnostic.severity {
+        DiagnosticsPresentation.severityText(for: diagnostic.severity)
+    }
+
+    private var severityIcon: String {
+        DiagnosticsPresentation.severityIcon(for: diagnostic.severity)
+    }
+
+    private var userMessage: String {
+        DiagnosticsPresentation.userMessage(for: diagnostic)
+    }
+
+    private var locationText: String {
+        DiagnosticsPresentation.locationText(for: diagnostic)
+    }
+}
+
+struct DiagnosticsPresentation {
+    let diagnostics: [RendererDiagnostic]
+
+    var summaryText: String {
+        let errors = diagnostics.filter { $0.severity == .error }.count
+        let warnings = diagnostics.filter { $0.severity == .warning }.count
+        return "エラー \(errors) 件、警告 \(warnings) 件"
+    }
+
+    static func severityText(for severity: DiagnosticSeverity) -> String {
+        switch severity {
         case .info: "情報"
         case .warning: "警告"
         case .error: "エラー"
         }
     }
 
-    private var severityIcon: String {
-        switch diagnostic.severity {
+    static func severityIcon(for severity: DiagnosticSeverity) -> String {
+        switch severity {
         case .info: "info.circle"
         case .warning: "exclamationmark.triangle"
         case .error: "xmark.octagon"
         }
     }
 
-    private var userMessage: String {
+    static func userMessage(for diagnostic: RendererDiagnostic) -> String {
         if diagnostic.code.hasPrefix("unsupported.") {
             return "この譜面には未対応の記譜があります。表示や再生ステップの一部が簡略化される可能性があります。"
         }
@@ -93,7 +116,7 @@ private struct DiagnosticRow: View {
         return diagnostic.message
     }
 
-    private var locationText: String {
+    static func locationText(for diagnostic: RendererDiagnostic) -> String {
         guard let location = diagnostic.location else {
             return "場所: 不明"
         }
@@ -103,4 +126,3 @@ private struct DiagnosticRow: View {
         return "場所: part \(part), measure \(measure), element \(element)"
     }
 }
-

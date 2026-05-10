@@ -64,6 +64,38 @@ import Testing
     #expect(events[1].staffIDs == [StaffID(rawValue: "1")])
 }
 
+@Test func playbackMixedRestAndAttackUsesAttackDuration() {
+    let score = playbackScore(notes: [
+        playbackNote(id: "half-note", pitch: Pitch(step: .e, octave: 5), onsetTicks: 0, durationTicks: 16),
+        playbackNote(id: "whole-rest", pitch: nil, onsetTicks: 0, durationTicks: 32),
+        playbackNote(id: "later-rest", pitch: nil, onsetTicks: 16, durationTicks: 16),
+    ])
+
+    let events = PlaybackSequenceBuilder().build(score: score, options: PlaybackOptions(includeRests: true))
+
+    #expect(events.count == 2)
+    #expect(events[0].noteIDs == [NoteID(rawValue: "half-note"), NoteID(rawValue: "whole-rest")])
+    #expect(events[0].nominalDuration == MusicalTime(ticks: 16, ticksPerQuarterNote: 4))
+    #expect(events[0].midiPitchDurations[76] == MusicalTime(ticks: 16, ticksPerQuarterNote: 4))
+    #expect(events[1].midiPitches.isEmpty)
+}
+
+@Test func playbackMixedPitchDurationsAreRetainedPerMIDIPitch() {
+    let score = playbackScore(notes: [
+        playbackNote(id: "quarter-c4", pitch: Pitch(step: .c, octave: 4), onsetTicks: 0, durationTicks: 8),
+        playbackNote(id: "whole-c2", pitch: Pitch(step: .c, octave: 2), onsetTicks: 0, durationTicks: 32),
+        playbackNote(id: "next-c4", pitch: Pitch(step: .c, octave: 4), onsetTicks: 8, durationTicks: 8),
+    ])
+
+    let events = PlaybackSequenceBuilder().build(score: score)
+
+    #expect(events.count == 2)
+    #expect(events[0].midiPitches == [60, 36])
+    #expect(events[0].nominalDuration == MusicalTime(ticks: 32, ticksPerQuarterNote: 4))
+    #expect(events[0].midiPitchDurations[60] == MusicalTime(ticks: 8, ticksPerQuarterNote: 4))
+    #expect(events[0].midiPitchDurations[36] == MusicalTime(ticks: 32, ticksPerQuarterNote: 4))
+}
+
 @Test func playbackMarksTieStopOnlyAsContinuation() {
     let score = playbackScore(notes: [
         playbackNote(id: "tie-start", pitch: Pitch(step: .f, octave: 4), onsetTicks: 0, ties: [.start]),
@@ -75,6 +107,22 @@ import Testing
     #expect(events.count == 2)
     #expect(events[0].isTiedContinuation == false)
     #expect(events[1].isTiedContinuation == true)
+    #expect(events[1].midiPitches.isEmpty)
+}
+
+@Test func playbackExcludesTieStopOnlyPitchFromMixedOnsetAttack() {
+    let score = playbackScore(notes: [
+        playbackNote(id: "held-start", pitch: Pitch(step: .c, octave: 3), onsetTicks: 0, ties: [.start]),
+        playbackNote(id: "held-stop", pitch: Pitch(step: .c, octave: 3), onsetTicks: 4, ties: [.stop]),
+        playbackNote(id: "new-attack", pitch: Pitch(step: .a, octave: 4), onsetTicks: 4),
+    ])
+
+    let events = PlaybackSequenceBuilder().build(score: score)
+
+    #expect(events.count == 2)
+    #expect(events[1].noteIDs == [NoteID(rawValue: "held-stop"), NoteID(rawValue: "new-attack")])
+    #expect(events[1].midiPitches == [69])
+    #expect(events[1].isTiedContinuation == false)
 }
 
 @Test func doReMiRendererFacadeBuildsPlaybackSequence() {
@@ -141,6 +189,7 @@ private func playbackNote(
     id: String,
     pitch: Pitch?,
     onsetTicks: Int,
+    durationTicks: Int = 4,
     isChordTone: Bool = false,
     chordOrdinal: Int = 0,
     ties: [MusicXMLTieKind] = []
@@ -149,7 +198,7 @@ private func playbackNote(
         id: NoteID(rawValue: id),
         pitch: pitch,
         onset: MusicalTime(ticks: onsetTicks, ticksPerQuarterNote: 4),
-        duration: MusicalTime(ticks: 4, ticksPerQuarterNote: 4),
+        duration: MusicalTime(ticks: durationTicks, ticksPerQuarterNote: 4),
         voiceID: VoiceID(rawValue: "1"),
         staffID: StaffID(rawValue: "1"),
         isChordTone: isChordTone,

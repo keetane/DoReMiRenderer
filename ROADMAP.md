@@ -79,8 +79,23 @@ Policy:
 - The SDK does not own file management.
 - The SDK receives MusicXML / MXL data and returns parse, layout, and playback
   outputs.
+- App code must continue to use the `DoReMiRenderer` facade and must not
+  reparse MusicXML, regenerate `NoteID`, or recalculate score coordinates.
+- Private file contents are not saved to `UserDefaults` or repository fixtures;
+  only library metadata is persisted locally.
 - Private user files stay out of the repository.
 - iCloud / cloud sync can come later.
+
+Phase 14 front half:
+
+- Add the app-side library/recent metadata model.
+- Represent bundled samples and imported files as distinct source types.
+- Persist recent imported-file metadata in local JSON.
+- Update the library entry when a duplicate file is imported.
+- Record diagnostic summaries, last selected note ID, and zoom scale where
+  available.
+- Leave full recent-files UI, complete security-scoped bookmark restore, and
+  missing-file UI to the Phase 14 back half.
 
 Completion criteria:
 
@@ -143,6 +158,16 @@ Non-goals:
 - complete repeat expansion
 - low-latency instrument-performance quality
 
+Phase 15 implementation note:
+
+- MVP generated-tone playback is implemented app-side in DoReMi Palette.
+- AVFoundation is not added to DoReMiRendererKit.
+- Chords, rests, tie continuations, tempo selection, score highlight, keyboard
+  highlight, and scroll follow are handled through existing `PlaybackEvent` and
+  app state.
+- High-quality instruments, background audio, full repeat expansion, exact
+  complex-tuplet duration, and transposition-aware playback remain future work.
+
 ## Phase 16: Practice Mode
 
 Purpose:
@@ -187,11 +212,67 @@ Non-goals:
 - advanced learning analytics
 - account sync
 
+## Phase 16.5: Notation / Playback Stabilization
+
+Purpose:
+
+- Stabilize notation display, playback timing, audio triggering, scroll follow,
+  and Practice/Playback coexistence before real-device and TestFlight work.
+- Use `Rhythm Values Sample` and `Notation Coverage Sample` as repeatable QA
+  fixtures for user-visible regressions.
+
+Focus:
+
+- basic note-value, rest, dot, flag, clef, accidental, key/time, repeat, and
+  continuation-highlight visibility
+- layout bounds so high/low notes, stems, flags, ledger lines, rests, clefs,
+  and repeats are not clipped
+- current-note scroll follow for playback, step, practice, and tap selection
+- generated-tone reliability for rests, tie continuations, mixed events,
+  chords, repeated pitches, tempo changes, and short values
+- Practice Mode and PlaybackRuntime index/state synchronization
+- documentation alignment for supported, partial, diagnostic-only, and
+  unsupported notation
+
+Completion criteria:
+
+- `swift test`, Palette app build/tests, SDK snapshot tests, license check, and
+  DocC build pass.
+- Rhythm Values Sample shows distinguishable whole/half/quarter/eighth notes,
+  rests, dots, repeated notes, and stable playback timing.
+- Notation Coverage Sample exposes the current symbol support state without
+  app-level MusicXML reparsing or renderer-side source interpretation.
+- Scroll follow does not block manual scrolling, does not snap every nearby
+  event back to center, and resumes after rests/offscreen notes.
+- Practice step movement and normal playback use the same event index when
+  switching modes.
+- Remaining limits are recorded in `MVP0_LIMITATIONS.md`,
+  `NOTATION_SUPPORT_MATRIX.md`, and `APP_QA_CHECKLIST.md`.
+
+Non-goals:
+
+- SMuFL font bundling
+- full tie/slur curve engraving
+- advanced beam grouping, tuplets, ornaments, endings, or collision avoidance
+- TestFlight distribution work
+
 ## Phase 17: Real iPad / TestFlight Preparation
 
 Purpose:
 
 - Validate on-device behavior and prepare for TestFlight distribution.
+
+Current Phase 17A status:
+
+- Physical device discovery is working for `iPad Pro 2nd` on iPadOS `26.4.2`
+  with device ID `00008027-001905583CC3802E`.
+- The DoReMi Palette Debug device build succeeds for that iPad destination.
+- Codex-side `devicectl` install / launch is currently blocked by a local
+  CoreDeviceService initialization timeout, so physical runtime QA is not yet
+  complete.
+- Phase 17B TestFlight preparation should not start until the app has been
+  installed/launched on the real iPad and the Phase 17A checklist has been
+  completed.
 
 Focus:
 
@@ -271,13 +352,107 @@ Do not solve SDK gaps by:
 
 ## Recommended Order After Phase 13
 
-1. Phase 14: Library / recent files
-2. Phase 15: Audio playback
-3. Phase 16: Practice mode
-4. Phase 17: Real iPad / TestFlight preparation
+1. Phase 14: Library / recent files - complete MVP
+2. Phase 15: Audio playback - complete MVP
+3. Phase 16: Practice mode - complete MVP
+4. Phase 16.5: Notation / playback stabilization
+5. Phase 17: Real iPad / TestFlight preparation
 
 If Phase 13 reveals a serious file-import issue, fix it before moving to Phase 14.
 If Phase 15 reveals missing playback data, feed the requirement back into the SDK.
 If Phase 16 reveals missing `NoteID`, pitch, or staff data, extend the SDK read
 model minimally.
 
+### Phase 16 MVP implementation note
+
+Phase 16 implements the first Practice Mode inside the DoReMi Palette app. The
+mode is app-owned: it consumes existing `PlaybackEvent`, `NoteID`, and public
+layout read data, and does not add practice state to DoReMiRendererKit.
+
+MVP behavior:
+
+- Practice Mode moves one `PlaybackEvent` at a time through explicit user input.
+- Automatic playback remains separate and tempo-driven.
+- Enabling Practice Mode stops automatic playback and silences app audio.
+- Pressing Play while Practice Mode is enabled leaves Practice Mode and starts
+  normal playback.
+- Chord events are treated as one practice step; the score highlights the first
+  note and the keyboard can highlight all pitches in the event.
+- Rest steps display as `休符` and do not highlight a keyboard key.
+- Note-name and solfege display use written pitch in MVP.
+- Palette selection is an app setting and must not change `ScoreLayout`,
+  `NoteID`, or `PlaybackEvent` identity.
+
+Phase 16 still does not include scoring, microphone input, MIDI keyboard input,
+AI analysis, account sync, or full practice history.
+
+## Notation Coverage / Symbols Hardening
+
+Before Phase 17/TestFlight work, keep a lightweight notation hardening loop in
+place:
+
+- use self-authored samples, not private or copyrighted scores, to reproduce
+  missing symbols;
+- update `NOTATION_SUPPORT_MATRIX.md` when parser, layout, renderer, app-visible,
+  or playback behavior changes;
+- keep renderer behavior driven only by `ScoreLayout` and domain models;
+- prefer diagnostics over silent failure for unsupported symbols;
+- feed app-visible notation gaps back into the SDK only when the fix belongs in
+  parser/domain/layout/rendering.
+
+Current priorities:
+
+1. Visual tie arcs, distinct from slurs.
+2. Slur layout/rendering beyond diagnostic-only support.
+3. Final/double barline style retention and rendering.
+4. Dynamic and tempo text rendering.
+5. Beam grouping and tuplets after basic symbol visibility is stable.
+
+This is intentionally separate from Practice Mode and audio playback. App code
+must not infer symbols from raw MusicXML or renderer coordinates.
+
+## SMuFL Symbol Rendering Plan
+
+The next notation-quality track is SMuFL-based symbol rendering, documented in
+[SMUFL_INTEGRATION_PLAN.md](SMUFL_INTEGRATION_PLAN.md). The goal is to improve
+the visual shape of common music symbols without handing layout, MusicXML
+interpretation, IDs, hit testing, colors, or playback to an external renderer.
+`ScoreLayout` remains the only coordinate source, and `ScorePainter` must still
+consume layout elements rather than MusicXML source text.
+
+Phase S1: SMuFL integration preparation
+
+- Select the first font candidate, currently Bravura.
+- Confirm license, redistribution, bundle placement, and fallback policy.
+- Design the internal glyph map and snapshot update rules.
+
+Phase S2: SMuFL font registration
+
+- Add and register the chosen font in the app/example bundles.
+- Verify Canvas/Core Text access and fallback behavior.
+- Record asset and third-party notices.
+
+Phase S3: Clef / accidental / rest glyph rendering
+
+- Move treble clef, bass clef, accidentals, and common rests to SMuFL glyphs.
+- Preserve layout-derived anchors and color behavior.
+
+Phase S4: Repeat / dynamics / time signature glyph rendering
+
+- Improve repeat dots, dynamic symbols, and time signature digits.
+- Keep barline and spacing responsibility in layout/rendering code.
+
+Phase S5: Notehead / flag glyph rendering
+
+- Improve whole, half, quarter, eighth noteheads and flags.
+- Preserve `NoteID`, `ScoreElementID`, hit-test frames, and note colors.
+
+Phase S6: Tie / slur / beam refinement
+
+- Refine Core Graphics curves and paths that are better drawn geometrically:
+  ties, slurs, beams, stems, and minimal collision details.
+
+The `notation_coverage_grand_staff.musicxml` and `rhythm_values_sample.musicxml`
+samples are the primary before/after QA fixtures for this track. Snapshot
+baseline updates are expected during implementation phases, but only after
+reviewing diffs as intentional symbol-quality improvements.

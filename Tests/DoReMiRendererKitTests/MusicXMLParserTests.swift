@@ -47,6 +47,14 @@ import Testing
     #expect(notes[2].onset == MusicalTime(ticks: 4, ticksPerQuarterNote: 4))
 }
 
+@Test func parserReadsNoteValueKindsAndDots() throws {
+    let notes = try parseMusicXML(noteValuesAndDotsXML).score.parts.flatMap(\.measures).flatMap(\.notes)
+
+    #expect(notes.map(\.noteValueKind) == [.whole, .half, .quarter, .eighth, .sixteenth])
+    #expect(notes.map(\.dotCount) == [0, 1, 0, 0, 0])
+    #expect(notes[4].pitch == nil)
+}
+
 @Test func parserAppliesBackupAndForwardToOnsets() throws {
     let notes = try parseMusicXML(backupForwardXML).score.parts.flatMap(\.measures).flatMap(\.notes)
 
@@ -165,6 +173,22 @@ private let chordAndRestXML = """
       <note>
         <rest/><duration>4</duration><voice>1</voice><staff>1</staff>
       </note>
+    </measure>
+  </part>
+</score-partwise>
+"""
+
+private let noteValuesAndDotsXML = """
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Part</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes><divisions>16</divisions></attributes>
+      <note><pitch><step>C</step><octave>4</octave></pitch><duration>64</duration><voice>1</voice><staff>1</staff><type>whole</type></note>
+      <note><pitch><step>D</step><octave>4</octave></pitch><duration>48</duration><voice>1</voice><staff>1</staff><type>half</type><dot/></note>
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>16</duration><voice>1</voice><staff>1</staff><type>quarter</type></note>
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>8</duration><voice>1</voice><staff>1</staff><type>eighth</type></note>
+      <note><rest/><duration>4</duration><voice>1</voice><staff>1</staff><type>16th</type></note>
     </measure>
   </part>
 </score-partwise>

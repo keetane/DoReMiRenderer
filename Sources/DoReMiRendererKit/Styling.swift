@@ -289,6 +289,9 @@ public struct ScoreColorResolver: Sendable {
             return ResolvedVisualStyle(fillColor: color, strokeColor: color, lineWidth: nil, opacity: color.alpha)
         case .rest:
             return ResolvedVisualStyle(fillColor: style.defaultInkColor, strokeColor: style.defaultInkColor, lineWidth: nil, opacity: style.defaultInkColor.alpha)
+        case .stem, .flag, .dot:
+            let color = resolvedNoteColor(for: element, score: score, layout: layout, style: style, context: context)
+            return ResolvedVisualStyle(fillColor: color, strokeColor: color, lineWidth: nil, opacity: color.alpha)
         case .staffLine:
             let color = resolvedStaffLineColor(for: element, style: style, context: context)
             return ResolvedVisualStyle(fillColor: nil, strokeColor: color, lineWidth: 1, opacity: color.alpha)

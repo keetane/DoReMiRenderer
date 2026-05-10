@@ -347,11 +347,54 @@ public enum MusicXMLTieKind: String, Hashable, Codable, Sendable {
     case stop
 }
 
+public enum NoteValueKind: String, Hashable, Codable, Sendable {
+    case whole
+    case half
+    case quarter
+    case eighth
+    case sixteenth
+    case other
+
+    public init(musicXMLType: String?) {
+        switch musicXMLType {
+        case "whole":
+            self = .whole
+        case "half":
+            self = .half
+        case "quarter":
+            self = .quarter
+        case "eighth":
+            self = .eighth
+        case "16th":
+            self = .sixteenth
+        default:
+            self = .other
+        }
+    }
+
+    public init(duration: MusicalTime) {
+        let quarters = Double(duration.ticks) / Double(duration.ticksPerQuarterNote)
+        if quarters >= 3.5 {
+            self = .whole
+        } else if quarters >= 1.5 {
+            self = .half
+        } else if quarters >= 0.75 {
+            self = .quarter
+        } else if quarters >= 0.375 {
+            self = .eighth
+        } else {
+            self = .sixteenth
+        }
+    }
+}
+
 public struct ScoreNote: Hashable, Codable, Sendable {
     public let id: NoteID
     public let pitch: Pitch?
     public let onset: MusicalTime
     public let duration: MusicalTime
+    public let noteValueKind: NoteValueKind
+    public let dotCount: Int
     public let voiceID: VoiceID
     public let staffID: StaffID
     public let isChordTone: Bool
@@ -369,6 +412,8 @@ public struct ScoreNote: Hashable, Codable, Sendable {
         pitch: Pitch?,
         onset: MusicalTime,
         duration: MusicalTime,
+        noteValueKind: NoteValueKind? = nil,
+        dotCount: Int = 0,
         voiceID: VoiceID,
         staffID: StaffID,
         isChordTone: Bool = false,
@@ -385,6 +430,8 @@ public struct ScoreNote: Hashable, Codable, Sendable {
         self.pitch = pitch
         self.onset = onset
         self.duration = duration
+        self.noteValueKind = noteValueKind ?? NoteValueKind(duration: duration)
+        self.dotCount = max(0, dotCount)
         self.voiceID = voiceID
         self.staffID = staffID
         self.isChordTone = isChordTone
@@ -459,6 +506,7 @@ public enum ScoreElementKind: Hashable, Codable, Sendable {
     case notehead
     case rest
     case stem
+    case flag
     case beam
     case accidental
     case dot
