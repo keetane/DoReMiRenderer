@@ -4,6 +4,8 @@ import Foundation
 enum PaletteImportError: LocalizedError, Equatable {
     case unsupportedExtension(String)
     case bundledSampleMissing(String)
+    case missingLibraryFile(String)
+    case unsupportedLibraryItem(String)
 
     var errorDescription: String? {
         switch self {
@@ -11,6 +13,10 @@ enum PaletteImportError: LocalizedError, Equatable {
             return "対応していないファイル形式です: .\(fileExtension)"
         case .bundledSampleMissing(let name):
             return "\(name) がアプリ内に見つかりません。"
+        case .missingLibraryFile(let name):
+            return "\(name) を開けませんでした。ファイルを再選択してください。"
+        case .unsupportedLibraryItem(let name):
+            return "\(name) はライブラリから開けません。"
         }
     }
 }
@@ -41,7 +47,10 @@ struct PaletteScoreLoader {
                 measureSpacing: 36
             )
         )
-        let playbackEvents = renderer.makePlaybackSequence(score: parseResult.score, options: .default)
+        let playbackEvents = renderer.makePlaybackSequence(
+            score: parseResult.score,
+            options: PlaybackOptions(includeRests: true)
+        )
         let playbackMetadata = renderer.makePlaybackMetadata(score: parseResult.score)
         return PaletteLoadedScore(
             sourceName: sourceName,
@@ -65,4 +74,3 @@ struct PaletteScoreLoader {
         }
     }
 }
-

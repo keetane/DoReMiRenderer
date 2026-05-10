@@ -175,6 +175,14 @@ struct ScoreLayoutEngine: Sendable {
             for staffID in staffIDs {
                 let clef = clef(for: staffID, in: item.measure)
                 let middleY = metrics.staffMiddleY(systemTop: systemTop, staffIndex: staffIndexByID[staffID] ?? 0)
+                elements.append(contentsOf: prefixElements(
+                    measure: item.measure,
+                    staffID: staffID,
+                    clef: clef,
+                    middleY: middleY,
+                    measureX: measureX,
+                    metrics: metrics
+                ))
                 for keyElement in keySignatureElements(
                     keySignature: item.measure.keySignature,
                     measure: item.measure,
@@ -189,6 +197,7 @@ struct ScoreLayoutEngine: Sendable {
             }
 
             let onsetX = xCoordinatesByOnset(for: item.measure, measureX: measureX, measureWidth: measureWidth, metrics: metrics)
+            let chordStemDirections = chordStemDirections(for: item.measure)
             for note in item.measure.notes {
                 let clef = clef(for: note.staffID, in: item.measure)
                 let staffIndex = staffIndexByID[note.staffID] ?? 0
@@ -214,6 +223,9 @@ struct ScoreLayoutEngine: Sendable {
                     clef: clef,
                     pitch: note.pitch,
                     staffPosition: position,
+                    duration: note.duration,
+                    noteValueKind: note.noteValueKind,
+                    dotCount: note.dotCount,
                     noteheadElementID: noteElementID,
                     noteheadCenter: center,
                     noteheadFrame: noteFrame
@@ -236,33 +248,69 @@ struct ScoreLayoutEngine: Sendable {
                     )
                 )
 
+                appendDotsIfNeeded(
+                    for: note,
+                    noteLayout: noteLayout,
+                    noteFrame: noteFrame,
+                    measureID: item.measure.id,
+                    clef: clef,
+                    elements: &elements
+                )
+
                 guard let pitch = note.pitch, let position else {
                     continue
                 }
 
-                let stemElementID = ScoreElementID(rawValue: "\(note.id.rawValue).stem")
-                let stemFrame = CGRect(
-                    x: noteFrame.maxX - max(1, noteFrame.width * 0.1),
-                    y: center.y - noteFrame.height * 3.2,
-                    width: max(2, noteFrame.width * 0.2),
-                    height: noteFrame.height * 3.2
-                )
-                elements.append(
-                    ElementLayout(
-                        id: stemElementID,
-                        kind: .stem,
-                        noteID: note.id,
-                        measureID: item.measure.id,
-                        staffID: note.staffID,
-                        voiceID: note.voiceID,
-                        clef: clef,
-                        keySignature: item.measure.keySignature,
-                        timeSignature: item.measure.timeSignature,
-                        pitchClassHint: pitch.pitchClass,
-                        frame: stemFrame,
-                        noteLayout: noteLayout
+                if note.noteValueKind.drawsStem {
+                    let stemElementID = ScoreElementID(rawValue: "\(note.id.rawValue).stem")
+                    let stemDirection = chordStemDirections[ChordStemKey(note)] ?? stemDirection(for: position)
+                    let stemFrame = stemFrame(
+                        direction: stemDirection,
+                        noteFrame: noteFrame,
+                        noteheadCenter: center
                     )
-                )
+                    elements.append(
+                        ElementLayout(
+                            id: stemElementID,
+                            kind: .stem,
+                            noteID: note.id,
+                            measureID: item.measure.id,
+                            staffID: note.staffID,
+                            voiceID: note.voiceID,
+                            clef: clef,
+                            keySignature: item.measure.keySignature,
+                            timeSignature: item.measure.timeSignature,
+                            pitchClassHint: pitch.pitchClass,
+                            frame: stemFrame,
+                            noteLayout: noteLayout
+                        )
+                    )
+
+                    if note.noteValueKind.flagCount > 0 {
+                        let flagElementID = ScoreElementID(rawValue: "\(note.id.rawValue).flag")
+                        let flagFrame = flagFrame(
+                            direction: stemDirection,
+                            stemFrame: stemFrame,
+                            noteFrame: noteFrame
+                        )
+                        elements.append(
+                            ElementLayout(
+                                id: flagElementID,
+                                kind: .flag,
+                                noteID: note.id,
+                                measureID: item.measure.id,
+                                staffID: note.staffID,
+                                voiceID: note.voiceID,
+                                clef: clef,
+                                keySignature: item.measure.keySignature,
+                                timeSignature: item.measure.timeSignature,
+                                pitchClassHint: pitch.pitchClass,
+                                frame: flagFrame,
+                                noteLayout: noteLayout
+                            )
+                        )
+                    }
+                }
 
                 if note.accidental != nil {
                     let accidentalElementID = ScoreElementID(rawValue: "\(note.id.rawValue).accidental")
@@ -383,12 +431,60 @@ struct ScoreLayoutEngine: Sendable {
                 }
             }
 
+            elements.append(contentsOf: barlineElements(
+                measure: item.measure,
+                staffIDs: staffIDs,
+                staffIndexByID: staffIndexByID,
+                measureX: measureX,
+                measureWidth: measureWidth,
+                systemTop: systemTop,
+                metrics: metrics
+            ))
+
             measureX += measureWidth + options.measureSpacing
         }
 
+        let renderBoundsPadding: CGFloat = 0
+        var renderBounds = drawingBounds(
+            elements: elements,
+            staffLines: staffLines,
+            ledgerLines: ledgerLines,
+            noteByID: noteByID,
+            padding: renderBoundsPadding
+        )
+        let originOffset = CGPoint(
+            x: max(0, -renderBounds.minX),
+            y: max(0, -renderBounds.minY)
+        )
+        if originOffset != .zero {
+            systems = systems.map { $0.offsetBy(dx: originOffset.x, dy: originOffset.y) }
+            staves = staves.map { $0.offsetBy(dx: originOffset.x, dy: originOffset.y) }
+            measures = measures.map { $0.offsetBy(dx: originOffset.x, dy: originOffset.y) }
+            elements = elements.map { $0.offsetBy(dx: originOffset.x, dy: originOffset.y) }
+            staffLines = staffLines.map { $0.offsetBy(dx: originOffset.x, dy: originOffset.y) }
+            ledgerLines = ledgerLines.map { $0.offsetBy(dx: originOffset.x, dy: originOffset.y) }
+            noteByID = noteByID.mapValues { $0.offsetBy(dx: originOffset.x, dy: originOffset.y) }
+            annotationMaxY += originOffset.y
+            renderBounds = drawingBounds(
+                elements: elements,
+                staffLines: staffLines,
+                ledgerLines: ledgerLines,
+                noteByID: noteByID,
+                padding: renderBoundsPadding
+            )
+        }
         let elementByID = Dictionary(uniqueKeysWithValues: elements.map { ($0.id, $0) })
-        let contentHeight = max(systemTop + systemHeight + metrics.bottomMargin, annotationMaxY + metrics.bottomMargin, options.pageHeight ?? 0)
-        let canvasWidth = max(options.pageWidth, measureX + metrics.rightMargin - options.measureSpacing)
+        let contentHeight = max(
+            systems.map(\.frame.maxY).max().map { $0 + metrics.bottomMargin } ?? 0,
+            annotationMaxY + metrics.bottomMargin,
+            renderBounds.maxY + metrics.bottomMargin,
+            options.pageHeight ?? 0
+        )
+        let canvasWidth = max(
+            options.pageWidth,
+            measureX + metrics.rightMargin - options.measureSpacing,
+            renderBounds.maxX + metrics.rightMargin
+        )
 
         let layout = ScoreLayout(
             canvasSize: CGSize(width: canvasWidth, height: contentHeight),
@@ -402,6 +498,148 @@ struct ScoreLayoutEngine: Sendable {
             elementByID: elementByID
         )
         return ScoreLayoutResult(layout: layout, diagnostics: diagnostics)
+    }
+
+    private func chordStemDirections(for measure: Measure) -> [ChordStemKey: StemDirection] {
+        let pitchedNotes = measure.notes.filter { $0.pitch != nil }
+        let grouped = Dictionary(grouping: pitchedNotes, by: ChordStemKey.init)
+        var directions: [ChordStemKey: StemDirection] = [:]
+
+        for (key, notes) in grouped where notes.count > 1 {
+            let steps = notes.compactMap { note -> Int? in
+                guard let pitch = note.pitch else {
+                    return nil
+                }
+                return staffPosition(pitch: pitch, clef: clef(for: note.staffID, in: measure)).stepsFromMiddleLine
+            }
+            guard !steps.isEmpty else {
+                continue
+            }
+            let averageSteps = Double(steps.reduce(0, +)) / Double(steps.count)
+            directions[key] = averageSteps < 0 ? .up : .down
+        }
+
+        return directions
+    }
+
+    private func stemDirection(for position: StaffPosition) -> StemDirection {
+        position.stepsFromMiddleLine < 0 ? .up : .down
+    }
+
+    private func stemFrame(
+        direction: StemDirection,
+        noteFrame: CGRect,
+        noteheadCenter center: CGPoint
+    ) -> CGRect {
+        let width = max(2, noteFrame.width * 0.2)
+        let length = noteFrame.height * 3.2
+        switch direction {
+        case .up:
+            return CGRect(
+                x: noteFrame.maxX - width * 0.55,
+                y: center.y - length,
+                width: width,
+                height: length
+            )
+        case .down:
+            return CGRect(
+                x: noteFrame.minX - width * 0.45,
+                y: center.y,
+                width: width,
+                height: length
+            )
+        }
+    }
+
+    private func flagFrame(
+        direction: StemDirection,
+        stemFrame: CGRect,
+        noteFrame: CGRect
+    ) -> CGRect {
+        switch direction {
+        case .up:
+            return CGRect(
+                x: stemFrame.midX,
+                y: stemFrame.minY,
+                width: noteFrame.width * 0.9,
+                height: noteFrame.height * 1.5
+            )
+        case .down:
+            return CGRect(
+                x: stemFrame.midX - noteFrame.width * 0.9,
+                y: stemFrame.maxY - noteFrame.height * 1.5,
+                width: noteFrame.width * 0.9,
+                height: noteFrame.height * 1.5
+            )
+        }
+    }
+
+    private func appendDotsIfNeeded(
+        for note: ScoreNote,
+        noteLayout: NoteLayout,
+        noteFrame: CGRect,
+        measureID: MeasureID,
+        clef: Clef,
+        elements: inout [ElementLayout]
+    ) {
+        guard note.dotCount > 0 else {
+            return
+        }
+
+        let dotSize = max(2, noteFrame.height * 0.28)
+        for index in 0..<note.dotCount {
+            let dotFrame = CGRect(
+                x: noteFrame.maxX + noteFrame.width * 0.45 + CGFloat(index) * dotSize * 1.8,
+                y: noteFrame.midY - dotSize / 2,
+                width: dotSize,
+                height: dotSize
+            )
+            elements.append(
+                ElementLayout(
+                    id: ScoreElementID(rawValue: "\(note.id.rawValue).dot.\(index)"),
+                    kind: .dot,
+                    noteID: note.id,
+                    measureID: measureID,
+                    staffID: note.staffID,
+                    voiceID: note.voiceID,
+                    clef: clef,
+                    pitchClassHint: note.pitch?.pitchClass,
+                    frame: dotFrame,
+                    noteLayout: noteLayout
+                )
+            )
+        }
+    }
+
+    private func drawingBounds(
+        elements: [ElementLayout],
+        staffLines: [StaffLineLayout],
+        ledgerLines: [LedgerLineLayout],
+        noteByID: [NoteID: NoteLayout],
+        padding: CGFloat
+    ) -> CGRect {
+        var bounds = CGRect.null
+        for element in elements {
+            bounds = bounds.union(element.frame)
+        }
+        for staffLine in staffLines {
+            bounds = bounds.union(staffLine.frame)
+        }
+        for ledgerLine in ledgerLines {
+            bounds = bounds.union(ledgerLine.frame)
+        }
+        for noteLayout in noteByID.values {
+            bounds = bounds.union(noteLayout.noteheadFrame)
+        }
+        guard !bounds.isNull,
+              bounds.origin.x.isFinite,
+              bounds.origin.y.isFinite,
+              bounds.size.width.isFinite,
+              bounds.size.height.isFinite
+        else {
+            return .zero
+        }
+        return bounds.insetBy(dx: -padding, dy: -padding)
     }
 }
 
@@ -458,6 +696,10 @@ public struct SystemLayout: Sendable {
         self.frame = frame
         self.staffIDs = staffIDs
     }
+
+    fileprivate func offsetBy(dx: CGFloat, dy: CGFloat) -> SystemLayout {
+        SystemLayout(index: index, frame: frame.offsetBy(dx: dx, dy: dy), staffIDs: staffIDs)
+    }
 }
 
 public struct StaffLayout: Sendable {
@@ -471,6 +713,15 @@ public struct StaffLayout: Sendable {
         self.systemIndex = systemIndex
         self.frame = frame
         self.middleLineY = middleLineY
+    }
+
+    fileprivate func offsetBy(dx: CGFloat, dy: CGFloat) -> StaffLayout {
+        StaffLayout(
+            staffID: staffID,
+            systemIndex: systemIndex,
+            frame: frame.offsetBy(dx: dx, dy: dy),
+            middleLineY: middleLineY + dy
+        )
     }
 }
 
@@ -494,6 +745,16 @@ public struct MeasureLayout: Sendable {
         self.partIndex = partIndex
         self.measureIndex = measureIndex
     }
+
+    fileprivate func offsetBy(dx: CGFloat, dy: CGFloat) -> MeasureLayout {
+        MeasureLayout(
+            measureID: measureID,
+            systemIndex: systemIndex,
+            frame: frame.offsetBy(dx: dx, dy: dy),
+            partIndex: partIndex,
+            measureIndex: measureIndex
+        )
+    }
 }
 
 public struct NoteLayout: Sendable {
@@ -504,6 +765,9 @@ public struct NoteLayout: Sendable {
     public let clef: Clef?
     public let pitch: Pitch?
     public let staffPosition: StaffPosition?
+    public let duration: MusicalTime?
+    public let noteValueKind: NoteValueKind
+    public let dotCount: Int
     public let noteheadElementID: ScoreElementID?
     public let noteheadCenter: CGPoint
     public let noteheadFrame: CGRect
@@ -516,6 +780,9 @@ public struct NoteLayout: Sendable {
         clef: Clef? = nil,
         pitch: Pitch? = nil,
         staffPosition: StaffPosition? = nil,
+        duration: MusicalTime? = nil,
+        noteValueKind: NoteValueKind = .quarter,
+        dotCount: Int = 0,
         noteheadElementID: ScoreElementID? = nil,
         noteheadCenter: CGPoint = .zero,
         noteheadFrame: CGRect = .zero
@@ -527,9 +794,30 @@ public struct NoteLayout: Sendable {
         self.clef = clef
         self.pitch = pitch
         self.staffPosition = staffPosition
+        self.duration = duration
+        self.noteValueKind = noteValueKind
+        self.dotCount = max(0, dotCount)
         self.noteheadElementID = noteheadElementID
         self.noteheadCenter = noteheadCenter
         self.noteheadFrame = noteheadFrame
+    }
+
+    fileprivate func offsetBy(dx: CGFloat, dy: CGFloat) -> NoteLayout {
+        NoteLayout(
+            noteID: noteID,
+            measureID: measureID,
+            staffID: staffID,
+            voiceID: voiceID,
+            clef: clef,
+            pitch: pitch,
+            staffPosition: staffPosition,
+            duration: duration,
+            noteValueKind: noteValueKind,
+            dotCount: dotCount,
+            noteheadElementID: noteheadElementID,
+            noteheadCenter: CGPoint(x: noteheadCenter.x + dx, y: noteheadCenter.y + dy),
+            noteheadFrame: noteheadFrame.offsetBy(dx: dx, dy: dy)
+        )
     }
 }
 
@@ -550,6 +838,7 @@ public struct ElementLayout: Sendable {
     public let ledgerLine: LedgerLineLayout?
     public let accidental: String?
     public let annotation: TextAnnotationLayout?
+    public let repeatBarline: RepeatBarline?
 
     init(
         id: ScoreElementID,
@@ -567,7 +856,8 @@ public struct ElementLayout: Sendable {
         staffLine: StaffLineLayout? = nil,
         ledgerLine: LedgerLineLayout? = nil,
         accidental: String? = nil,
-        annotation: TextAnnotationLayout? = nil
+        annotation: TextAnnotationLayout? = nil,
+        repeatBarline: RepeatBarline? = nil
     ) {
         self.id = id
         self.kind = kind
@@ -585,6 +875,29 @@ public struct ElementLayout: Sendable {
         self.ledgerLine = ledgerLine
         self.accidental = accidental
         self.annotation = annotation
+        self.repeatBarline = repeatBarline
+    }
+
+    fileprivate func offsetBy(dx: CGFloat, dy: CGFloat) -> ElementLayout {
+        ElementLayout(
+            id: id,
+            kind: kind,
+            noteID: noteID,
+            measureID: measureID,
+            staffID: staffID,
+            voiceID: voiceID,
+            clef: clef,
+            keySignature: keySignature,
+            timeSignature: timeSignature,
+            pitchClassHint: pitchClassHint,
+            frame: frame.offsetBy(dx: dx, dy: dy),
+            noteLayout: noteLayout?.offsetBy(dx: dx, dy: dy),
+            staffLine: staffLine?.offsetBy(dx: dx, dy: dy),
+            ledgerLine: ledgerLine?.offsetBy(dx: dx, dy: dy),
+            accidental: accidental,
+            annotation: annotation?.offsetBy(dx: dx, dy: dy),
+            repeatBarline: repeatBarline
+        )
     }
 }
 
@@ -601,6 +914,16 @@ public struct TextAnnotationLayout: Sendable {
         self.text = text
         self.origin = origin
         self.frame = frame
+    }
+
+    fileprivate func offsetBy(dx: CGFloat, dy: CGFloat) -> TextAnnotationLayout {
+        TextAnnotationLayout(
+            id: id,
+            noteID: noteID,
+            text: text,
+            origin: CGPoint(x: origin.x + dx, y: origin.y + dy),
+            frame: frame.offsetBy(dx: dx, dy: dy)
+        )
     }
 }
 
@@ -636,6 +959,20 @@ public struct StaffLineLayout: Sendable {
         self.end = end
         self.frame = frame
     }
+
+    fileprivate func offsetBy(dx: CGFloat, dy: CGFloat) -> StaffLineLayout {
+        StaffLineLayout(
+            id: id,
+            staffID: staffID,
+            measureID: measureID,
+            lineIndex: lineIndex,
+            clefKind: clefKind,
+            pitchClassHint: pitchClassHint,
+            start: CGPoint(x: start.x + dx, y: start.y + dy),
+            end: CGPoint(x: end.x + dx, y: end.y + dy),
+            frame: frame.offsetBy(dx: dx, dy: dy)
+        )
+    }
 }
 
 public struct LedgerLineLayout: Sendable {
@@ -669,6 +1006,59 @@ public struct LedgerLineLayout: Sendable {
         self.start = start
         self.end = end
         self.frame = frame
+    }
+
+    fileprivate func offsetBy(dx: CGFloat, dy: CGFloat) -> LedgerLineLayout {
+        LedgerLineLayout(
+            id: id,
+            noteID: noteID,
+            measureID: measureID,
+            staffID: staffID,
+            pitchClassHint: pitchClassHint,
+            lineStepFromMiddle: lineStepFromMiddle,
+            start: CGPoint(x: start.x + dx, y: start.y + dy),
+            end: CGPoint(x: end.x + dx, y: end.y + dy),
+            frame: frame.offsetBy(dx: dx, dy: dy)
+        )
+    }
+}
+
+private extension NoteValueKind {
+    var drawsStem: Bool {
+        switch self {
+        case .whole:
+            false
+        case .half, .quarter, .eighth, .sixteenth, .other:
+            true
+        }
+    }
+
+    var flagCount: Int {
+        switch self {
+        case .eighth:
+            1
+        case .sixteenth:
+            2
+        case .whole, .half, .quarter, .other:
+            0
+        }
+    }
+}
+
+private enum StemDirection {
+    case up
+    case down
+}
+
+private struct ChordStemKey: Hashable {
+    let staffID: StaffID
+    let voiceID: VoiceID
+    let onset: MusicalTime
+
+    init(_ note: ScoreNote) {
+        self.staffID = note.staffID
+        self.voiceID = note.voiceID
+        self.onset = note.onset
     }
 }
 
@@ -746,13 +1136,15 @@ private func xCoordinatesByOnset(
     }
 
     let prefixWidth = keySignaturePrefixWidth(for: measure.keySignature, metrics: metrics)
-    let startX = measureX + metrics.noteInset + prefixWidth
+    let timeWidth: CGFloat = measure.timeSignature == nil ? 0 : metrics.staffSpace * 1.6
+    let clefWidth: CGFloat = (measure.clef == nil && measure.clefsByStaff.isEmpty) ? 0 : metrics.staffSpace * 1.6
+    let startX = measureX + metrics.noteInset + prefixWidth + timeWidth + clefWidth
 
     if onsets.count == 1 {
         return [onsets[0]: startX]
     }
 
-    let usableWidth = max(0, measureWidth - metrics.noteInset * 2 - prefixWidth)
+    let usableWidth = max(0, measureWidth - metrics.noteInset * 2 - prefixWidth - timeWidth - clefWidth)
     let stepWidth = usableWidth / CGFloat(onsets.count - 1)
     return Dictionary(uniqueKeysWithValues: onsets.enumerated().map { index, onset in
         (onset, startX + CGFloat(index) * stepWidth)
@@ -764,6 +1156,93 @@ private func keySignaturePrefixWidth(for keySignature: KeySignature?, metrics: L
         return 0
     }
     return CGFloat(min(abs(keySignature.fifths), 7)) * metrics.staffSpace * 1.15
+}
+
+private func prefixElements(
+    measure: Measure,
+    staffID: StaffID,
+    clef: Clef,
+    middleY: CGFloat,
+    measureX: CGFloat,
+    metrics: LayoutMetrics
+) -> [ElementLayout] {
+    var elements: [ElementLayout] = []
+    if measure.clef != nil || measure.clefsByStaff[staffID] != nil {
+        let frame = CGRect(
+            x: measureX + metrics.staffSpace * 0.15,
+            y: middleY - metrics.staffSpace * 2.1,
+            width: metrics.staffSpace * 1.4,
+            height: metrics.staffSpace * 4.2
+        )
+        elements.append(ElementLayout(
+            id: ScoreElementID(rawValue: "\(staffID.rawValue).\(measure.id.rawValue).clef"),
+            kind: .clef,
+            measureID: measure.id,
+            staffID: staffID,
+            clef: clef,
+            frame: frame
+        ))
+    }
+
+    if let timeSignature = measure.timeSignature {
+        let frame = CGRect(
+            x: measureX + metrics.staffSpace * 2.0 + keySignaturePrefixWidth(for: measure.keySignature, metrics: metrics),
+            y: middleY - metrics.staffSpace * 1.8,
+            width: metrics.staffSpace * 1.4,
+            height: metrics.staffSpace * 3.6
+        )
+        elements.append(ElementLayout(
+            id: ScoreElementID(rawValue: "\(staffID.rawValue).\(measure.id.rawValue).timeSignature"),
+            kind: .timeSignature,
+            measureID: measure.id,
+            staffID: staffID,
+            clef: clef,
+            keySignature: measure.keySignature,
+            timeSignature: timeSignature,
+            frame: frame
+        ))
+    }
+
+    return elements
+}
+
+private func barlineElements(
+    measure: Measure,
+    staffIDs: [StaffID],
+    staffIndexByID: [StaffID: Int],
+    measureX: CGFloat,
+    measureWidth: CGFloat,
+    systemTop: CGFloat,
+    metrics: LayoutMetrics
+) -> [ElementLayout] {
+    guard !staffIDs.isEmpty else {
+        return []
+    }
+    var elements: [ElementLayout] = []
+    let rightX = measureX + measureWidth
+    let topStaffIndex = staffIndexByID[staffIDs.first!] ?? 0
+    let bottomStaffIndex = staffIndexByID[staffIDs.last!] ?? 0
+    let top = metrics.staffMiddleY(systemTop: systemTop, staffIndex: topStaffIndex) - metrics.staffHeight / 2
+    let bottom = metrics.staffMiddleY(systemTop: systemTop, staffIndex: bottomStaffIndex) + metrics.staffHeight / 2
+
+    elements.append(ElementLayout(
+        id: ScoreElementID(rawValue: "\(measure.id.rawValue).barline.right"),
+        kind: .barline,
+        measureID: measure.id,
+        frame: CGRect(x: rightX - metrics.staffLineHitHalfWidth, y: top, width: metrics.staffLineHitHalfWidth * 2, height: bottom - top)
+    ))
+
+    for repeatBarline in measure.repeatBarlines {
+        let x = repeatBarline.direction == .forward ? measureX : rightX
+        elements.append(ElementLayout(
+            id: ScoreElementID(rawValue: "\(measure.id.rawValue).repeat.\(repeatBarline.direction.rawValue)"),
+            kind: .barline,
+            measureID: measure.id,
+            frame: CGRect(x: x - metrics.staffSpace * 0.3, y: top, width: metrics.staffSpace * 0.6, height: bottom - top),
+            repeatBarline: repeatBarline
+        ))
+    }
+    return elements
 }
 
 private func keySignatureElements(

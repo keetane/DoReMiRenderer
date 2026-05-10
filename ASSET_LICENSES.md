@@ -24,6 +24,35 @@
 - Redistribution outside this repository: governed by the repository `LICENSE`
   unless a separate written permission is provided.
 
+## DoReMi Palette Import QA Fixtures
+
+`Apps/DoReMiPalette/TestImportFiles/`
+
+- Origin: Original short MusicXML fixtures created for Phase 13 import QA.
+- Contains copyrighted third party music: No.
+- Included files: `.musicxml`, `.xml`, generated `.mxl`, invalid MusicXML, and
+  unsupported-extension text fixture.
+- Permitted project use: commercial, test, demo, screenshot, and documentation
+  use within DoReMiRendererKit and DoReMiPalette.
+- Redistribution outside this repository: governed by the repository `LICENSE`
+  unless a separate written permission is provided.
+
+## DoReMi Palette App Icon
+
+`Apps/DoReMiPalette/DoReMiPalette/Resources/DoReMi_icon.png`
+
+`Apps/DoReMiPalette/DoReMiPalette/Assets.xcassets/AppIcon.appiconset/`
+
+- Origin: User-provided app icon asset from
+  `/Users/keetane/Downloads/DoReMi_icon.png`, resized into iOS app icon slots
+  for DoReMi Palette.
+- Contains copyrighted third party music: No.
+- Permitted project use: commercial, test, demo, screenshot, app build, and
+  documentation use within DoReMiRendererKit and DoReMiPalette, subject to the
+  user's ownership or permission for the provided source image.
+- Redistribution outside this repository: governed by the repository `LICENSE`
+  and any separate rights attached to the user-provided source image.
+
 ## MXL Test Fixture
 
 `Tests/DoReMiRendererKitTests/MXLLoaderTests.swift` creates an in-memory `.mxl`
@@ -52,3 +81,21 @@ Phase 11F lyrics/fingering and key signature fixtures.
   unless a separate written permission is provided.
 
 No additional non-code assets are included in MVP0.
+
+## rhythm_values_sample.musicxml
+
+`Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/rhythm_values_sample.musicxml`
+is a self-authored DoReMi Palette QA fixture. It contains only simple original
+rhythm-value examples for whole, half, quarter, eighth, rest, repeated-note, and
+simple chord playback and rendering verification, including a dotted-note
+example. It may be used for commercial, test, and demo purposes within this
+project.
+
+## notation_coverage_grand_staff.musicxml
+
+`Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/notation_coverage_grand_staff.musicxml`
+is a self-authored DoReMi Palette QA fixture. It contains only short original
+grand-staff notation examples for treble/bass clefs, time and key signatures,
+accidentals, rests, dotted notes, ties, slurs, repeats, chords, ledger lines,
+tempo metadata, and dynamics diagnostics. It may be used for commercial, test,
+demo, screenshot, and documentation purposes within this project.

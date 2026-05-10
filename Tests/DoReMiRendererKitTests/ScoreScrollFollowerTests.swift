@@ -1,4 +1,5 @@
 import CoreGraphics
+import SwiftUI
 import Testing
 @testable import DoReMiRendererKit
 
@@ -159,13 +160,225 @@ import Testing
     #expect(target.targetContentOffset == CGPoint(x: 70, y: 1716))
 }
 
+@Test func scoreCanvasFollowHeuristicsResumeAfterNilAndScrollFarNotes() {
+    let noteFrame = CGRect(x: 100, y: 900, width: 20, height: 16)
+    let noteCenter = CGPoint(x: 110, y: 908)
+    let viewport = CGSize(width: 300, height: 200)
+
+    #expect(ScoreCanvasFollowHeuristics.shouldScroll(
+        noteFrame: noteFrame,
+        noteCenter: noteCenter,
+        lastFollowCenter: nil,
+        viewportSize: viewport,
+        margin: 48
+    ))
+
+    #expect(ScoreCanvasFollowHeuristics.shouldScroll(
+        noteFrame: CGRect(x: 310, y: 900, width: 20, height: 16),
+        noteCenter: CGPoint(x: 320, y: 908),
+        lastFollowCenter: noteCenter,
+        viewportSize: viewport,
+        margin: 48
+    ))
+}
+
+@Test func scoreCanvasFollowHeuristicsDoesNotScrollNearbyVisibleNotes() {
+    let lastCenter = CGPoint(x: 110, y: 908)
+
+    #expect(!ScoreCanvasFollowHeuristics.shouldScroll(
+        noteFrame: CGRect(x: 132, y: 912, width: 20, height: 16),
+        noteCenter: CGPoint(x: 142, y: 920),
+        lastFollowCenter: lastCenter,
+        viewportSize: CGSize(width: 300, height: 200),
+        margin: 24
+    ))
+}
+
+@Test func scoreCanvasFollowHeuristicsUsesMeasuredViewportFrameVisibility() {
+    let viewport = CGSize(width: 300, height: 200)
+
+    #expect(ScoreCanvasFollowHeuristics.isFrameVisible(
+        CGRect(x: 80, y: 60, width: 20, height: 16),
+        viewportSize: viewport,
+        margin: 24
+    ))
+    #expect(!ScoreCanvasFollowHeuristics.isFrameVisible(
+        CGRect(x: 4, y: 60, width: 20, height: 16),
+        viewportSize: viewport,
+        margin: 24
+    ))
+    #expect(!ScoreCanvasFollowHeuristics.isFrameVisible(
+        CGRect(x: 80, y: 185, width: 20, height: 16),
+        viewportSize: viewport,
+        margin: 24
+    ))
+}
+
+@Test func scoreCanvasFollowHeuristicsChoosesEdgeAnchorsFromMeasuredBounds() {
+    let viewport = CGSize(width: 300, height: 200)
+
+    #expect(ScoreCanvasFollowHeuristics.scrollAnchor(
+        for: CGRect(x: 90, y: 190, width: 20, height: 16),
+        viewportSize: viewport,
+        margin: 24
+    ) == UnitPoint(x: 0.5, y: 1))
+
+    #expect(ScoreCanvasFollowHeuristics.scrollAnchor(
+        for: CGRect(x: 2, y: 80, width: 20, height: 16),
+        viewportSize: viewport,
+        margin: 24
+    ) == UnitPoint(x: 0, y: 0.5))
+
+    #expect(ScoreCanvasFollowHeuristics.scrollAnchor(
+        for: CGRect(x: 120, y: 2, width: 20, height: 16),
+        viewportSize: viewport,
+        margin: 24
+    ) == UnitPoint(x: 0.5, y: 0))
+
+    #expect(ScoreCanvasFollowHeuristics.scrollAnchor(
+        for: CGRect(x: 120, y: 80, width: 20, height: 16),
+        viewportSize: viewport,
+        margin: 24
+    ) == .center)
+}
+
+@Test func scoreCanvasFollowHeuristicsKeepsEvaluatingAfterInitialFollow() {
+    let viewport = CGSize(width: 300, height: 200)
+    let firstVisibleFrame = CGRect(x: 120, y: 90, width: 20, height: 16)
+    let laterOffscreenFrame = CGRect(x: 120, y: 220, width: 20, height: 16)
+
+    #expect(ScoreCanvasFollowHeuristics.isFrameVisible(
+        firstVisibleFrame,
+        viewportSize: viewport,
+        margin: 24
+    ))
+    #expect(!ScoreCanvasFollowHeuristics.isFrameVisible(
+        laterOffscreenFrame,
+        viewportSize: viewport,
+        margin: 24
+    ))
+    #expect(ScoreCanvasFollowHeuristics.scrollAnchor(
+        for: laterOffscreenFrame,
+        viewportSize: viewport,
+        margin: 24
+    ) == UnitPoint(x: 0.5, y: 1))
+}
+
+@Test func scoreCanvasFollowHeuristicsFollowsFarCurrentNotesAfterInitialFollow() {
+    let viewport = CGSize(width: 700, height: 520)
+    let initialCenter = CGPoint(x: 180, y: 260)
+    let nearbyCenter = CGPoint(x: 260, y: 264)
+    let laterSystemCenter = CGPoint(x: 760, y: 264)
+
+    #expect(!ScoreCanvasFollowHeuristics.hasMovedBeyondFollowDistance(
+        noteCenter: nearbyCenter,
+        lastFollowCenter: initialCenter,
+        viewportSize: viewport,
+        scale: 1,
+        margin: 48
+    ))
+    #expect(ScoreCanvasFollowHeuristics.hasMovedBeyondFollowDistance(
+        noteCenter: laterSystemCenter,
+        lastFollowCenter: initialCenter,
+        viewportSize: viewport,
+        scale: 1,
+        margin: 48
+    ))
+    #expect(ScoreCanvasFollowHeuristics.scrollAnchorForLayoutMovement(
+        noteCenter: laterSystemCenter,
+        lastFollowCenter: initialCenter
+    ).x > 0.5)
+}
+
+@Test func scoreCanvasFollowHeuristicsUsesScaleForFollowDistance() {
+    let viewport = CGSize(width: 700, height: 520)
+    let initialCenter = CGPoint(x: 180, y: 260)
+    let zoomedFarCenter = CGPoint(x: 390, y: 260)
+
+    #expect(!ScoreCanvasFollowHeuristics.hasMovedBeyondFollowDistance(
+        noteCenter: zoomedFarCenter,
+        lastFollowCenter: initialCenter,
+        viewportSize: viewport,
+        scale: 1,
+        margin: 48
+    ))
+    #expect(ScoreCanvasFollowHeuristics.hasMovedBeyondFollowDistance(
+        noteCenter: zoomedFarCenter,
+        lastFollowCenter: initialCenter,
+        viewportSize: viewport,
+        scale: 2,
+        margin: 48
+    ))
+}
+
+@Test func scoreCanvasFollowHeuristicsUsesMeasureLeadingXForFollowAnchor() {
+    let noteID = NoteID(rawValue: "measure.note")
+    let layout = scrollLayout(
+        noteID: noteID,
+        noteheadFrame: CGRect(x: 340, y: 900, width: 20, height: 16),
+        measureFrame: CGRect(x: 280, y: 80, width: 180, height: 160)
+    )
+    let noteLayout = layout.noteByID[noteID]!
+
+    #expect(ScoreCanvasFollowHeuristics.measureLeadingX(for: noteLayout, in: layout) == 280)
+}
+
+@Test func scoreCanvasFollowHeuristicsFallsBackToNoteXWithoutMeasureLayout() {
+    let noteID = NoteID(rawValue: "orphan.note")
+    let layout = scrollLayout(
+        noteID: noteID,
+        noteheadFrame: CGRect(x: 340, y: 900, width: 20, height: 16),
+        measureFrame: nil
+    )
+    let noteLayout = layout.noteByID[noteID]!
+
+    #expect(ScoreCanvasFollowHeuristics.measureLeadingX(for: noteLayout, in: layout) == 340)
+}
+
+@Test func scoreCanvasScrollableContentSizeKeepsPositiveScrollExtentWithInset() {
+    let canvasSize = CGSize(width: 500, height: 900)
+    let viewportSize = CGSize(width: 300, height: 260)
+
+    let scaleOneSize = ScoreCanvasFollowHeuristics.scrollableContentSize(
+        canvasSize: canvasSize,
+        scale: 1.0,
+        margin: 48
+    )
+    let scaleTwoSize = ScoreCanvasFollowHeuristics.scrollableContentSize(
+        canvasSize: canvasSize,
+        scale: 2.0,
+        margin: 48
+    )
+
+    #expect(scaleOneSize.width > viewportSize.width)
+    #expect(scaleOneSize.height > viewportSize.height)
+    #expect(scaleTwoSize.width > scaleOneSize.width)
+    #expect(scaleTwoSize.height > scaleOneSize.height)
+    #expect(scaleOneSize.width > canvasSize.width)
+    #expect(scaleOneSize.height > canvasSize.height)
+}
+
+@Test func scoreCanvasFollowHeuristicsUsesScaledViewportCoordinates() {
+    let lastCenter = CGPoint(x: 110, y: 908)
+
+    #expect(ScoreCanvasFollowHeuristics.shouldScroll(
+        noteFrame: CGRect(x: 210, y: 908, width: 20, height: 16),
+        noteCenter: CGPoint(x: 220, y: 916),
+        lastFollowCenter: lastCenter,
+        viewportSize: CGSize(width: 150, height: 100),
+        margin: 24
+    ))
+}
+
 private func scrollLayout(
     noteID: NoteID,
-    noteheadFrame: CGRect = CGRect(x: 100, y: 900, width: 20, height: 16)
+    noteheadFrame: CGRect = CGRect(x: 100, y: 900, width: 20, height: 16),
+    measureFrame: CGRect? = CGRect(x: 80, y: 80, width: 200, height: 160)
 ) -> ScoreLayout {
+    let measureID = MeasureID(partIndex: 0, measureNumber: "1")
     let noteLayout = NoteLayout(
         noteID: noteID,
-        measureID: MeasureID(partIndex: 0, measureNumber: "1"),
+        measureID: measureID,
         staffID: StaffID(rawValue: "1"),
         voiceID: VoiceID(rawValue: "1"),
         pitch: Pitch(step: .c, octave: 4),
@@ -182,6 +395,9 @@ private func scrollLayout(
     )
     return ScoreLayout(
         canvasSize: CGSize(width: 1_000, height: 2_000),
+        measures: measureFrame.map {
+            [MeasureLayout(measureID: measureID, systemIndex: 0, frame: $0)]
+        } ?? [],
         elements: [element],
         noteByID: [noteID: noteLayout],
         elementByID: [element.id: element]

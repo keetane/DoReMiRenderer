@@ -4,6 +4,7 @@ import SwiftUI
 struct KeyboardView: View {
     let layout: ScoreLayout
     let currentNoteIDs: Set<NoteID>
+    var highlightState: CurrentNoteHighlightState?
     var range: ClosedRange<Int> = KeyboardPitchMapper.defaultRange
     var palette: ScaleColorPalette = defaultEducationalPalette
 
@@ -23,6 +24,21 @@ struct KeyboardView: View {
         )
     }
 
+    private var attackHighlighted: Set<Int> {
+        guard let highlightState else {
+            return highlighted
+        }
+        return Set(highlightState.attackMIDIPitches.filter(range.contains))
+    }
+
+    private var continuationHighlighted: Set<Int> {
+        guard let highlightState else {
+            return []
+        }
+        return Set(highlightState.continuationMIDIPitches.filter(range.contains))
+            .subtracting(attackHighlighted)
+    }
+
     var body: some View {
         GeometryReader { proxy in
             let whiteWidth = proxy.size.width / CGFloat(max(whiteKeys.count, 1))
@@ -31,7 +47,7 @@ struct KeyboardView: View {
                     ForEach(whiteKeys, id: \.self) { midi in
                         WhiteKey(
                             midi: midi,
-                            isHighlighted: highlighted.contains(midi),
+                            highlightKind: highlightKind(for: midi),
                             color: color(for: midi)
                         )
                         .frame(width: whiteWidth)
@@ -41,7 +57,7 @@ struct KeyboardView: View {
                 ForEach(blackKeys, id: \.self) { key in
                     BlackKey(
                         midi: key.midi,
-                        isHighlighted: highlighted.contains(key.midi),
+                        highlightKind: highlightKind(for: key.midi),
                         color: color(for: key.midi)
                     )
                     .frame(width: whiteWidth * 0.62, height: proxy.size.height * 0.62)
@@ -64,6 +80,16 @@ struct KeyboardView: View {
         )
     }
 
+    private func highlightKind(for midi: Int) -> KeyboardKeyHighlight {
+        if attackHighlighted.contains(midi) {
+            return .attack
+        }
+        if continuationHighlighted.contains(midi) {
+            return .continuation
+        }
+        return .none
+    }
+
     private func pitchClass(for midi: Int) -> PitchClass {
         switch ((midi % 12) + 12) % 12 {
         case 0, 1: .c
@@ -77,44 +103,91 @@ struct KeyboardView: View {
     }
 }
 
+private enum KeyboardKeyHighlight {
+    case none
+    case attack
+    case continuation
+}
+
 private struct WhiteKey: View {
     let midi: Int
-    let isHighlighted: Bool
+    let highlightKind: KeyboardKeyHighlight
     let color: Color
 
     var body: some View {
         ZStack(alignment: .bottom) {
             RoundedRectangle(cornerRadius: 4)
-                .fill(isHighlighted ? color.opacity(0.9) : Color.white)
+                .fill(fillColor)
                 .overlay(
                     RoundedRectangle(cornerRadius: 4)
-                        .stroke(Color.black.opacity(0.35), lineWidth: 1)
+                        .stroke(strokeColor, lineWidth: highlightKind == .continuation ? 2 : 1)
                 )
             if midi % 12 == 0 {
                 Text(KeyboardPitchMapper.label(for: midi))
                     .font(.caption2)
-                    .foregroundStyle(isHighlighted ? .white : .secondary)
+                    .foregroundStyle(highlightKind == .attack ? .white : .secondary)
                     .padding(.bottom, 6)
             }
         }
         .accessibilityLabel(KeyboardPitchMapper.label(for: midi))
     }
+
+    private var fillColor: Color {
+        switch highlightKind {
+        case .attack:
+            return color.opacity(0.9)
+        case .continuation:
+            return color.opacity(0.22)
+        case .none:
+            return .white
+        }
+    }
+
+    private var strokeColor: Color {
+        switch highlightKind {
+        case .attack:
+            return Color.black.opacity(0.35)
+        case .continuation:
+            return color.opacity(0.9)
+        case .none:
+            return Color.black.opacity(0.35)
+        }
+    }
 }
 
 private struct BlackKey: View {
     let midi: Int
-    let isHighlighted: Bool
+    let highlightKind: KeyboardKeyHighlight
     let color: Color
 
     var body: some View {
         RoundedRectangle(cornerRadius: 3)
-            .fill(isHighlighted ? color : Color.black)
+            .fill(fillColor)
             .overlay(
                 RoundedRectangle(cornerRadius: 3)
-                    .stroke(Color.white.opacity(0.28), lineWidth: 1)
+                    .stroke(strokeColor, lineWidth: highlightKind == .continuation ? 2 : 1)
             )
             .shadow(radius: 1, y: 1)
             .accessibilityLabel(KeyboardPitchMapper.label(for: midi))
     }
-}
 
+    private var fillColor: Color {
+        switch highlightKind {
+        case .attack:
+            return color
+        case .continuation:
+            return color.opacity(0.36)
+        case .none:
+            return .black
+        }
+    }
+
+    private var strokeColor: Color {
+        switch highlightKind {
+        case .attack, .none:
+            return Color.white.opacity(0.28)
+        case .continuation:
+            return color.opacity(0.95)
+        }
+    }
+}

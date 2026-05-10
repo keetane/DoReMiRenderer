@@ -1,0 +1,1 @@
+This is not a supported score file. It exists only to verify unsupported import handling.

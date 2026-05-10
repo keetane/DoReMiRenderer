@@ -75,7 +75,6 @@
         <duration>2</duration>
         <voice>1</voice>
         <type>half</type>
-        <tie type="start"/>
       </note>
     </measure>
     <measure number="3">
@@ -84,7 +83,6 @@
         <duration>1</duration>
         <voice>1</voice>
         <type>quarter</type>
-        <tie type="stop"/>
       </note>
       <note>
         <pitch><step>E</step><octave>5</octave></pitch>

@@ -13,6 +13,8 @@ The Phase 13+ app-execution roadmap is tracked in [ROADMAP.md](ROADMAP.md), and 
 - Build a deterministic `ScoreDocument`.
 - Build a minimal `ScoreLayout`.
 - Render with SwiftUI `Canvas` through `ScoreCanvasView`.
+- Draw basic whole, half, quarter, eighth, dotted-note, and rest differences for
+  MVP rhythm readability.
 - Resolve note, staff line, ledger line, accidental, and highlight colors through `ScoreStyle` and `ScoreColorResolver`.
 - Perform MVP0 hit testing with `ScoreLayout.hitTest(point:radius:)`.
 - Generate playback step events without audio output.
@@ -245,7 +247,9 @@ xcodebuild build \
 The app loads a bundled self-authored MusicXML sample on launch, renders it with
 `ScoreCanvasView`, supports `.musicxml`, `.xml`, and `.mxl` import, shows
 diagnostics in Japanese, persists display settings, and displays a simple piano
-keyboard highlight for the current note. Audio playback is not implemented.
+keyboard highlight for the current note. Phase 15 adds MVP generated-tone audio
+playback with Play / Pause / Stop / Reset, tempo selection, and synchronized
+score and keyboard highlights.
 
 The integration design and SDK/App responsibility boundary are documented in
 [DOREMI_PALETTE_INTEGRATION.md](DOREMI_PALETTE_INTEGRATION.md).
@@ -253,6 +257,34 @@ The integration design and SDK/App responsibility boundary are documented in
 Phase 13 and later focus on real-app readiness: QA, import verification, UI
 tuning, file persistence, audio playback, practice mode, and real iPad /
 TestFlight preparation. See [ROADMAP.md](ROADMAP.md).
+
+Phase 13 app QA is tracked in [APP_QA_CHECKLIST.md](APP_QA_CHECKLIST.md).
+Self-authored import fixtures for `.musicxml`, `.xml`, `.mxl`, invalid
+MusicXML, and unsupported extension checks live under
+`Apps/DoReMiPalette/TestImportFiles/`. Phase 13 also adds regression coverage
+for keyboard highlight behavior, display settings persistence, diagnostics
+presentation, and app-level import/state transitions. Full library/recent-file
+persistence is handled in Phase 14.
+
+Phase 14 completes the MVP Library / Recent files flow in the app. Bundled
+samples and imported scores have distinct metadata records, recent imported
+files are shown in a Library sheet, duplicate imports update the existing item,
+items can be removed from Recent files, and missing or unresolved files show a
+Japanese recovery message instead of replacing the current score. The app stores
+metadata only; raw MusicXML and MXL contents are not persisted. Security-scoped
+bookmark handling is intentionally minimal and may require reselecting files
+depending on the provider.
+
+Phase 15 adds app-side playback runtime and simple generated audio. The SDK
+still only provides `PlaybackEvent` and metadata; AVFoundation is used only by
+the DoReMi Palette app. Audio quality, background playback, repeat expansion,
+full tuplet timing, and transposition-aware playback remain future work.
+
+Future notation-quality work is planned in
+[SMUFL_INTEGRATION_PLAN.md](SMUFL_INTEGRATION_PLAN.md). The plan is to use a
+SMuFL-compliant music font, with Bravura as the first candidate, to improve
+symbol shapes while keeping MusicXML interpretation, `ScoreLayout` coordinates,
+IDs, hit testing, color resolution, and playback in DoReMiRendererKit.
 
 ## Snapshot Tests
 
@@ -272,3 +304,62 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for recording and diff artifact details.
 ## Legal Disclaimer
 
 The legal and licensing files in this repository are project hygiene records, not legal advice. Before selling, publishing, or externally distributing this SDK, obtain review from a qualified legal professional.
+
+## Practice Mode MVP
+
+DoReMi Palette now includes an app-side Practice Mode. It lets the user step
+through the current score one event at a time, shows written note names and
+solfege, keeps score and keyboard highlights in sync, and provides a small color
+palette selector. Practice Mode is separate from automatic audio playback:
+enabling practice stops playback, and pressing Play returns to normal playback.
+
+Practice Mode remains MVP-level: no scoring, microphone input, MIDI keyboard
+input, AI analysis, or transposition-aware note-name display yet.
+
+### Rhythm Values Sample
+
+DoReMi Palette includes a bundled `Rhythm Values Sample` for playback QA. It is
+self-authored and covers whole, half, quarter, eighth, rests, repeated C notes,
+and a simple chord. Generated-tone playback uses an app-side note gate so
+repeated same-pitch notes are separated without changing score duration or
+layout.
+
+### Notation Coverage Sample
+
+DoReMi Palette includes a bundled `Notation Coverage Sample`. It is a
+self-authored grand staff score for checking common symbols: treble and bass
+clefs, time and key signatures, accidentals, rests, dotted notes, chords,
+ledger lines, repeat barlines, and diagnostic-only items such as slurs and
+dynamics. See [NOTATION_SUPPORT_MATRIX.md](NOTATION_SUPPORT_MATRIX.md) for the
+current parser/layout/renderer/app support status of each symbol. This sample is
+also the main QA score for future SMuFL before/after comparisons.
+
+## Phase 16.5 Stabilization
+
+Before Phase 17 real-device/TestFlight preparation, the project uses a
+stabilization gate focused on notation, playback, scroll follow, and Practice
+Mode coexistence. The main checks are:
+
+- `Rhythm Values Sample` for note values, rests, repeated pitches, and playback
+  timing.
+- `Notation Coverage Sample` for common symbol visibility and known unsupported
+  notation.
+- SDK and app tests for layout bounds, current-note follow, generated-tone
+  playback, attack/continuation highlighting, and Practice/Playback handoff.
+
+Phase 16.5 does not add SMuFL fonts or new notation families. It stabilizes the
+current Core Graphics renderer and app playback path before the Phase 17 gate.
+
+## Phase 17A Real iPad QA
+
+Phase 17A is the first physical-device gate before TestFlight preparation. The
+current real iPad status is:
+
+- `iPad Pro 2nd` on iPadOS `26.4.2` is detected by Xcode command-line tools.
+- DoReMi Palette builds successfully for the physical iPad destination.
+- Codex-side install / launch through `devicectl` is blocked by a local
+  CoreDeviceService timeout, so runtime, audio, import, Library, Diagnostics,
+  and settings QA still need Xcode Run or a recovered CoreDevice environment.
+
+The detailed checklist is tracked in
+[APP_QA_CHECKLIST.md](APP_QA_CHECKLIST.md).

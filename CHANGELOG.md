@@ -7,6 +7,19 @@ Initial experimental MVP0 release.
 This version is intended for integration review and early adopter testing. Public
 APIs may change before `1.0`.
 
+### Phase 17A real iPad QA start
+
+- Confirmed a physical `iPad Pro 2nd` running iPadOS `26.4.2` is visible to
+  `xcrun xctrace` and `xcodebuild -showdestinations`.
+- Confirmed the DoReMi Palette Debug build succeeds for the real iPad
+  destination with bundle identifier `com.doremipalette.app`.
+- Recorded the current QA blocker: Codex-side `devicectl` install / launch is
+  blocked by a local CoreDeviceService initialization timeout, so runtime,
+  audio, file-import, and settings QA still need Xcode Run or a recovered
+  CoreDevice environment.
+- Added the Phase 17A real-device QA checklist and device runbook. No app code,
+  SDK code, signing setting, public API, or asset changes were made.
+
 ### Added
 
 - Swift Package `DoReMiRendererKit`.
@@ -86,3 +99,226 @@ changelog. The roadmap now clearly separates:
 
 The roadmap also records the feedback loop that sends real app gaps back into
 the SDK when needed.
+
+## Phase 13 Part 1 - App QA Start
+
+Added the first Phase 13 app-readiness updates:
+
+- `APP_QA_CHECKLIST.md` for iPad, iPhone, import, diagnostics, keyboard, and
+  settings QA tracking
+- self-authored import fixtures for `.musicxml`, `.xml`, `.mxl`, invalid
+  MusicXML, and unsupported-extension checks
+- DoReMi Palette app loader tests for supported import formats, failure
+  handling, current-note reset, and existing-score preservation
+- small SwiftUI layout polish for iPad readability and minimum iPhone
+  reachability
+
+Phase 13 part 1 retry confirmed iPhone launch, bundled sample visibility,
+reachable controls, diagnostics sheet display, keyboard setting reachability,
+and `1.0x` score visibility. Manual invalid-file selection through the iPad
+Files picker remains tracked because the local fixtures still need to be made
+available inside the Simulator Files app; app loader tests cover the invalid
+and unsupported import paths.
+
+## Phase 13 Part 2 - Keyboard / Settings / Diagnostics QA
+
+Expanded the second Phase 13 app-readiness pass:
+
+- keyboard pitch-mapping tests for natural notes, accidentals, current-note
+  changes, chord highlighting, rest/missing-note, and out-of-range behavior
+- app regression tests for tap selection, keyboard visibility state, zoom
+  coordinate conversion, settings key persistence, diagnostics presentation,
+  and color-setting layout/playback invariance
+- Japanese diagnostics presentation helper for summary, severity, unsupported
+  feature, repeat, and location text
+- iPad/iPhone Simulator screenshots for keyboard, diagnostics, and settings QA
+
+Phase 13 remains an app QA phase only. It does not add audio playback, library
+persistence, or SDK public API changes.
+
+## Phase 14 Part 1 - Library / Recent Files Foundation
+
+Started the app-side Library / Recent files foundation without changing SDK
+public API:
+
+- internal DoReMi Palette library metadata model for sample and imported scores
+- local JSON persistence for imported metadata only
+- diagnostic-summary, last-current-note, and zoom-scale metadata fields
+- bundled sample represented as a sample library item
+- successful imports add or update an imported library item
+- duplicate imports update the existing recent item
+- failed imports keep the current score and do not add library metadata
+- app tests for Codable round trips, corrupt store recovery, duplicate update,
+  import success, and import failure behavior
+
+Recent files UI, complete security-scoped bookmark restore, missing-file UI, and
+remove-from-recent actions remain Phase 14 back-half work.
+
+## Phase 14 Part 2 - Recent Files UI / Persistence / Missing File Handling
+
+Completed the app-side Library / Recent files MVP without changing SDK public
+API:
+
+- Library sheet for bundled samples and recent imported files
+- sample and imported rows with last-opened date and diagnostics summary
+- tap-to-open for samples and recent imported files
+- remove-from-recent action for imported items
+- minimal bookmark metadata save/resolve path for imported files
+- missing-file and failed-reload handling that keeps the current score intact
+- app tests for reload success/failure, nil bookmark, bookmark metadata update,
+  remove-from-recent, and metadata-only persistence
+
+Security-scoped bookmark behavior remains provider-dependent, and raw MusicXML /
+MXL contents are still not persisted by the library.
+
+## Phase 15 - Audio Playback / Playback Runtime
+
+Added MVP app-side playback runtime and generated-tone audio:
+
+- app-side playback state for Play / Pause / Stop / Reset
+- event-index based automatic playback over existing `PlaybackEvent` arrays
+- tempo selection with clamped BPM handling and parsed tempo metadata fallback
+- synchronized `currentNoteID`, score highlight, keyboard highlight, and scroll
+  follow through existing app state
+- generated sine-tone audio engine using AVFoundation only in the app target
+- chord playback by mixing all event MIDI pitches
+- rest and tie-continuation events do not trigger new audio
+- mock-audio tests for runtime transitions, rest/chord/tie behavior, audio
+  startup failure, tempo duration, and layout identity preservation
+
+No SDK public API changes, external audio assets, or new dependencies were
+added.
+
+### Fixed
+
+- Fixed a DoReMi Palette crash when changing tempo from the playback control.
+  Tempo changes now safely clamp BPM, avoid reentrant SwiftUI state mutation,
+  silence current audio, and restart playback scheduling from the current event
+  when changed during playback.
+
+## Phase 16 - Practice Mode MVP
+
+- Added app-side Practice Mode for one-event-at-a-time score practice.
+- Added written note-name and solfege display for the current practice step.
+- Added Practice Mode controls for ON/OFF, Next, Previous, and Reset.
+- Added a minimal color palette selector that does not mutate layout or playback
+  identity.
+- Defined PlaybackRuntime interoperability: Practice Mode stops playback, and
+  Play exits Practice Mode for normal tempo-driven playback.
+- Added app tests for practice state, note-name formatting, palette invariance,
+  and playback/practice coexistence.
+
+## Playback note gate and rhythm sample
+
+- Added app-side `noteGateRatio` for generated-tone playback. Event scheduling
+  still uses full `PlaybackEvent` duration, while sound duration defaults to 85%.
+- Silenced the current generated tone before each new pitched event so repeated
+  same-pitch notes are articulated separately.
+- Added the self-authored `rhythm_values_sample.musicxml` bundled sample for
+  whole, half, quarter, eighth, rest, repeated-note, and simple chord playback QA.
+- Added tests for gate-ratio clamping, sound-duration calculation, repeated same
+  pitch playback, and rhythm-value sample parsing.
+
+## Note value rendering fix
+
+- Added MusicXML `<type>` and `<dot>` propagation into the domain and layout
+  models so note values are not inferred by the app or renderer.
+- Render whole notes as hollow noteheads without stems, half notes as hollow
+  noteheads with stems, quarter notes as filled noteheads with stems, and eighth
+  notes as filled noteheads with stems and flags.
+- Added layout/rendering support for note dots and basic rest-value drawing.
+- Added parser, layout, renderer, app sample, and snapshot coverage for rhythm
+  value rendering.
+- Hotfixed Core Graphics stem geometry so single-voice notes below the middle
+  staff line use upward stems and notes on or above the middle line use downward
+  stems, while whole notes remain stemless.
+- Fixed chord stem direction so chord tones in the same
+  part/measure/staff/voice/onset share one MVP stem direction instead of mixing
+  up and down stems inside a single chord.
+- Fixed current-note scroll follow to avoid recentering every nearby playback or
+  practice step. `ScoreCanvasView` now keeps layout-coordinate note anchors and
+  only scrolls again when the current note leaves the viewport margin.
+
+## Notation coverage sample and symbol audit
+
+- Added the self-authored `notation_coverage_grand_staff.musicxml` bundled
+  sample for checking treble/bass clefs, time and key signatures, accidentals,
+  rest values, dots, ties, slurs, repeats, chords, ledger lines, and tempo /
+  dynamic diagnostics in one app-visible score.
+- Added MVP layout and rendering for clef, time signature, basic barline, and
+  repeat barline elements from `ScoreLayout`.
+- Added `NOTATION_SUPPORT_MATRIX.md` to distinguish supported, partial,
+  diagnostic-only, and unsupported notation symbols.
+
+## SMuFL integration planning
+
+- Added `SMUFL_INTEGRATION_PLAN.md` for the future Bravura-first SMuFL
+  rendering track.
+- Recorded the license, architecture, QA, snapshot, and stop-condition policy
+  for using SMuFL glyphs as symbol shapes while keeping MusicXML parsing,
+  layout coordinates, IDs, hit testing, color resolution, and playback in
+  DoReMiRendererKit.
+- Added roadmap phases S1-S6 for preparation, font registration,
+  clef/accidental/rest glyphs, repeat/dynamics/time signatures, notehead/flag
+  glyphs, and tie/slur/beam refinement.
+- No font files, renderer code, Info.plist entries, snapshot baselines, public
+  APIs, or external dependencies were changed in this planning step.
+
+## Playback follow / bounds / audio reliability fix
+
+- Expanded `ScoreLayout.canvasSize` from rendered element union bounds within
+  the normal page margins so high/low notes, stems, flags, ledger lines, rests,
+  clefs, and barlines are less likely to clip at the top or bottom of the canvas.
+- Stabilized `ScoreCanvasView` current-note follow heuristics so playback,
+  step, practice, and tap-driven current-note changes can resume after rests and
+  follow far-enough notes without snapping every nearby event back to center.
+- Added a minimum audible generated-tone duration for short pitched playback
+  events while preserving the original event scheduling duration.
+- Added regression tests for layout bounds, scroll follow heuristics, and
+  repeated/short-note audio paths.
+
+## Tie continuation highlight distinction
+
+- Split DoReMi Palette current-note display into attack and tie-continuation
+  highlight states using `PlaybackEvent.noteIDs`, `PlaybackEvent.midiPitches`,
+  and public layout pitch lookup.
+- Added weaker secondary score highlighting for tied continuations while keeping
+  the strong current-note highlight for newly sounding notes.
+- Added keyboard highlight styling that distinguishes newly sounding pitches
+  from tied continuation pitches.
+- Added regression tests for mixed attack/continuation events, continuation-only
+  tie events, rest events, and keyboard highlight priority.
+
+## Layout bounds / scroll follow / audio reliability follow-up
+
+- Kept SDK layout bounds stable while adding ScoreCanvasView scroll-content
+  padding so edge notes, stems, flags, and ledger lines have room inside the
+  scrollable viewport.
+- Changed current-note follow to use measured note bounds and edge anchors
+  instead of suppressing follow after user scroll or always returning to center.
+- Updated playback audio triggering so any event with `midiPitches` plays those
+  attack pitches, even when the same visual event also contains tied
+  continuation notes.
+- Added regression coverage for measured-bounds follow anchors, layout element
+  bounds, and mixed tie-continuation/new-attack audio.
+- Follow-up fix: moved scroll padding inside the Canvas coordinate system so
+  top-edge notation is not clipped by the Canvas itself.
+- Restored manual scrolling by keeping measured note-frame updates as data only;
+  scroll execution now happens on current-note / zoom / layout changes, not on
+  every geometry preference update.
+- Removed the extra ScrollView drag recognizer from the follow path so normal
+  manual scrolling remains owned by SwiftUI's ScrollView.
+- Restored follow for offscreen notes whose measured viewport frame is not yet
+  available by falling back to the stable note anchor ID.
+
+## Phase 16.5 - Notation / Playback Stabilization
+
+- Added a formal stabilization gate before Phase 17 for notation display,
+  layout bounds, scroll follow, generated-tone playback, and Practice/Playback
+  coexistence.
+- Added SDK layout-origin compensation for extreme high notation whose rendered
+  element bounds would otherwise extend above the canvas origin.
+- Added regression coverage for high notes, upward stems, flags, and ledger
+  lines staying inside positive canvas bounds.
+- Synchronized Practice Mode step movement with `PalettePlaybackRuntime` so
+  pressing Play after practice stepping resumes from the practiced event.

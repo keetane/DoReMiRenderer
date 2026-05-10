@@ -3,25 +3,35 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 60;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		2B0000010000000000000001 /* DoReMiPaletteApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001011 /* DoReMiPaletteApp.swift */; };
 		2B0000010000000000000002 /* AppRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001012 /* AppRootView.swift */; };
-		2B0000010000000000000003 /* PaletteScoreLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001013 /* PaletteScoreLoader.swift */; };
-		2B0000010000000000000004 /* PalettePlaybackCursor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001014 /* PalettePlaybackCursor.swift */; };
-		2B0000010000000000000005 /* PaletteScoreSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001015 /* PaletteScoreSession.swift */; };
-		2B0000010000000000000006 /* PaletteStyleFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001016 /* PaletteStyleFactory.swift */; };
-		2B0000010000000000000007 /* ScorePracticeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001017 /* ScorePracticeView.swift */; };
-		2B0000010000000000000008 /* PaletteSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001018 /* PaletteSettingsView.swift */; };
-		2B0000010000000000000009 /* DiagnosticsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001019 /* DiagnosticsPanel.swift */; };
-		2B000001000000000000000A /* KeyboardPitchMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000101A /* KeyboardPitchMapper.swift */; };
-		2B000001000000000000000B /* KeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000101B /* KeyboardView.swift */; };
-		2B000001000000000000000C /* phase12_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000101C /* phase12_sample.musicxml */; };
+		2B0000010000000000000003 /* Features/ScorePractice/PaletteScoreLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001013 /* Features/ScorePractice/PaletteScoreLoader.swift */; };
+		2B0000010000000000000004 /* Features/ScorePractice/PalettePlaybackCursor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001014 /* Features/ScorePractice/PalettePlaybackCursor.swift */; };
+		2B0000010000000000000005 /* Features/ScorePractice/PaletteScoreSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001015 /* Features/ScorePractice/PaletteScoreSession.swift */; };
+		2B0000010000000000000006 /* Features/ScorePractice/PaletteStyleFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001016 /* Features/ScorePractice/PaletteStyleFactory.swift */; };
+		2B0000010000000000000007 /* Features/ScorePractice/ScorePracticeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001017 /* Features/ScorePractice/ScorePracticeView.swift */; };
+		2B0000010000000000000008 /* Features/ScorePractice/PaletteSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001018 /* Features/ScorePractice/PaletteSettingsView.swift */; };
+		2B0000010000000000000009 /* Features/Diagnostics/DiagnosticsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001019 /* Features/Diagnostics/DiagnosticsPanel.swift */; };
+		2B000001000000000000000A /* Features/Keyboard/KeyboardPitchMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000101A /* Features/Keyboard/KeyboardPitchMapper.swift */; };
+		2B000001000000000000000B /* Features/Keyboard/KeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000101B /* Features/Keyboard/KeyboardView.swift */; };
+		2B000001000000000000000C /* Resources/Samples/phase12_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000101C /* Resources/Samples/phase12_sample.musicxml */; };
 		2B000001000000000000000D /* DoReMiRendererKit in Frameworks */ = {isa = PBXBuildFile; productRef = 2B0000010000000000000041 /* DoReMiRendererKit */; };
 		2B000001000000000000000E /* PaletteScoreLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000101D /* PaletteScoreLoaderTests.swift */; };
 		2B000001000000000000000F /* KeyboardPitchMapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000101E /* KeyboardPitchMapperTests.swift */; };
+		2B0000010000000000000010 /* Features/Library/PaletteLibrary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001020 /* Features/Library/PaletteLibrary.swift */; };
+		2B0000010000000000000011 /* Features/Library/LibraryPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001021 /* Features/Library/LibraryPanel.swift */; };
+		2B0000010000000000000012 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001022 /* Assets.xcassets */; };
+		2B0000010000000000000013 /* Features/Playback/PalettePlaybackState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001023 /* Features/Playback/PalettePlaybackState.swift */; };
+		2B0000010000000000000014 /* Features/Playback/PalettePlaybackRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001024 /* Features/Playback/PalettePlaybackRuntime.swift */; };
+		2B0000010000000000000015 /* Features/Playback/Audio/PaletteAudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001025 /* Features/Playback/Audio/PaletteAudioEngine.swift */; };
+		2B0000010000000000000016 /* Features/Playback/Audio/SimpleToneAudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001026 /* Features/Playback/Audio/SimpleToneAudioEngine.swift */; };
+		2B0000010000000000000017 /* PalettePlaybackRuntimeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001027 /* PalettePlaybackRuntimeTests.swift */; };
+		2B0000010000000000000018 /* Resources/Samples/rhythm_values_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001028 /* Resources/Samples/rhythm_values_sample.musicxml */; };
+		2B0000010000000000000019 /* Resources/Samples/notation_coverage_grand_staff.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001029 /* Resources/Samples/notation_coverage_grand_staff.musicxml */; };
 		2B00000100000000000000F0 /* DoReMiRendererKit in Frameworks */ = {isa = PBXBuildFile; productRef = 2B0000010000000000000041 /* DoReMiRendererKit */; };
 /* End PBXBuildFile section */
 
@@ -39,19 +49,29 @@
 		2B0000010000000000001010 /* DoReMiPalette.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DoReMiPalette.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		2B0000010000000000001011 /* DoReMiPaletteApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoReMiPaletteApp.swift; sourceTree = "<group>"; };
 		2B0000010000000000001012 /* AppRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRootView.swift; sourceTree = "<group>"; };
-		2B0000010000000000001013 /* PaletteScoreLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/ScorePractice/PaletteScoreLoader.swift; sourceTree = "<group>"; };
-		2B0000010000000000001014 /* PalettePlaybackCursor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/ScorePractice/PalettePlaybackCursor.swift; sourceTree = "<group>"; };
-		2B0000010000000000001015 /* PaletteScoreSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/ScorePractice/PaletteScoreSession.swift; sourceTree = "<group>"; };
-		2B0000010000000000001016 /* PaletteStyleFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/ScorePractice/PaletteStyleFactory.swift; sourceTree = "<group>"; };
-		2B0000010000000000001017 /* ScorePracticeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/ScorePractice/ScorePracticeView.swift; sourceTree = "<group>"; };
-		2B0000010000000000001018 /* PaletteSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/ScorePractice/PaletteSettingsView.swift; sourceTree = "<group>"; };
-		2B0000010000000000001019 /* DiagnosticsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Diagnostics/DiagnosticsPanel.swift; sourceTree = "<group>"; };
-		2B000001000000000000101A /* KeyboardPitchMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Keyboard/KeyboardPitchMapper.swift; sourceTree = "<group>"; };
-		2B000001000000000000101B /* KeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Keyboard/KeyboardView.swift; sourceTree = "<group>"; };
-		2B000001000000000000101C /* phase12_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/phase12_sample.musicxml; sourceTree = "<group>"; };
+		2B0000010000000000001013 /* Features/ScorePractice/PaletteScoreLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/ScorePractice/PaletteScoreLoader.swift; sourceTree = "<group>"; };
+		2B0000010000000000001014 /* Features/ScorePractice/PalettePlaybackCursor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/ScorePractice/PalettePlaybackCursor.swift; sourceTree = "<group>"; };
+		2B0000010000000000001015 /* Features/ScorePractice/PaletteScoreSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/ScorePractice/PaletteScoreSession.swift; sourceTree = "<group>"; };
+		2B0000010000000000001016 /* Features/ScorePractice/PaletteStyleFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/ScorePractice/PaletteStyleFactory.swift; sourceTree = "<group>"; };
+		2B0000010000000000001017 /* Features/ScorePractice/ScorePracticeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/ScorePractice/ScorePracticeView.swift; sourceTree = "<group>"; };
+		2B0000010000000000001018 /* Features/ScorePractice/PaletteSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/ScorePractice/PaletteSettingsView.swift; sourceTree = "<group>"; };
+		2B0000010000000000001019 /* Features/Diagnostics/DiagnosticsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Diagnostics/DiagnosticsPanel.swift; sourceTree = "<group>"; };
+		2B000001000000000000101A /* Features/Keyboard/KeyboardPitchMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Keyboard/KeyboardPitchMapper.swift; sourceTree = "<group>"; };
+		2B000001000000000000101B /* Features/Keyboard/KeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Keyboard/KeyboardView.swift; sourceTree = "<group>"; };
+		2B000001000000000000101C /* Resources/Samples/phase12_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/phase12_sample.musicxml; sourceTree = "<group>"; };
 		2B000001000000000000101D /* PaletteScoreLoaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaletteScoreLoaderTests.swift; sourceTree = "<group>"; };
 		2B000001000000000000101E /* KeyboardPitchMapperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardPitchMapperTests.swift; sourceTree = "<group>"; };
 		2B000001000000000000101F /* DoReMiPaletteTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DoReMiPaletteTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		2B0000010000000000001020 /* Features/Library/PaletteLibrary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/PaletteLibrary.swift; sourceTree = "<group>"; };
+		2B0000010000000000001021 /* Features/Library/LibraryPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/LibraryPanel.swift; sourceTree = "<group>"; };
+		2B0000010000000000001022 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		2B0000010000000000001023 /* Features/Playback/PalettePlaybackState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Playback/PalettePlaybackState.swift; sourceTree = "<group>"; };
+		2B0000010000000000001024 /* Features/Playback/PalettePlaybackRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Playback/PalettePlaybackRuntime.swift; sourceTree = "<group>"; };
+		2B0000010000000000001025 /* Features/Playback/Audio/PaletteAudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Playback/Audio/PaletteAudioEngine.swift; sourceTree = "<group>"; };
+		2B0000010000000000001026 /* Features/Playback/Audio/SimpleToneAudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Playback/Audio/SimpleToneAudioEngine.swift; sourceTree = "<group>"; };
+		2B0000010000000000001027 /* PalettePlaybackRuntimeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PalettePlaybackRuntimeTests.swift; sourceTree = "<group>"; };
+		2B0000010000000000001028 /* Resources/Samples/rhythm_values_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/rhythm_values_sample.musicxml; sourceTree = "<group>"; };
+		2B0000010000000000001029 /* Resources/Samples/notation_coverage_grand_staff.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/notation_coverage_grand_staff.musicxml; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -88,16 +108,25 @@
 			children = (
 				2B0000010000000000001011 /* DoReMiPaletteApp.swift */,
 				2B0000010000000000001012 /* AppRootView.swift */,
-				2B0000010000000000001013 /* PaletteScoreLoader.swift */,
-				2B0000010000000000001014 /* PalettePlaybackCursor.swift */,
-				2B0000010000000000001015 /* PaletteScoreSession.swift */,
-				2B0000010000000000001016 /* PaletteStyleFactory.swift */,
-				2B0000010000000000001017 /* ScorePracticeView.swift */,
-				2B0000010000000000001018 /* PaletteSettingsView.swift */,
-				2B0000010000000000001019 /* DiagnosticsPanel.swift */,
-				2B000001000000000000101A /* KeyboardPitchMapper.swift */,
-				2B000001000000000000101B /* KeyboardView.swift */,
-				2B000001000000000000101C /* phase12_sample.musicxml */,
+				2B0000010000000000001013 /* Features/ScorePractice/PaletteScoreLoader.swift */,
+				2B0000010000000000001014 /* Features/ScorePractice/PalettePlaybackCursor.swift */,
+				2B0000010000000000001015 /* Features/ScorePractice/PaletteScoreSession.swift */,
+				2B0000010000000000001016 /* Features/ScorePractice/PaletteStyleFactory.swift */,
+				2B0000010000000000001017 /* Features/ScorePractice/ScorePracticeView.swift */,
+				2B0000010000000000001018 /* Features/ScorePractice/PaletteSettingsView.swift */,
+				2B0000010000000000001019 /* Features/Diagnostics/DiagnosticsPanel.swift */,
+				2B000001000000000000101A /* Features/Keyboard/KeyboardPitchMapper.swift */,
+				2B000001000000000000101B /* Features/Keyboard/KeyboardView.swift */,
+				2B0000010000000000001020 /* Features/Library/PaletteLibrary.swift */,
+				2B0000010000000000001021 /* Features/Library/LibraryPanel.swift */,
+				2B0000010000000000001023 /* Features/Playback/PalettePlaybackState.swift */,
+				2B0000010000000000001024 /* Features/Playback/PalettePlaybackRuntime.swift */,
+				2B0000010000000000001025 /* Features/Playback/Audio/PaletteAudioEngine.swift */,
+				2B0000010000000000001026 /* Features/Playback/Audio/SimpleToneAudioEngine.swift */,
+				2B0000010000000000001022 /* Assets.xcassets */,
+				2B000001000000000000101C /* Resources/Samples/phase12_sample.musicxml */,
+				2B0000010000000000001028 /* Resources/Samples/rhythm_values_sample.musicxml */,
+				2B0000010000000000001029 /* Resources/Samples/notation_coverage_grand_staff.musicxml */,
 			);
 			path = DoReMiPalette;
 			sourceTree = "<group>";
@@ -116,6 +145,7 @@
 			children = (
 				2B000001000000000000101D /* PaletteScoreLoaderTests.swift */,
 				2B000001000000000000101E /* KeyboardPitchMapperTests.swift */,
+				2B0000010000000000001027 /* PalettePlaybackRuntimeTests.swift */,
 			);
 			path = DoReMiPaletteTests;
 			sourceTree = "<group>";
@@ -196,7 +226,6 @@
 			packageReferences = (
 				2B0000010000000000000040 /* XCLocalSwiftPackageReference "../../" */,
 			);
-			preferredProjectObjectVersion = 60;
 			productRefGroup = 2B0000010000000000000032 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -212,7 +241,10 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2B000001000000000000000C /* phase12_sample.musicxml in Resources */,
+				2B0000010000000000000012 /* Assets.xcassets in Resources */,
+				2B000001000000000000000C /* Resources/Samples/phase12_sample.musicxml in Resources */,
+				2B0000010000000000000018 /* Resources/Samples/rhythm_values_sample.musicxml in Resources */,
+				2B0000010000000000000019 /* Resources/Samples/notation_coverage_grand_staff.musicxml in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -232,15 +264,21 @@
 			files = (
 				2B0000010000000000000001 /* DoReMiPaletteApp.swift in Sources */,
 				2B0000010000000000000002 /* AppRootView.swift in Sources */,
-				2B0000010000000000000003 /* PaletteScoreLoader.swift in Sources */,
-				2B0000010000000000000004 /* PalettePlaybackCursor.swift in Sources */,
-				2B0000010000000000000005 /* PaletteScoreSession.swift in Sources */,
-				2B0000010000000000000006 /* PaletteStyleFactory.swift in Sources */,
-				2B0000010000000000000007 /* ScorePracticeView.swift in Sources */,
-				2B0000010000000000000008 /* PaletteSettingsView.swift in Sources */,
-				2B0000010000000000000009 /* DiagnosticsPanel.swift in Sources */,
-				2B000001000000000000000A /* KeyboardPitchMapper.swift in Sources */,
-				2B000001000000000000000B /* KeyboardView.swift in Sources */,
+				2B0000010000000000000003 /* Features/ScorePractice/PaletteScoreLoader.swift in Sources */,
+				2B0000010000000000000004 /* Features/ScorePractice/PalettePlaybackCursor.swift in Sources */,
+				2B0000010000000000000005 /* Features/ScorePractice/PaletteScoreSession.swift in Sources */,
+				2B0000010000000000000006 /* Features/ScorePractice/PaletteStyleFactory.swift in Sources */,
+				2B0000010000000000000007 /* Features/ScorePractice/ScorePracticeView.swift in Sources */,
+				2B0000010000000000000008 /* Features/ScorePractice/PaletteSettingsView.swift in Sources */,
+				2B0000010000000000000009 /* Features/Diagnostics/DiagnosticsPanel.swift in Sources */,
+				2B000001000000000000000A /* Features/Keyboard/KeyboardPitchMapper.swift in Sources */,
+				2B000001000000000000000B /* Features/Keyboard/KeyboardView.swift in Sources */,
+				2B0000010000000000000010 /* Features/Library/PaletteLibrary.swift in Sources */,
+				2B0000010000000000000011 /* Features/Library/LibraryPanel.swift in Sources */,
+				2B0000010000000000000013 /* Features/Playback/PalettePlaybackState.swift in Sources */,
+				2B0000010000000000000014 /* Features/Playback/PalettePlaybackRuntime.swift in Sources */,
+				2B0000010000000000000015 /* Features/Playback/Audio/PaletteAudioEngine.swift in Sources */,
+				2B0000010000000000000016 /* Features/Playback/Audio/SimpleToneAudioEngine.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -250,6 +288,7 @@
 			files = (
 				2B000001000000000000000E /* PaletteScoreLoaderTests.swift in Sources */,
 				2B000001000000000000000F /* KeyboardPitchMapperTests.swift in Sources */,
+				2B0000010000000000000017 /* PalettePlaybackRuntimeTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -300,12 +339,13 @@
 		2B0000010000000000000072 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "";
-				CODE_SIGNING_ALLOWED = NO;
-				CODE_SIGNING_REQUIRED = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGNING_ALLOWED = YES;
+				CODE_SIGNING_REQUIRED = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 5ZTY6QA87P;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "DoReMi Palette";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -321,6 +361,7 @@
 				MARKETING_VERSION = 0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.doremipalette.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -332,12 +373,13 @@
 		2B0000010000000000000073 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "";
-				CODE_SIGNING_ALLOWED = NO;
-				CODE_SIGNING_REQUIRED = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGNING_ALLOWED = YES;
+				CODE_SIGNING_REQUIRED = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 5ZTY6QA87P;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "DoReMi Palette";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -353,6 +395,7 @@
 				MARKETING_VERSION = 0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.doremipalette.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;

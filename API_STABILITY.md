@@ -119,3 +119,15 @@ layout, or rendering logic in the app.
 
 The app should not be forced to reparse MusicXML, regenerate `NoteID`, or
 recompute `ScoreLayout` coordinates just to cover an SDK omission.
+
+## SMuFL And API Stability
+
+The planned SMuFL rendering track should not require app-facing API expansion.
+SMuFL glyph selection, font fallback, and glyph anchoring should remain internal
+renderer/layout concerns unless an external consumer needs additional read-only
+inspection data.
+
+Before `1.0`, the SDK may adjust internal layout element metadata to support
+better glyph rendering. Those changes should preserve the public facade,
+`ScoreLayout` coordinate semantics, stable IDs, hit-test behavior, color
+resolution contracts, and playback event identity.

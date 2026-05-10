@@ -55,6 +55,28 @@ enum SnapshotFixtures {
     </score-partwise>
     """
 
+    static let rhythmValues = """
+    <score-partwise version="4.0">
+      <part-list><score-part id="P1"><part-name>Snapshot Rhythm Values</part-name></score-part></part-list>
+      <part id="P1">
+        <measure number="1">
+          <attributes><divisions>8</divisions><clef><sign>G</sign><line>2</line></clef></attributes>
+          <note><pitch><step>C</step><octave>4</octave></pitch><duration>32</duration><voice>1</voice><type>whole</type><staff>1</staff></note>
+        </measure>
+        <measure number="2">
+          <note><pitch><step>D</step><octave>4</octave></pitch><duration>16</duration><voice>1</voice><type>half</type><staff>1</staff></note>
+          <note><pitch><step>E</step><octave>4</octave></pitch><duration>8</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+          <note><pitch><step>F</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>eighth</type><staff>1</staff></note>
+        </measure>
+        <measure number="3">
+          <note><pitch><step>G</step><octave>4</octave></pitch><duration>12</duration><voice>1</voice><type>quarter</type><dot/><staff>1</staff></note>
+          <note><rest/><duration>8</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+          <note><rest/><duration>4</duration><voice>1</voice><type>eighth</type><staff>1</staff></note>
+        </measure>
+      </part>
+    </score-partwise>
+    """
+
     static let accidentals = """
     <score-partwise version="4.0">
       <part-list><score-part id="P1"><part-name>Snapshot Accidentals</part-name></score-part></part-list>

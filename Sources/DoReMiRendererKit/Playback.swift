@@ -5,6 +5,7 @@ public struct PlaybackEvent: Hashable, Sendable {
     public let onset: MusicalTime
     public let nominalDuration: MusicalTime
     public let midiPitches: [Int]
+    public let midiPitchDurations: [Int: MusicalTime]
     public let measureID: MeasureID
     public let staffIDs: [StaffID]
     public let isTiedContinuation: Bool
@@ -14,6 +15,7 @@ public struct PlaybackEvent: Hashable, Sendable {
         onset: MusicalTime,
         nominalDuration: MusicalTime,
         midiPitches: [Int],
+        midiPitchDurations: [Int: MusicalTime] = [:],
         measureID: MeasureID,
         staffIDs: [StaffID],
         isTiedContinuation: Bool
@@ -22,6 +24,7 @@ public struct PlaybackEvent: Hashable, Sendable {
         self.onset = onset
         self.nominalDuration = nominalDuration
         self.midiPitches = midiPitches
+        self.midiPitchDurations = midiPitchDurations
         self.measureID = measureID
         self.staffIDs = staffIDs
         self.isTiedContinuation = isTiedContinuation
@@ -132,9 +135,22 @@ struct PlaybackSequenceBuilder: Sendable {
         let notes = orderedEntries.map(\.note)
         let pitchedNotes = notes.filter { $0.pitch != nil }
         // MVP0 identifies tie continuations, but does not merge full tie-chain durations yet.
-        let duration = notes.map(\.duration).max() ?? MusicalTime(ticks: 0, ticksPerQuarterNote: key.onset.ticksPerQuarterNote)
-        let midiPitches = pitchedNotes.compactMap { note in
+        let attackNotes = pitchedNotes.filter { !isTieStopOnly($0) }
+        let durationSource = attackNotes.isEmpty ? notes : attackNotes
+        let duration = durationSource.map(\.duration).max() ?? MusicalTime(ticks: 0, ticksPerQuarterNote: key.onset.ticksPerQuarterNote)
+        let midiPitches = attackNotes.compactMap { note in
             note.pitch.map(midiPitch(for:))
+        }
+        let midiPitchDurations = attackNotes.reduce(into: [Int: MusicalTime]()) { result, note in
+            guard let pitch = note.pitch else {
+                return
+            }
+            let midiPitch = midiPitch(for: pitch)
+            if let existing = result[midiPitch] {
+                result[midiPitch] = max(existing, note.duration)
+            } else {
+                result[midiPitch] = note.duration
+            }
         }
         let staffIDs = Array(Set(notes.map(\.staffID))).sorted { $0.rawValue < $1.rawValue }
         let isTiedContinuation = !pitchedNotes.isEmpty && pitchedNotes.allSatisfy(isTieStopOnly)
@@ -144,6 +160,7 @@ struct PlaybackSequenceBuilder: Sendable {
             onset: key.onset,
             nominalDuration: duration,
             midiPitches: midiPitches,
+            midiPitchDurations: midiPitchDurations,
             measureID: key.measureID,
             staffIDs: staffIDs,
             isTiedContinuation: isTiedContinuation

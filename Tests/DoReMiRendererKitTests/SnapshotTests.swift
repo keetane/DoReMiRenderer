@@ -18,6 +18,10 @@ final class SnapshotTests: XCTestCase {
         try assertSnapshot(xml: SnapshotFixtures.chordAndRest, name: "chord-and-rest")
     }
 
+    func testRhythmValuesSnapshot() throws {
+        try assertSnapshot(xml: SnapshotFixtures.rhythmValues, name: "rhythm-values")
+    }
+
     func testAccidentalsSnapshot() throws {
         try assertSnapshot(xml: SnapshotFixtures.accidentals, name: "accidentals")
     }

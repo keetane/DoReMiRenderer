@@ -134,6 +134,10 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             noteBuilder?.isChordTone = true
         case "rest":
             noteBuilder?.isRest = true
+        case "dot":
+            if noteBuilder != nil {
+                noteBuilder?.dotCount += 1
+            }
         case "clef":
             pendingClefNumber = attributeDict["number"]
             pendingClefSign = nil
@@ -292,6 +296,10 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             noteBuilder?.staffID = StaffID(rawValue: text.isEmpty ? "1" : text)
         case "accidental":
             noteBuilder?.accidental = text
+        case "type":
+            if parentElement == "note" {
+                noteBuilder?.noteValueKind = NoteValueKind(musicXMLType: text)
+            }
         case "syllabic":
             lyricBuilder?.syllabic = LyricSyllabic(rawValue: text) ?? .unknown
         case "text":
@@ -384,6 +392,8 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             pitch: pitch,
             onset: musicalOnset,
             duration: MusicalTime(ticks: duration, ticksPerQuarterNote: divisions),
+            noteValueKind: builder.noteValueKind,
+            dotCount: builder.dotCount,
             voiceID: voiceID,
             staffID: staffID,
             isChordTone: builder.isChordTone,
@@ -503,6 +513,8 @@ private struct NoteBuilder {
     var alter = 0
     var octave: Int?
     var duration = 0
+    var noteValueKind: NoteValueKind?
+    var dotCount = 0
     var voiceID: VoiceID?
     var staffID: StaffID?
     var accidental: String?
@@ -546,6 +558,7 @@ private let recognizedMusicXMLElements: Set<String> = [
     "rest",
     "duration",
     "type",
+    "dot",
     "voice",
     "staff",
     "chord",

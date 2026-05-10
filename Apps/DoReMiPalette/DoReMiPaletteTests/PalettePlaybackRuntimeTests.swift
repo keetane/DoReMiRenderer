@@ -1,0 +1,667 @@
+import DoReMiRendererKit
+import Foundation
+import Testing
+@testable import DoReMiPalette
+
+@Suite("Palette playback runtime")
+struct PalettePlaybackRuntimeTests {
+    @Test @MainActor func playPauseStopTransitionsAreStable() throws {
+        let audio = MockPaletteAudioEngine()
+        let runtime = PalettePlaybackRuntime(
+            events: try Self.events(from: PaletteScoreLoaderTests.validMusicXML),
+            audioEngine: audio
+        )
+
+        runtime.play()
+        #expect(runtime.state == .playing)
+
+        runtime.pause()
+        #expect(runtime.state == .paused)
+        #expect(audio.silenceCount > 0)
+
+        runtime.stop()
+        #expect(runtime.state == .stopped)
+    }
+
+    @Test @MainActor func resetReturnsToFirstEvent() throws {
+        let runtime = PalettePlaybackRuntime(events: try Self.events(from: PaletteScoreLoaderTests.validMusicXML))
+
+        runtime.move(by: 1)
+        #expect(runtime.currentEventIndex == 1)
+
+        runtime.reset()
+
+        #expect(runtime.currentEventIndex == 0)
+        #expect(runtime.state == .stopped)
+    }
+
+    @Test @MainActor func tempoChangesDurationCalculation() throws {
+        let event = try #require(Self.events(from: PaletteScoreLoaderTests.validMusicXML).first)
+        let runtime = PalettePlaybackRuntime(events: [event], tempoBPM: 120)
+        let defaultDuration = runtime.eventDurationSeconds(for: event)
+
+        runtime.setTempoBPM(240)
+
+        #expect(runtime.eventDurationSeconds(for: event) < defaultDuration)
+    }
+
+    @Test @MainActor func noteGateRatioDefaultsClampsAndShortensSoundOnly() throws {
+        let event = try #require(Self.events(from: PaletteScoreLoaderTests.validMusicXML).first)
+        let runtime = PalettePlaybackRuntime(events: [event], tempoBPM: 120)
+        let eventDuration = runtime.eventDurationSeconds(for: event)
+
+        #expect(runtime.noteGateRatio == 0.85)
+        #expect(runtime.soundDurationSeconds(for: event) == eventDuration * 0.85)
+
+        runtime.setNoteGateRatio(0.1)
+        #expect(runtime.noteGateRatio == 0.50)
+        #expect(runtime.eventDurationSeconds(for: event) == eventDuration)
+
+        runtime.setNoteGateRatio(2.0)
+        #expect(runtime.noteGateRatio == 1.00)
+        #expect(runtime.eventDurationSeconds(for: event) == eventDuration)
+
+        runtime.setNoteGateRatio(.nan)
+        #expect(runtime.noteGateRatio == 0.85)
+        #expect(runtime.eventDurationSeconds(for: event) == eventDuration)
+    }
+
+    @Test @MainActor func repeatedSamePitchTriggersSeparateGatedAudioPlays() throws {
+        let audio = MockPaletteAudioEngine()
+        let events = try Self.events(from: Self.rhythmValuesSampleMusicXML)
+            .filter { $0.midiPitches == [60] && Self.quarterNotes(for: $0.nominalDuration) == 1.0 }
+        let first = try #require(events.first)
+        let second = try #require(events.dropFirst().first)
+        let runtime = PalettePlaybackRuntime(events: [first, second], tempoBPM: 120, noteGateRatio: 0.70, audioEngine: audio)
+        let expectedSoundDuration = runtime.eventDurationSeconds(for: first) * 0.70
+
+        runtime.triggerAudioForCurrentEvent()
+        runtime.move(by: 1)
+        runtime.triggerAudioForCurrentEvent()
+
+        #expect(audio.playedPitches == [[60], [60]])
+        #expect(audio.playedDurations == [expectedSoundDuration, expectedSoundDuration])
+        #expect(audio.silenceCount == 0)
+    }
+
+    @Test @MainActor func fastShortNotesKeepMinimumAudibleSoundDuration() throws {
+        let event = try #require(Self.events(from: Self.sixteenthNotesMusicXML).first)
+        let runtime = PalettePlaybackRuntime(events: [event], tempoBPM: 240, noteGateRatio: 0.50)
+        let eventDuration = runtime.eventDurationSeconds(for: event)
+        let soundDuration = runtime.soundDurationSeconds(for: event)
+
+        #expect(soundDuration >= min(eventDuration, 0.06))
+        #expect(soundDuration <= eventDuration)
+        #expect(soundDuration > eventDuration * 0.50)
+    }
+
+    @Test @MainActor func pitchedPlaybackEventsTriggerAudioForEachEvent() throws {
+        let audio = MockPaletteAudioEngine()
+        let events = try Self.events(from: Self.rhythmValuesSampleMusicXML)
+            .filter { !$0.midiPitches.isEmpty && !$0.isTiedContinuation }
+            .prefix(6)
+        let runtime = PalettePlaybackRuntime(events: Array(events), tempoBPM: 150, audioEngine: audio)
+
+        for index in runtime.events.indices {
+            runtime.move(to: index)
+            runtime.triggerAudioForCurrentEvent()
+        }
+
+        #expect(audio.playedPitches.count == runtime.events.count)
+        #expect(audio.playedDurations.allSatisfy { $0.isFinite && $0 > 0 })
+    }
+
+    @Test @MainActor func notationCoverageSixthEventD3IsPitchedAudibleAndScheduled() throws {
+        let audio = MockPaletteAudioEngine()
+        let events = try Self.events(from: Self.notationCoverageSampleMusicXML)
+        let d3Event = try #require(events.dropFirst(5).first)
+        let runtime = PalettePlaybackRuntime(events: Array(events.prefix(6)), tempoBPM: 120, audioEngine: audio)
+
+        #expect(d3Event.midiPitches == [50])
+        #expect(d3Event.isTiedContinuation == false)
+        #expect(d3Event.noteIDs.isEmpty == false)
+        #expect(runtime.soundDurationSeconds(for: d3Event) >= 0.06)
+        #expect(SimpleToneAudioEngine.frequency(forMIDIPitch: 50).isFinite)
+        #expect(SimpleToneAudioEngine.frequency(forMIDIPitch: 50) > 0)
+
+        for index in runtime.events.indices {
+            runtime.move(to: index)
+            runtime.triggerAudioForCurrentEvent()
+        }
+
+        #expect(audio.playedPitches.count >= 6)
+        #expect(audio.playedPitches.last == [50])
+        #expect(audio.playedDurations.last ?? 0 >= 0.06)
+    }
+
+    @Test @MainActor func notationCoverageD3StartsAtItsOnsetBeforeC5WholeCompletes() throws {
+        let events = try Self.events(from: Self.notationCoverageSampleMusicXML)
+        let c5Whole = try #require(events.dropFirst(4).first)
+        let d3Event = try #require(events.dropFirst(5).first)
+        let runtime = PalettePlaybackRuntime(events: events, tempoBPM: 120)
+
+        #expect(c5Whole.midiPitches == [72])
+        #expect(Self.quarterNotes(for: c5Whole.nominalDuration) == 4.0)
+        #expect(d3Event.midiPitches == [50])
+        #expect(d3Event.measureID == c5Whole.measureID)
+        #expect(d3Event.onset > c5Whole.onset)
+
+        let schedulingInterval = runtime.schedulingIntervalSeconds(from: 4)
+
+        #expect(schedulingInterval < runtime.eventDurationSeconds(for: c5Whole))
+        #expect(schedulingInterval == 1.0)
+    }
+
+    @Test @MainActor func bundledSampleRepeatedC5NotesAreSeparateAttacks() throws {
+        let audio = MockPaletteAudioEngine()
+        let c5Events = try Self.events(from: Self.phase12SampleMusicXML)
+            .filter { $0.midiPitches == [72] }
+        let first = try #require(c5Events.first)
+        let second = try #require(c5Events.dropFirst().first)
+        let runtime = PalettePlaybackRuntime(events: [first, second], tempoBPM: 120, noteGateRatio: 0.85, audioEngine: audio)
+
+        #expect(first.isTiedContinuation == false)
+        #expect(second.isTiedContinuation == false)
+
+        runtime.triggerAudioForCurrentEvent()
+        runtime.move(by: 1)
+        runtime.triggerAudioForCurrentEvent()
+
+        #expect(audio.playedPitches == [[72], [72]])
+        #expect(audio.silenceCount == 0)
+        #expect(audio.playedDurations.count == 2)
+        #expect(audio.playedDurations[0] > audio.playedDurations[1])
+    }
+
+    @Test func audioVoiceRegistryStopsOverlappingSamePitchBeforeNewAttack() {
+        var registry = PaletteAudioVoiceRegistry()
+
+        let firstStopped = registry.prepareToPlay(
+            playerIndex: 0,
+            pitches: [48, 69],
+            duration: 4.0,
+            now: 10
+        )
+        let secondStopped = registry.prepareToPlay(
+            playerIndex: 1,
+            pitches: [48],
+            duration: 0.5,
+            now: 11
+        )
+
+        #expect(firstStopped.isEmpty)
+        #expect(secondStopped == [0])
+        #expect(registry.activeVoices[0] == nil)
+        #expect(registry.activeVoices[1]?.pitches == [48])
+    }
+
+    @Test func audioVoiceRegistryKeepsDifferentOverlappingPitchesActive() {
+        var registry = PaletteAudioVoiceRegistry()
+
+        _ = registry.prepareToPlay(playerIndex: 0, pitches: [48], duration: 4.0, now: 10)
+        let stopped = registry.prepareToPlay(playerIndex: 1, pitches: [69], duration: 0.5, now: 11)
+
+        #expect(stopped.isEmpty)
+        #expect(registry.activeVoices[0]?.pitches == [48])
+        #expect(registry.activeVoices[1]?.pitches == [69])
+    }
+
+    @Test func audioVoiceRegistryDropsExpiredVoicesBeforePlaying() {
+        var registry = PaletteAudioVoiceRegistry()
+
+        _ = registry.prepareToPlay(playerIndex: 0, pitches: [48], duration: 1.0, now: 10)
+        let stopped = registry.prepareToPlay(playerIndex: 1, pitches: [69], duration: 0.5, now: 12)
+
+        #expect(stopped == [0])
+        #expect(registry.activeVoices[0] == nil)
+        #expect(registry.activeVoices[1]?.pitches == [69])
+    }
+
+    @Test @MainActor func tempoChangeIsSafeWhileStoppedPausedPlayingAndEmpty() throws {
+        let audio = MockPaletteAudioEngine()
+        let runtime = PalettePlaybackRuntime(
+            events: try Self.events(from: PaletteScoreLoaderTests.validMusicXML),
+            audioEngine: audio
+        )
+        let firstNoteID = runtime.currentNoteID
+
+        runtime.setTempoBPM(90)
+        #expect(runtime.state == .stopped)
+        #expect(runtime.currentEventIndex == 0)
+        #expect(runtime.currentNoteID == firstNoteID)
+        #expect(audio.playedPitches.isEmpty)
+
+        runtime.play()
+        runtime.pause()
+        runtime.setTempoBPM(150)
+        #expect(runtime.state == .paused)
+        #expect(runtime.currentEventIndex == 0)
+        #expect(runtime.currentNoteID == firstNoteID)
+
+        runtime.play()
+        let silenceBeforeTempoChange = audio.silenceCount
+        runtime.setTempoBPM(60)
+        #expect(runtime.state == .playing)
+        #expect(runtime.currentEventIndex == 0)
+        #expect(runtime.currentNoteID == firstNoteID)
+        #expect(audio.silenceCount > silenceBeforeTempoChange)
+
+        runtime.stop()
+        runtime.configure(events: [])
+        runtime.setTempoBPM(120)
+        runtime.play()
+        #expect(runtime.state == .stopped)
+        #expect(runtime.currentEventIndex == 0)
+    }
+
+    @Test @MainActor func tempoClampsInvalidValuesWithoutChangingCurrentEvent() throws {
+        let events = try Self.events(from: PaletteScoreLoaderTests.validMusicXML)
+        let runtime = PalettePlaybackRuntime(events: events, tempoBPM: 120)
+
+        runtime.move(by: 1)
+        let currentNoteID = runtime.currentNoteID
+
+        runtime.setTempoBPM(0)
+        #expect(runtime.tempoBPM == 30)
+        #expect(runtime.currentEventIndex == 1)
+        #expect(runtime.currentNoteID == currentNoteID)
+
+        runtime.setTempoBPM(-200)
+        #expect(runtime.tempoBPM == 30)
+
+        runtime.setTempoBPM(10_000)
+        #expect(runtime.tempoBPM == 240)
+
+        runtime.setTempoBPM(.nan)
+        #expect(runtime.tempoBPM == 120)
+
+        runtime.setTempoBPM(.infinity)
+        #expect(runtime.tempoBPM == 120)
+    }
+
+    @Test @MainActor func transportCommandsAroundTempoChangesDoNotCrash() throws {
+        let runtime = PalettePlaybackRuntime(events: try Self.events(from: PaletteScoreLoaderTests.validMusicXML))
+
+        runtime.play()
+        runtime.setTempoBPM(90)
+        runtime.pause()
+        runtime.setTempoBPM(150)
+        runtime.play()
+        runtime.setTempoBPM(60)
+        runtime.stop()
+        runtime.setTempoBPM(120)
+        runtime.reset()
+
+        #expect(runtime.state == .stopped)
+        #expect(runtime.currentEventIndex == 0)
+        #expect(runtime.currentNoteID != nil)
+    }
+
+    @Test @MainActor func tempoMetadataAppliesAtCurrentEventOnset() throws {
+        let events = try Self.events(from: PaletteScoreLoaderTests.validMusicXML)
+        let metadata = DoReMiRenderer().makePlaybackMetadata(score: Self.score(tempoEvents: [
+            TempoEvent(bpm: 60, onset: MusicalTime(ticks: 0, ticksPerQuarterNote: 1), source: .sound),
+            TempoEvent(bpm: 120, onset: MusicalTime(ticks: 1, ticksPerQuarterNote: 1), source: .sound),
+        ]))
+        let runtime = PalettePlaybackRuntime(events: events, tempoBPM: 90)
+
+        runtime.configure(events: events, metadata: metadata)
+
+        #expect(runtime.eventDurationSeconds(for: events[0]) == 1.0)
+        #expect(runtime.eventDurationSeconds(for: events[1]) == 0.5)
+    }
+
+    @Test @MainActor func restEventDoesNotTriggerAudioPlay() throws {
+        let audio = MockPaletteAudioEngine()
+        let rest = try #require(Self.events(from: PaletteScoreLoaderTests.validMusicXML, includeRests: true).first {
+            $0.midiPitches.isEmpty
+        })
+        let runtime = PalettePlaybackRuntime(events: [rest], audioEngine: audio)
+
+        runtime.triggerAudioForCurrentEvent()
+
+        #expect(audio.playedPitches.isEmpty)
+        #expect(audio.silenceCount == 0)
+    }
+
+    @Test @MainActor func emptySequenceTempoChangeDoesNotPlayAudio() {
+        let audio = MockPaletteAudioEngine()
+        let runtime = PalettePlaybackRuntime(events: [], audioEngine: audio)
+
+        runtime.setTempoBPM(150)
+        runtime.play()
+        runtime.pause()
+        runtime.stop()
+        runtime.reset()
+
+        #expect(runtime.state == .stopped)
+        #expect(runtime.currentEventIndex == 0)
+        #expect(audio.playedPitches.isEmpty)
+    }
+
+    @Test @MainActor func invalidDurationDoesNotReachAudioPlay() throws {
+        let audio = MockPaletteAudioEngine()
+        let event = try #require(Self.events(from: PaletteScoreLoaderTests.validMusicXML).first)
+        let runtime = PalettePlaybackRuntime(events: [event], tempoBPM: .nan, audioEngine: audio)
+
+        runtime.triggerAudioForCurrentEvent()
+
+        #expect(audio.playedDurations.allSatisfy { $0.isFinite && $0 > 0 })
+    }
+
+    @Test @MainActor func chordEventPlaysAllPitchesInMVP() throws {
+        let audio = MockPaletteAudioEngine()
+        let chord = try #require(Self.events(from: PaletteScoreLoaderTests.chordMusicXML).first)
+        let runtime = PalettePlaybackRuntime(events: [chord], audioEngine: audio)
+
+        runtime.triggerAudioForCurrentEvent()
+
+        #expect(audio.playedPitches == [[60, 64]])
+    }
+
+    @Test @MainActor func notationCoverageLastMeasuresUsePerPitchSoundDurations() throws {
+        let events = try Self.events(from: Self.notationCoverageSampleMusicXML, includeRests: true)
+        let measureNineFirst = try #require(events.first {
+            $0.measureID.rawValue == "0.9" && $0.midiPitches == [76]
+        })
+        let measureTenFirst = try #require(events.first {
+            $0.measureID.rawValue == "0.10" && Set($0.midiPitches) == [60, 36]
+        })
+        let runtime = PalettePlaybackRuntime(events: [measureNineFirst, measureTenFirst], tempoBPM: 120)
+
+        #expect(measureNineFirst.nominalDuration == MusicalTime(ticks: 16, ticksPerQuarterNote: 8))
+        #expect(runtime.soundDurationSeconds(for: 76, in: measureNineFirst) == runtime.soundDurationSeconds(for: measureNineFirst))
+        #expect(runtime.soundDurationSeconds(for: 60, in: measureTenFirst) < runtime.soundDurationSeconds(for: 36, in: measureTenFirst))
+    }
+
+    @Test @MainActor func notationCoverageFinalMeasuresKeepFourBeatScheduling() throws {
+        let events = try Self.events(from: Self.notationCoverageSampleMusicXML)
+        let runtime = PalettePlaybackRuntime(events: events, tempoBPM: 120)
+
+        let measureNineIntervals = scheduledIntervals(forMeasure: "0.9", events: events, runtime: runtime)
+        let measureTenIntervals = scheduledIntervals(forMeasure: "0.10", events: events, runtime: runtime)
+
+        #expect(events.contains { $0.measureID.rawValue == "0.9" && $0.midiPitches.isEmpty })
+        #expect(events.contains { $0.measureID.rawValue == "0.10" && $0.midiPitches.isEmpty })
+        #expect(abs(measureNineIntervals.reduce(0, +) - 2.0) < 0.001)
+        #expect(abs(measureTenIntervals.reduce(0, +) - 2.0) < 0.001)
+    }
+
+    @Test @MainActor func mixedDurationChordSchedulesSeparateAudioPlays() throws {
+        let audio = MockPaletteAudioEngine()
+        let event = try #require(Self.events(from: Self.notationCoverageSampleMusicXML, includeRests: true).first {
+            $0.measureID.rawValue == "0.10" && Set($0.midiPitches) == [60, 36]
+        })
+        let runtime = PalettePlaybackRuntime(events: [event], tempoBPM: 120, audioEngine: audio)
+
+        runtime.triggerAudioForCurrentEvent()
+
+        #expect(Set(audio.playedPitches.map { Set($0) }) == [Set([60]), Set([36])])
+        #expect(audio.playedDurations.count == 2)
+        #expect((audio.playedDurations.max() ?? 0) > (audio.playedDurations.min() ?? 0))
+    }
+
+    @Test @MainActor func tieContinuationDoesNotTriggerNewAttack() throws {
+        let audio = MockPaletteAudioEngine()
+        let continuation = try #require(Self.events(from: Self.tieStopOnlyMusicXML).first {
+            $0.isTiedContinuation
+        })
+        let runtime = PalettePlaybackRuntime(events: [continuation], audioEngine: audio)
+
+        runtime.triggerAudioForCurrentEvent()
+
+        #expect(audio.playedPitches.isEmpty)
+        #expect(audio.silenceCount == 0)
+    }
+
+    @Test @MainActor func mixedTieContinuationEventStillPlaysNewAttackPitches() throws {
+        let audio = MockPaletteAudioEngine()
+        let event = try #require(Self.events(from: PaletteScoreLoaderTests.mixedTieContinuationAndAttackMusicXML).first {
+            $0.midiPitches == [69] && $0.noteIDs.count > $0.midiPitches.count
+        })
+        let runtime = PalettePlaybackRuntime(events: [event], audioEngine: audio)
+
+        runtime.triggerAudioForCurrentEvent()
+
+        #expect(audio.playedPitches == [[69]])
+        #expect(audio.playedDurations.first ?? 0 >= 0.06)
+        #expect(audio.silenceCount == 0)
+    }
+
+
+    @Test @MainActor func audioStartFailureDoesNotCrashRuntime() throws {
+        let audio = MockPaletteAudioEngine(startError: MockAudioError.startFailed)
+        let event = try #require(Self.events(from: PaletteScoreLoaderTests.validMusicXML).first)
+        let runtime = PalettePlaybackRuntime(events: [event], audioEngine: audio)
+        var receivedError: Error?
+        runtime.onAudioError = { receivedError = $0 }
+
+        runtime.triggerAudioForCurrentEvent()
+
+        #expect(receivedError != nil)
+        #expect(audio.playedPitches.isEmpty)
+    }
+
+    @Test @MainActor func sessionPlaybackUpdatesCurrentNoteIDAndKeepsLayoutIdentity() throws {
+        let audio = MockPaletteAudioEngine()
+        let runtime = PalettePlaybackRuntime(audioEngine: audio)
+        let session = PaletteScoreSession(playbackRuntime: runtime)
+        try session.load(data: PaletteScoreLoaderTests.validMusicXML, sourceName: "unit.musicxml")
+        let noteIDs = Set(try #require(session.loadedScore?.layout.noteByID.keys))
+        let first = session.playbackCursor.currentNoteID
+
+        session.movePlaybackStep(by: 1)
+
+        #expect(session.playbackCursor.currentNoteID != first)
+        #expect(Set(try #require(session.loadedScore?.layout.noteByID.keys)) == noteIDs)
+    }
+
+    private static func events(from data: Data, includeRests: Bool = false) throws -> [PlaybackEvent] {
+        let loaded = try PaletteScoreLoader().load(data: data, sourceName: "unit.musicxml")
+        if includeRests {
+            return DoReMiRenderer().makePlaybackSequence(
+                score: loaded.score,
+                options: PlaybackOptions(includeRests: true)
+            )
+        }
+        return loaded.playbackEvents
+    }
+
+    @MainActor
+    private func scheduledIntervals(
+        forMeasure measureID: String,
+        events: [PlaybackEvent],
+        runtime: PalettePlaybackRuntime
+    ) -> [TimeInterval] {
+        events.indices.compactMap { index in
+            guard events[index].measureID.rawValue == measureID else {
+                return nil
+            }
+            return runtime.schedulingIntervalSeconds(from: index)
+        }
+    }
+
+    private static var rhythmValuesSampleMusicXML: Data {
+        get throws {
+            let testFile = URL(fileURLWithPath: #filePath)
+            let projectRoot = testFile
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+            let sampleURL = projectRoot
+                .appendingPathComponent("DoReMiPalette")
+                .appendingPathComponent("Resources")
+                .appendingPathComponent("Samples")
+                .appendingPathComponent("rhythm_values_sample.musicxml")
+            return try Data(contentsOf: sampleURL)
+        }
+    }
+
+    private static var phase12SampleMusicXML: Data {
+        get throws {
+            let testFile = URL(fileURLWithPath: #filePath)
+            let projectRoot = testFile
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+            let sampleURL = projectRoot
+                .appendingPathComponent("DoReMiPalette")
+                .appendingPathComponent("Resources")
+                .appendingPathComponent("Samples")
+                .appendingPathComponent("phase12_sample.musicxml")
+            return try Data(contentsOf: sampleURL)
+        }
+    }
+
+    private static var notationCoverageSampleMusicXML: Data {
+        get throws {
+            let testFile = URL(fileURLWithPath: #filePath)
+            let projectRoot = testFile
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+            let sampleURL = projectRoot
+                .appendingPathComponent("DoReMiPalette")
+                .appendingPathComponent("Resources")
+                .appendingPathComponent("Samples")
+                .appendingPathComponent("notation_coverage_grand_staff.musicxml")
+            return try Data(contentsOf: sampleURL)
+        }
+    }
+
+    private static func score(tempoEvents: [TempoEvent]) -> ScoreDocument {
+        ScoreDocument(parts: [
+            ScorePart(id: "p1", measures: [
+                Measure(
+                    id: MeasureID(partIndex: 0, measureNumber: "1"),
+                    number: "1",
+                    notes: [],
+                    tempoEvents: tempoEvents
+                ),
+            ]),
+        ])
+    }
+
+    private static func quarterNotes(for time: MusicalTime) -> Double {
+        Double(time.ticks) / Double(time.ticksPerQuarterNote)
+    }
+
+    static let tieStopOnlyMusicXML = Data("""
+    <?xml version="1.0" encoding="UTF-8"?>
+    <score-partwise version="4.0">
+      <part-list><score-part id="P1"><part-name>Tie</part-name></score-part></part-list>
+      <part id="P1">
+        <measure number="1">
+          <attributes>
+            <divisions>1</divisions>
+            <time><beats>4</beats><beat-type>4</beat-type></time>
+            <clef><sign>G</sign><line>2</line></clef>
+          </attributes>
+          <note>
+            <pitch><step>C</step><octave>4</octave></pitch>
+            <duration>1</duration>
+            <tie type="stop"/>
+            <voice>1</voice>
+            <type>quarter</type>
+          </note>
+        </measure>
+      </part>
+    </score-partwise>
+    """.utf8)
+
+    static let sixteenthNotesMusicXML = Data("""
+    <?xml version="1.0" encoding="UTF-8"?>
+    <score-partwise version="4.0">
+      <part-list><score-part id="P1"><part-name>Short</part-name></score-part></part-list>
+      <part id="P1">
+        <measure number="1">
+          <attributes>
+            <divisions>4</divisions>
+            <time><beats>4</beats><beat-type>4</beat-type></time>
+            <clef><sign>G</sign><line>2</line></clef>
+          </attributes>
+          <note>
+            <pitch><step>C</step><octave>4</octave></pitch>
+            <duration>1</duration>
+            <voice>1</voice>
+            <type>16th</type>
+          </note>
+        </measure>
+      </part>
+    </score-partwise>
+    """.utf8)
+}
+
+private final class MockPaletteAudioEngine: PaletteAudioEngine {
+    private let startError: Error?
+    private(set) var playedPitches: [[Int]] = []
+    private(set) var playedDurations: [TimeInterval] = []
+    private(set) var silenceCount = 0
+    private(set) var lastFailure: Error?
+
+    init(startError: Error? = nil) {
+        self.startError = startError
+    }
+
+    func start() throws {
+        if let startError {
+            lastFailure = startError
+            throw startError
+        }
+        lastFailure = nil
+    }
+
+    func stop() {
+        silence()
+    }
+
+    func silence() {
+        silenceCount += 1
+    }
+
+    func play(midiPitches: [Int], duration: TimeInterval, velocity: Double) {
+        playedPitches.append(midiPitches)
+        playedDurations.append(duration)
+    }
+
+    func play(event: PlaybackEvent, tempoBPM: Double, velocity: Double) {
+        guard !event.midiPitches.isEmpty else {
+            silence()
+            return
+        }
+        play(midiPitches: event.midiPitches, duration: 0.5, velocity: velocity)
+    }
+}
+
+private enum MockAudioError: Error {
+    case startFailed
+}
+
+@Suite("Palette playback tempo override")
+struct PalettePlaybackTempoOverrideTests {
+    @Test @MainActor func manualTempoOverrideWinsOverParsedTempoMetadata() throws {
+        let loaded = try PaletteScoreLoader().load(data: PaletteScoreLoaderTests.validMusicXML, sourceName: "tempo.musicxml")
+        let event = try #require(loaded.playbackEvents.first)
+        let metadata = DoReMiRenderer().makePlaybackMetadata(score: Self.score(tempoEvents: [
+            TempoEvent(bpm: 60, onset: event.onset, source: .sound),
+        ]))
+        let runtime = PalettePlaybackRuntime(events: [event], tempoBPM: 120)
+
+        runtime.configure(events: [event], metadata: metadata)
+        let metadataDuration = runtime.eventDurationSeconds(for: event)
+        runtime.setTempoBPM(240)
+        let manualDuration = runtime.eventDurationSeconds(for: event)
+
+        #expect(manualDuration < metadataDuration)
+    }
+
+    private static func score(tempoEvents: [TempoEvent]) -> ScoreDocument {
+        ScoreDocument(parts: [
+            ScorePart(id: "p1", measures: [
+                Measure(
+                    id: MeasureID(partIndex: 0, measureNumber: "1"),
+                    number: "1",
+                    notes: [],
+                    tempoEvents: tempoEvents
+                ),
+            ]),
+        ])
+    }
+}

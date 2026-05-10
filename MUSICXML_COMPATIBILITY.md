@@ -147,3 +147,54 @@ Do not copy measures from real/private MusicXML files into tests. When a private
 sample reveals a missing feature, create a new short self-authored fixture that
 only reproduces the needed MusicXML element. Record public fixtures in
 `ASSET_LICENSES.md`.
+
+## Notation Symbol Coverage
+
+Common notation symbols are tracked in `NOTATION_SUPPORT_MATRIX.md`. The matrix
+separates parser support, domain retention, layout support, renderer support,
+app visibility, and playback impact so partially-supported features are not
+mistaken for complete engraving support.
+
+The self-authored `notation_coverage_grand_staff.musicxml` sample is the public
+QA fixture for this audit. It includes supported MVP symbols such as clefs, time
+and key signatures, accidentals, rest values, dotted notes, chords, ledger lines,
+and repeat barlines, plus diagnostic-only symbols such as slurs and dynamics.
+
+Current Phase 16.5 stabilization status:
+
+- Rhythm values, dots, common rests, stems, flags, ledger lines, clefs,
+  accidentals, key signatures, time signatures, repeat barlines, and
+  attack/continuation highlights are visible at MVP quality.
+- Tie `<tie>` data affects playback and continuation highlighting, but visual
+  tie arcs are not rendered. MusicXML notation `<tied>` is not a rendered tie
+  arc yet.
+- Dynamic text and tempo words are not rendered. `<sound tempo="">` is retained
+  for playback metadata, but visible tempo words remain future work.
+- Unsupported or partial items must be reflected in `NOTATION_SUPPORT_MATRIX.md`
+  so the app does not silently imply full engraving support.
+
+Unsupported or partial symbols must be handled in one of two ways:
+
+- emit or preserve a specific diagnostic when parser/runtime support is not
+  available; or
+- record the current support state in `NOTATION_SUPPORT_MATRIX.md` and
+  `MVP0_LIMITATIONS.md` when the feature is intentionally deferred.
+
+Renderer code must continue to consume only `ScoreLayout` and domain-derived
+layout elements. It must not parse MusicXML or infer unsupported notation from
+source text.
+
+## SMuFL Rendering Plan
+
+The future SMuFL rendering track is documented in
+[SMUFL_INTEGRATION_PLAN.md](SMUFL_INTEGRATION_PLAN.md). SMuFL fonts are planned
+only as symbol-shape providers. MusicXML compatibility remains parser/domain
+work, and coordinates remain `ScoreLayout` / `ElementLayout` work.
+
+The first candidate font is Bravura, subject to license and distribution review
+before any font file is added. The notation coverage sample will be used to
+compare clef, accidental, rest, repeat, dynamics, and time-signature rendering
+before and after glyph adoption. Partial and unsupported symbols must remain
+explicit in `NOTATION_SUPPORT_MATRIX.md`, `MVP0_LIMITATIONS.md`, or diagnostics;
+SMuFL adoption must not hide unsupported MusicXML interpretation behind prettier
+fallback drawing.
