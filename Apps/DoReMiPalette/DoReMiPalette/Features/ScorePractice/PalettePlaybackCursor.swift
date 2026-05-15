@@ -20,6 +20,10 @@ struct PalettePlaybackCursor: Equatable {
         events[safe: index]
     }
 
+    var nextPitchedEvent: PlaybackEvent? {
+        events.suffix(from: min(index + 1, events.count)).first { !$0.midiPitches.isEmpty }
+    }
+
     var stepSummary: String {
         guard !events.isEmpty else {
             return "Step 0/0"
@@ -80,6 +84,10 @@ struct PalettePracticeSession: Equatable {
 
     var currentEvent: PlaybackEvent? {
         events[safe: index]
+    }
+
+    var nextPitchedEvent: PlaybackEvent? {
+        events.suffix(from: min(index + 1, events.count)).first { !$0.midiPitches.isEmpty }
     }
 
     var currentNoteID: NoteID? {

@@ -105,6 +105,66 @@ struct SampleScoreCatalog: Hashable {
 
     static let `default` = SampleScoreCatalog(samples: [
         SampleScoreItem(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000018")!,
+            displayName: "S9 Repeat Visuals Sample",
+            resourceName: "s9_repeat_visuals_sample",
+            fileExtension: "musicxml"
+        ),
+        SampleScoreItem(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000019")!,
+            displayName: "S10 D.C. al Fine Sample",
+            resourceName: "s10_dc_fine_sample",
+            fileExtension: "musicxml"
+        ),
+        SampleScoreItem(
+            id: UUID(uuidString: "00000000-0000-0000-0000-00000000001A")!,
+            displayName: "S10 D.S. al Fine Sample",
+            resourceName: "s10_ds_fine_sample",
+            fileExtension: "musicxml"
+        ),
+        SampleScoreItem(
+            id: UUID(uuidString: "00000000-0000-0000-0000-00000000001B")!,
+            displayName: "S10 D.C. al Coda Sample",
+            resourceName: "s10_dc_coda_sample",
+            fileExtension: "musicxml"
+        ),
+        SampleScoreItem(
+            id: UUID(uuidString: "00000000-0000-0000-0000-00000000001C")!,
+            displayName: "S10 D.S. al Coda Sample",
+            resourceName: "s10_ds_coda_sample",
+            fileExtension: "musicxml"
+        ),
+        SampleScoreItem(
+            id: UUID(uuidString: "00000000-0000-0000-0000-00000000001D")!,
+            displayName: "S10 Repeat Diagnostics Sample",
+            resourceName: "s10_repeat_diagnostics_sample",
+            fileExtension: "musicxml"
+        ),
+        SampleScoreItem(
+            id: UUID(uuidString: "00000000-0000-0000-0000-00000000001E")!,
+            displayName: "S10 All Repeat Symbols Sample",
+            resourceName: "s10_all_repeat_symbols_sample",
+            fileExtension: "musicxml"
+        ),
+        SampleScoreItem(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000017")!,
+            displayName: "S8 Repeat Endings Sample",
+            resourceName: "s8_repeat_endings_sample",
+            fileExtension: "musicxml"
+        ),
+        SampleScoreItem(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000016")!,
+            displayName: "S7 Repeat Playback Sample",
+            resourceName: "s7_repeat_playback_sample",
+            fileExtension: "musicxml"
+        ),
+        SampleScoreItem(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000015")!,
+            displayName: "S6 Notation Refinement Sample",
+            resourceName: "s6_notation_refinement_grand_staff",
+            fileExtension: "musicxml"
+        ),
+        SampleScoreItem(
             id: UUID(uuidString: "00000000-0000-0000-0000-000000000012")!,
             displayName: "DoReMi Palette Sample",
             resourceName: "phase12_sample",

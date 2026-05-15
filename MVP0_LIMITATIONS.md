@@ -12,10 +12,11 @@ This document records the known limitations of DoReMiRendererKit after Phase 0 t
 - Advanced archive layouts, encrypted archives, and non-file root entries are not supported.
 - `score-timewise` is not supported and should produce diagnostics according to `UnsupportedFeaturePolicy`.
 - Unsupported MusicXML elements are reported through diagnostics where the parser recognizes them as unsupported.
-- Tuplet brackets, slurs, ornaments, grace-note engraving/playback,
-  transposition application, advanced beams, cross-staff beam/stem notation,
-  and voice collision avoidance are diagnostic-only or minimal metadata in
-  Phase 11F.
+- Basic tie/slur curves, simple beam grouping, and basic triplet brackets are
+  available at MVP quality after Phase S6. Ornaments, grace-note
+  engraving/playback, transposition application, advanced beams, cross-staff
+  beam/stem notation, nested tuplets, and voice collision avoidance remain
+  diagnostic-only or limited metadata.
 
 ## Layout And Rendering
 
@@ -30,31 +31,40 @@ This document records the known limitations of DoReMiRendererKit after Phase 0 t
   engraving, multi-voice stem direction, and collision avoidance remain future
   work.
 - Basic clef, time signature, standard barline, and repeat barline drawing is
-  implemented from layout elements. The output is intentionally simple and does
-  not include publication-quality glyph placement or full final/double barline
-  semantics.
-- SMuFL music fonts are not bundled yet. `SMUFL_INTEGRATION_PLAN.md` records
-  the planned Bravura-first approach for improving clefs, rests, accidentals,
-  repeat symbols, dynamics, time signature digits, noteheads, and flags while
-  keeping `ScoreLayout` as the coordinate source.
+  implemented from layout elements. Bravura SMuFL glyphs now improve clefs,
+  rests, accidentals, repeat dots, time-signature digits, noteheads, and flags,
+  with SDK-internal category sizing for iPad readability. The current tuning
+  enlarges common noteheads for learning readability, shortens stems, uses
+  direction-specific flag glyphs anchored near stem ends, pulls note accidentals
+  closer to noteheads, and balances rest sizes, but placement and spacing remain
+  MVP quality.
+- Bravura 1.392 is bundled as a Swift Package resource under the SIL Open Font
+  License. `SMUFL_INTEGRATION_PLAN.md` records the S1-S5 implementation and the
+  remaining S6 work while keeping `ScoreLayout` as the coordinate source.
 - `notation_coverage_grand_staff.musicxml` and
   `NOTATION_SUPPORT_MATRIX.md` document which common symbols are supported,
   partial, diagnostic-only, or unsupported at the parser/layout/renderer/app
   layers.
-- Ties are parsed and affect playback continuation, but visual tie arcs are not
-  rendered yet.
-- Slurs, dynamic text engraving, first/second endings, tuplets, ornaments,
-  grace-note rendering, advanced beam grouping, and transposition-aware display
-  remain diagnostic-only or unsupported.
+- Ties are parsed, affect playback continuation, keep weak continuation
+  highlighting, and render same-system MVP curves. Complex tie chains and
+  system-crossing tie engraving remain limited.
+- Basic same-system slurs and basic 3:2 triplet brackets render at MVP quality.
+  Dynamic text engraving, first/second endings, ornaments, grace-note
+  rendering, advanced beam grouping, nested tuplets, and transposition-aware
+  display remain diagnostic-only or unsupported.
 - Complex multi-voice collision avoidance is not implemented; Phase 11F emits
   layout diagnostics for basic collision cases.
-- Page breaking and advanced system layout are not implemented.
-- Beam grouping is still minimal; isolated eighth notes use flags and advanced
-  beaming remains a future engraving task.
+- A4-width system wrapping is available for display and the Print MVP, but full
+  physical page pagination, page headers/footers, and advanced page breaking
+  are not implemented.
+- Beam grouping is minimal: safe adjacent flagged notes in the same
+  measure/staff/voice can render a Core Graphics beam from stem tip to stem tip,
+  isolated eighth notes use SMuFL flags, and mixed eighth/sixteenth groups have
+  minimal secondary beam segments. Advanced beam slope/grouping remains a future
+  engraving task.
 - Ties, slurs, beams, stems, staff lines, ledgers, highlights, and simple
-  barlines are planned to remain Core Graphics path-based even after SMuFL
-  adoption. SMuFL is planned for glyph shapes, not for replacing layout or hit
-  testing.
+  barlines remain Core Graphics path-based after SMuFL S1-S5. SMuFL is used for
+  glyph shapes, not for replacing layout or hit testing.
 - Snapshot rendering tests cover basic MVP0 cases only: melody, grand staff,
   chord/rest, accidentals, ledger lines, lyrics/fingering, key signatures,
   current-note highlight, rhythm values, and note/staff color combinations.
@@ -102,7 +112,17 @@ This document records the known limitations of DoReMiRendererKit after Phase 0 t
 - Mixed visual events can contain tied continuations and new attack pitches; the
   app plays the `midiPitches` attack list and does not sound continuation-only
   events.
-- Repeat barlines are parsed as metadata, but repeat playback expansion is not implemented.
+- Phase S7 expands simple forward/backward repeat playback sections for two
+  passes in the `PlaybackSequence`. Phase S8 adds a first/second ending MVP for
+  one clear repeat section and a limited D.C. al Fine jump-only expansion.
+  Phase S9 renders same-system first/second ending brackets and numbers. Phase
+  S10 adds jump-only D.S. al Fine, D.C. al Coda, and D.S. al Coda expansion,
+  plus simple repeat counts up to four passes. The score and layout are not
+  duplicated. Third endings, nested repeats, ambiguous endings, mixed
+  repeat/jump structures, multiple Segno/Coda markers, complex jumps, and
+  system-crossing ending brackets remain unsupported or diagnostic-only.
+  Expansion has explicit loop-prevention limits and falls back with diagnostics
+  rather than risking infinite playback.
 - Tie continuations are identified and DoReMi Palette visually distinguishes
   newly sounding attacks from tied continuations in score and keyboard
   highlights. Full tie-chain duration merging and tie-curve engraving are not
@@ -192,8 +212,9 @@ it is still an MVP stabilization pass:
   compensation, but complex collision-aware engraving is still unsupported.
 - `Notation Coverage Sample` is a QA fixture, not proof of full MusicXML
   compatibility.
-- Tie continuation highlighting is available, but tie/slur curve engraving is
-  still future work.
+- Tie continuation highlighting is available, and same-system tie/slur curves
+  now render at MVP quality. System-crossing curves and collision-aware curve
+  placement remain future notation work.
 
 ## Legal And Packaging
 
@@ -230,5 +251,5 @@ performance interpretation remain unsupported.
 
 The app can show a tied continuation with a weaker highlight so users can tell
 why a visually current note does not sound again. This is a display aid, not
-full tie engraving. Tie arcs, slur arcs, collision-aware tie placement, and
-advanced tie-chain interpretation remain future notation work.
+full tie engraving. System-crossing tie/slur arcs, collision-aware tie
+placement, and advanced tie-chain interpretation remain future notation work.

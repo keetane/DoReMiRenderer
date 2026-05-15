@@ -1,4 +1,5 @@
 import DoReMiRendererKit
+import Foundation
 import Testing
 @testable import DoReMiPalette
 
@@ -61,6 +62,59 @@ struct KeyboardPitchMapperTests {
         #expect(firstHighlight == [60])
         #expect(secondHighlight == [62])
     }
+
+    @Test func playbackCursorExposesNextPitchedEventForKeyboardPreview() throws {
+        let loaded = try PaletteScoreLoader().load(data: Self.threeNoteMusicXML, sourceName: "three-notes.musicxml")
+        var cursor = PalettePlaybackCursor(events: loaded.playbackEvents)
+
+        #expect(cursor.currentEvent?.midiPitches == [60])
+        #expect(cursor.nextPitchedEvent?.midiPitches == [62])
+
+        cursor.move(by: 1)
+
+        #expect(cursor.currentEvent?.midiPitches == [62])
+        #expect(cursor.nextPitchedEvent?.midiPitches == [64])
+    }
+
+    @Test func playbackCursorSkipsRestsForNextPitchedEvent() throws {
+        let renderer = DoReMiRenderer()
+        let score = try renderer.parseMusicXML(data: Self.restBetweenNotesMusicXML)
+        let events = renderer.makePlaybackSequence(score: score, options: PlaybackOptions(includeRests: true))
+        let firstRestIndex = try #require(events.firstIndex { $0.midiPitches.isEmpty })
+        let precedingIndex = max(firstRestIndex - 1, 0)
+        let cursor = PalettePlaybackCursor(events: events)
+        var moved = cursor
+        moved.setIndex(precedingIndex)
+
+        #expect(events[firstRestIndex].midiPitches.isEmpty)
+        #expect(moved.nextPitchedEvent?.midiPitches.isEmpty == false)
+    }
+
+    private static let threeNoteMusicXML = Data("""
+    <?xml version="1.0" encoding="UTF-8"?>
+    <score-partwise version="3.1">
+      <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+      <part id="P1"><measure number="1">
+        <attributes><divisions>1</divisions><key><fifths>0</fifths></key><time><beats>3</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>
+        <note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+        <note><pitch><step>D</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+        <note><pitch><step>E</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+      </measure></part>
+    </score-partwise>
+    """.utf8)
+
+    private static let restBetweenNotesMusicXML = Data("""
+    <?xml version="1.0" encoding="UTF-8"?>
+    <score-partwise version="3.1">
+      <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+      <part id="P1"><measure number="1">
+        <attributes><divisions>1</divisions><key><fifths>0</fifths></key><time><beats>3</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>
+        <note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+        <note><rest/><duration>1</duration><voice>1</voice><type>quarter</type></note>
+        <note><pitch><step>D</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+      </measure></part>
+    </score-partwise>
+    """.utf8)
 
     @Test func chordHighlightsAllCurrentNoteIDsInMVP() throws {
         let loaded = try PaletteScoreLoader().load(data: PaletteScoreLoaderTests.chordMusicXML, sourceName: "chord.musicxml")

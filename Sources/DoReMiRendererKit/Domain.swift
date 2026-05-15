@@ -262,6 +262,8 @@ public struct Measure: Hashable, Codable, Sendable {
     public let timeSignature: TimeSignature?
     public let tempoEvents: [TempoEvent]
     public let repeatBarlines: [RepeatBarline]
+    public let repeatEndings: [RepeatEnding]
+    public let playbackJumpMarkers: [PlaybackJumpMarker]
 
     public init(
         id: MeasureID,
@@ -272,7 +274,9 @@ public struct Measure: Hashable, Codable, Sendable {
         keySignature: KeySignature? = nil,
         timeSignature: TimeSignature? = nil,
         tempoEvents: [TempoEvent] = [],
-        repeatBarlines: [RepeatBarline] = []
+        repeatBarlines: [RepeatBarline] = [],
+        repeatEndings: [RepeatEnding] = [],
+        playbackJumpMarkers: [PlaybackJumpMarker] = []
     ) {
         self.id = id
         self.number = number
@@ -283,6 +287,8 @@ public struct Measure: Hashable, Codable, Sendable {
         self.timeSignature = timeSignature
         self.tempoEvents = tempoEvents
         self.repeatBarlines = repeatBarlines
+        self.repeatEndings = repeatEndings
+        self.playbackJumpMarkers = playbackJumpMarkers
     }
 }
 
@@ -347,12 +353,35 @@ public enum MusicXMLTieKind: String, Hashable, Codable, Sendable {
     case stop
 }
 
+public enum MusicXMLSlurKind: String, Hashable, Codable, Sendable {
+    case start
+    case stop
+}
+
+public enum MusicXMLTupletKind: String, Hashable, Codable, Sendable {
+    case start
+    case stop
+}
+
+public struct TupletInfo: Hashable, Codable, Sendable {
+    public let kind: MusicXMLTupletKind?
+    public let actualNotes: Int?
+    public let normalNotes: Int?
+
+    public init(kind: MusicXMLTupletKind? = nil, actualNotes: Int? = nil, normalNotes: Int? = nil) {
+        self.kind = kind
+        self.actualNotes = actualNotes
+        self.normalNotes = normalNotes
+    }
+}
+
 public enum NoteValueKind: String, Hashable, Codable, Sendable {
     case whole
     case half
     case quarter
     case eighth
     case sixteenth
+    case thirtySecond
     case other
 
     public init(musicXMLType: String?) {
@@ -367,6 +396,8 @@ public enum NoteValueKind: String, Hashable, Codable, Sendable {
             self = .eighth
         case "16th":
             self = .sixteenth
+        case "32nd":
+            self = .thirtySecond
         default:
             self = .other
         }
@@ -382,8 +413,10 @@ public enum NoteValueKind: String, Hashable, Codable, Sendable {
             self = .quarter
         } else if quarters >= 0.375 {
             self = .eighth
-        } else {
+        } else if quarters >= 0.1875 {
             self = .sixteenth
+        } else {
+            self = .thirtySecond
         }
     }
 }
@@ -401,11 +434,13 @@ public struct ScoreNote: Hashable, Codable, Sendable {
     public let chordOrdinal: Int
     public let accidental: String?
     public let ties: [MusicXMLTieKind]
+    public let slurs: [MusicXMLSlurKind]
     public let lyrics: [LyricAnnotation]
     public let fingerings: [FingeringAnnotation]
     public let isGrace: Bool
     public let hasTimeModification: Bool
     public let hasTupletNotation: Bool
+    public let tuplet: TupletInfo?
 
     public init(
         id: NoteID,
@@ -420,11 +455,13 @@ public struct ScoreNote: Hashable, Codable, Sendable {
         chordOrdinal: Int = 0,
         accidental: String? = nil,
         ties: [MusicXMLTieKind] = [],
+        slurs: [MusicXMLSlurKind] = [],
         lyrics: [LyricAnnotation] = [],
         fingerings: [FingeringAnnotation] = [],
         isGrace: Bool = false,
         hasTimeModification: Bool = false,
-        hasTupletNotation: Bool = false
+        hasTupletNotation: Bool = false,
+        tuplet: TupletInfo? = nil
     ) {
         self.id = id
         self.pitch = pitch
@@ -438,11 +475,13 @@ public struct ScoreNote: Hashable, Codable, Sendable {
         self.chordOrdinal = chordOrdinal
         self.accidental = accidental
         self.ties = ties
+        self.slurs = slurs
         self.lyrics = lyrics
         self.fingerings = fingerings
         self.isGrace = isGrace
         self.hasTimeModification = hasTimeModification
         self.hasTupletNotation = hasTupletNotation
+        self.tuplet = tuplet
     }
 }
 
@@ -496,9 +535,51 @@ public enum RepeatDirection: String, Hashable, Codable, Sendable {
 
 public struct RepeatBarline: Hashable, Codable, Sendable {
     public let direction: RepeatDirection
+    public let times: Int?
 
-    public init(direction: RepeatDirection) {
+    public init(direction: RepeatDirection, times: Int? = nil) {
         self.direction = direction
+        self.times = times
+    }
+}
+
+public enum RepeatEndingKind: String, Hashable, Codable, Sendable {
+    case start
+    case stop
+    case discontinue
+    case unknown
+}
+
+public struct RepeatEnding: Hashable, Codable, Sendable {
+    public let numbers: [Int]
+    public let kind: RepeatEndingKind
+
+    public init(numbers: [Int], kind: RepeatEndingKind) {
+        self.numbers = numbers
+        self.kind = kind
+    }
+}
+
+public enum PlaybackJumpMarkerKind: String, Hashable, Codable, Sendable {
+    case fine
+    case daCapo
+    case daCapoAlFine
+    case daCapoAlCoda
+    case dalSegno
+    case dalSegnoAlFine
+    case dalSegnoAlCoda
+    case segno
+    case coda
+    case toCoda
+}
+
+public struct PlaybackJumpMarker: Hashable, Codable, Sendable {
+    public let kind: PlaybackJumpMarkerKind
+    public let text: String
+
+    public init(kind: PlaybackJumpMarkerKind, text: String) {
+        self.kind = kind
+        self.text = text
     }
 }
 
@@ -518,4 +599,9 @@ public enum ScoreElementKind: Hashable, Codable, Sendable {
     case barline
     case lyric
     case fingering
+    case tie
+    case slur
+    case tuplet
+    case repeatEnding
+    case playbackJumpMarker
 }

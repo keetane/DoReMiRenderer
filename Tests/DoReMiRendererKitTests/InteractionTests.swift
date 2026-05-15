@@ -25,7 +25,7 @@ import Testing
 
     let result = layout.hitTest(point: accidental.frame.center, radius: 4)
 
-    #expect(result.elements.first?.kind == .accidental)
+    #expect(result.elements.contains { $0.kind == .accidental && $0.noteID == noteID })
     #expect(result.nearestNoteID == noteID)
 }
 

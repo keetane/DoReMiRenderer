@@ -1,6 +1,6 @@
 # MusicXML Compatibility Report
 
-Generated: 2026-05-10T00:30:34Z
+Generated: 2026-05-15T12:48:16Z
 Input directory: `/Users/keetane/Documents/apps/DoReMiRenderer/LocalSamples`
 
 ## Status

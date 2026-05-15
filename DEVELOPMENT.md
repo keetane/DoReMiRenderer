@@ -13,6 +13,15 @@ TestFlight preparation.
 swift test
 ```
 
+## SMuFL Rendering QA
+
+Bravura SMuFL glyphs are bundled as SDK resources. When adjusting glyph
+readability, keep sizing and anchors in DoReMiRendererKit layout/renderer code:
+the app must not reparse MusicXML, choose glyphs, or recompute coordinates.
+Recheck Rhythm Values Sample for notehead/stem/flag/rest balance and Notation
+Coverage Sample for clef/key/time/accidental spacing. Snapshot diffs should be
+limited to intentional glyph size or placement changes.
+
 ## MusicXML Compatibility Diagnostics
 
 Private and third-party MusicXML samples belong in `LocalSamples/`, which is
@@ -526,9 +535,36 @@ Library / sample scores and confirm:
 4. Whole, half, quarter, and eighth rests are distinguishable.
 5. Dotted notes, chords, repeated notes, and ledger-line notes are visible.
 6. Repeat start/end barlines are visible.
-7. Ties, slurs, dynamic marks, final/double barline variants, and advanced
+7. Same-system tie/slur curves, simple beam groups, and basic triplet brackets
+   are checked against `NOTATION_SUPPORT_MATRIX.md` so MVP support is not
+   mistaken for publishing-quality engraving.
+8. Dynamic marks, final/double barline variants, complex tuplets, and advanced
    symbols are checked against `NOTATION_SUPPORT_MATRIX.md` so partial or
    diagnostic-only support is not mistaken for full rendering support.
+
+## S6 Notation Refinement QA
+
+The app includes `s6_notation_refinement_grand_staff.musicxml` as the focused
+Phase S6 bundled sample. Open `S6 Notation Refinement Sample` from Library and
+confirm:
+
+1. Consecutive eighth notes render as simple beams where safe.
+2. A rest breaks a beam group.
+3. Same-system tie and slur curves are visible and distinct.
+4. Basic triplets show a bracket and number `3`.
+5. Mixed eighth/sixteenth groups show a primary beam plus a minimal secondary
+   beam segment where expected.
+6. Accidentals, chords, repeat barlines, lyrics/fingering, and highlights remain
+   visible without major collision.
+7. Playback, Practice Mode, Library, Recent files, and Diagnostics still work.
+
+Use the following screenshot paths for manual iPad QA:
+
+- `/tmp/doremipalette_s6_default_sample.png`
+- `/tmp/doremipalette_s6_tie_slur.png`
+- `/tmp/doremipalette_s6_beam.png`
+- `/tmp/doremipalette_s6_tuplet.png`
+- `/tmp/doremipalette_s6_playback.png`
 
 Use the following screenshot paths for manual iPad QA:
 
@@ -538,6 +574,106 @@ Use the following screenshot paths for manual iPad QA:
 
 The current support audit lives in `NOTATION_SUPPORT_MATRIX.md`. Update it when
 parser, layout, renderer, or app-visible behavior changes.
+
+## S7 Repeat Playback QA
+
+The app includes `s7_repeat_playback_sample.musicxml` for Phase S7 regression.
+Open `S7 Repeat Playback Sample` from Library and confirm:
+
+1. Repeat start and repeat end barlines are visible.
+2. Playback order is Measure 1, Measure 2, Measure 3, Measure 2, Measure 3,
+   Measure 4.
+3. Score highlight, keyboard highlight, and scroll follow return to the
+   repeated measures on the second pass.
+4. Practice Mode Next / Previous steps through the expanded playback sequence.
+5. Unsupported repeat structures produce diagnostics instead of silent failure.
+6. The S6 notation refinement sample remains available and unchanged in Library.
+
+Use the following screenshot paths for manual iPad QA:
+
+- `/tmp/doremipalette_s7_repeat_sample.png`
+- `/tmp/doremipalette_s7_repeat_playing_first_pass.png`
+- `/tmp/doremipalette_s7_repeat_playing_second_pass.png`
+- `/tmp/doremipalette_s7_repeat_outro.png`
+- `/tmp/doremipalette_s7_repeat_practice.png`
+
+## S8 Repeat Endings QA
+
+The app includes `s8_repeat_endings_sample.musicxml` as the Phase S8 bundled
+sample. Open `S8 Repeat Endings Sample` from Library and confirm:
+
+1. Playback order is Measure 1, Measure 2, Measure 3, Measure 4, Measure 2,
+   Measure 3, Measure 5, Measure 6.
+2. The first ending is heard and highlighted only on the first pass.
+3. The repeated body is revisited, then the second ending and outro are played.
+4. Practice Mode Next / Previous follows the same expanded sequence.
+5. D.S., Segno, Coda, nested repeats, third endings, and ambiguous ending cases
+   remain diagnostic-only.
+
+Use the following screenshot paths for manual iPad QA:
+
+- `/tmp/doremipalette_s8_endings_sample.png`
+- `/tmp/doremipalette_s8_first_pass_first_ending.png`
+- `/tmp/doremipalette_s8_second_pass_repeated_body.png`
+- `/tmp/doremipalette_s8_second_ending.png`
+
+## S9 Repeat Visuals QA
+
+The app includes `s9_repeat_visuals_sample.musicxml` as the current default
+bundled sample for Phase S9. Open `S9 Repeat Visuals Sample` at app launch or
+from Library and confirm:
+
+1. First and second ending numbers are visible above the staff.
+2. Ending bracket horizontal lines and hooks are visible and do not replace
+   repeat barlines.
+3. Playback order remains Measure 1, Measure 2, Measure 3, Measure 4,
+   Measure 2, Measure 3, Measure 5, Measure 6.
+4. Unsupported D.S. / Segno / Coda structures appear as diagnostics when
+   present rather than silent playback behavior.
+5. Practice Mode, keyboard highlight, current-note highlight, Library, and
+   Diagnostics still work with the expanded playback sequence.
+
+Suggested screenshots:
+
+- `/tmp/doremipalette_s9_repeat_visuals_sample.png`
+- `/tmp/doremipalette_s9_first_ending_visual.png`
+- `/tmp/doremipalette_s9_second_ending_visual.png`
+- `/tmp/doremipalette_s9_repeat_playback.png`
+- `/tmp/doremipalette_s9_diagnostics.png`
+- `/tmp/doremipalette_s8_outro.png`
+- `/tmp/doremipalette_s8_practice.png`
+
+## Print MVP QA
+
+DoReMi Palette exposes a toolbar `印刷` button and a score layout switcher. The
+on-screen score can use the horizontal one-row layout (`横一段`) or an A4-width
+layout (`A4`) that wraps measures into systems. Printing always uses the A4
+layout so the PDF follows normal sheet-music proportions even if the user is
+viewing the horizontal layout.
+
+Implementation boundaries:
+
+- `DoReMiRendererKit` owns the drawing path through `ScoreGraphicsRenderer`,
+  which renders an existing `ScoreLayout` / `ScoreDocument` into a `CGContext`.
+- DoReMi Palette owns PDF generation and the iOS print sheet.
+- The app does not reparse MusicXML, regenerate `NoteID`, or recalculate
+  `ScoreLayout` for printing.
+- `PaletteScoreLoader` creates both horizontal and A4 `ScoreLayout` values from
+  the same parsed `ScoreDocument`; the UI only switches which existing layout is
+  active.
+- Playback, Practice Mode, Library, and Diagnostics are not involved in the
+  print path.
+
+Manual QA:
+
+1. Build and launch DoReMi Palette on iPad Simulator or a real iPad.
+2. Load the bundled S6 sample or another sample.
+3. Switch between `横一段` and `A4`; confirm the score changes from a single
+   horizontal system to wrapped A4 systems without changing playback position.
+4. Tap `印刷`.
+5. Confirm the iOS print sheet appears with the A4 score PDF.
+6. Cancel the sheet and confirm playback, scrolling, Library, and Diagnostics
+   still work.
 
 ## Phase 16.5 Stabilization Verification
 
@@ -573,22 +709,33 @@ Manual iPad Simulator QA should use `Notation Coverage Sample` first, then
   sound only attack pitches, and repeated pitches remain separate attacks;
 - Practice Mode stepping, Reset, and Play handoff keep the same current event.
 
-## SMuFL Integration Planning
+## SMuFL Integration
 
-The planned SMuFL music-font track is documented in
-[SMUFL_INTEGRATION_PLAN.md](SMUFL_INTEGRATION_PLAN.md). Current work does not
-bundle Bravura or any other SMuFL font, does not change `Info.plist`, and does
-not change renderer code.
+The SMuFL music-font track is documented in
+[SMUFL_INTEGRATION_PLAN.md](SMUFL_INTEGRATION_PLAN.md). Bravura 1.392 is bundled
+as a DoReMiRendererKit Swift Package resource and registered by the SDK renderer
+with Core Text. No App-specific glyph selection is allowed.
 
-When implementation starts, keep the development flow explicit:
+When changing the SMuFL renderer path, keep the development flow explicit:
 
 1. Confirm font license, version, source, and app redistribution terms.
-2. Update asset and third-party notices before committing any font file.
+2. Update asset and third-party notices before committing any new or changed
+   font file.
 3. Add a small glyph-map test before replacing renderer shapes.
 4. Keep all glyph placement driven by `ScoreLayout` / `ElementLayout`.
 5. Use `Notation Coverage Sample` and `Rhythm Values Sample` as before/after
    QA fixtures.
 6. Review snapshot diffs manually before recording new baselines.
+7. Confirm fallback rendering still works by testing `ScorePainter` with a nil
+   SMuFL font name.
+8. Keep glyph readability tuning in the SDK renderer. `SMUFLGlyphSizePolicy`
+   owns category scales for noteheads, accidentals, rests, flags, clefs, repeat
+   dots, and time-signature digits; the app must not choose glyph sizes.
+9. When adjusting SMuFL visuals, check both glyph size and anchor policy:
+   noteheads should keep whole/half/black sizes visually close, stems should
+   meet the notehead edge, flags should attach to the stem end, accidentals
+   should not crowd noteheads or key signatures, and clef/key/time prefix
+   spacing should remain non-overlapping.
 
 SMuFL must improve symbol shapes only. It must not move MusicXML parsing,
 layout, hit testing, color resolution, or playback into the app or an external
@@ -646,3 +793,27 @@ trusted, and Developer Mode is enabled under Settings > Privacy & Security.
 After launch, complete the Phase 17A checklist in
 `APP_QA_CHECKLIST.md`. Record any issue by layer: device setup, signing,
 runtime, audio, file import, layout, scroll, practice, library, or diagnostics.
+
+## Phase S10 Repeat / Jump Playback QA
+
+S10 repeat navigation remains SDK playback-sequence work. Parser/domain retain
+the MusicXML markers, `PlaybackSequenceBuilder` expands supported jump-only
+orders, and DoReMi Palette consumes the resulting event list without reparsing
+MusicXML.
+
+Focused samples:
+
+- `S10 D.C. al Fine Sample`: expected measure order `1,2,3,4,1,2,3`.
+- `S10 D.S. al Fine Sample`: expected measure order `1,2,3,4,2,3`.
+- `S10 D.C. al Coda Sample`: expected measure order `1,2,3,1,2,4,5`.
+- `S10 D.S. al Coda Sample`: expected measure order `1,2,3,4,2,3,5,6`.
+- `S10 Repeat Diagnostics Sample`: nested repeat, third ending, repeat+jump,
+  excessive count, and multiple Segno diagnostics.
+- `S10 All Repeat Symbols Sample`: visual/manual QA fixture containing repeat
+  start/end, first/second endings, Segno, To Coda, Fine, D.C., D.C. al Fine,
+  D.C. al Coda, D.S., D.S. al Fine, Coda, and D.S. al Coda in one score. This
+  sample intentionally mixes repeats and jumps, so diagnostics are expected.
+
+When adding repeat/jump support, keep explicit expansion limits in place and
+prefer a warning diagnostic over any ambiguous or potentially looping playback
+order.

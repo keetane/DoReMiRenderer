@@ -68,6 +68,8 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
     private var currentTimeSignature: TimeSignature?
     private var currentMeasureTempoEvents: [TempoEvent] = []
     private var currentMeasureRepeatBarlines: [RepeatBarline] = []
+    private var currentMeasureRepeatEndings: [RepeatEnding] = []
+    private var currentMeasurePlaybackJumpMarkers: [PlaybackJumpMarker] = []
 
     private var noteBuilder: NoteBuilder?
     private var lyricBuilder: LyricBuilder?
@@ -126,6 +128,8 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             currentTimeSignature = nil
             currentMeasureTempoEvents = []
             currentMeasureRepeatBarlines = []
+            currentMeasureRepeatEndings = []
+            currentMeasurePlaybackJumpMarkers = []
         case "note":
             noteBuilder = NoteBuilder()
         case "lyric":
@@ -145,6 +149,10 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             if let type = attributeDict["type"], let tieKind = MusicXMLTieKind(rawValue: type) {
                 noteBuilder?.ties.append(tieKind)
             }
+        case "slur":
+            if let type = attributeDict["type"], let slurKind = MusicXMLSlurKind(rawValue: type) {
+                noteBuilder?.slurs.append(slurKind)
+            }
         case "sound":
             if let tempo = attributeDict["tempo"] {
                 recordTempo(tempo)
@@ -152,14 +160,9 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
         case "barline":
             pendingBarlineLocation = attributeDict["location"]
         case "repeat":
-            recordRepeat(direction: attributeDict["direction"])
+            recordRepeat(direction: attributeDict["direction"], times: attributeDict["times"])
         case "ending":
-            recordDiagnostic(
-                severity: .warning,
-                code: "repeat.endingUnsupported",
-                elementName: elementName,
-                message: "Volta endings are recognized but repeat playback expansion is not supported in Phase 11F."
-            )
+            recordRepeatEnding(number: attributeDict["number"], type: attributeDict["type"])
         case "metronome":
             recordDiagnostic(
                 severity: .warning,
@@ -169,27 +172,11 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             )
         case "time-modification":
             noteBuilder?.hasTimeModification = true
-            recordDiagnostic(
-                severity: .warning,
-                code: "unsupported.tuplet.rendering",
-                elementName: elementName,
-                message: "Tuplet duration data is parsed through MusicXML duration, but tuplet bracket rendering is not supported in Phase 11F."
-            )
         case "tuplet":
             noteBuilder?.hasTupletNotation = true
-            recordDiagnostic(
-                severity: .warning,
-                code: "unsupported.tuplet.rendering",
-                elementName: elementName,
-                message: "Tuplet notation rendering is not supported in Phase 11F."
-            )
-        case "slur":
-            recordDiagnostic(
-                severity: .warning,
-                code: "unsupported.slur.rendering",
-                elementName: elementName,
-                message: "Slur rendering is not supported in Phase 11F."
-            )
+            if let type = attributeDict["type"], let tupletKind = MusicXMLTupletKind(rawValue: type) {
+                noteBuilder?.tupletKind = tupletKind
+            }
         case "ornaments":
             recordDiagnostic(
                 severity: .warning,
@@ -213,12 +200,7 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
                 message: "Transposition is not applied in Phase 11F; written pitch is preserved for layout, color, and playback."
             )
         case "beam":
-            recordDiagnostic(
-                severity: .warning,
-                code: "unsupported.beam.rendering",
-                elementName: elementName,
-                message: "Beam rendering is not supported in Phase 11F."
-            )
+            break
         default:
             break
         }
@@ -255,7 +237,9 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
                 keySignature: currentKeySignature,
                 timeSignature: currentTimeSignature,
                 tempoEvents: currentMeasureTempoEvents,
-                repeatBarlines: currentMeasureRepeatBarlines
+                repeatBarlines: currentMeasureRepeatBarlines,
+                repeatEndings: currentMeasureRepeatEndings,
+                playbackJumpMarkers: currentMeasurePlaybackJumpMarkers
             )
             currentMeasures.append(measure)
         case "divisions":
@@ -290,6 +274,10 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             } else {
                 noteBuilder?.duration = Int(text) ?? 0
             }
+        case "actual-notes":
+            noteBuilder?.tupletActualNotes = Int(text)
+        case "normal-notes":
+            noteBuilder?.tupletNormalNotes = Int(text)
         case "voice":
             noteBuilder?.voiceID = VoiceID(rawValue: text.isEmpty ? "1" : text)
         case "staff":
@@ -306,6 +294,8 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             if parentElement == "lyric" {
                 lyricBuilder?.text += text
             }
+        case "words":
+            recordPlaybackJumpMarker(text)
         case "lyric":
             if let lyricBuilder, !lyricBuilder.text.isEmpty {
                 noteBuilder?.lyrics.append(LyricAnnotation(text: lyricBuilder.text, syllabic: lyricBuilder.syllabic))
@@ -400,11 +390,13 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             chordOrdinal: noteChordOrdinal,
             accidental: builder.accidental,
             ties: builder.ties,
+            slurs: builder.slurs,
             lyrics: builder.lyrics,
             fingerings: builder.fingerings,
             isGrace: builder.isGrace,
             hasTimeModification: builder.hasTimeModification,
-            hasTupletNotation: builder.hasTupletNotation
+            hasTupletNotation: builder.hasTupletNotation,
+            tuplet: builder.tupletInfo
         ))
 
         xmlNoteOrdinal += 1
@@ -485,7 +477,7 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
         ))
     }
 
-    private func recordRepeat(direction: String?) {
+    private func recordRepeat(direction: String?, times: String?) {
         guard let direction, let repeatDirection = RepeatDirection(rawValue: direction) else {
             recordDiagnostic(
                 severity: .warning,
@@ -496,13 +488,97 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             return
         }
 
-        currentMeasureRepeatBarlines.append(RepeatBarline(direction: repeatDirection))
-        recordDiagnostic(
-            severity: .warning,
-            code: "repeat.playbackExpansionUnsupported",
-            elementName: "repeat",
-            message: "Repeat barlines are parsed as metadata, but repeat playback expansion is not supported in Phase 11F."
-        )
+        let repeatTimes: Int?
+        if let times, !times.isEmpty {
+            repeatTimes = Int(times)
+            if repeatTimes == nil {
+                recordDiagnostic(
+                    severity: .warning,
+                    code: "repeat.countInvalid",
+                    elementName: "repeat",
+                    message: "Invalid MusicXML repeat times value: \(times). Repeat playback will use the MVP default."
+                )
+            }
+        } else {
+            repeatTimes = nil
+        }
+
+        currentMeasureRepeatBarlines.append(RepeatBarline(direction: repeatDirection, times: repeatTimes))
+    }
+
+    private func recordRepeatEnding(number: String?, type: String?) {
+        let numbers = parseEndingNumbers(number)
+        if numbers.isEmpty {
+            recordDiagnostic(
+                severity: .warning,
+                code: "repeat.endingInvalid",
+                elementName: "ending",
+                message: "MusicXML ending is missing a usable number; ending playback expansion will ignore it."
+            )
+        }
+
+        let kind = RepeatEndingKind(rawValue: type ?? "") ?? .unknown
+        if kind == .unknown {
+            recordDiagnostic(
+                severity: .warning,
+                code: "repeat.endingTypeUnsupported",
+                elementName: "ending",
+                message: "MusicXML ending type \(type ?? "missing") is not supported by the repeat ending MVP."
+            )
+        }
+
+        currentMeasureRepeatEndings.append(RepeatEnding(numbers: numbers, kind: kind))
+    }
+
+    private func parseEndingNumbers(_ number: String?) -> [Int] {
+        guard let number else {
+            return []
+        }
+        return number
+            .split { character in
+                character == "," || character == " " || character == ";"
+            }
+            .compactMap { Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
+    }
+
+    private func recordPlaybackJumpMarker(_ rawText: String) {
+        let text = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else {
+            return
+        }
+        let normalized = text
+            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            .uppercased()
+            .replacingOccurrences(of: ".", with: "")
+
+        let kind: PlaybackJumpMarkerKind?
+        if normalized.contains("DC") && normalized.contains("CODA") {
+            kind = .daCapoAlCoda
+        } else if normalized.contains("DS") && normalized.contains("FINE") {
+            kind = .dalSegnoAlFine
+        } else if normalized.contains("DS") && normalized.contains("CODA") {
+            kind = .dalSegnoAlCoda
+        } else if normalized.contains("DC") && normalized.contains("FINE") {
+            kind = .daCapoAlFine
+        } else if normalized == "FINE" || normalized.contains(" FINE") {
+            kind = .fine
+        } else if normalized.contains("DS") {
+            kind = .dalSegno
+        } else if normalized.contains("SEGNO") {
+            kind = .segno
+        } else if normalized.contains("TO CODA") {
+            kind = .toCoda
+        } else if normalized.contains("CODA") {
+            kind = .coda
+        } else if normalized.contains("DC") {
+            kind = .daCapo
+        } else {
+            kind = nil
+        }
+
+        if let kind {
+            currentMeasurePlaybackJumpMarkers.append(PlaybackJumpMarker(kind: kind, text: text))
+        }
     }
 }
 
@@ -519,11 +595,22 @@ private struct NoteBuilder {
     var staffID: StaffID?
     var accidental: String?
     var ties: [MusicXMLTieKind] = []
+    var slurs: [MusicXMLSlurKind] = []
     var lyrics: [LyricAnnotation] = []
     var fingerings: [FingeringAnnotation] = []
     var isGrace = false
     var hasTimeModification = false
     var hasTupletNotation = false
+    var tupletKind: MusicXMLTupletKind?
+    var tupletActualNotes: Int?
+    var tupletNormalNotes: Int?
+
+    var tupletInfo: TupletInfo? {
+        guard hasTimeModification || hasTupletNotation || tupletKind != nil || tupletActualNotes != nil || tupletNormalNotes != nil else {
+            return nil
+        }
+        return TupletInfo(kind: tupletKind, actualNotes: tupletActualNotes, normalNotes: tupletNormalNotes)
+    }
 }
 
 private struct LyricBuilder {

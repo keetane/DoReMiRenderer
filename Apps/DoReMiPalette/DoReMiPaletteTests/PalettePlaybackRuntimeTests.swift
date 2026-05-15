@@ -152,6 +152,28 @@ struct PalettePlaybackRuntimeTests {
         #expect(schedulingInterval == 1.0)
     }
 
+    @Test @MainActor func s6StandaloneQuintupletAndSeptupletUseTupletPlaybackIntervals() throws {
+        let events = try Self.events(from: Self.s6NotationRefinementSampleMusicXML)
+        let runtime = PalettePlaybackRuntime(events: events, tempoBPM: 120)
+        let measure12Events = events.enumerated().filter { $0.element.measureID.rawValue == "0.12" }
+        let measure13Events = events.enumerated().filter { $0.element.measureID.rawValue == "0.13" }
+        let measure12Pitched = measure12Events.filter { !$0.element.midiPitches.isEmpty }
+        let measure13Pitched = measure13Events.filter { !$0.element.midiPitches.isEmpty }
+
+        #expect(measure12Pitched.count == 5)
+        #expect(measure13Pitched.count == 7)
+        #expect(measure12Pitched.allSatisfy { $0.element.staffIDs.contains(StaffID(rawValue: "1")) })
+        #expect(measure13Pitched.allSatisfy { $0.element.staffIDs.contains(StaffID(rawValue: "2")) })
+        #expect(measure12Pitched.allSatisfy { abs(Self.quarterNotes(for: $0.element.nominalDuration) - 0.4) < 0.0001 })
+        #expect(measure13Pitched.allSatisfy { abs(Self.quarterNotes(for: $0.element.nominalDuration) - (2.0 / 7.0)) < 0.0001 })
+
+        let quintupletIntervals = measure12Pitched.dropLast().map { runtime.schedulingIntervalSeconds(from: $0.offset) }
+        let septupletIntervals = measure13Pitched.dropLast().map { runtime.schedulingIntervalSeconds(from: $0.offset) }
+
+        #expect(quintupletIntervals.allSatisfy { abs($0 - 0.2) < 0.0001 })
+        #expect(septupletIntervals.allSatisfy { abs($0 - (1.0 / 7.0)) < 0.0001 })
+    }
+
     @Test @MainActor func bundledSampleRepeatedC5NotesAreSeparateAttacks() throws {
         let audio = MockPaletteAudioEngine()
         let c5Events = try Self.events(from: Self.phase12SampleMusicXML)
@@ -414,6 +436,20 @@ struct PalettePlaybackRuntimeTests {
         #expect(audio.silenceCount == 0)
     }
 
+    @Test @MainActor func tieStartSustainsThroughTieContinuationWithoutGateShortening() throws {
+        let audio = MockPaletteAudioEngine()
+        let attack = try #require(Self.events(from: Self.tieStopOnlyMusicXML).first {
+            $0.midiPitches == [65]
+        })
+        let runtime = PalettePlaybackRuntime(events: [attack], tempoBPM: 120, noteGateRatio: 0.50, audioEngine: audio)
+
+        runtime.triggerAudioForCurrentEvent()
+
+        #expect(attack.midiPitchDurations[65] == MusicalTime(ticks: 8, ticksPerQuarterNote: 4))
+        #expect(audio.playedPitches == [[65]])
+        #expect(abs((audio.playedDurations.first ?? 0) - 1.0) < 0.001)
+    }
+
     @Test @MainActor func mixedTieContinuationEventStillPlaysNewAttackPitches() throws {
         let audio = MockPaletteAudioEngine()
         let event = try #require(Self.events(from: PaletteScoreLoaderTests.mixedTieContinuationAndAttackMusicXML).first {
@@ -526,6 +562,21 @@ struct PalettePlaybackRuntimeTests {
         }
     }
 
+    private static var s6NotationRefinementSampleMusicXML: Data {
+        get throws {
+            let testFile = URL(fileURLWithPath: #filePath)
+            let projectRoot = testFile
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+            let sampleURL = projectRoot
+                .appendingPathComponent("DoReMiPalette")
+                .appendingPathComponent("Resources")
+                .appendingPathComponent("Samples")
+                .appendingPathComponent("s6_notation_refinement_grand_staff.musicxml")
+            return try Data(contentsOf: sampleURL)
+        }
+    }
+
     private static func score(tempoEvents: [TempoEvent]) -> ScoreDocument {
         ScoreDocument(parts: [
             ScorePart(id: "p1", measures: [
@@ -555,7 +606,14 @@ struct PalettePlaybackRuntimeTests {
             <clef><sign>G</sign><line>2</line></clef>
           </attributes>
           <note>
-            <pitch><step>C</step><octave>4</octave></pitch>
+            <pitch><step>F</step><octave>4</octave></pitch>
+            <duration>1</duration>
+            <tie type="start"/>
+            <voice>1</voice>
+            <type>quarter</type>
+          </note>
+          <note>
+            <pitch><step>F</step><octave>4</octave></pitch>
             <duration>1</duration>
             <tie type="stop"/>
             <voice>1</voice>

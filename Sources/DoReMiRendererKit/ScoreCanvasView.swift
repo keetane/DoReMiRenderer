@@ -523,6 +523,13 @@ internal struct SwiftUICanvasScoreDrawingContext: ScoreDrawingContext {
         context.stroke(path, with: .color(Color(scoreColor: color)), lineWidth: lineWidth)
     }
 
+    mutating func strokeQuadCurve(from start: CGPoint, control: CGPoint, to end: CGPoint, color: ScoreColor, lineWidth: CGFloat) {
+        var path = Path()
+        path.move(to: start)
+        path.addQuadCurve(to: end, control: control)
+        context.stroke(path, with: .color(Color(scoreColor: color)), lineWidth: lineWidth)
+    }
+
     mutating func fillEllipse(in rect: CGRect, color: ScoreColor) {
         context.fill(Path(ellipseIn: rect), with: .color(Color(scoreColor: color)))
     }
@@ -531,12 +538,38 @@ internal struct SwiftUICanvasScoreDrawingContext: ScoreDrawingContext {
         context.stroke(Path(ellipseIn: rect), with: .color(Color(scoreColor: color)), lineWidth: lineWidth)
     }
 
-    mutating func drawText(_ text: String, at point: CGPoint, color: ScoreColor, size: CGFloat) {
+    mutating func drawText(_ text: String, at point: CGPoint, color: ScoreColor, size: CGFloat, fontName: String?) {
+        let font: Font = if let fontName {
+            .custom(fontName, size: size)
+        } else {
+            .system(size: size)
+        }
         context.draw(
-            Text(text).font(.system(size: size)).foregroundStyle(Color(scoreColor: color)),
+            Text(text).font(font).foregroundStyle(Color(scoreColor: color)),
             at: point,
             anchor: .center
         )
+    }
+
+    mutating func drawText(_ text: String, at point: CGPoint, color: ScoreColor, size: CGFloat, fontName: String?, mirroredHorizontally: Bool, mirroredVertically: Bool) {
+        guard mirroredHorizontally || mirroredVertically else {
+            drawText(text, at: point, color: color, size: size, fontName: fontName)
+            return
+        }
+        let font: Font = if let fontName {
+            .custom(fontName, size: size)
+        } else {
+            .system(size: size)
+        }
+        context.translateBy(x: point.x, y: point.y)
+        context.scaleBy(x: mirroredHorizontally ? -1 : 1, y: mirroredVertically ? -1 : 1)
+        context.draw(
+            Text(text).font(font).foregroundStyle(Color(scoreColor: color)),
+            at: .zero,
+            anchor: .center
+        )
+        context.scaleBy(x: mirroredHorizontally ? -1 : 1, y: mirroredVertically ? -1 : 1)
+        context.translateBy(x: -point.x, y: -point.y)
     }
 }
 

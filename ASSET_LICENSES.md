@@ -13,6 +13,23 @@
 
 ## Other Assets
 
+## Bravura SMuFL Font
+
+`Sources/DoReMiRendererKit/Resources/Fonts/Bravura.otf`
+
+- Font name: Bravura
+- Version: 1.392, from the upstream Bravura SMuFL metadata.
+- Source: Steinberg Bravura repository, https://github.com/steinbergmedia/bravura
+- License: SIL Open Font License, Version 1.1.
+- License file: `Sources/DoReMiRendererKit/Resources/Fonts/OFL.txt`
+- Purpose: SMuFL music-symbol glyph rendering in DoReMiRendererKit.
+- Permitted project use: bundled app, SDK example, test, demo, screenshot, and
+  documentation use subject to the SIL Open Font License.
+- Distribution notes: the font must not be sold by itself. The reserved font
+  name "Bravura" must be respected if a derived font is ever created. License
+  and notice records must be rechecked before TestFlight, App Store, or other
+  external distribution.
+
 ## DoReMi Palette App Sample
 
 `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/phase12_sample.musicxml`
@@ -99,3 +116,55 @@ grand-staff notation examples for treble/bass clefs, time and key signatures,
 accidentals, rests, dotted notes, ties, slurs, repeats, chords, ledger lines,
 tempo metadata, and dynamics diagnostics. It may be used for commercial, test,
 demo, screenshot, and documentation purposes within this project.
+
+## s6_notation_refinement_grand_staff.musicxml
+
+`Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/s6_notation_refinement_grand_staff.musicxml`
+is a self-authored DoReMi Palette QA fixture. It contains only short original
+grand-staff notation examples for Phase S6 tie curves, slur curves, simple and
+mixed eighth/sixteenth beam groups, basic triplets, rests, accidentals, chords,
+lyrics/fingering, and repeat barlines. It may be used for commercial, test,
+demo, screenshot, and documentation purposes within this project.
+
+## s7_repeat_playback_sample.musicxml
+
+`Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/s7_repeat_playback_sample.musicxml`
+is a self-authored DoReMi Palette QA fixture. It contains only short original
+grand-staff notation examples for Phase S7 repeat playback expansion, including
+an intro, a simple forward/backward repeat section, and an outro. It may be used
+for commercial, test, demo, screenshot, and documentation purposes within this
+project.
+
+## s8_repeat_endings_sample.musicxml
+
+`Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/s8_repeat_endings_sample.musicxml`
+is a self-authored DoReMi Palette QA fixture. It contains only short original
+grand-staff notation examples for Phase S8 repeat-ending playback expansion,
+including an intro, a repeated body, first ending, second ending, and outro. It
+may be used for commercial, test, demo, screenshot, and documentation purposes
+within this project.
+
+## s9_repeat_visuals_sample.musicxml
+
+`Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/s9_repeat_visuals_sample.musicxml`
+is a self-authored DoReMi Palette QA fixture. It contains only short original
+grand-staff notation examples for Phase S9 repeat-ending visual brackets,
+first/second ending playback regression, and unsupported jump-marker diagnostic
+checks. It may be used for commercial, test, demo, screenshot, and documentation
+purposes within this project.
+
+## Phase S10 repeat / jump samples
+
+The following files are self-authored DoReMi Palette QA fixtures:
+
+- `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/s10_dc_fine_sample.musicxml`
+- `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/s10_ds_fine_sample.musicxml`
+- `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/s10_dc_coda_sample.musicxml`
+- `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/s10_ds_coda_sample.musicxml`
+- `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/s10_repeat_diagnostics_sample.musicxml`
+- `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/s10_all_repeat_symbols_sample.musicxml`
+
+They contain only short original grand-staff notation examples for Phase S10
+D.C./D.S./Fine/Coda playback expansion, all-repeat-symbol visual QA, and
+repeat/jump diagnostic QA. They may be used for commercial, test, demo,
+screenshot, and documentation purposes within this project.

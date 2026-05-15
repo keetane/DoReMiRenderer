@@ -58,18 +58,34 @@ Completion criteria:
 - renderer draws key signature glyphs as layout elements
 - ColorRule changes do not alter layout or playback identity
 
-### 11F-4 Tempo And Repeat Metadata
+### 11F-4 Tempo Metadata And Phase S7/S8 Repeat Playback
 
-Purpose: read tempo and repeat metadata for future playback without implementing
-audio playback or repeat expansion.
+Purpose: read tempo and repeat metadata, and expand simple repeat playback
+sections without changing `ScoreDocument` or `ScoreLayout`.
 
 Completion criteria:
 
 - `<sound tempo="">` produces `TempoEvent`
 - repeat barlines produce `RepeatBarline`
-- unsupported repeat expansion emits diagnostics
-- playback event order and grouping are unchanged
+- simple forward/backward repeat sections expand in `PlaybackSequenceBuilder`
+  for two passes
+- unsupported repeat structures emit diagnostics
+- non-repeat playback event order and grouping are unchanged
 - metadata is available through the facade
+
+S7/S8/S9 repeat playback and visual MVP support:
+
+- Supported: one or more simple, non-nested forward/backward repeat sections.
+- Supported in Phase S8: one clear first/second ending repeat section.
+- Supported in Phase S9: same-system first/second ending bracket and number
+  rendering from layout elements.
+- Supported in Phase S8: basic D.C. al Fine expansion only for jump-only scores
+  without repeats/endings.
+- Fallback: a backward repeat without a start repeats from the beginning and
+  emits `repeat.startMissingFallback`.
+- Diagnostic-only: unmatched starts, nested repeats, repeat counts outside the
+  MVP two-pass behavior, third endings, ambiguous endings, D.S./Segno/Coda/To
+  Coda, and complex jumps.
 
 ### 11F-5 Complex MusicXML Diagnostics
 
@@ -78,8 +94,10 @@ cross-staff/staff changes, transposition, and complex voice collisions.
 
 Completion criteria:
 
-- tuplets keep MusicXML duration timing and warn about rendering
-- slur, ornament, grace, transposition, and beam limitations have specific codes
+- basic tuplets keep MusicXML duration timing and can render an MVP bracket;
+  complex tuplets warn about rendering limits
+- slur, ornament, grace, transposition, and advanced beam limitations have
+  specific codes or documented MVP limits
 - layout reports complex voice collision and cross-staff notation limitations
 - grace notes are not treated as normal playback events
 - unsupported diagnostics are specific enough for prioritization
@@ -156,18 +174,37 @@ app visibility, and playback impact so partially-supported features are not
 mistaken for complete engraving support.
 
 The self-authored `notation_coverage_grand_staff.musicxml` sample is the public
-QA fixture for this audit. It includes supported MVP symbols such as clefs, time
-and key signatures, accidentals, rest values, dotted notes, chords, ledger lines,
-and repeat barlines, plus diagnostic-only symbols such as slurs and dynamics.
+QA fixture for broad symbol coverage. It includes supported MVP symbols such as
+clefs, time and key signatures, accidentals, rest values, dotted notes, chords,
+ledger lines, and repeat barlines, plus limited or diagnostic symbols such as
+dynamics. The self-authored
+`s6_notation_refinement_grand_staff.musicxml` sample is the focused Phase S6
+fixture for tie/slur curves, simple beams, mixed eighth/sixteenth beams,
+triplet brackets, and collision review. The self-authored
+`s7_repeat_playback_sample.musicxml` sample is the focused Phase S7 fixture for
+verifying intro -> repeated section -> outro playback order. The self-authored
+`s8_repeat_endings_sample.musicxml` sample is the focused Phase S8 fixture for
+verifying intro -> repeated body -> first ending -> repeated body -> second
+ending -> outro playback order.
+`s9_repeat_visuals_sample.musicxml` sample is the focused Phase S9 fixture for
+verifying first/second ending visual brackets and unsupported D.S. diagnostics
+without changing the S8 playback order.
+Phase S10 adds focused jump-playback samples for D.C. al Fine, D.S. al Fine,
+D.C. al Coda, and D.S. al Coda, plus a diagnostic sample for nested repeats,
+third endings, excessive repeat counts, and ambiguous jump/repeat mixtures.
+Clear jump-only S10 samples expand in `PlaybackSequenceBuilder`; unsafe mixed
+structures remain warning-backed diagnostics.
 
 Current Phase 16.5 stabilization status:
 
-- Rhythm values, dots, common rests, stems, flags, ledger lines, clefs,
-  accidentals, key signatures, time signatures, repeat barlines, and
-  attack/continuation highlights are visible at MVP quality.
-- Tie `<tie>` data affects playback and continuation highlighting, but visual
-  tie arcs are not rendered. MusicXML notation `<tied>` is not a rendered tie
-  arc yet.
+- Rhythm values, dots, common rests, stems, flags, simple beams, mixed
+  eighth/sixteenth beam checks, ledger lines,
+  clefs, accidentals, key signatures, time signatures, repeat barlines, basic
+  triplet brackets, and attack/continuation highlights are visible at MVP
+  quality.
+- Tie `<tie>` data affects playback and continuation highlighting. Basic
+  same-system MusicXML notation `<tied>` pairs render MVP tie curves; complex
+  and system-crossing tie chains remain limited.
 - Dynamic text and tempo words are not rendered. `<sound tempo="">` is retained
   for playback metadata, but visible tempo words remain future work.
 - Unsupported or partial items must be reflected in `NOTATION_SUPPORT_MATRIX.md`
@@ -184,17 +221,25 @@ Renderer code must continue to consume only `ScoreLayout` and domain-derived
 layout elements. It must not parse MusicXML or infer unsupported notation from
 source text.
 
-## SMuFL Rendering Plan
+## SMuFL Rendering Status
 
-The future SMuFL rendering track is documented in
-[SMUFL_INTEGRATION_PLAN.md](SMUFL_INTEGRATION_PLAN.md). SMuFL fonts are planned
-only as symbol-shape providers. MusicXML compatibility remains parser/domain
+The SMuFL rendering track is documented in
+[SMUFL_INTEGRATION_PLAN.md](SMUFL_INTEGRATION_PLAN.md). Bravura 1.392 is now
+bundled as a Swift Package resource under the SIL Open Font License and is used
+only as a symbol-shape provider. MusicXML compatibility remains parser/domain
 work, and coordinates remain `ScoreLayout` / `ElementLayout` work.
 
-The first candidate font is Bravura, subject to license and distribution review
-before any font file is added. The notation coverage sample will be used to
-compare clef, accidental, rest, repeat, dynamics, and time-signature rendering
-before and after glyph adoption. Partial and unsupported symbols must remain
-explicit in `NOTATION_SUPPORT_MATRIX.md`, `MVP0_LIMITATIONS.md`, or diagnostics;
-SMuFL adoption must not hide unsupported MusicXML interpretation behind prettier
+Current SMuFL-rendered symbol families include clefs, accidentals, rests, repeat
+dots, time-signature digits, noteheads, and flags. The SDK renderer applies
+category-specific glyph sizes so those supported symbols remain readable on
+iPad while still using `ScoreLayout` frames and IDs. The current renderer pass
+  also keeps notehead sizes visually close across whole/half/black values,
+  enlarges common noteheads, shortens stems, uses direction-specific flag glyphs
+  near stem ends, keeps note accidentals close to noteheads, balances rest sizes, and spaces
+clef/key/time prefixes to keep the Notation Coverage Sample inspectable.
+Dynamics and articulations remain diagnostic-only unless they are represented by
+existing text annotations.
+Partial and unsupported symbols must remain explicit in
+`NOTATION_SUPPORT_MATRIX.md`, `MVP0_LIMITATIONS.md`, or diagnostics; SMuFL
+adoption must not hide unsupported MusicXML interpretation behind prettier
 fallback drawing.

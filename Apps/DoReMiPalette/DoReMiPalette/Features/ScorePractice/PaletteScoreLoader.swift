@@ -24,10 +24,45 @@ enum PaletteImportError: LocalizedError, Equatable {
 struct PaletteLoadedScore {
     let sourceName: String
     let score: ScoreDocument
-    let layout: ScoreLayout
+    let horizontalLayout: ScoreLayout
+    let a4Layout: ScoreLayout
+    var layoutMode: PaletteScoreLayoutMode
     let diagnostics: [RendererDiagnostic]
     let playbackEvents: [PlaybackEvent]
     let playbackMetadata: PlaybackMetadata
+
+    var layout: ScoreLayout {
+        switch layoutMode {
+        case .horizontal:
+            horizontalLayout
+        case .a4:
+            a4Layout
+        }
+    }
+
+    var printLayout: ScoreLayout {
+        a4Layout
+    }
+}
+
+enum PaletteScoreLayoutMode: String, CaseIterable, Identifiable {
+    case horizontal
+    case a4
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .horizontal:
+            "横一段"
+        case .a4:
+            "A4"
+        }
+    }
+
+    static func fromRawValue(_ rawValue: String) -> PaletteScoreLayoutMode {
+        PaletteScoreLayoutMode(rawValue: rawValue) ?? .horizontal
+    }
 }
 
 struct PaletteScoreLoader {
@@ -38,13 +73,26 @@ struct PaletteScoreLoader {
     func load(data: Data, sourceName: String) throws -> PaletteLoadedScore {
         let input = try scoreInput(for: sourceName, data: data)
         let parseResult = try renderer.parseWithDiagnostics(input: input)
-        let layoutResult = try renderer.layoutWithDiagnostics(
+        let horizontalLayoutResult = try renderer.layoutWithDiagnostics(
             score: parseResult.score,
             options: LayoutOptions(
                 pageWidth: 980,
                 staffSpace: 16,
                 systemSpacing: 96,
-                measureSpacing: 36
+                measureSpacing: 36,
+                displayMode: .horizontal
+            )
+        )
+        let a4LayoutResult = try renderer.layoutWithDiagnostics(
+            score: parseResult.score,
+            options: LayoutOptions(
+                pageWidth: 595,
+                pageHeight: 842,
+                staffSpace: 12,
+                systemSpacing: 72,
+                measureSpacing: 24,
+                displayMode: .print,
+                showPageMargins: true
             )
         )
         let playbackEvents = renderer.makePlaybackSequence(
@@ -55,8 +103,10 @@ struct PaletteScoreLoader {
         return PaletteLoadedScore(
             sourceName: sourceName,
             score: parseResult.score,
-            layout: layoutResult.layout,
-            diagnostics: parseResult.diagnostics + layoutResult.diagnostics + playbackMetadata.diagnostics,
+            horizontalLayout: horizontalLayoutResult.layout,
+            a4Layout: a4LayoutResult.layout,
+            layoutMode: .horizontal,
+            diagnostics: parseResult.diagnostics + horizontalLayoutResult.diagnostics + a4LayoutResult.diagnostics + playbackMetadata.diagnostics,
             playbackEvents: playbackEvents,
             playbackMetadata: playbackMetadata
         )

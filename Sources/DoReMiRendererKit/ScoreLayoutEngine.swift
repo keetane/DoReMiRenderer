@@ -63,16 +63,16 @@ struct ScoreLayoutEngine: Sendable {
     func layoutWithDiagnostics(score: ScoreDocument, options: LayoutOptions = .default) throws -> ScoreLayoutResult {
         var diagnostics: [RendererDiagnostic] = []
         switch options.displayMode {
-        case .print:
+        case .print, .horizontal:
             break
-        case .horizontal, .verticalPractice:
+        case .verticalPractice:
             if options.unsupportedFeaturePolicy == .fail {
                 throw LayoutError.unsupportedDisplayMode(options.displayMode)
             }
             diagnostics.append(RendererDiagnostic(
                 severity: .warning,
                 code: "unsupported.displayMode",
-                message: "\(options.displayMode) display mode is not supported in Phase 3; falling back to print layout.",
+                message: "\(options.displayMode) display mode is not supported; falling back to print layout.",
                 location: nil
             ))
         }
@@ -90,33 +90,39 @@ struct ScoreLayoutEngine: Sendable {
         let staffIDs = orderedStaffIDs(in: score)
         let staffIndexByID = Dictionary(uniqueKeysWithValues: staffIDs.enumerated().map { ($0.element, $0.offset) })
         let contentWidth = max(metrics.minimumMeasureWidth, options.pageWidth - metrics.leftMargin - metrics.rightMargin)
-        let systemTop = metrics.topMargin
         let systemHeight = CGFloat(max(staffIDs.count, 1) - 1) * metrics.staffGap + metrics.staffHeight
+        let shouldWrapSystems = options.displayMode == .print
 
-        systems.append(
-            SystemLayout(
-                index: 0,
-                frame: CGRect(x: metrics.leftMargin, y: systemTop, width: contentWidth, height: systemHeight),
-                staffIDs: staffIDs
-            )
-        )
-
-        for (staffIndex, staffID) in staffIDs.enumerated() {
-            let middleY = metrics.staffMiddleY(systemTop: systemTop, staffIndex: staffIndex)
-            staves.append(
-                StaffLayout(
-                    staffID: staffID,
-                    systemIndex: 0,
-                    frame: CGRect(
-                        x: metrics.leftMargin,
-                        y: middleY - 2 * options.staffSpace,
-                        width: contentWidth,
-                        height: metrics.staffHeight
-                    ),
-                    middleLineY: middleY
+        func appendSystem(index: Int, top: CGFloat) {
+            systems.append(
+                SystemLayout(
+                    index: index,
+                    frame: CGRect(x: metrics.leftMargin, y: top, width: contentWidth, height: systemHeight),
+                    staffIDs: staffIDs
                 )
             )
+
+            for (staffIndex, staffID) in staffIDs.enumerated() {
+                let middleY = metrics.staffMiddleY(systemTop: top, staffIndex: staffIndex)
+                staves.append(
+                    StaffLayout(
+                        staffID: staffID,
+                        systemIndex: index,
+                        frame: CGRect(
+                            x: metrics.leftMargin,
+                            y: middleY - 2 * options.staffSpace,
+                            width: contentWidth,
+                            height: metrics.staffHeight
+                        ),
+                        middleLineY: middleY
+                    )
+                )
+            }
         }
+
+        var currentSystemIndex = 0
+        var systemTop = metrics.topMargin
+        appendSystem(index: currentSystemIndex, top: systemTop)
 
         var measureX = metrics.leftMargin
         let flatMeasures = score.parts.enumerated().flatMap { partIndex, part in
@@ -128,10 +134,18 @@ struct ScoreLayoutEngine: Sendable {
 
         for item in flatMeasures {
             let measureWidth = width(for: item.measure, options: options, metrics: metrics)
+            if shouldWrapSystems,
+               measureX > metrics.leftMargin,
+               measureX + measureWidth > metrics.leftMargin + contentWidth {
+                currentSystemIndex += 1
+                systemTop += systemHeight + options.systemSpacing
+                measureX = metrics.leftMargin
+                appendSystem(index: currentSystemIndex, top: systemTop)
+            }
             let measureFrame = CGRect(x: measureX, y: systemTop, width: measureWidth, height: systemHeight)
             let measureLayout = MeasureLayout(
                 measureID: item.measure.id,
-                systemIndex: 0,
+                systemIndex: currentSystemIndex,
                 frame: measureFrame,
                 partIndex: item.partIndex,
                 measureIndex: item.measureIndex
@@ -198,13 +212,21 @@ struct ScoreLayoutEngine: Sendable {
 
             let onsetX = xCoordinatesByOnset(for: item.measure, measureX: measureX, measureWidth: measureWidth, metrics: metrics)
             let chordStemDirections = chordStemDirections(for: item.measure)
+            let beamGroups = beamGroups(for: item.measure)
+            let beamedNoteIDs = Set(beamGroups.flatMap(\.noteIDs))
             for note in item.measure.notes {
                 let clef = clef(for: note.staffID, in: item.measure)
                 let staffIndex = staffIndexByID[note.staffID] ?? 0
                 let middleY = metrics.staffMiddleY(systemTop: systemTop, staffIndex: staffIndex)
                 let position = note.pitch.map { staffPosition(pitch: $0, clef: clef) }
+                let noteCenterX = wholeRestCenterX(
+                    for: note,
+                    measureX: measureX,
+                    measureWidth: measureWidth,
+                    fallbackX: onsetX[note.onset] ?? (measureX + metrics.noteInset)
+                )
                 let center = CGPoint(
-                    x: onsetX[note.onset] ?? (measureX + metrics.noteInset),
+                    x: noteCenterX,
                     y: middleY - CGFloat(position?.stepsFromMiddleLine ?? 0) * options.staffSpace / 2
                 )
                 let noteFrame = CGRect(
@@ -286,7 +308,7 @@ struct ScoreLayoutEngine: Sendable {
                         )
                     )
 
-                    if note.noteValueKind.flagCount > 0 {
+                    if note.noteValueKind.flagCount > 0 && !beamedNoteIDs.contains(note.id) {
                         let flagElementID = ScoreElementID(rawValue: "\(note.id.rawValue).flag")
                         let flagFrame = flagFrame(
                             direction: stemDirection,
@@ -314,11 +336,13 @@ struct ScoreLayoutEngine: Sendable {
 
                 if note.accidental != nil {
                     let accidentalElementID = ScoreElementID(rawValue: "\(note.id.rawValue).accidental")
+                    let accidentalHeight = noteFrame.height * 1.55
+                    let accidentalWidth = noteFrame.width * 0.95
                     let accidentalFrame = CGRect(
-                        x: noteFrame.minX - noteFrame.width * 1.6,
-                        y: noteFrame.minY - noteFrame.height * 0.25,
-                        width: noteFrame.width,
-                        height: noteFrame.height * 1.5
+                        x: noteFrame.minX - noteFrame.width * 0.60,
+                        y: noteFrame.midY - accidentalHeight / 2,
+                        width: accidentalWidth,
+                        height: accidentalHeight
                     )
                     elements.append(
                         ElementLayout(
@@ -431,7 +455,51 @@ struct ScoreLayoutEngine: Sendable {
                 }
             }
 
+            elements.append(contentsOf: beamElements(
+                groups: beamGroups,
+                measure: item.measure,
+                noteByID: noteByID,
+                elements: elements,
+                metrics: metrics
+            ))
+            elements.append(contentsOf: tieAndSlurElements(
+                measure: item.measure,
+                noteByID: noteByID,
+                metrics: metrics
+            ))
+            elements.append(contentsOf: tupletElements(
+                measure: item.measure,
+                noteByID: noteByID,
+                elements: elements,
+                metrics: metrics
+            ))
+
             elements.append(contentsOf: barlineElements(
+                measure: item.measure,
+                staffIDs: staffIDs,
+                staffIndexByID: staffIndexByID,
+                measureX: measureX,
+                measureWidth: measureWidth,
+                forwardRepeatX: forwardRepeatX(
+                    for: item.measure,
+                    measureX: measureX,
+                    elements: elements,
+                    noteByID: noteByID,
+                    metrics: metrics
+                ),
+                systemTop: systemTop,
+                metrics: metrics
+            ))
+            elements.append(contentsOf: repeatEndingElements(
+                measure: item.measure,
+                staffIDs: staffIDs,
+                staffIndexByID: staffIndexByID,
+                measureX: measureX,
+                measureWidth: measureWidth,
+                systemTop: systemTop,
+                metrics: metrics
+            ))
+            elements.append(contentsOf: playbackJumpMarkerElements(
                 measure: item.measure,
                 staffIDs: staffIDs,
                 staffIndexByID: staffIndexByID,
@@ -522,6 +590,405 @@ struct ScoreLayoutEngine: Sendable {
         return directions
     }
 
+    private func beamGroups(for measure: Measure) -> [BeamGroup] {
+        let candidates = measure.notes.filter { $0.pitch != nil && $0.noteValueKind.flagCount > 0 }
+        let grouped = Dictionary(grouping: candidates) { note in
+            BeamGroupKey(measureID: measure.id, staffID: note.staffID, voiceID: note.voiceID)
+        }
+        return grouped.flatMap { key, notes -> [BeamGroup] in
+            let notesByID = Dictionary(uniqueKeysWithValues: notes.map { ($0.id, $0) })
+            let events = Dictionary(grouping: notes, by: \.onset)
+                .map { onset, onsetNotes in
+                    BeamEvent(onset: onset, noteIDs: onsetNotes.map(\.id))
+                }
+                .sorted { $0.onset < $1.onset }
+            var result: [BeamGroup] = []
+            var current: [BeamEvent] = []
+            var currentBeatIndex: Int?
+            var previousEnd: MusicalTime?
+            var previousNote: ScoreNote?
+            let measureStart = measure.notes.map(\.onset).min() ?? MusicalTime(ticks: 0, ticksPerQuarterNote: 4)
+            let beatDuration = beamBeatDuration(for: measure, fallbackOnset: measureStart)
+            for event in events {
+                let representativeNote = notes.first { $0.id == event.noteIDs.first }
+                let duration = representativeNote?.duration ?? MusicalTime(ticks: 0, ticksPerQuarterNote: event.onset.ticksPerQuarterNote)
+                let eventBeatIndex = beamBeatIndex(onset: event.onset, measureStart: measureStart, beatDuration: beatDuration)
+                let eventEnd = event.onset + duration
+                let beatStart = beamBeatStart(index: eventBeatIndex, measureStart: measureStart, beatDuration: beatDuration)
+                let beatEnd = beatStart + beatDuration
+                let crossesBeat = eventEnd > beatEnd
+                let leapsTooFar = previousNote.flatMap { previous in
+                    representativeNote.map { current in
+                        abs(diatonicPitchValue(previous.pitch) - diatonicPitchValue(current.pitch)) > 7
+                    }
+                } ?? false
+                let stemDirectionChanged = previousNote.flatMap { previous in
+                    representativeNote.map { current in
+                        guard let previousPitch = previous.pitch, let currentPitch = current.pitch else {
+                            return false
+                        }
+                        let previousDirection = stemDirection(for: staffPosition(pitch: previousPitch, clef: clef(for: previous.staffID, in: measure)))
+                        let currentDirection = stemDirection(for: staffPosition(pitch: currentPitch, clef: clef(for: current.staffID, in: measure)))
+                        return previousDirection != currentDirection
+                    }
+                } ?? false
+                if (currentBeatIndex != nil && currentBeatIndex != eventBeatIndex)
+                    || (previousEnd != nil && previousEnd != event.onset)
+                    || leapsTooFar
+                    || stemDirectionChanged
+                    || crossesBeat
+                {
+                    appendBeamGroupIfAllowed(events: current, key: key, notesByID: notesByID, to: &result)
+                    current = []
+                    currentBeatIndex = nil
+                }
+                if !crossesBeat {
+                    current.append(event)
+                    currentBeatIndex = eventBeatIndex
+                }
+                previousEnd = event.onset + duration
+                previousNote = representativeNote
+            }
+            appendBeamGroupIfAllowed(events: current, key: key, notesByID: notesByID, to: &result)
+            return result
+        }
+    }
+
+    private func appendBeamGroupIfAllowed(
+        events: [BeamEvent],
+        key: BeamGroupKey,
+        notesByID: [NoteID: ScoreNote],
+        to result: inout [BeamGroup]
+    ) {
+        guard events.count >= 2, beamContourIsSimple(events: events, notesByID: notesByID) else {
+            return
+        }
+        result.append(BeamGroup(key: key, events: events))
+    }
+
+    private func beamContourIsSimple(events: [BeamEvent], notesByID: [NoteID: ScoreNote]) -> Bool {
+        let values = events.compactMap { event -> Int? in
+            guard let firstID = event.noteIDs.first else {
+                return nil
+            }
+            return diatonicPitchValue(notesByID[firstID]?.pitch)
+        }
+        guard values.count == events.count else {
+            return false
+        }
+        var direction: Int?
+        for pair in zip(values, values.dropFirst()) {
+            let difference = pair.1 - pair.0
+            guard abs(difference) <= 4 else {
+                return false
+            }
+            let sign = difference == 0 ? 0 : (difference > 0 ? 1 : -1)
+            if sign == 0 {
+                continue
+            }
+            if let direction, direction != sign {
+                return false
+            }
+            direction = sign
+        }
+        return true
+    }
+
+    private func beamBeatDuration(for measure: Measure, fallbackOnset: MusicalTime) -> MusicalTime {
+        let beatType = measure.timeSignature?.beatType ?? 4
+        let ticksPerQuarterNote = fallbackOnset.ticksPerQuarterNote
+        let ticks = max(1, ticksPerQuarterNote * 4 / max(1, beatType))
+        return MusicalTime(ticks: ticks, ticksPerQuarterNote: ticksPerQuarterNote)
+    }
+
+    private func beamBeatIndex(onset: MusicalTime, measureStart: MusicalTime, beatDuration: MusicalTime) -> Int {
+        let offset = musicalTimeValue(onset - measureStart)
+        let beat = musicalTimeValue(beatDuration)
+        guard beat > 0 else {
+            return 0
+        }
+        return Int(floor((offset / beat) + 0.0001))
+    }
+
+    private func beamBeatStart(index: Int, measureStart: MusicalTime, beatDuration: MusicalTime) -> MusicalTime {
+        MusicalTime(ticks: measureStart.ticks + beatDuration.ticks * index, ticksPerQuarterNote: measureStart.ticksPerQuarterNote)
+    }
+
+    private func beamElements(
+        groups: [BeamGroup],
+        measure: Measure,
+        noteByID: [NoteID: NoteLayout],
+        elements: [ElementLayout],
+        metrics: LayoutMetrics
+    ) -> [ElementLayout] {
+        var stemsByNoteID: [NoteID: ElementLayout] = [:]
+        for element in elements where element.kind == .stem {
+            if let noteID = element.noteID {
+                stemsByNoteID[noteID] = element
+            }
+        }
+        return groups.compactMap { group in
+            guard let firstID = group.noteIDs.first,
+                  let lastID = group.noteIDs.last,
+                  let firstStem = stemsByNoteID[firstID],
+                  let lastStem = stemsByNoteID[lastID],
+                  let firstLayout = noteByID[firstID]
+            else {
+                return nil
+            }
+            let startTip = stemTip(stem: firstStem, noteLayout: firstLayout)
+            let endTip = stemTip(stem: lastStem, noteLayout: noteByID[lastID] ?? firstLayout)
+            let y1 = startTip.y
+            let y2 = endTip.y
+            let x1 = startTip.x
+            let x2 = endTip.x
+            let thickness = max(3, metrics.noteheadSize.height * 0.16)
+            let secondarySegments = secondaryBeamSegments(
+                group: group,
+                noteByID: noteByID,
+                stemsByNoteID: stemsByNoteID,
+                primaryStart: startTip,
+                primaryEnd: endTip,
+                thickness: thickness
+            )
+            let allSegments = [BeamSegmentLayout(start: startTip, end: endTip)] + secondarySegments
+            let minX = min(x1, x2)
+            let minY = min(y1, y2) - thickness / 2
+            let maxX = max(x1, x2)
+            let maxY = max(y1, y2) + thickness / 2
+            let segmentBounds = allSegments.reduce(CGRect(x: minX, y: minY, width: max(thickness, maxX - minX), height: max(thickness, maxY - minY))) { bounds, segment in
+                bounds.union(CGRect(
+                    x: min(segment.start.x, segment.end.x),
+                    y: min(segment.start.y, segment.end.y) - thickness / 2,
+                    width: max(thickness, abs(segment.end.x - segment.start.x)),
+                    height: abs(segment.end.y - segment.start.y) + thickness
+                ))
+            }
+            let frame = segmentBounds
+            let beam = BeamLayout(
+                noteIDs: group.noteIDs,
+                primary: BeamSegmentLayout(start: startTip, end: endTip),
+                secondarySegments: secondarySegments,
+                thickness: thickness
+            )
+            return ElementLayout(
+                id: ScoreElementID(rawValue: "\(measure.id.rawValue).beam.\(firstID.rawValue).\(lastID.rawValue)"),
+                kind: .beam,
+                noteID: firstID,
+                measureID: measure.id,
+                staffID: firstLayout.staffID,
+                voiceID: firstLayout.voiceID,
+                clef: firstLayout.clef,
+                frame: frame.insetBy(dx: -thickness / 2, dy: -thickness / 2),
+                beam: beam
+            )
+        }
+    }
+
+    private func stemTip(stem: ElementLayout, noteLayout: NoteLayout) -> CGPoint {
+        let drawsDown = stem.frame.midY > noteLayout.noteheadCenter.y
+        return CGPoint(x: stem.frame.midX, y: drawsDown ? stem.frame.maxY : stem.frame.minY)
+    }
+
+    private func secondaryBeamSegments(
+        group: BeamGroup,
+        noteByID: [NoteID: NoteLayout],
+        stemsByNoteID: [NoteID: ElementLayout],
+        primaryStart: CGPoint,
+        primaryEnd: CGPoint,
+        thickness: CGFloat
+    ) -> [BeamSegmentLayout] {
+        let representativeIDs = group.events.compactMap(\.noteIDs.first)
+        let maxFlagCount = representativeIDs
+            .map { noteByID[$0]?.noteValueKind.flagCount ?? 0 }
+            .max() ?? 0
+        guard maxFlagCount >= 2 else {
+            return []
+        }
+        let secondaryOffset: CGFloat = max(thickness * 1.45, (noteByID[representativeIDs.first ?? NoteID(rawValue: "")]?.noteheadFrame.height ?? 16) * 0.34)
+        func yOnPrimary(at x: CGFloat) -> CGFloat {
+            guard primaryEnd.x != primaryStart.x else { return primaryStart.y }
+            let t = (x - primaryStart.x) / (primaryEnd.x - primaryStart.x)
+            return primaryStart.y + (primaryEnd.y - primaryStart.y) * t
+        }
+        var segments: [BeamSegmentLayout] = []
+        for beamLevel in 2...maxFlagCount {
+            var run: [NoteID] = []
+            for id in representativeIDs {
+                if (noteByID[id]?.noteValueKind.flagCount ?? 0) >= beamLevel {
+                    run.append(id)
+                } else {
+                    appendSecondaryRun(run, to: &segments, noteByID: noteByID, stemsByNoteID: stemsByNoteID, yOnPrimary: yOnPrimary, offset: secondaryOffset * CGFloat(beamLevel - 1))
+                    run = []
+                }
+            }
+            appendSecondaryRun(run, to: &segments, noteByID: noteByID, stemsByNoteID: stemsByNoteID, yOnPrimary: yOnPrimary, offset: secondaryOffset * CGFloat(beamLevel - 1))
+        }
+        return segments
+    }
+
+    private func appendSecondaryRun(
+        _ run: [NoteID],
+        to segments: inout [BeamSegmentLayout],
+        noteByID: [NoteID: NoteLayout],
+        stemsByNoteID: [NoteID: ElementLayout],
+        yOnPrimary: (CGFloat) -> CGFloat,
+        offset: CGFloat
+    ) {
+        guard let firstID = run.first,
+              let firstStem = stemsByNoteID[firstID],
+              let firstLayout = noteByID[firstID]
+        else {
+            return
+        }
+        let drawsDown = firstStem.frame.midY > firstLayout.noteheadCenter.y
+        let signedOffset = drawsDown ? -offset : offset
+        let startX = firstStem.frame.midX
+        let endX: CGFloat
+        if let lastID = run.dropFirst().last, let lastStem = stemsByNoteID[lastID] {
+            endX = lastStem.frame.midX
+        } else {
+            let hookLength = firstLayout.noteheadFrame.width * 0.95
+            endX = startX + (drawsDown ? -hookLength : hookLength)
+        }
+        segments.append(BeamSegmentLayout(
+            start: CGPoint(x: startX, y: yOnPrimary(startX) + signedOffset),
+            end: CGPoint(x: endX, y: yOnPrimary(endX) + signedOffset)
+        ))
+    }
+
+    private func tieAndSlurElements(
+        measure: Measure,
+        noteByID: [NoteID: NoteLayout],
+        metrics: LayoutMetrics
+    ) -> [ElementLayout] {
+        let notes = measure.notes.sorted { lhs, rhs in
+            if lhs.onset != rhs.onset { return lhs.onset < rhs.onset }
+            return lhs.chordOrdinal < rhs.chordOrdinal
+        }
+        var result: [ElementLayout] = []
+
+        for startNote in notes where startNote.pitch != nil && startNote.ties.contains(.start) {
+            if let endNote = notes.first(where: {
+                $0.id != startNote.id
+                    && $0.pitch == startNote.pitch
+                    && $0.staffID == startNote.staffID
+                    && $0.voiceID == startNote.voiceID
+                    && $0.onset >= startNote.onset
+                    && $0.ties.contains(.stop)
+            }), let element = curveElement(kind: .tie, measure: measure, startNote: startNote, endNote: endNote, noteByID: noteByID, metrics: metrics) {
+                result.append(element)
+            }
+        }
+
+        var slurStarts: [SlurKey: ScoreNote] = [:]
+        for note in notes {
+            let key = SlurKey(staffID: note.staffID, voiceID: note.voiceID)
+            if note.slurs.contains(.start) {
+                slurStarts[key] = note
+            }
+            if note.slurs.contains(.stop), let start = slurStarts[key], start.id != note.id {
+                if let element = curveElement(kind: .slur, measure: measure, startNote: start, endNote: note, noteByID: noteByID, metrics: metrics) {
+                    result.append(element)
+                }
+                slurStarts[key] = nil
+            }
+        }
+        return result
+    }
+
+    private func curveElement(
+        kind: NotationCurveKind,
+        measure: Measure,
+        startNote: ScoreNote,
+        endNote: ScoreNote,
+        noteByID: [NoteID: NoteLayout],
+        metrics: LayoutMetrics
+    ) -> ElementLayout? {
+        guard let startLayout = noteByID[startNote.id],
+              let endLayout = noteByID[endNote.id]
+        else {
+            return nil
+        }
+        let direction = curveDirection(startLayout: startLayout, endLayout: endLayout)
+        let lift = (kind == .tie ? metrics.noteheadSize.height * 0.55 : metrics.noteheadSize.height * 1.25) * direction
+        let start = CGPoint(x: startLayout.noteheadFrame.maxX, y: startLayout.noteheadCenter.y + lift * 0.25)
+        let end = CGPoint(x: endLayout.noteheadFrame.minX, y: endLayout.noteheadCenter.y + lift * 0.25)
+        let control = CGPoint(x: (start.x + end.x) / 2, y: min(start.y, end.y) + lift)
+        let minX = min(start.x, end.x, control.x)
+        let minY = min(start.y, end.y, control.y)
+        let maxX = max(start.x, end.x, control.x)
+        let maxY = max(start.y, end.y, control.y)
+        let frame = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+            .insetBy(dx: -metrics.staffLineHitHalfWidth * 2, dy: -metrics.staffLineHitHalfWidth * 2)
+        let curve = NotationCurveLayout(kind: kind, startNoteID: startNote.id, endNoteID: endNote.id, start: start, control: control, end: end, frame: frame)
+        return ElementLayout(
+            id: ScoreElementID(rawValue: "\(measure.id.rawValue).\(kind == .tie ? "tie" : "slur").\(startNote.id.rawValue).\(endNote.id.rawValue)"),
+            kind: kind == .tie ? .tie : .slur,
+            noteID: startNote.id,
+            measureID: measure.id,
+            staffID: startLayout.staffID,
+            voiceID: startLayout.voiceID,
+            clef: startLayout.clef,
+            pitchClassHint: startLayout.pitch?.pitchClass,
+            frame: frame,
+            curve: curve
+        )
+    }
+
+    private func curveDirection(startLayout: NoteLayout, endLayout: NoteLayout) -> CGFloat {
+        if let position = startLayout.staffPosition {
+            return stemDirection(for: position) == .up ? 1 : -1
+        }
+        if startLayout.noteheadCenter.y == endLayout.noteheadCenter.y {
+            return 1
+        }
+        return startLayout.noteheadCenter.y < endLayout.noteheadCenter.y ? -1 : 1
+    }
+
+    private func tupletElements(
+        measure: Measure,
+        noteByID: [NoteID: NoteLayout],
+        elements: [ElementLayout],
+        metrics: LayoutMetrics
+    ) -> [ElementLayout] {
+        let candidates = measure.notes.filter { $0.pitch != nil && ($0.hasTimeModification || $0.hasTupletNotation || $0.tuplet != nil) }
+        let grouped = Dictionary(grouping: candidates) { note in
+            BeamGroupKey(measureID: measure.id, staffID: note.staffID, voiceID: note.voiceID)
+        }
+        return grouped.compactMap { _, notes in
+            let sorted = notes.sorted { $0.onset < $1.onset }
+            guard sorted.count >= 3,
+                  let first = sorted.first,
+                  let last = sorted.last,
+                  let firstLayout = noteByID[first.id],
+                  let lastLayout = noteByID[last.id]
+            else {
+                return nil
+            }
+            let number = "\(first.tuplet?.actualNotes ?? 3)"
+            let top = sorted.compactMap { noteByID[$0.id]?.noteheadFrame.minY }.min() ?? firstLayout.noteheadFrame.minY
+            let frame = CGRect(
+                x: firstLayout.noteheadCenter.x,
+                y: top - metrics.noteheadSize.height * 1.65,
+                width: max(metrics.noteheadSize.width * 2, lastLayout.noteheadCenter.x - firstLayout.noteheadCenter.x),
+                height: metrics.noteheadSize.height * 0.8
+            )
+            let tuplet = TupletLayout(noteIDs: sorted.map(\.id), number: number, frame: frame)
+            return ElementLayout(
+                id: ScoreElementID(rawValue: "\(measure.id.rawValue).tuplet.\(first.id.rawValue).\(last.id.rawValue)"),
+                kind: .tuplet,
+                noteID: first.id,
+                measureID: measure.id,
+                staffID: firstLayout.staffID,
+                voiceID: firstLayout.voiceID,
+                clef: firstLayout.clef,
+                frame: frame,
+                tuplet: tuplet
+            )
+        }
+    }
+
     private func stemDirection(for position: StaffPosition) -> StemDirection {
         position.stepsFromMiddleLine < 0 ? .up : .down
     }
@@ -532,19 +999,19 @@ struct ScoreLayoutEngine: Sendable {
         noteheadCenter center: CGPoint
     ) -> CGRect {
         let width = max(2, noteFrame.width * 0.2)
-        let length = noteFrame.height * 3.2
+        let length = noteFrame.height * 2.2 + width * 0.25
         switch direction {
         case .up:
             return CGRect(
-                x: noteFrame.maxX - width * 0.55,
-                y: center.y - length,
+                x: noteFrame.maxX - width * 1.75,
+                y: center.y - length - width * 0.4,
                 width: width,
                 height: length
             )
         case .down:
             return CGRect(
-                x: noteFrame.minX - width * 0.45,
-                y: center.y,
+                x: noteFrame.minX + width * 0.65,
+                y: center.y + width * 0.4,
                 width: width,
                 height: length
             )
@@ -561,17 +1028,29 @@ struct ScoreLayoutEngine: Sendable {
             return CGRect(
                 x: stemFrame.midX,
                 y: stemFrame.minY,
-                width: noteFrame.width * 0.9,
-                height: noteFrame.height * 1.5
+                width: noteFrame.width * 1.18,
+                height: noteFrame.height * 1.85
             )
         case .down:
             return CGRect(
-                x: stemFrame.midX - noteFrame.width * 0.9,
-                y: stemFrame.maxY - noteFrame.height * 1.5,
-                width: noteFrame.width * 0.9,
-                height: noteFrame.height * 1.5
+                x: stemFrame.midX - noteFrame.width * 1.18,
+                y: stemFrame.maxY - noteFrame.height * 1.85,
+                width: noteFrame.width * 1.18,
+                height: noteFrame.height * 1.85
             )
         }
+    }
+
+    private func wholeRestCenterX(
+        for note: ScoreNote,
+        measureX: CGFloat,
+        measureWidth: CGFloat,
+        fallbackX: CGFloat
+    ) -> CGFloat {
+        guard note.pitch == nil, note.noteValueKind == .whole else {
+            return fallbackX
+        }
+        return measureX + measureWidth / 2
     }
 
     private func appendDotsIfNeeded(
@@ -587,9 +1066,10 @@ struct ScoreLayoutEngine: Sendable {
         }
 
         let dotSize = max(2, noteFrame.height * 0.28)
+        let firstDotOffset = note.pitch == nil ? -noteFrame.width * 0.06 : noteFrame.width * 0.45
         for index in 0..<note.dotCount {
             let dotFrame = CGRect(
-                x: noteFrame.maxX + noteFrame.width * 0.45 + CGFloat(index) * dotSize * 1.8,
+                x: noteFrame.maxX + firstDotOffset + CGFloat(index) * dotSize * 1.8,
                 y: noteFrame.midY - dotSize / 2,
                 width: dotSize,
                 height: dotSize
@@ -839,6 +1319,11 @@ public struct ElementLayout: Sendable {
     public let accidental: String?
     public let annotation: TextAnnotationLayout?
     public let repeatBarline: RepeatBarline?
+    public let beam: BeamLayout?
+    public let curve: NotationCurveLayout?
+    public let tuplet: TupletLayout?
+    public let repeatEnding: RepeatEndingLayout?
+    public let playbackJumpMarker: PlaybackJumpMarkerLayout?
 
     init(
         id: ScoreElementID,
@@ -857,7 +1342,12 @@ public struct ElementLayout: Sendable {
         ledgerLine: LedgerLineLayout? = nil,
         accidental: String? = nil,
         annotation: TextAnnotationLayout? = nil,
-        repeatBarline: RepeatBarline? = nil
+        repeatBarline: RepeatBarline? = nil,
+        beam: BeamLayout? = nil,
+        curve: NotationCurveLayout? = nil,
+        tuplet: TupletLayout? = nil,
+        repeatEnding: RepeatEndingLayout? = nil,
+        playbackJumpMarker: PlaybackJumpMarkerLayout? = nil
     ) {
         self.id = id
         self.kind = kind
@@ -876,6 +1366,11 @@ public struct ElementLayout: Sendable {
         self.accidental = accidental
         self.annotation = annotation
         self.repeatBarline = repeatBarline
+        self.beam = beam
+        self.curve = curve
+        self.tuplet = tuplet
+        self.repeatEnding = repeatEnding
+        self.playbackJumpMarker = playbackJumpMarker
     }
 
     fileprivate func offsetBy(dx: CGFloat, dy: CGFloat) -> ElementLayout {
@@ -896,7 +1391,184 @@ public struct ElementLayout: Sendable {
             ledgerLine: ledgerLine?.offsetBy(dx: dx, dy: dy),
             accidental: accidental,
             annotation: annotation?.offsetBy(dx: dx, dy: dy),
-            repeatBarline: repeatBarline
+            repeatBarline: repeatBarline,
+            beam: beam?.offsetBy(dx: dx, dy: dy),
+            curve: curve?.offsetBy(dx: dx, dy: dy),
+            tuplet: tuplet?.offsetBy(dx: dx, dy: dy),
+            repeatEnding: repeatEnding?.offsetBy(dx: dx, dy: dy),
+            playbackJumpMarker: playbackJumpMarker?.offsetBy(dx: dx, dy: dy)
+        )
+    }
+}
+
+public struct BeamSegmentLayout: Sendable {
+    public let start: CGPoint
+    public let end: CGPoint
+
+    init(start: CGPoint, end: CGPoint) {
+        self.start = start
+        self.end = end
+    }
+
+    fileprivate func offsetBy(dx: CGFloat, dy: CGFloat) -> BeamSegmentLayout {
+        BeamSegmentLayout(
+            start: CGPoint(x: start.x + dx, y: start.y + dy),
+            end: CGPoint(x: end.x + dx, y: end.y + dy)
+        )
+    }
+}
+
+public struct BeamLayout: Sendable {
+    public let noteIDs: [NoteID]
+    public let primary: BeamSegmentLayout
+    public let secondarySegments: [BeamSegmentLayout]
+    public let thickness: CGFloat
+
+    init(noteIDs: [NoteID], primary: BeamSegmentLayout, secondarySegments: [BeamSegmentLayout] = [], thickness: CGFloat) {
+        self.noteIDs = noteIDs
+        self.primary = primary
+        self.secondarySegments = secondarySegments
+        self.thickness = thickness
+    }
+
+    fileprivate func offsetBy(dx: CGFloat, dy: CGFloat) -> BeamLayout {
+        BeamLayout(
+            noteIDs: noteIDs,
+            primary: primary.offsetBy(dx: dx, dy: dy),
+            secondarySegments: secondarySegments.map { $0.offsetBy(dx: dx, dy: dy) },
+            thickness: thickness
+        )
+    }
+}
+
+public enum NotationCurveKind: Hashable, Codable, Sendable {
+    case tie
+    case slur
+}
+
+public struct NotationCurveLayout: Sendable {
+    public let kind: NotationCurveKind
+    public let startNoteID: NoteID
+    public let endNoteID: NoteID
+    public let start: CGPoint
+    public let control: CGPoint
+    public let end: CGPoint
+    public let frame: CGRect
+
+    init(kind: NotationCurveKind, startNoteID: NoteID, endNoteID: NoteID, start: CGPoint, control: CGPoint, end: CGPoint, frame: CGRect) {
+        self.kind = kind
+        self.startNoteID = startNoteID
+        self.endNoteID = endNoteID
+        self.start = start
+        self.control = control
+        self.end = end
+        self.frame = frame
+    }
+
+    fileprivate func offsetBy(dx: CGFloat, dy: CGFloat) -> NotationCurveLayout {
+        NotationCurveLayout(
+            kind: kind,
+            startNoteID: startNoteID,
+            endNoteID: endNoteID,
+            start: CGPoint(x: start.x + dx, y: start.y + dy),
+            control: CGPoint(x: control.x + dx, y: control.y + dy),
+            end: CGPoint(x: end.x + dx, y: end.y + dy),
+            frame: frame.offsetBy(dx: dx, dy: dy)
+        )
+    }
+}
+
+public struct TupletLayout: Sendable {
+    public let noteIDs: [NoteID]
+    public let number: String
+    public let frame: CGRect
+
+    init(noteIDs: [NoteID], number: String, frame: CGRect) {
+        self.noteIDs = noteIDs
+        self.number = number
+        self.frame = frame
+    }
+
+    fileprivate func offsetBy(dx: CGFloat, dy: CGFloat) -> TupletLayout {
+        TupletLayout(noteIDs: noteIDs, number: number, frame: frame.offsetBy(dx: dx, dy: dy))
+    }
+}
+
+public struct RepeatEndingLayout: Sendable {
+    public let numbers: [Int]
+    public let label: String
+    public let kind: RepeatEndingKind
+    public let startsHere: Bool
+    public let stopsHere: Bool
+    public let lineStart: CGPoint
+    public let lineEnd: CGPoint
+    public let startHookEnd: CGPoint?
+    public let endHookEnd: CGPoint?
+    public let labelPoint: CGPoint
+    public let frame: CGRect
+
+    init(
+        numbers: [Int],
+        label: String,
+        kind: RepeatEndingKind,
+        startsHere: Bool,
+        stopsHere: Bool,
+        lineStart: CGPoint,
+        lineEnd: CGPoint,
+        startHookEnd: CGPoint?,
+        endHookEnd: CGPoint?,
+        labelPoint: CGPoint,
+        frame: CGRect
+    ) {
+        self.numbers = numbers
+        self.label = label
+        self.kind = kind
+        self.startsHere = startsHere
+        self.stopsHere = stopsHere
+        self.lineStart = lineStart
+        self.lineEnd = lineEnd
+        self.startHookEnd = startHookEnd
+        self.endHookEnd = endHookEnd
+        self.labelPoint = labelPoint
+        self.frame = frame
+    }
+
+    fileprivate func offsetBy(dx: CGFloat, dy: CGFloat) -> RepeatEndingLayout {
+        RepeatEndingLayout(
+            numbers: numbers,
+            label: label,
+            kind: kind,
+            startsHere: startsHere,
+            stopsHere: stopsHere,
+            lineStart: CGPoint(x: lineStart.x + dx, y: lineStart.y + dy),
+            lineEnd: CGPoint(x: lineEnd.x + dx, y: lineEnd.y + dy),
+            startHookEnd: startHookEnd.map { CGPoint(x: $0.x + dx, y: $0.y + dy) },
+            endHookEnd: endHookEnd.map { CGPoint(x: $0.x + dx, y: $0.y + dy) },
+            labelPoint: CGPoint(x: labelPoint.x + dx, y: labelPoint.y + dy),
+            frame: frame.offsetBy(dx: dx, dy: dy)
+        )
+    }
+}
+
+public struct PlaybackJumpMarkerLayout: Sendable {
+    public let marker: PlaybackJumpMarker
+    public let label: String
+    public let point: CGPoint
+    public let frame: CGRect
+
+    init(marker: PlaybackJumpMarker, label: String, point: CGPoint, frame: CGRect) {
+        self.marker = marker
+        self.label = label
+        self.point = point
+        self.frame = frame
+    }
+
+    fileprivate func offsetBy(dx: CGFloat, dy: CGFloat) -> PlaybackJumpMarkerLayout {
+        PlaybackJumpMarkerLayout(
+            marker: marker,
+            label: label,
+            point: CGPoint(x: point.x + dx, y: point.y + dy),
+            frame: frame.offsetBy(dx: dx, dy: dy)
         )
     }
 }
@@ -1028,7 +1700,7 @@ private extension NoteValueKind {
         switch self {
         case .whole:
             false
-        case .half, .quarter, .eighth, .sixteenth, .other:
+        case .half, .quarter, .eighth, .sixteenth, .thirtySecond, .other:
             true
         }
     }
@@ -1039,6 +1711,8 @@ private extension NoteValueKind {
             1
         case .sixteenth:
             2
+        case .thirtySecond:
+            3
         case .whole, .half, .quarter, .other:
             0
         }
@@ -1062,6 +1736,47 @@ private struct ChordStemKey: Hashable {
     }
 }
 
+private struct BeamGroupKey: Hashable {
+    let measureID: MeasureID
+    let staffID: StaffID
+    let voiceID: VoiceID
+}
+
+private struct BeamEvent {
+    let onset: MusicalTime
+    let noteIDs: [NoteID]
+}
+
+private struct BeamGroup {
+    let key: BeamGroupKey
+    let events: [BeamEvent]
+
+    var noteIDs: [NoteID] {
+        events.flatMap(\.noteIDs)
+    }
+}
+
+private struct SlurKey: Hashable {
+    let staffID: StaffID
+    let voiceID: VoiceID
+}
+
+private func diatonicPitchValue(_ pitch: Pitch?) -> Int {
+    guard let pitch else {
+        return 0
+    }
+    let stepIndex: Int = switch pitch.step {
+    case .c: 0
+    case .d: 1
+    case .e: 2
+    case .f: 3
+    case .g: 4
+    case .a: 5
+    case .b: 6
+    }
+    return pitch.octave * 7 + stepIndex
+}
+
 private struct LayoutMetrics {
     let leftMargin: CGFloat
     let rightMargin: CGFloat
@@ -1083,7 +1798,7 @@ private struct LayoutMetrics {
         bottomMargin = options.showPageMargins ? 48 : 32
         staffHeight = options.staffSpace * 4
         staffGap = max(options.systemSpacing, options.staffSpace * 8)
-        noteheadSize = CGSize(width: options.staffSpace * 1.35, height: options.staffSpace)
+        noteheadSize = CGSize(width: options.staffSpace * 1.95, height: options.staffSpace * 1.55)
         noteInset = options.staffSpace * 3
         minimumMeasureWidth = options.staffSpace * 12
         staffLineHitHalfWidth = max(1, options.staffSpace * 0.08)
@@ -1119,9 +1834,35 @@ private func clef(for staffID: StaffID, in measure: Measure) -> Clef {
 }
 
 private func width(for measure: Measure, options: LayoutOptions, metrics: LayoutMetrics) -> CGFloat {
-    let uniqueOnsets = Set(measure.notes.map(\.onset)).count
-    let onsetWidth = CGFloat(max(uniqueOnsets, 1)) * options.staffSpace * 5
+    let spacingUnits = spacingUnitCount(for: measure)
+    let onsetWidth = CGFloat(max(spacingUnits, 1)) * options.staffSpace * 5
     return max(metrics.minimumMeasureWidth, onsetWidth + metrics.noteInset * 2)
+}
+
+private func spacingUnitCount(for measure: Measure) -> Int {
+    let uniqueOnsets = Set(measure.notes.map(\.onset)).count
+    guard uniqueOnsets > 1 else {
+        return max(uniqueOnsets, 1)
+    }
+
+    let measureStart = measure.notes.map(\.onset).min() ?? MusicalTime(ticks: 0, ticksPerQuarterNote: 4)
+    let measureEnd = measure.notes
+        .map { $0.onset + $0.duration }
+        .max() ?? measureStart
+    let durationValue = musicalTimeValue(measureEnd - measureStart)
+    guard durationValue > 0 else {
+        return uniqueOnsets
+    }
+
+    // Keep short-note passages on an eighth-note visual grid. Sixteenth onsets
+    // should live inside the same beat width as the surrounding eighth-note beam
+    // instead of widening the whole measure just because the onset grid is finer.
+    let eighthGridUnits = Int(ceil(durationValue * 2))
+    let containsShortNotes = measure.notes.contains { $0.noteValueKind.flagCount > 1 }
+    if containsShortNotes {
+        return max(eighthGridUnits, 1)
+    }
+    return uniqueOnsets
 }
 
 private func xCoordinatesByOnset(
@@ -1136,8 +1877,8 @@ private func xCoordinatesByOnset(
     }
 
     let prefixWidth = keySignaturePrefixWidth(for: measure.keySignature, metrics: metrics)
-    let timeWidth: CGFloat = measure.timeSignature == nil ? 0 : metrics.staffSpace * 1.6
-    let clefWidth: CGFloat = (measure.clef == nil && measure.clefsByStaff.isEmpty) ? 0 : metrics.staffSpace * 1.6
+    let timeWidth: CGFloat = measure.timeSignature == nil ? 0 : metrics.staffSpace * 2.2
+    let clefWidth: CGFloat = (measure.clef == nil && measure.clefsByStaff.isEmpty) ? 0 : metrics.staffSpace * 2.9
     let startX = measureX + metrics.noteInset + prefixWidth + timeWidth + clefWidth
 
     if onsets.count == 1 {
@@ -1145,17 +1886,35 @@ private func xCoordinatesByOnset(
     }
 
     let usableWidth = max(0, measureWidth - metrics.noteInset * 2 - prefixWidth - timeWidth - clefWidth)
-    let stepWidth = usableWidth / CGFloat(onsets.count - 1)
-    return Dictionary(uniqueKeysWithValues: onsets.enumerated().map { index, onset in
-        (onset, startX + CGFloat(index) * stepWidth)
+    let measureStart = onsets.first ?? onsets[0]
+    let measureEnd = measure.notes
+        .map { $0.onset + $0.duration }
+        .max() ?? onsets.last ?? measureStart
+    let measureDuration = measureEnd - measureStart
+    let measureDurationValue = musicalTimeValue(measureDuration)
+
+    guard measureDurationValue > 0 else {
+        let stepWidth = usableWidth / CGFloat(onsets.count - 1)
+        return Dictionary(uniqueKeysWithValues: onsets.enumerated().map { index, onset in
+            (onset, startX + CGFloat(index) * stepWidth)
+        })
+    }
+
+    return Dictionary(uniqueKeysWithValues: onsets.map { onset in
+        let offset = musicalTimeValue(onset - measureStart) / measureDurationValue
+        return (onset, startX + usableWidth * offset)
     })
+}
+
+private func musicalTimeValue(_ time: MusicalTime) -> CGFloat {
+    CGFloat(time.ticks) / CGFloat(time.ticksPerQuarterNote)
 }
 
 private func keySignaturePrefixWidth(for keySignature: KeySignature?, metrics: LayoutMetrics) -> CGFloat {
     guard let keySignature else {
         return 0
     }
-    return CGFloat(min(abs(keySignature.fifths), 7)) * metrics.staffSpace * 1.15
+    return CGFloat(min(abs(keySignature.fifths), 7)) * metrics.staffSpace * 1.35
 }
 
 private func prefixElements(
@@ -1168,11 +1927,23 @@ private func prefixElements(
 ) -> [ElementLayout] {
     var elements: [ElementLayout] = []
     if measure.clef != nil || measure.clefsByStaff[staffID] != nil {
+        let clefYOffset: CGFloat = switch clef.kind {
+        case .treble:
+            metrics.staffSpace * 0.8
+        case .bass:
+            -metrics.staffSpace * 1.2
+        case .alto, .tenor, .unknown:
+            0
+        }
+        let clefScale: CGFloat = clef.kind == .bass ? 0.9 : 1
+        let baseClefHeight = metrics.staffSpace * 4.55
+        let clefWidth = metrics.staffSpace * 2.0 * clefScale
+        let clefHeight = baseClefHeight * clefScale
         let frame = CGRect(
-            x: measureX + metrics.staffSpace * 0.15,
-            y: middleY - metrics.staffSpace * 2.1,
-            width: metrics.staffSpace * 1.4,
-            height: metrics.staffSpace * 4.2
+            x: measureX + metrics.staffSpace * 0.65,
+            y: middleY - metrics.staffSpace * 2.1 + clefYOffset + (baseClefHeight - clefHeight) / 2,
+            width: clefWidth,
+            height: clefHeight
         )
         elements.append(ElementLayout(
             id: ScoreElementID(rawValue: "\(staffID.rawValue).\(measure.id.rawValue).clef"),
@@ -1186,10 +1957,10 @@ private func prefixElements(
 
     if let timeSignature = measure.timeSignature {
         let frame = CGRect(
-            x: measureX + metrics.staffSpace * 2.0 + keySignaturePrefixWidth(for: measure.keySignature, metrics: metrics),
-            y: middleY - metrics.staffSpace * 1.8,
-            width: metrics.staffSpace * 1.4,
-            height: metrics.staffSpace * 3.6
+            x: measureX + metrics.staffSpace * 3.85 + keySignaturePrefixWidth(for: measure.keySignature, metrics: metrics),
+            y: middleY - metrics.staffSpace * 1.85,
+            width: metrics.staffSpace * 1.85,
+            height: metrics.staffSpace * 3.95
         )
         elements.append(ElementLayout(
             id: ScoreElementID(rawValue: "\(staffID.rawValue).\(measure.id.rawValue).timeSignature"),
@@ -1212,6 +1983,7 @@ private func barlineElements(
     staffIndexByID: [StaffID: Int],
     measureX: CGFloat,
     measureWidth: CGFloat,
+    forwardRepeatX: CGFloat,
     systemTop: CGFloat,
     metrics: LayoutMetrics
 ) -> [ElementLayout] {
@@ -1233,7 +2005,7 @@ private func barlineElements(
     ))
 
     for repeatBarline in measure.repeatBarlines {
-        let x = repeatBarline.direction == .forward ? measureX : rightX
+        let x = repeatBarline.direction == .forward ? forwardRepeatX : rightX
         elements.append(ElementLayout(
             id: ScoreElementID(rawValue: "\(measure.id.rawValue).repeat.\(repeatBarline.direction.rawValue)"),
             kind: .barline,
@@ -1243,6 +2015,169 @@ private func barlineElements(
         ))
     }
     return elements
+}
+
+private func repeatEndingElements(
+    measure: Measure,
+    staffIDs: [StaffID],
+    staffIndexByID: [StaffID: Int],
+    measureX: CGFloat,
+    measureWidth: CGFloat,
+    systemTop: CGFloat,
+    metrics: LayoutMetrics
+) -> [ElementLayout] {
+    guard !staffIDs.isEmpty else {
+        return []
+    }
+
+    let startEndings = measure.repeatEndings.filter { $0.kind == .start && !$0.numbers.isEmpty }
+    guard !startEndings.isEmpty else {
+        return []
+    }
+
+    let topStaffIndex = staffIndexByID[staffIDs.first!] ?? 0
+    let topStaffTop = metrics.staffMiddleY(systemTop: systemTop, staffIndex: topStaffIndex) - metrics.staffHeight / 2
+    let bracketY = topStaffTop - metrics.staffSpace * 1.35
+    let hookLength = metrics.staffSpace * 0.9
+    let labelHeight = metrics.staffSpace * 1.05
+    let lineStartX = measureX + metrics.staffSpace * 0.35
+    let lineEndX = measureX + measureWidth - metrics.staffSpace * 0.35
+    let lineStart = CGPoint(x: lineStartX, y: bracketY)
+    let lineEnd = CGPoint(x: lineEndX, y: bracketY)
+
+    return startEndings.flatMap { ending in
+        ending.numbers.map { number in
+            let sameMeasureStop = measure.repeatEndings.contains { candidate in
+                candidate.numbers.contains(number)
+                    && (candidate.kind == .stop || candidate.kind == .discontinue)
+            }
+            let label = "\(number)."
+            let startHookEnd = CGPoint(x: lineStart.x, y: lineStart.y + hookLength)
+            let endHookEnd = sameMeasureStop ? CGPoint(x: lineEnd.x, y: lineEnd.y + hookLength) : nil
+            let labelPoint = CGPoint(x: lineStart.x + metrics.staffSpace * 0.55, y: lineStart.y - labelHeight * 0.35)
+            let frame = CGRect(
+                x: lineStart.x - metrics.staffLineHitHalfWidth * 2,
+                y: min(lineStart.y, labelPoint.y) - metrics.staffLineHitHalfWidth * 2,
+                width: lineEnd.x - lineStart.x + metrics.staffLineHitHalfWidth * 4,
+                height: max(hookLength, labelHeight) + metrics.staffLineHitHalfWidth * 4
+            )
+            let layout = RepeatEndingLayout(
+                numbers: [number],
+                label: label,
+                kind: ending.kind,
+                startsHere: true,
+                stopsHere: sameMeasureStop,
+                lineStart: lineStart,
+                lineEnd: lineEnd,
+                startHookEnd: startHookEnd,
+                endHookEnd: endHookEnd,
+                labelPoint: labelPoint,
+                frame: frame
+            )
+            return ElementLayout(
+                id: ScoreElementID(rawValue: "\(measure.id.rawValue).repeatEnding.\(number).start"),
+                kind: .repeatEnding,
+                measureID: measure.id,
+                staffID: staffIDs.first,
+                frame: frame,
+                repeatEnding: layout
+            )
+        }
+    }
+}
+
+private func playbackJumpMarkerElements(
+    measure: Measure,
+    staffIDs: [StaffID],
+    staffIndexByID: [StaffID: Int],
+    measureX: CGFloat,
+    measureWidth: CGFloat,
+    systemTop: CGFloat,
+    metrics: LayoutMetrics
+) -> [ElementLayout] {
+    guard !measure.playbackJumpMarkers.isEmpty, let topStaffID = staffIDs.first else {
+        return []
+    }
+
+    let topStaffIndex = staffIndexByID[topStaffID] ?? 0
+    let topStaffTop = metrics.staffMiddleY(systemTop: systemTop, staffIndex: topStaffIndex) - metrics.staffHeight / 2
+    let markerHeight = metrics.staffSpace * 1.15
+    let baseY = topStaffTop - metrics.staffSpace * 2.75
+    let baseX = measureX + min(measureWidth * 0.18, metrics.staffSpace * 2.8)
+
+    return measure.playbackJumpMarkers.enumerated().map { index, marker in
+        let label = playbackJumpMarkerLabel(for: marker)
+        let width = max(metrics.staffSpace * 2.3, CGFloat(label.count) * metrics.staffSpace * 0.48)
+        let point = CGPoint(
+            x: baseX + CGFloat(index) * (width + metrics.staffSpace * 0.5),
+            y: baseY - CGFloat(index / 2) * markerHeight
+        )
+        let frame = CGRect(
+            x: point.x - metrics.staffSpace * 0.25,
+            y: point.y - markerHeight * 0.55,
+            width: width + metrics.staffSpace * 0.5,
+            height: markerHeight
+        )
+        let layout = PlaybackJumpMarkerLayout(marker: marker, label: label, point: point, frame: frame)
+        return ElementLayout(
+            id: ScoreElementID(rawValue: "\(measure.id.rawValue).jump.\(index).\(marker.kind.rawValue)"),
+            kind: .playbackJumpMarker,
+            measureID: measure.id,
+            staffID: topStaffID,
+            frame: frame,
+            playbackJumpMarker: layout
+        )
+    }
+}
+
+private func playbackJumpMarkerLabel(for marker: PlaybackJumpMarker) -> String {
+    switch marker.kind {
+    case .fine:
+        return "Fine"
+    case .daCapo:
+        return "D.C."
+    case .daCapoAlFine:
+        return "D.C. al Fine"
+    case .daCapoAlCoda:
+        return "D.C. al Coda"
+    case .dalSegno:
+        return "D.S."
+    case .dalSegnoAlFine:
+        return "D.S. al Fine"
+    case .dalSegnoAlCoda:
+        return "D.S. al Coda"
+    case .segno:
+        return "Segno"
+    case .coda:
+        return "Coda"
+    case .toCoda:
+        return "To Coda"
+    }
+}
+
+private func forwardRepeatX(
+    for measure: Measure,
+    measureX: CGFloat,
+    elements: [ElementLayout],
+    noteByID: [NoteID: NoteLayout],
+    metrics: LayoutMetrics
+) -> CGFloat {
+    let prefixKinds: Set<ScoreElementKind> = [.clef, .keySignature, .timeSignature]
+    let prefixEndX = elements
+        .filter { $0.measureID == measure.id && prefixKinds.contains($0.kind) }
+        .map(\.frame.maxX)
+        .max()
+
+    guard let prefixEndX else {
+        return measureX
+    }
+
+    let firstNoteMinX = measure.notes
+        .compactMap { noteByID[$0.id]?.noteheadFrame.minX }
+        .min()
+    let desiredX = prefixEndX + metrics.staffSpace * 0.85
+    let xBeforeFirstNote = firstNoteMinX.map { $0 - metrics.staffSpace * 0.70 } ?? desiredX
+    return max(measureX, min(desiredX, xBeforeFirstNote))
 }
 
 private func keySignatureElements(
@@ -1263,14 +2198,14 @@ private func keySignatureElements(
     return pitches.enumerated().map { index, pitch in
         let position = staffPosition(pitch: pitch, clef: clef)
         let center = CGPoint(
-            x: measureX + metrics.staffSpace * 2.0 + CGFloat(index) * metrics.staffSpace * 1.15,
+            x: measureX + metrics.staffSpace * 3.95 + CGFloat(index) * metrics.staffSpace * 1.35,
             y: middleY - CGFloat(position.stepsFromMiddleLine) * metrics.staffSpace / 2
         )
         let frame = CGRect(
             x: center.x - metrics.noteheadSize.width * 0.45,
-            y: center.y - metrics.noteheadSize.height * 0.75,
-            width: metrics.noteheadSize.width * 0.9,
-            height: metrics.noteheadSize.height * 1.5
+            y: center.y - metrics.noteheadSize.height * 0.70,
+            width: metrics.noteheadSize.width * 0.95,
+            height: metrics.noteheadSize.height * 1.6
         )
         return ElementLayout(
             id: ScoreElementID(rawValue: "\(staffID.rawValue).\(measure.id.rawValue).keySignature.\(index)"),

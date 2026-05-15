@@ -26,6 +26,22 @@ ZIPFoundation is a general ZIP archive library. It is not a score rendering SDK
 and does not provide MusicXML parsing, layout, rendering, interaction, or
 playback behavior.
 
+## Bravura
+
+- Project: Bravura
+- Repository: https://github.com/steinbergmedia/bravura
+- Version: 1.392
+- License: SIL Open Font License, Version 1.1
+- Purpose: SMuFL music-symbol glyph rendering for clefs, accidentals, rests,
+  repeat dots, time-signature digits, noteheads, and flags.
+
+The bundled license text is recorded in
+`Sources/DoReMiRendererKit/Resources/Fonts/OFL.txt`. Bravura is used only as a
+font for symbol shapes; DoReMiRendererKit still performs MusicXML parsing,
+layout, hit testing, color resolution, and playback sequencing itself. The font
+must not be sold by itself, and the reserved font name requirements must be
+followed if a derived font is ever created.
+
 ## External Score Rendering SDKs
 
 No code, sample code, type definitions, API names, headers, binaries, or internal

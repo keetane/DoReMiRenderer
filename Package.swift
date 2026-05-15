@@ -28,7 +28,10 @@ let package = Package(
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
             name: "DoReMiRendererKit",
-            dependencies: ["ZIPFoundation"]
+            dependencies: ["ZIPFoundation"],
+            resources: [
+                .process("Resources"),
+            ]
         ),
         .executableTarget(
             name: "DoReMiRendererDiagnostics",

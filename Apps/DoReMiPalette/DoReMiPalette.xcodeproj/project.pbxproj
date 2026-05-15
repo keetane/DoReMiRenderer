@@ -32,6 +32,16 @@
 		2B0000010000000000000017 /* PalettePlaybackRuntimeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001027 /* PalettePlaybackRuntimeTests.swift */; };
 		2B0000010000000000000018 /* Resources/Samples/rhythm_values_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001028 /* Resources/Samples/rhythm_values_sample.musicxml */; };
 		2B0000010000000000000019 /* Resources/Samples/notation_coverage_grand_staff.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001029 /* Resources/Samples/notation_coverage_grand_staff.musicxml */; };
+		2B000001000000000000001A /* Resources/Samples/s6_notation_refinement_grand_staff.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000102A /* Resources/Samples/s6_notation_refinement_grand_staff.musicxml */; };
+		2B000001000000000000001B /* Resources/Samples/s7_repeat_playback_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000102B /* Resources/Samples/s7_repeat_playback_sample.musicxml */; };
+		2B000001000000000000001C /* Resources/Samples/s8_repeat_endings_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000102C /* Resources/Samples/s8_repeat_endings_sample.musicxml */; };
+		2B000001000000000000001D /* Resources/Samples/s9_repeat_visuals_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000102D /* Resources/Samples/s9_repeat_visuals_sample.musicxml */; };
+		2B00000100000000000000A1 /* Resources/Samples/s10_dc_fine_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000102E /* Resources/Samples/s10_dc_fine_sample.musicxml */; };
+		2B00000100000000000000A2 /* Resources/Samples/s10_ds_fine_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000102F /* Resources/Samples/s10_ds_fine_sample.musicxml */; };
+		2B00000100000000000000A3 /* Resources/Samples/s10_dc_coda_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001030 /* Resources/Samples/s10_dc_coda_sample.musicxml */; };
+		2B00000100000000000000A4 /* Resources/Samples/s10_ds_coda_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001031 /* Resources/Samples/s10_ds_coda_sample.musicxml */; };
+		2B00000100000000000000A5 /* Resources/Samples/s10_repeat_diagnostics_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001032 /* Resources/Samples/s10_repeat_diagnostics_sample.musicxml */; };
+		2B00000100000000000000A6 /* Resources/Samples/s10_all_repeat_symbols_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001033 /* Resources/Samples/s10_all_repeat_symbols_sample.musicxml */; };
 		2B00000100000000000000F0 /* DoReMiRendererKit in Frameworks */ = {isa = PBXBuildFile; productRef = 2B0000010000000000000041 /* DoReMiRendererKit */; };
 /* End PBXBuildFile section */
 
@@ -72,6 +82,16 @@
 		2B0000010000000000001027 /* PalettePlaybackRuntimeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PalettePlaybackRuntimeTests.swift; sourceTree = "<group>"; };
 		2B0000010000000000001028 /* Resources/Samples/rhythm_values_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/rhythm_values_sample.musicxml; sourceTree = "<group>"; };
 		2B0000010000000000001029 /* Resources/Samples/notation_coverage_grand_staff.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/notation_coverage_grand_staff.musicxml; sourceTree = "<group>"; };
+		2B000001000000000000102A /* Resources/Samples/s6_notation_refinement_grand_staff.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/s6_notation_refinement_grand_staff.musicxml; sourceTree = "<group>"; };
+		2B000001000000000000102B /* Resources/Samples/s7_repeat_playback_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/s7_repeat_playback_sample.musicxml; sourceTree = "<group>"; };
+		2B000001000000000000102C /* Resources/Samples/s8_repeat_endings_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/s8_repeat_endings_sample.musicxml; sourceTree = "<group>"; };
+		2B000001000000000000102D /* Resources/Samples/s9_repeat_visuals_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/s9_repeat_visuals_sample.musicxml; sourceTree = "<group>"; };
+		2B000001000000000000102E /* Resources/Samples/s10_dc_fine_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/s10_dc_fine_sample.musicxml; sourceTree = "<group>"; };
+		2B000001000000000000102F /* Resources/Samples/s10_ds_fine_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/s10_ds_fine_sample.musicxml; sourceTree = "<group>"; };
+		2B0000010000000000001030 /* Resources/Samples/s10_dc_coda_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/s10_dc_coda_sample.musicxml; sourceTree = "<group>"; };
+		2B0000010000000000001031 /* Resources/Samples/s10_ds_coda_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/s10_ds_coda_sample.musicxml; sourceTree = "<group>"; };
+		2B0000010000000000001032 /* Resources/Samples/s10_repeat_diagnostics_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/s10_repeat_diagnostics_sample.musicxml; sourceTree = "<group>"; };
+		2B0000010000000000001033 /* Resources/Samples/s10_all_repeat_symbols_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/s10_all_repeat_symbols_sample.musicxml; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -127,6 +147,16 @@
 				2B000001000000000000101C /* Resources/Samples/phase12_sample.musicxml */,
 				2B0000010000000000001028 /* Resources/Samples/rhythm_values_sample.musicxml */,
 				2B0000010000000000001029 /* Resources/Samples/notation_coverage_grand_staff.musicxml */,
+				2B000001000000000000102A /* Resources/Samples/s6_notation_refinement_grand_staff.musicxml */,
+				2B000001000000000000102B /* Resources/Samples/s7_repeat_playback_sample.musicxml */,
+				2B000001000000000000102C /* Resources/Samples/s8_repeat_endings_sample.musicxml */,
+				2B000001000000000000102D /* Resources/Samples/s9_repeat_visuals_sample.musicxml */,
+				2B000001000000000000102E /* Resources/Samples/s10_dc_fine_sample.musicxml */,
+				2B000001000000000000102F /* Resources/Samples/s10_ds_fine_sample.musicxml */,
+				2B0000010000000000001030 /* Resources/Samples/s10_dc_coda_sample.musicxml */,
+				2B0000010000000000001031 /* Resources/Samples/s10_ds_coda_sample.musicxml */,
+				2B0000010000000000001032 /* Resources/Samples/s10_repeat_diagnostics_sample.musicxml */,
+				2B0000010000000000001033 /* Resources/Samples/s10_all_repeat_symbols_sample.musicxml */,
 			);
 			path = DoReMiPalette;
 			sourceTree = "<group>";
@@ -245,6 +275,16 @@
 				2B000001000000000000000C /* Resources/Samples/phase12_sample.musicxml in Resources */,
 				2B0000010000000000000018 /* Resources/Samples/rhythm_values_sample.musicxml in Resources */,
 				2B0000010000000000000019 /* Resources/Samples/notation_coverage_grand_staff.musicxml in Resources */,
+				2B000001000000000000001A /* Resources/Samples/s6_notation_refinement_grand_staff.musicxml in Resources */,
+				2B000001000000000000001B /* Resources/Samples/s7_repeat_playback_sample.musicxml in Resources */,
+				2B000001000000000000001C /* Resources/Samples/s8_repeat_endings_sample.musicxml in Resources */,
+				2B000001000000000000001D /* Resources/Samples/s9_repeat_visuals_sample.musicxml in Resources */,
+				2B00000100000000000000A1 /* Resources/Samples/s10_dc_fine_sample.musicxml in Resources */,
+				2B00000100000000000000A2 /* Resources/Samples/s10_ds_fine_sample.musicxml in Resources */,
+				2B00000100000000000000A3 /* Resources/Samples/s10_dc_coda_sample.musicxml in Resources */,
+				2B00000100000000000000A4 /* Resources/Samples/s10_ds_coda_sample.musicxml in Resources */,
+				2B00000100000000000000A5 /* Resources/Samples/s10_repeat_diagnostics_sample.musicxml in Resources */,
+				2B00000100000000000000A6 /* Resources/Samples/s10_all_repeat_symbols_sample.musicxml in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
