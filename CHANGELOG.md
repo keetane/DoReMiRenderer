@@ -7,6 +7,61 @@ Initial experimental MVP0 release.
 This version is intended for integration review and early adopter testing. Public
 APIs may change before `1.0`.
 
+### SMuFL glyph rendering
+
+- Added Bravura 1.392 as a bundled SDK resource under the SIL Open Font
+  License 1.1.
+- Added Core Text font registration and an internal SMuFL glyph map for clefs,
+  accidentals, rests, repeat dots, time-signature digits, noteheads, and flags.
+- Updated `ScorePainter` to render those notation symbols with SMuFL glyphs
+  while preserving `ScoreLayout`, `NoteID`, `ScoreElementID`, hit testing,
+  color rules, playback events, and app-level responsibilities.
+- Tuned SMuFL glyph readability with SDK-internal category sizing for
+  noteheads, accidentals, rests, flags, clefs, repeat dots, and time-signature
+  digits, plus matching layout frames to reduce clipping and hit-test drift.
+- Rebalanced the SMuFL sizing pass after visual QA: whole/half/black
+  noteheads now use a closer visual scale, accidentals are slightly smaller,
+  rest sizing is consistent, and flags are anchored to the Core Graphics stem
+  end instead of floating from the notehead.
+- Retuned the SMuFL visual balance after iPad QA: common noteheads are larger,
+  stems are shorter and overlap the notehead edge, flags attach closer to the
+  stem end, note accidentals sit closer to the notehead, and rest glyphs use a
+  more consistent readable size.
+- Follow-up SMuFL tuning enlarges black/quarter noteheads again for learning
+  readability, shortens stems further, restores down-stem flag glyph selection,
+  tightens flag anchors to the stem end, and moves note accidentals closer to
+  noteheads.
+- Increased clef / key signature / time signature prefix spacing so the
+  Notation Coverage Sample exposes clef, key, and time symbols without overlap.
+- Added Phase S6 MVP notation refinement: same-system tie/slur curve rendering,
+  safe simple beam grouping, basic triplet bracket/number rendering, and the
+  self-authored `S6 Notation Refinement Sample` as the current default launch
+  sample for QA.
+- Fixed the S6 follow-up notation QA issues: tie/slur curves now use the
+  opposite-stem side, beams are drawn from the first stem tip to the last stem
+  tip, and the S6 sample includes mixed eighth/sixteenth beaming for regression
+  checks.
+- Added Phase S7 Repeat Playback Expansion MVP: simple forward/backward repeat
+  sections now expand in the playback sequence for two passes while preserving
+  the original score, layout, note IDs, and playback events.
+- Added diagnostics for repeat fallback and unsupported repeat structures such
+  as backward repeat without a start, unmatched starts, nested repeats, and
+  repeat counts outside the MVP two-pass behavior.
+- Added the self-authored `S7 Repeat Playback Sample` grand-staff fixture and
+  registered it in the DoReMi Palette Library as the current default launch
+  sample for Phase S7 QA. The S6 notation refinement sample remains available
+  from Library.
+- Added Phase S8 Advanced Repeat / Playback Hardening MVP: first/second ending
+  playback expansion, jump-marker parsing/diagnostics, and limited D.C. al Fine
+  expansion for jump-only scores while preserving the original score, layout,
+  note IDs, and playback events.
+- Added the self-authored `S8 Repeat Endings Sample` grand-staff fixture and
+  registered it as the current default launch sample for Phase S8 QA.
+- Kept Core Graphics fallback rendering for font lookup or registration failure.
+- Dynamics remain diagnostic-only unless represented by existing text
+  annotations; system-crossing curves, advanced beams, complex tuplets, and
+  collision-aware engraving remain future work.
+
 ### Phase 17A real iPad QA start
 
 - Confirmed a physical `iPad Pro 2nd` running iPadOS `26.4.2` is visible to
@@ -23,6 +78,14 @@ APIs may change before `1.0`.
 ### Added
 
 - Swift Package `DoReMiRendererKit`.
+- Added a Print MVP for DoReMi Palette: the app can generate a PDF from the
+  current `ScoreLayout` and open the standard iOS print sheet. The SDK exposes
+  a small `ScoreGraphicsRenderer` CGContext drawing entry point so printing can
+  reuse `ScorePainter` without app-side MusicXML parsing or coordinate
+  recalculation.
+- Added a score layout switcher for DoReMi Palette. Users can toggle between
+  the existing horizontal one-row layout (`横一段`) and an A4-width layout (`A4`)
+  that wraps measures into systems; printing always uses the A4 layout.
 - Domain model for score documents, measures, notes, pitch, time, clefs, staves,
   score elements, diagnostics, and color rules.
 - Minimal MusicXML `score-partwise` parser with diagnostics.
@@ -322,3 +385,34 @@ added.
   lines staying inside positive canvas bounds.
 - Synchronized Practice Mode step movement with `PalettePlaybackRuntime` so
   pressing Play after practice stepping resumes from the practiced event.
+
+## Phase S9 - Advanced Repeat Visuals / Jump Marker Hardening MVP
+
+- Added first/second ending visual bracket layout and Core Graphics rendering
+  from `ScoreLayout` elements, including ending numbers and bracket hooks.
+- Added `S9 Repeat Visuals Sample` as the default bundled QA sample while
+  keeping S6, S7, S8, notation coverage, rhythm values, and the original sample
+  available from Library.
+- Kept S8 first/second ending playback expansion unchanged and added regression
+  coverage that S9 playback order remains intro, repeated body, first ending,
+  repeated body, second ending, and outro.
+- Strengthened QA/docs around diagnostic-only jump markers such as D.S., Segno,
+  Coda, and To Coda. The S9 sample includes a D.S. marker to verify diagnostics
+  are visible without changing playback.
+
+## Phase S10 - Complete Repeat Symbols Before TestFlight
+
+- Added jump-only playback expansion for D.S. al Fine, D.C. al Coda, and
+  D.S. al Coda while preserving the existing D.C. al Fine path.
+- Added explicit repeat-count handling for simple repeats up to four passes,
+  with invalid/excessive counts diagnosed rather than silently ignored.
+- Added loop-prevention limits for jump/repeat expansion and diagnostics for
+  unsafe mixed repeat+jump structures, multiple Segno/Coda markers, nested
+  repeats, and third endings.
+- Added MVP visual marker layout/rendering for Fine, D.C., D.S., Segno, Coda,
+  and To Coda as `ScoreLayout` elements consumed by `ScorePainter`.
+- Added five self-authored S10 QA samples for D.C. al Fine, D.S. al Fine,
+  D.C. al Coda, D.S. al Coda, and diagnostic repeat/jump cases.
+- Added `S10 All Repeat Symbols Sample` so manual QA can inspect repeat
+  start/end, first/second endings, Segno, To Coda, Fine, D.C., D.C. al Fine,
+  D.C. al Coda, D.S., D.S. al Fine, Coda, and D.S. al Coda in one score.

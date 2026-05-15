@@ -411,46 +411,98 @@ Current priorities:
 This is intentionally separate from Practice Mode and audio playback. App code
 must not infer symbols from raw MusicXML or renderer coordinates.
 
-## SMuFL Symbol Rendering Plan
+## SMuFL Symbol Rendering Status
 
-The next notation-quality track is SMuFL-based symbol rendering, documented in
-[SMUFL_INTEGRATION_PLAN.md](SMUFL_INTEGRATION_PLAN.md). The goal is to improve
+The notation-quality track is SMuFL-based symbol rendering, documented in
+[SMUFL_INTEGRATION_PLAN.md](SMUFL_INTEGRATION_PLAN.md). S1-S5 are implemented
+with Bravura 1.392 as an SDK resource. The goal is to improve
 the visual shape of common music symbols without handing layout, MusicXML
 interpretation, IDs, hit testing, colors, or playback to an external renderer.
 `ScoreLayout` remains the only coordinate source, and `ScorePainter` must still
 consume layout elements rather than MusicXML source text.
 
-Phase S1: SMuFL integration preparation
+Phase S1: SMuFL integration preparation - complete
 
 - Select the first font candidate, currently Bravura.
 - Confirm license, redistribution, bundle placement, and fallback policy.
 - Design the internal glyph map and snapshot update rules.
 
-Phase S2: SMuFL font registration
+Phase S2: SMuFL font registration - complete
 
 - Add and register the chosen font in the app/example bundles.
 - Verify Canvas/Core Text access and fallback behavior.
 - Record asset and third-party notices.
 
-Phase S3: Clef / accidental / rest glyph rendering
+Phase S3: Clef / accidental / rest glyph rendering - complete
 
 - Move treble clef, bass clef, accidentals, and common rests to SMuFL glyphs.
 - Preserve layout-derived anchors and color behavior.
 
-Phase S4: Repeat / dynamics / time signature glyph rendering
+Phase S4: Repeat / dynamics / time signature glyph rendering - partial
 
-- Improve repeat dots, dynamic symbols, and time signature digits.
+- Improve repeat dots and time signature digits.
+- Dynamic symbols remain diagnostic-only unless represented by existing text
+  annotations.
 - Keep barline and spacing responsibility in layout/rendering code.
 
-Phase S5: Notehead / flag glyph rendering
+Phase S5: Notehead / flag glyph rendering - complete
 
 - Improve whole, half, quarter, eighth noteheads and flags.
 - Preserve `NoteID`, `ScoreElementID`, hit-test frames, and note colors.
 
-Phase S6: Tie / slur / beam refinement
+Phase S6: Tie / slur / beam refinement - complete
 
 - Refine Core Graphics curves and paths that are better drawn geometrically:
   ties, slurs, beams, stems, and minimal collision details.
+
+Phase S7: Repeat Playback Expansion MVP - complete
+
+- Expand simple forward/backward repeat playback sections for two passes in
+  `PlaybackSequenceBuilder`.
+- Keep `ScoreDocument`, `ScoreLayout`, `NoteID`, and renderer state unchanged.
+- Practice Mode and app playback consume the same expanded event sequence.
+
+Phase S8: Advanced Repeat / Playback Hardening MVP - complete
+
+- Expand one clear first/second ending repeat section in `PlaybackSequenceBuilder`.
+- Parse repeat ending metadata and common jump-marker words into playback
+  metadata without changing score layout or renderer responsibilities.
+- Support basic D.C. al Fine only for jump-only scores in S8; later S10 expands
+  the jump-only D.S. al Fine / al Coda paths.
+- Keep Practice Mode, Previous / Next, current-note highlighting, keyboard
+  highlighting, and scroll follow on the expanded playback sequence.
+
+Phase S9: Advanced Repeat Visuals / Jump Marker Hardening MVP - complete
+
+- Render first/second ending brackets and ending numbers from layout elements.
+- Keep S8 repeat-ending playback expansion unchanged while making the visual
+  ending brackets visible in the app and snapshots.
+- Add an S9 repeat visuals sample for Library/default QA and diagnostic-only
+  jump-marker checks.
+- Continue to leave third endings, nested repeats, complex jumps, and
+  system-crossing ending brackets as documented limitations; S10 handles the
+  limited jump-only D.S./Coda playback paths.
+
+Phase S10: Complete Repeat Symbols Before TestFlight - in progress
+
+- Prioritize remaining repeat and jump playback before TestFlight so the app
+  fails with diagnostics instead of silently misplaying common navigation marks.
+- Implement supported jump-only cases in `PlaybackSequenceBuilder`: D.S. al
+  Fine, D.C. al Coda, and D.S. al Coda, while preserving the existing D.C. al
+  Fine path.
+- Keep repeat/jump expansion bounded with max repeat passes, max jump counts,
+  and max expanded event safeguards.
+- Treat repeat count as an MVP feature: use explicit counts up to four passes,
+  default missing counts to two, and diagnose invalid/excessive counts.
+- Keep third endings, nested repeats, mixed repeat+jump structures, multiple
+  Segno/Coda markers, and ambiguous jumps diagnostic-backed unless a safe
+  limited expansion exists.
+- Add focused S10 samples for D.C. al Fine, D.S. al Fine, D.C. al Coda, D.S. al
+  Coda, and diagnostic repeat/jump cases.
+- TestFlight entry criteria: supported S10 samples load, expected expanded
+  orders are verified, unsupported structures emit diagnostics, app playback and
+  Practice Mode continue to consume only expanded `PlaybackEvent` sequences, and
+  non-repeat samples remain unchanged.
 
 The `notation_coverage_grand_staff.musicxml` and `rhythm_values_sample.musicxml`
 samples are the primary before/after QA fixtures for this track. Snapshot

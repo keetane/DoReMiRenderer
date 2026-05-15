@@ -1,9 +1,8 @@
 # SMuFL Integration Plan
 
-This document records the planned SMuFL music font integration for
-DoReMiRendererKit and DoReMi Palette. It is a planning document only: no font
-file, renderer change, Info.plist change, snapshot baseline update, or public
-API change is part of this step.
+This document records the SMuFL music font integration plan and implementation
+status for DoReMiRendererKit and DoReMi Palette. S1-S5 are implemented; S6
+remains planned.
 
 ## Purpose
 
@@ -298,24 +297,83 @@ Completion:
 - `rhythm_values_sample.musicxml` clearly distinguishes whole, half, quarter,
   and eighth notes.
 
-### Phase S6: Tie / Slur / Beam Refinement
+## Phase S1-S5 Implementation Status
+
+S1 through S5 are implemented in the SDK renderer path.
+
+- Adopted font: Bravura 1.392.
+- License: SIL Open Font License 1.1, with the bundled text in
+  `Sources/DoReMiRendererKit/Resources/Fonts/OFL.txt`.
+- Placement: `Sources/DoReMiRendererKit/Resources/Fonts/Bravura.otf`, bundled
+  as a Swift Package resource so DoReMi Palette and the SDK Example use the
+  same renderer asset.
+- Registration: `SMuFLFont` registers Bravura with Core Text at process scope.
+  If registration or resource lookup fails, `ScorePainter` falls back to the
+  existing Core Graphics/simple text shapes.
+- Glyph map: `SMuFLGlyph` maps clefs, accidentals, rests, repeat dots, time
+  signature digits, noteheads, and flags.
+- Renderer behavior: `ScorePainter` selects glyphs from `ElementLayout` /
+  `NoteLayout` meaning data. Parser, domain, app UI, playback, hit testing, and
+  scroll follow do not interpret SMuFL codepoints.
+- Size policy: `SMUFLGlyphSizePolicy` keeps glyph sizing internal to the SDK
+  renderer. The current readability pass scales noteheads, accidentals, rests,
+  flags, clefs, repeat dots, and time-signature digits by category while
+  preserving `ScoreLayout` as the coordinate source. Whole/half/black
+  noteheads use a close visual scale so common note values do not appear
+  mismatched; the latest tuning makes noteheads larger for iPad learning
+  readability, shortens stems further, uses direction-specific flag glyphs near
+  stem ends, pulls note accidentals closer to noteheads, gives rests a more
+  consistent readable size, and keeps clef/key/time prefix spacing wide enough
+  to avoid overlap.
+- Layout frames: notehead, accidental, flag, clef, key signature, and time
+  signature frames are expanded or spaced only enough to keep glyph placement,
+  hit testing, clipping, and snapshot rendering aligned with the visible glyphs.
+- `Info.plist`: no app-level font declaration is required for this phase
+  because the SDK registers the package resource explicitly with Core Text.
+- Dynamics: still diagnostic-only unless represented by existing text
+  annotations. Full dynamic layout/rendering remains outside S1-S5.
+
+### Phase S6: Tie / Slur / Beam / Tuplet Refinement
+
+Status: implemented at MVP quality for the Phase S6 QA sample.
 
 Purpose:
 
 - Improve remaining Core Graphics path symbols after glyph rendering stabilizes.
+- Add a focused grand-staff QA sample for tie, slur, beam, triplet, and basic
+  collision review.
 
 Work:
 
-- Refine tie curves.
-- Refine slur curves.
-- Improve beam grouping.
-- Improve stem direction.
-- Add minimal collision improvements where safe.
+- Render same-system tie curves from layout elements.
+- Render same-system slur curves from layout elements.
+- Infer safe MVP beam groups for adjacent flagged notes in the same
+  measure/staff/voice, with rests and unsafe changes breaking groups.
+- The S6 follow-up tuning orients tie/slur curves to the opposite stem side and
+  carries explicit beam start/end segments so beams connect from stem tip to
+  stem tip.
+- Mixed eighth/sixteenth beam groups use a primary beam plus MVP secondary
+  beam segments for adjacent sixteenth-note runs.
+- Render basic triplet brackets and number `3` for simple same-measure tuplet
+  groups.
+- Add the self-authored `S6 Notation Refinement Sample` and make it the current
+  default app launch sample while retaining all previous bundled samples.
+- Add minimal spacing/bounds checks where safe.
 
 Completion:
 
-- The notation coverage sample shows tie, slur, and beam behavior clearly
-  enough for MVP learning use, while advanced engraving remains future work.
+- The S6 notation refinement sample shows tie, slur, beam, and triplet behavior
+  clearly enough for MVP learning use, while advanced engraving remains future
+  work.
+
+Remaining S6 limitations:
+
+- System-crossing tie/slur curves are not fully engraved.
+- Advanced beam slope, cross-staff beaming, nested beam groups, and multi-voice
+  beam collision handling remain future work.
+- Tuplet support targets basic 3:2 groups; nested, complex, and system-crossing
+  tuplets remain limited.
+- Collision avoidance is still pragmatic spacing, not a full engraving engine.
 
 ## Relationship To QA Samples
 
@@ -323,6 +381,8 @@ Completion:
   for SMuFL symbol rendering.
 - `rhythm_values_sample.musicxml` remains the before/after comparison score for
   note values and generated-tone playback timing.
+- `s6_notation_refinement_grand_staff.musicxml` is the focused default QA score
+  for Phase S6 tie/slur/beam/triplet checks.
 - SMuFL phases will likely require snapshot baseline updates.
 - Baselines must be updated only after confirming the diff is an intentional
   visual improvement.
@@ -382,12 +442,13 @@ Stop and redesign before implementation if:
 - GPL/LGPL dependencies become necessary.
 - Font loading is not stable on iOS.
 
-## Not In This Planning Step
+## Not In S1-S5 Implementation
 
-- Do not add Bravura or any other font file.
-- Do not change `Info.plist`.
-- Do not change renderer code.
-- Do not update snapshot baselines.
-- Do not change implementation code.
-- Do not change public API.
-- Do not add external dependencies.
+- Phase S6 tie/slur/beam refinement, Phase S7 repeat playback expansion,
+  Phase S8 repeat-ending playback hardening, and Phase S9 repeat-ending visual
+  bracket rendering are separate tracks from SMuFL glyph
+  adoption. They keep the same `ScoreLayout` coordinate source and do not move
+  notation interpretation into the app.
+- Do not replace `ScoreLayout` coordinates or hit-test frames.
+- Do not move glyph selection into the app.
+- Do not add external rendering engines or GPL/LGPL dependencies.

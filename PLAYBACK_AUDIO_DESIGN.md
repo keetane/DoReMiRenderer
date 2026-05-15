@@ -94,6 +94,43 @@ continuations. If `midiPitches` is empty, the event is silent.
 Tie and slur curve drawing remains separate notation-rendering work. This rule
 only explains why a visually current tied note may not produce a new sound.
 
+## Repeat Playback Expansion
+
+Phase S7/S8 expand repeat playback in `PlaybackSequenceBuilder`, before the
+app-side runtime receives events:
+
+- Simple forward/backward repeat sections are played for two passes.
+- Phase S8 adds a first/second ending MVP for one clear repeat section: the
+  first ending is played only on the first pass, the repeated body is revisited,
+  and the second ending is played only on the second pass.
+- A backward repeat without a forward start falls back to the beginning and
+  emits a warning diagnostic.
+- Jump markers are parsed into playback metadata. Basic D.C. al Fine is expanded
+  only for jump-only scores without repeats/endings; D.S., Segno, Coda, To Coda,
+  and complex jump combinations remain diagnostic-only.
+- The original `ScoreDocument`, `ScoreLayout`, `NoteID`, and `PlaybackEvent`
+  identity model are preserved; repeated passes reuse the same score note IDs.
+- `PalettePlaybackRuntime` does not interpret MusicXML repeat syntax. It only
+  advances over the already-expanded event sequence.
+- Practice Mode uses the same expanded sequence, so repeated measures and
+  supported endings are revisited by step navigation as well as automatic
+  playback.
+- Phase S9 adds first/second ending visual bracket rendering in layout and
+  painting only; it does not change the expanded playback event order.
+- Phase S10 hardens jump-only repeat navigation before TestFlight. D.S. al Fine,
+  D.C. al Coda, and D.S. al Coda are expanded in `PlaybackSequenceBuilder` for
+  clear scores without repeats/endings. D.C. al Fine remains supported.
+- S10 also honors simple repeat counts up to four passes. Missing counts default
+  to two; invalid or excessive counts emit diagnostics, with excessive counts
+  clamped to the MVP safety limit.
+- Loop prevention is explicit: expansion is bounded by jump-count and expanded
+  event-count limits, and unsupported mixed structures fall back with
+  diagnostics rather than risking infinite playback.
+
+Unsupported repeat structures such as third endings, nested repeats, ambiguous
+endings, repeat+jump mixtures, multiple Segno/Coda markers, and complex jumps
+remain diagnostic-only.
+
 ## Phase 16.5 Stabilization
 
 Phase 16.5 treats generated-tone playback as stable enough to gate Phase 17 only

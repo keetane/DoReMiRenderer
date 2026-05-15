@@ -461,9 +461,12 @@ Screenshots:
 - [ ] Chord notes are visible as one event/onset.
 - [ ] Ledger-line notes are visible.
 - [ ] Repeat start/end barlines are visible.
-- [ ] Tie content is present in the sample; visual tie arcs are currently not
-  rendered and should be checked against `NOTATION_SUPPORT_MATRIX.md`.
-- [ ] Slur content is present in the sample; current support is diagnostic-only.
+- [ ] Same-system tie content is present and MVP tie curves are visible.
+- [ ] Same-system slur content is present and MVP slur curves are visible.
+- [ ] S6 sample simple beam groups are visible, and rests break beams.
+- [ ] S6 sample mixed eighth/sixteenth beams show a primary beam plus secondary
+  segment, connected to stem tips.
+- [ ] S6 sample basic triplets show a bracket and number `3`.
 - [ ] Dynamics / tempo text support is checked against
   `NOTATION_SUPPORT_MATRIX.md`.
 - [ ] Play / Pause / Stop / Reset still work on this sample.
@@ -476,26 +479,124 @@ Screenshots:
 - `/tmp/doremipalette_notation_coverage_symbols.png`
 - `/tmp/doremipalette_notation_coverage_playing.png`
 
-## Future SMuFL Rendering QA
+## SMuFL Rendering QA
 
-SMuFL implementation is not active yet. The plan is tracked in
-`SMUFL_INTEGRATION_PLAN.md`; this checklist is for future S2+ implementation
-passes.
+SMuFL S1-S5 is active. Bravura glyph rendering is implemented in the SDK
+renderer path and must remain layout-driven.
 
-- [ ] Confirm the selected SMuFL font loads in the app and SDK Example.
+- [ ] Confirm Bravura loads in the app and SDK Example.
 - [ ] Confirm fallback drawing is used when the font is unavailable.
 - [ ] Confirm clef glyphs improve `Notation Coverage Sample` without shifting
   hit-test coordinates.
 - [ ] Confirm accidental and rest glyphs respect note color / staff color
   settings.
-- [ ] Confirm repeat, dynamics, and time signature glyphs remain layout-driven.
+- [ ] Confirm repeat dots and time signature glyphs remain layout-driven.
+- [ ] Confirm dynamics remain documented as diagnostic-only unless represented
+  by existing text annotations.
 - [ ] Confirm notehead and flag glyph changes preserve `NoteID` and
   `ScoreElementID` stability.
+- [ ] Confirm noteheads, accidentals, rests, flags, clefs, and time-signature
+  digits are large enough to read on iPad without crowding nearby notes.
+- [ ] Confirm whole, half, and black noteheads have a natural size balance.
+- [ ] Confirm stems meet notehead edges and eighth/sixteenth flags attach to
+  the stem end with the correct up/down direction.
+- [ ] Confirm accidentals are readable but not oversized, and clef / key
+  signature / time signature prefixes do not overlap.
+- [ ] Confirm note accidentals sit close enough to their noteheads without
+  colliding with the clef/key/time prefix area.
+- [ ] Confirm whole, half, quarter, eighth, and sixteenth rests use a consistent
+  readable size policy.
+- [ ] Confirm `Notation Coverage Sample` visibly shows the 4/4 time signature
+  on both treble and bass staves.
 - [ ] Confirm `Rhythm Values Sample` still distinguishes whole, half, quarter,
   and eighth notes.
 - [ ] Review snapshot diffs before recording new baselines.
 - [ ] Confirm Library, Playback, Practice Mode, and Diagnostics behavior are
   unchanged by glyph rendering changes.
+
+## Print MVP QA
+
+- [ ] `印刷` button is visible in the top toolbar when a score is loaded.
+- [ ] `譜面レイアウト` can switch between `横一段` and `A4`.
+- [ ] `横一段` keeps the existing single horizontal score flow.
+- [ ] `A4` wraps measures into normal page-width systems.
+- [ ] Switching layouts does not change playback position, highlights, Library,
+  Diagnostics, or imported score state.
+- [ ] Tapping `印刷` opens the standard iOS print sheet.
+- [ ] Print preview uses the A4 score layout even when the on-screen layout is
+  `横一段`.
+- [ ] Note Color / Staff Color settings are reflected in the generated PDF.
+- [ ] Cancelling the print sheet returns to the score without changing
+  playback, Practice Mode, Library, or Diagnostics state.
+- [ ] Imported scores can also be sent to the print sheet.
+
+## Phase S7 Repeat Playback QA
+
+- [ ] `S7 Repeat Playback Sample` is visible in Library.
+- [ ] `S7 Repeat Playback Sample` can be opened from Library during Phase S7 regression QA.
+- [ ] Repeat start and repeat end barlines are visible.
+- [ ] Playback order is Measure 1, Measure 2, Measure 3, Measure 2, Measure 3,
+  Measure 4.
+- [ ] Current-note score highlight returns to Measure 2 on the second pass.
+- [ ] Keyboard highlight returns to the repeated measures on the second pass.
+- [ ] Scroll follow returns to the repeated measures without losing manual
+  scroll behavior.
+- [ ] Practice Mode Next / Previous steps through the expanded repeat sequence.
+- [ ] Reset returns to the expanded playback sequence start.
+- [ ] Backward repeat without a start shows a warning diagnostic and falls back
+  to the beginning.
+- [ ] Nested repeats, endings, and D.C./D.S./Coda remain documented limitations.
+
+## Phase S8 Repeat Endings QA
+
+- [ ] `S8 Repeat Endings Sample` is visible in Library.
+- [ ] App launch opens `S8 Repeat Endings Sample` during Phase S8 QA.
+- [ ] Repeat start and repeat end barlines are visible.
+- [ ] First/second ending playback order is Measure 1, Measure 2, Measure 3,
+  Measure 4, Measure 2, Measure 3, Measure 5, Measure 6.
+- [ ] Measure 4 first ending is skipped on the second pass.
+- [ ] Measure 5 second ending is skipped on the first pass and played on the
+  second pass.
+- [ ] Current-note score highlight, keyboard highlight, and scroll follow return
+  to the repeated body and then continue to the second ending.
+- [ ] Practice Mode Next / Previous steps through the expanded ending sequence.
+- [ ] Unsupported nested repeat and complex ending cases are diagnostic-only
+  rather than silent failures. Basic jump-only D.S. al Fine / al Coda cases are
+  covered by Phase S10.
+
+## Phase S9 Repeat Visuals QA
+
+- [ ] `S9 Repeat Visuals Sample` is visible in Library.
+- [ ] App launch opens `S9 Repeat Visuals Sample` during Phase S9 QA.
+- [ ] First ending and second ending numbers are visible above the staff.
+- [ ] Ending bracket lines and hooks are visible and do not replace repeat
+  start/end barlines.
+- [ ] Playback order still follows the S8 first/second ending sequence.
+- [ ] Practice Mode Next / Previous still steps through the expanded sequence.
+- [ ] Jump-marker structures outside the S10 jump-only MVP are visible in
+  Diagnostics when present in a sample.
+- [ ] Non-repeat samples still load, play, and show diagnostics normally.
+
+## Phase S10 Complete Repeat Symbols QA
+
+- [ ] `S10 D.C. al Fine Sample`, `S10 D.S. al Fine Sample`,
+  `S10 D.C. al Coda Sample`, `S10 D.S. al Coda Sample`, and
+  `S10 Repeat Diagnostics Sample` are visible in Library.
+- [ ] `S10 All Repeat Symbols Sample` is visible in Library and shows repeat
+  start/end, first/second endings, Segno, To Coda, Fine, D.C., D.C. al Fine,
+  D.C. al Coda, D.S., D.S. al Fine, Coda, and D.S. al Coda for visual QA.
+- [ ] D.C. al Fine playback order is 1, 2, 3, 4, 1, 2, 3.
+- [ ] D.S. al Fine playback order is 1, 2, 3, 4, 2, 3.
+- [ ] D.C. al Coda playback order is 1, 2, 3, 1, 2, 4, 5.
+- [ ] D.S. al Coda playback order is 1, 2, 3, 4, 2, 3, 5, 6.
+- [ ] Fine, D.C., D.S., Segno, Coda, and To Coda markers are visible as MVP
+  text markers above the staff.
+- [ ] Unsupported nested repeats, third endings, repeat+jump mixtures, and
+  multiple Segno/Coda cases appear in Diagnostics instead of silently
+  misplaying.
+- [ ] Practice Mode, Previous / Next, score highlight, keyboard highlight, and
+  scroll follow use the expanded S10 playback order.
+- [ ] Non-repeat samples and the S7/S8/S9 repeat samples still load and play.
 
 ## Phase 17A Real iPad QA
 

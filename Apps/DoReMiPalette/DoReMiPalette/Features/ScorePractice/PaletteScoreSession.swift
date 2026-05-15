@@ -58,6 +58,11 @@ final class PaletteScoreSession: ObservableObject {
         return CurrentNoteHighlightState.make(event: currentPlaybackEvent, layout: layout)
     }
 
+    var nextNoteMIDIPitches: Set<Int> {
+        let event = practiceSession.isEnabled ? practiceSession.nextPitchedEvent : playbackCursor.nextPitchedEvent
+        return Set(event?.midiPitches ?? [])
+    }
+
     var isPracticeModeEnabled: Bool {
         practiceSession.isEnabled
     }
@@ -162,6 +167,14 @@ final class PaletteScoreSession: ObservableObject {
     func setPlaybackTempoBPM(_ tempo: Double) {
         playbackRuntime.setTempoBPM(tempo)
         playbackTempoBPM = playbackRuntime.tempoBPM
+    }
+
+    func setScoreLayoutMode(_ mode: PaletteScoreLayoutMode) {
+        guard var loadedScore, loadedScore.layoutMode != mode else {
+            return
+        }
+        loadedScore.layoutMode = mode
+        self.loadedScore = loadedScore
     }
 
     func setPracticeModeEnabled(_ enabled: Bool) {

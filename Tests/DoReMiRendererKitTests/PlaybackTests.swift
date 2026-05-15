@@ -106,6 +106,7 @@ import Testing
 
     #expect(events.count == 2)
     #expect(events[0].isTiedContinuation == false)
+    #expect(events[0].midiPitchDurations[65] == MusicalTime(ticks: 8, ticksPerQuarterNote: 4))
     #expect(events[1].isTiedContinuation == true)
     #expect(events[1].midiPitches.isEmpty)
 }
@@ -135,6 +136,276 @@ import Testing
     #expect(events.count == 1)
     #expect(events[0].noteIDs == [NoteID(rawValue: "n0")])
     #expect(events[0].midiPitches == [60])
+}
+
+@Test func playbackExpandsSimpleStartEndRepeat() {
+    let score = repeatPlaybackScore(measureRepeatBarlines: [
+        [],
+        [RepeatBarline(direction: .forward)],
+        [RepeatBarline(direction: .backward)],
+        [],
+    ])
+
+    let events = PlaybackSequenceBuilder().build(score: score)
+
+    #expect(events.map(\.measureID.rawValue) == ["0.1", "0.2", "0.3", "0.2", "0.3", "0.4"])
+    #expect(events.map { $0.noteIDs.first?.rawValue } == ["m1", "m2", "m3", "m2", "m3", "m4"])
+    #expect(events.filter { $0.noteIDs == [NoteID(rawValue: "m2")] }.count == 2)
+    #expect(events.filter { $0.noteIDs == [NoteID(rawValue: "m3")] }.count == 2)
+}
+
+@Test func playbackRepeatExpansionCanBeDisabled() {
+    let score = repeatPlaybackScore(measureRepeatBarlines: [
+        [],
+        [RepeatBarline(direction: .forward)],
+        [RepeatBarline(direction: .backward)],
+        [],
+    ])
+
+    let events = PlaybackSequenceBuilder().build(
+        score: score,
+        options: PlaybackOptions(expandRepeats: false)
+    )
+
+    #expect(events.map(\.measureID.rawValue) == ["0.1", "0.2", "0.3", "0.4"])
+}
+
+@Test func playbackRepeatEndWithoutStartFallsBackToBeginningAndWarns() {
+    let score = repeatPlaybackScore(measureRepeatBarlines: [
+        [],
+        [],
+        [RepeatBarline(direction: .backward)],
+        [],
+    ])
+    let builder = PlaybackSequenceBuilder()
+
+    let events = builder.build(score: score)
+    let metadata = builder.metadata(score: score)
+
+    #expect(events.map(\.measureID.rawValue) == ["0.1", "0.2", "0.3", "0.1", "0.2", "0.3", "0.4"])
+    #expect(metadata.diagnostics.contains { $0.code == "repeat.startMissingFallback" })
+}
+
+@Test func playbackRepeatStartWithoutEndWarnsWithoutExpansion() {
+    let score = repeatPlaybackScore(measureRepeatBarlines: [
+        [],
+        [RepeatBarline(direction: .forward)],
+        [],
+        [],
+    ])
+    let builder = PlaybackSequenceBuilder()
+
+    let events = builder.build(score: score)
+    let metadata = builder.metadata(score: score)
+
+    #expect(events.map(\.measureID.rawValue) == ["0.1", "0.2", "0.3", "0.4"])
+    #expect(metadata.diagnostics.contains { $0.code == "repeat.startWithoutEndUnsupported" })
+}
+
+@Test func playbackRepeatCountThreeUsesThreePasses() {
+    let score = repeatPlaybackScore(measureRepeatBarlines: [
+        [RepeatBarline(direction: .forward)],
+        [RepeatBarline(direction: .backward, times: 3)],
+        [],
+        [],
+    ])
+    let builder = PlaybackSequenceBuilder()
+
+    let events = builder.build(score: score)
+    let metadata = builder.metadata(score: score)
+
+    #expect(events.map(\.measureID.rawValue) == ["0.1", "0.2", "0.1", "0.2", "0.1", "0.2", "0.3", "0.4"])
+    #expect(!metadata.diagnostics.contains { $0.code == "repeat.countUnsupported" })
+}
+
+@Test func playbackNestedRepeatEmitsDiagnostic() {
+    let score = repeatPlaybackScore(measureRepeatBarlines: [
+        [RepeatBarline(direction: .forward)],
+        [RepeatBarline(direction: .forward)],
+        [RepeatBarline(direction: .backward)],
+        [],
+    ])
+
+    let metadata = PlaybackSequenceBuilder().metadata(score: score)
+
+    #expect(metadata.diagnostics.contains { $0.code == "repeat.nestedUnsupported" })
+}
+
+@Test func playbackExpandsFirstAndSecondEndingsInExpectedOrder() {
+    let score = repeatPlaybackScore(
+        measureRepeatBarlines: [
+            [],
+            [RepeatBarline(direction: .forward)],
+            [],
+            [RepeatBarline(direction: .backward)],
+            [],
+            [],
+        ],
+        measureRepeatEndings: [
+            [],
+            [],
+            [],
+            [RepeatEnding(numbers: [1], kind: .start), RepeatEnding(numbers: [1], kind: .stop)],
+            [RepeatEnding(numbers: [2], kind: .start), RepeatEnding(numbers: [2], kind: .stop)],
+            [],
+        ]
+    )
+
+    let events = PlaybackSequenceBuilder().build(score: score)
+
+    #expect(events.map(\.measureID.rawValue) == ["0.1", "0.2", "0.3", "0.4", "0.2", "0.3", "0.5", "0.6"])
+    #expect(events.filter { $0.noteIDs == [NoteID(rawValue: "m2")] }.count == 2)
+    #expect(events.filter { $0.noteIDs == [NoteID(rawValue: "m3")] }.count == 2)
+    #expect(events.filter { $0.noteIDs == [NoteID(rawValue: "m4")] }.count == 1)
+    #expect(events.filter { $0.noteIDs == [NoteID(rawValue: "m5")] }.count == 1)
+}
+
+@Test func playbackEndingWithoutRepeatEmitsDiagnostic() {
+    let score = repeatPlaybackScore(
+        measureRepeatBarlines: [[], [], []],
+        measureRepeatEndings: [
+            [],
+            [RepeatEnding(numbers: [1], kind: .start)],
+            [],
+        ]
+    )
+
+    let metadata = PlaybackSequenceBuilder().metadata(score: score)
+
+    #expect(metadata.diagnostics.contains { $0.code == "repeat.endingWithoutRepeat" })
+}
+
+@Test func playbackMissingSecondEndingEmitsDiagnosticAndUsesSimpleRepeatFallback() {
+    let score = repeatPlaybackScore(
+        measureRepeatBarlines: [
+            [RepeatBarline(direction: .forward)],
+            [RepeatBarline(direction: .backward)],
+            [],
+        ],
+        measureRepeatEndings: [
+            [],
+            [RepeatEnding(numbers: [1], kind: .start), RepeatEnding(numbers: [1], kind: .stop)],
+            [],
+        ]
+    )
+    let builder = PlaybackSequenceBuilder()
+
+    let events = builder.build(score: score)
+    let metadata = builder.metadata(score: score)
+
+    #expect(events.map(\.measureID.rawValue) == ["0.1", "0.2", "0.1", "0.2", "0.3"])
+    #expect(metadata.diagnostics.contains { $0.code == "repeat.endingSecondMissing" })
+}
+
+@Test func playbackRepeatEndingBeyondSecondEmitsDiagnostic() {
+    let score = repeatPlaybackScore(
+        measureRepeatBarlines: [
+            [RepeatBarline(direction: .forward)],
+            [RepeatBarline(direction: .backward)],
+            [],
+        ],
+        measureRepeatEndings: [
+            [],
+            [RepeatEnding(numbers: [3], kind: .start)],
+            [],
+        ]
+    )
+
+    let metadata = PlaybackSequenceBuilder().metadata(score: score)
+
+    #expect(metadata.diagnostics.contains { $0.code == "repeat.endingNumberUnsupported" })
+}
+
+@Test func playbackDaCapoAlFineExpandsBasicJumpOnlySequence() {
+    let score = repeatPlaybackScore(
+        measureRepeatBarlines: [[], [], [], []],
+        measureJumpMarkers: [
+            [PlaybackJumpMarker(kind: .fine, text: "Fine")],
+            [],
+            [],
+            [PlaybackJumpMarker(kind: .daCapoAlFine, text: "D.C. al Fine")],
+        ]
+    )
+
+    let events = PlaybackSequenceBuilder().build(score: score)
+
+    #expect(events.map(\.measureID.rawValue) == ["0.1", "0.2", "0.3", "0.4", "0.1"])
+}
+
+@Test func playbackUnsupportedJumpMarkersEmitSpecificDiagnostics() {
+    let score = repeatPlaybackScore(
+        measureRepeatBarlines: [[], [], []],
+        measureJumpMarkers: [
+            [PlaybackJumpMarker(kind: .segno, text: "Segno")],
+            [PlaybackJumpMarker(kind: .dalSegno, text: "D.S.")],
+            [PlaybackJumpMarker(kind: .toCoda, text: "To Coda")],
+        ]
+    )
+
+    let metadata = PlaybackSequenceBuilder().metadata(score: score)
+
+    #expect(metadata.diagnostics.contains { $0.code == "jump.dalSegnoUnsupported" })
+    #expect(metadata.diagnostics.contains { $0.code == "jump.codaUnsupported" })
+}
+
+@Test func playbackDalSegnoAlFineExpandsBasicJumpOnlySequence() {
+    let score = repeatPlaybackScore(
+        measureRepeatBarlines: [[], [], [], []],
+        measureJumpMarkers: [
+            [],
+            [PlaybackJumpMarker(kind: .segno, text: "Segno")],
+            [PlaybackJumpMarker(kind: .fine, text: "Fine")],
+            [PlaybackJumpMarker(kind: .dalSegnoAlFine, text: "D.S. al Fine")],
+        ]
+    )
+    let builder = PlaybackSequenceBuilder()
+
+    let events = builder.build(score: score)
+    let metadata = builder.metadata(score: score)
+
+    #expect(events.map(\.measureID.rawValue) == ["0.1", "0.2", "0.3", "0.4", "0.2", "0.3"])
+    #expect(!metadata.diagnostics.contains { $0.code == "jump.dalSegnoUnsupported" })
+}
+
+@Test func playbackDaCapoAlCodaExpandsBasicJumpOnlySequence() {
+    let score = repeatPlaybackScore(
+        measureRepeatBarlines: [[], [], [], [], []],
+        measureJumpMarkers: [
+            [],
+            [PlaybackJumpMarker(kind: .toCoda, text: "To Coda")],
+            [PlaybackJumpMarker(kind: .daCapoAlCoda, text: "D.C. al Coda")],
+            [PlaybackJumpMarker(kind: .coda, text: "Coda")],
+            [],
+        ]
+    )
+    let builder = PlaybackSequenceBuilder()
+
+    let events = builder.build(score: score)
+    let metadata = builder.metadata(score: score)
+
+    #expect(events.map(\.measureID.rawValue) == ["0.1", "0.2", "0.3", "0.1", "0.2", "0.4", "0.5"])
+    #expect(!metadata.diagnostics.contains { $0.code == "jump.codaUnsupported" })
+}
+
+@Test func playbackDalSegnoAlCodaExpandsBasicJumpOnlySequence() {
+    let score = repeatPlaybackScore(
+        measureRepeatBarlines: [[], [], [], [], [], []],
+        measureJumpMarkers: [
+            [],
+            [PlaybackJumpMarker(kind: .segno, text: "Segno")],
+            [PlaybackJumpMarker(kind: .toCoda, text: "To Coda")],
+            [PlaybackJumpMarker(kind: .dalSegnoAlCoda, text: "D.S. al Coda")],
+            [PlaybackJumpMarker(kind: .coda, text: "Coda")],
+            [],
+        ]
+    )
+    let builder = PlaybackSequenceBuilder()
+
+    let events = builder.build(score: score)
+    let metadata = builder.metadata(score: score)
+
+    #expect(events.map(\.measureID.rawValue) == ["0.1", "0.2", "0.3", "0.4", "0.2", "0.3", "0.5", "0.6"])
+    #expect(!metadata.diagnostics.contains { $0.code == "jump.codaUnsupported" })
 }
 
 @Test func colorRuleChangesDoNotChangePlaybackEvents() throws {
@@ -182,6 +453,34 @@ private func playbackScore(notes: [ScoreNote]) -> ScoreDocument {
                 clef: Clef(kind: .treble)
             ),
         ]),
+    ])
+}
+
+private func repeatPlaybackScore(
+    measureRepeatBarlines: [[RepeatBarline]],
+    measureRepeatEndings: [[RepeatEnding]]? = nil,
+    measureJumpMarkers: [[PlaybackJumpMarker]]? = nil
+) -> ScoreDocument {
+    let measures = measureRepeatBarlines.enumerated().map { index, repeatBarlines in
+        let measureNumber = "\(index + 1)"
+        return Measure(
+            id: MeasureID(partIndex: 0, measureNumber: measureNumber),
+            number: measureNumber,
+            notes: [
+                playbackNote(
+                    id: "m\(measureNumber)",
+                    pitch: Pitch(step: .c, octave: 4 + index % 2),
+                    onsetTicks: 0
+                ),
+            ],
+            clef: Clef(kind: .treble),
+            repeatBarlines: repeatBarlines,
+            repeatEndings: measureRepeatEndings?[index] ?? [],
+            playbackJumpMarkers: measureJumpMarkers?[index] ?? []
+        )
+    }
+    return ScoreDocument(parts: [
+        ScorePart(id: "p1", measures: measures),
     ])
 }
 

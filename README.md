@@ -15,6 +15,9 @@ The Phase 13+ app-execution roadmap is tracked in [ROADMAP.md](ROADMAP.md), and 
 - Render with SwiftUI `Canvas` through `ScoreCanvasView`.
 - Draw basic whole, half, quarter, eighth, dotted-note, and rest differences for
   MVP rhythm readability.
+- Use bundled Bravura SMuFL glyphs for clefs, accidentals, rests, repeat dots,
+  time-signature digits, noteheads, and flags, with SDK-side size and anchor
+  tuning for iPad learning readability.
 - Resolve note, staff line, ledger line, accidental, and highlight colors through `ScoreStyle` and `ScoreColorResolver`.
 - Perform MVP0 hit testing with `ScoreLayout.hitTest(point:radius:)`.
 - Generate playback step events without audio output.
@@ -194,10 +197,10 @@ let events = renderer.makePlaybackSequence(
 )
 ```
 
-Playback events are for cursor and highlight stepping. Audio playback is not implemented in MVP0.
+Playback events are for cursor, highlight stepping, and app-side generated-tone
+playback.
 
-Tempo and repeat metadata can be inspected without changing playback event
-ordering:
+Tempo and repeat metadata can be inspected through playback metadata:
 
 ```swift
 let metadata = renderer.makePlaybackMetadata(score: score)
@@ -205,7 +208,15 @@ let tempoEvents = metadata.tempoEvents
 let repeatWarnings = metadata.diagnostics
 ```
 
-Repeat playback expansion is intentionally unsupported in Phase 11F.
+Phase S7 expands simple forward/backward repeat sections in the playback
+sequence. Phase S8 adds one clear first/second ending repeat section and limited
+D.C. al Fine expansion for jump-only scores. Phase S9 adds visual first/second
+ending brackets and numbers. Phase S10 adds jump-only D.S. al Fine, D.C. al
+Coda, and D.S. al Coda expansion. The score and layout are not duplicated for
+playback; repeated passes reuse the original `NoteID` values. Nested repeats,
+third endings, mixed repeat+jump structures, multiple Segno/Coda markers,
+complex jumps, and system-crossing ending brackets remain unsupported or
+diagnostic-only.
 
 ## MusicXML Compatibility
 
@@ -278,13 +289,37 @@ depending on the provider.
 Phase 15 adds app-side playback runtime and simple generated audio. The SDK
 still only provides `PlaybackEvent` and metadata; AVFoundation is used only by
 the DoReMi Palette app. Audio quality, background playback, repeat expansion,
-full tuplet timing, and transposition-aware playback remain future work.
+complex tuplet timing, and transposition-aware playback remain future work.
 
-Future notation-quality work is planned in
-[SMUFL_INTEGRATION_PLAN.md](SMUFL_INTEGRATION_PLAN.md). The plan is to use a
-SMuFL-compliant music font, with Bravura as the first candidate, to improve
-symbol shapes while keeping MusicXML interpretation, `ScoreLayout` coordinates,
-IDs, hit testing, color resolution, and playback in DoReMiRendererKit.
+Notation symbols now use the Bravura SMuFL font for clefs, accidentals, rests,
+repeat dots, time-signature digits, noteheads, and flags. SMuFL is used only as
+a glyph source: MusicXML interpretation, `ScoreLayout` coordinates, IDs, hit
+testing, color resolution, and playback remain in DoReMiRendererKit. See
+[SMUFL_INTEGRATION_PLAN.md](SMUFL_INTEGRATION_PLAN.md),
+[ASSET_LICENSES.md](ASSET_LICENSES.md), and
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the integration and
+license details. The renderer also applies an internal category-based size
+policy so noteheads, accidentals, rests, flags, clefs, and time signatures stay
+readable on iPad without moving glyph selection into the app. The current
+SMuFL tuning keeps common notehead sizes visually close, anchors flags to stem
+ends, uses slightly smaller accidentals than the first pass, and spaces clef /
+key / time-signature prefixes to avoid overlap.
+
+Phase S6 adds MVP Core Graphics path rendering for same-system tie/slur curves,
+safe simple beam groups, mixed eighth/sixteenth secondary beam checks, and basic
+triplet brackets while keeping SMuFL glyphs for notation shapes. Phase S7 adds
+simple repeat playback expansion, Phase S8 adds first/second ending playback
+expansion, and Phase S9 adds visible ending brackets. The default app launch
+sample is currently `S9 Repeat Visuals Sample` for repeat-visual QA; earlier
+bundled samples remain available from Library.
+
+DoReMi Palette also includes a Print MVP and a score layout switcher. The app
+can display either the existing horizontal one-row score (`横一段`) or an A4-width
+score layout (`A4`) that wraps measures into systems. The toolbar `印刷` button
+always generates the PDF from the A4 layout, even when the on-screen view is in
+horizontal mode. The SDK provides `ScoreGraphicsRenderer` for drawing an
+existing layout into a `CGContext`; the app does not reparse MusicXML or
+recalculate score coordinates for printing.
 
 ## Snapshot Tests
 
@@ -329,10 +364,52 @@ layout.
 DoReMi Palette includes a bundled `Notation Coverage Sample`. It is a
 self-authored grand staff score for checking common symbols: treble and bass
 clefs, time and key signatures, accidentals, rests, dotted notes, chords,
-ledger lines, repeat barlines, and diagnostic-only items such as slurs and
-dynamics. See [NOTATION_SUPPORT_MATRIX.md](NOTATION_SUPPORT_MATRIX.md) for the
-current parser/layout/renderer/app support status of each symbol. This sample is
-also the main QA score for future SMuFL before/after comparisons.
+ledger lines, repeat barlines, and limited/diagnostic items such as dynamics.
+See [NOTATION_SUPPORT_MATRIX.md](NOTATION_SUPPORT_MATRIX.md) for the current
+parser/layout/renderer/app support status of each symbol. This sample remains a
+broad QA score for SMuFL before/after comparisons.
+
+### S6 Notation Refinement Sample
+
+DoReMi Palette includes a bundled `S6 Notation Refinement Sample`. It is a
+self-authored grand staff score for checking same-system tie/slur curves, simple
+beam groups, mixed eighth/sixteenth beams, basic triplet brackets, accidentals
+near beams, chords, and repeat barlines. It is the current default launch sample
+only when Phase S6 notation QA is active; otherwise it remains available from
+Library.
+
+### S7 Repeat Playback Sample
+
+DoReMi Palette includes a bundled `S7 Repeat Playback Sample`. It is a
+self-authored grand staff score for checking simple repeat playback order:
+intro, repeat section first pass, repeat section second pass, and outro. It is
+available from the Library.
+
+### S8 Repeat Endings Sample
+
+DoReMi Palette includes a bundled `S8 Repeat Endings Sample`. It is a
+self-authored grand staff score for checking first/second ending playback order:
+intro, repeated body, first ending, repeated body again, second ending, and
+outro. It remains available from the Library.
+
+### S9 Repeat Visuals Sample
+
+DoReMi Palette includes a bundled `S9 Repeat Visuals Sample`. It is a
+self-authored grand staff score for checking first/second ending brackets,
+ending numbers, repeat-ending playback regression, and unsupported jump-marker
+diagnostics. It is the current default launch sample for Phase S9 verification.
+
+### S10 Repeat / Jump Samples
+
+DoReMi Palette includes bundled S10 samples for D.C. al Fine, D.S. al Fine,
+D.C. al Coda, D.S. al Coda, and repeat/jump diagnostics. They are
+self-authored grand staff fixtures for verifying supported jump-only playback
+orders, visible Fine / D.C. / D.S. / Segno / Coda / To Coda markers, repeat
+count behavior, and diagnostic handling for unsafe repeat/jump combinations.
+`S10 All Repeat Symbols Sample` additionally places the supported and
+diagnostic repeat/jump symbols in one score for manual visual QA.
+They remain available from the Library; the default launch sample is not changed
+by S10.
 
 ## Phase 16.5 Stabilization
 

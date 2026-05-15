@@ -219,8 +219,9 @@ final class PalettePlaybackRuntime {
     private func soundDurationSeconds(for duration: MusicalTime, in event: PlaybackEvent) -> TimeInterval {
         let eventDuration = eventDurationSeconds(for: event)
         let pitchDuration = durationSeconds(for: duration, event: event)
-        let soundWindow = min(eventDuration, pitchDuration)
-        let gatedDuration = soundWindow * noteGateRatio
+        let extendsBeyondEvent = duration > event.nominalDuration
+        let soundWindow = extendsBeyondEvent ? pitchDuration : min(eventDuration, pitchDuration)
+        let gatedDuration = extendsBeyondEvent ? soundWindow : soundWindow * noteGateRatio
         guard eventDuration.isFinite,
               pitchDuration.isFinite,
               soundWindow.isFinite,

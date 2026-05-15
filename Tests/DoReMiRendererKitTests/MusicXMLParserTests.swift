@@ -50,9 +50,10 @@ import Testing
 @Test func parserReadsNoteValueKindsAndDots() throws {
     let notes = try parseMusicXML(noteValuesAndDotsXML).score.parts.flatMap(\.measures).flatMap(\.notes)
 
-    #expect(notes.map(\.noteValueKind) == [.whole, .half, .quarter, .eighth, .sixteenth])
-    #expect(notes.map(\.dotCount) == [0, 1, 0, 0, 0])
+    #expect(notes.map(\.noteValueKind) == [.whole, .half, .quarter, .eighth, .sixteenth, .thirtySecond])
+    #expect(notes.map(\.dotCount) == [0, 1, 0, 0, 0, 0])
     #expect(notes[4].pitch == nil)
+    #expect(notes[5].pitch == Pitch(step: .g, octave: 4))
 }
 
 @Test func parserAppliesBackupAndForwardToOnsets() throws {
@@ -189,6 +190,7 @@ private let noteValuesAndDotsXML = """
       <note><pitch><step>E</step><octave>4</octave></pitch><duration>16</duration><voice>1</voice><staff>1</staff><type>quarter</type></note>
       <note><pitch><step>F</step><octave>4</octave></pitch><duration>8</duration><voice>1</voice><staff>1</staff><type>eighth</type></note>
       <note><rest/><duration>4</duration><voice>1</voice><staff>1</staff><type>16th</type></note>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice><staff>1</staff><type>32nd</type></note>
     </measure>
   </part>
 </score-partwise>

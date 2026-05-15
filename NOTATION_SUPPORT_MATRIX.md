@@ -11,38 +11,42 @@ Status meanings:
 
 | Symbol | Parser | Layout | Renderer | App visible | Status | Notes |
 |---|---|---|---|---|---|---|
-| Whole notehead | Supported | Supported | Supported | Yes | partial | Core Graphics MVP hollow notehead, no stem. SMuFL replacement is planned later. |
-| Half notehead | Supported | Supported | Supported | Yes | partial | Core Graphics MVP hollow notehead with stem. |
-| Quarter notehead | Supported | Supported | Supported | Yes | partial | Core Graphics MVP filled notehead with stem. |
-| Eighth note / flag | Supported | Supported | Supported | Yes | partial | Isolated MVP flags are rendered. Beam grouping remains unsupported. |
+| Whole notehead | Supported | Supported | Supported | Yes | partial | Rendered with Bravura SMuFL notehead glyph; size is balanced against half/black noteheads, but spacing remains MVP quality. |
+| Half notehead | Supported | Supported | Supported | Yes | partial | Rendered with Bravura SMuFL half-notehead glyph and Core Graphics stem; stem attachment is MVP-aligned to the notehead edge. |
+| Quarter notehead | Supported | Supported | Supported | Yes | partial | Rendered with Bravura SMuFL black notehead glyph and Core Graphics stem; size is balanced against hollow noteheads and tuned larger for learning readability. |
+| Eighth note / flag | Supported | Supported | Supported | Yes | partial | Bravura SMuFL notehead and direction-specific flag glyphs are rendered; single eighth notes keep flags, while safe adjacent groups can be rendered with MVP beams. |
 | Note dots | Supported | Supported | Supported | Yes | supported | Dot count is retained and rendered at MVP quality. |
 | Ledger lines | Supported | Supported | Supported | Yes | supported | Layout bounds include ledger lines; collision quality remains limited. |
-| Treble clef | Supported | Supported | Supported | Yes | partial | Rendered as an MVP text glyph from layout. Full engraving/font quality is not a goal yet. |
-| Bass clef | Supported | Supported | Supported | Yes | partial | Rendered as an MVP text glyph from layout. Grand staff brace/grouping is not rendered. |
-| Key signature | Supported | Supported | Supported | Yes | partial | Treble/bass placement exists for basic fifths. Key-aware note coloring is still future work. |
-| Time signature | Supported | Supported | Supported | Yes | partial | Rendered from layout as simple numeric text. Common/cut-time symbols are not implemented. |
-| Accidental | Supported | Supported | Supported | Yes | supported | Sharp/flat/natural are rendered from layout elements. |
-| Whole rest | Supported | Supported | Supported | Yes | partial | MVP rest glyph/shape only, not publication-quality engraving. |
-| Half rest | Supported | Supported | Supported | Yes | partial | MVP rest glyph/shape only. |
-| Quarter rest | Supported | Supported | Supported | Yes | partial | MVP rest glyph/shape only. |
-| Eighth rest | Supported | Supported | Supported | Yes | partial | MVP rest glyph/shape only. |
-| Tie | Supported for playback `<tie>` | Not rendered as arc | Not rendered as arc | Continuation highlight only | partial | Tie data is used for playback continuation and weak continuation highlighting. MusicXML notation `<tied>` may still be reported/treated as unsupported for arc rendering. |
-| Slur | Diagnostic | Not rendered | Not rendered | No | diagnostic-only | Emits `unsupported.slur.rendering`; visual slur support is planned separately. |
+| Treble clef | Supported | Supported | Supported | Yes | partial | Rendered with Bravura SMuFL glyph from layout. Grand staff brace/grouping is not rendered. |
+| Bass clef | Supported | Supported | Supported | Yes | partial | Rendered with Bravura SMuFL glyph from layout. Grand staff brace/grouping is not rendered. |
+| Key signature | Supported | Supported | Supported | Yes | partial | Treble/bass placement exists for basic fifths; accidentals use Bravura SMuFL glyphs with widened clef/key/time prefix spacing. Key-aware note coloring is still future work. |
+| Time signature | Supported | Supported | Supported | Yes | partial | Digits use Bravura SMuFL glyphs and are spaced after clef/key prefixes. Common/cut-time symbols are not implemented. |
+| Accidental | Supported | Supported | Supported | Yes | supported | Sharp/flat/natural use Bravura SMuFL glyphs from layout elements with moderated size and closer notehead offset. |
+| Whole rest | Supported | Supported | Supported | Yes | partial | Bravura SMuFL rest glyph; placement remains MVP quality. |
+| Half rest | Supported | Supported | Supported | Yes | partial | Bravura SMuFL rest glyph; placement remains MVP quality. |
+| Quarter rest | Supported | Supported | Supported | Yes | partial | Bravura SMuFL rest glyph; placement remains MVP quality. |
+| Eighth rest | Supported | Supported | Supported | Yes | partial | Bravura SMuFL rest glyph; placement remains MVP quality. |
+| Tie | Supported for playback `<tie>` and notation `<tied>` | Supported for same-measure pairs | Supported as Core Graphics curve | Yes | partial | Tie data is used for playback continuation, weak continuation highlighting, and MVP same-system curve rendering. System-crossing and complex tie-chain engraving remain limited. |
+| Slur | Supported for basic start/stop | Supported for same-measure pairs | Supported as Core Graphics curve | Yes | partial | Basic same-system slur curves are visible. Nested, numbered, and system-crossing slurs remain MVP-limited. |
 | Dotted note | Supported | Supported | Supported | Yes | supported | Dot count is retained and dot elements are rendered. Multiple-dot engraving remains basic. |
 | Chord | Supported | Supported | Supported | Yes | partial | Chord tones share onset and render as stacked noteheads. Collision avoidance remains basic. |
-| Repeat start | Supported | Supported | Supported | Yes | partial | Repeat barline is visible. Playback repeat expansion remains unsupported and diagnostic-backed. |
-| Repeat end | Supported | Supported | Supported | Yes | partial | Repeat barline is visible. Playback repeat expansion remains unsupported and diagnostic-backed. |
+| Repeat start | Supported | Supported | Supported | Yes | partial | Repeat barline is visible; repeat dots use Bravura SMuFL glyphs. Phase S7 expands simple start/end repeat playback for two passes. Phase S8 adds first/second ending playback expansion. Nested repeats and complex jumps remain unsupported/diagnostic. |
+| Repeat end | Supported | Supported | Supported | Yes | partial | Repeat barline is visible; repeat dots use Bravura SMuFL glyphs. Phase S7 expands simple start/end repeat playback for two passes. A backward repeat without a start falls back to the beginning with a warning. |
 | Current-note highlight | Playback/App state | Overlay | Supported | Yes | supported | Attack notes use strong highlight; tied continuations use weaker secondary highlight in the app. |
 | Dynamic text | Recognized but ignored | Not retained | Not rendered | No | unsupported | Dynamic elements such as `p`/`mf` are not rendered yet and should be promoted to diagnostics in a future hardening pass. |
 | Tempo text | Metadata only for `<sound tempo>` | Not rendered | Not rendered | No | partial | `<sound tempo="">` can affect playback metadata. Visual tempo words rendering is not implemented; `<words>` text is not retained as visible tempo text. |
 | Double/final barline | Diagnostic | Basic barline only | Basic barline only | Partial | partial | Standard barlines are visible. `bar-style` variants are not retained yet. |
-| Beam grouping | Parsed as limited/ignored | Not grouped | Not rendered as beams | No | unsupported | Eighth notes use MVP flags. Beam grouping is future engraving work. |
-| Tuplets | Diagnostic | Not implemented | Not rendered | No | diagnostic-only | Tuplets can affect duration/onset, so unsupported tuplets are diagnostic-backed. |
+| Beam grouping | MusicXML beam tags are ignored; safe groups inferred | Supported for simple adjacent groups | Supported as Core Graphics beam | Yes | partial | Consecutive flagged notes in the same measure/staff/voice can render as MVP beams from stem tip to stem tip. Mixed eighth/sixteenth groups show a primary beam plus minimal secondary beam segments. Rests, staff/voice changes, and unsafe leaps break groups. Advanced beam slope/grouping remains future work. |
+| Tuplets | Supported for basic `time-modification` and tuplet start/stop | Supported for simple same-measure groups | Supported as bracket/number | Yes | partial | Basic 3:2 triplets show an MVP bracket and `3`. Complex, nested, or system-crossing tuplets remain limited and should stay diagnostic-backed when unsafe. |
 | Ornaments | Diagnostic | Not implemented | Not rendered | No | diagnostic-only | Decorative ornaments are intentionally deferred. |
 | Grace notes | Diagnostic | Excluded from playback | Not rendered | No | diagnostic-only | Grace notes are not treated as normal notes. |
-| First/second endings | Diagnostic | Not implemented | Not rendered | No | diagnostic-only | Repeat ending expansion and display are future work. |
+| First/second endings | Supported for basic number 1/2 ending metadata | Supported for same-system bracket elements | Supported | Yes | partial | Phase S8 expands one clear first/second ending repeat section. Phase S9 renders MVP ending brackets and numbers. System-crossing, overlapping, discontinuous, and third-or-later endings remain diagnostic/limited. |
+| D.C. al Fine | Supported for basic words/Fine metadata | Playback expansion for jump-only scores; marker text layout | Text marker rendering supported | Yes | partial | Basic D.C. al Fine can expand only when no repeats/endings are present. |
+| D.S. al Fine | Supported for basic words/Segno/Fine metadata | Playback expansion for jump-only scores; marker text layout | Text marker rendering supported | Yes | partial | Phase S10 expands clear D.S. al Fine scores. Missing Segno/Fine and mixed repeat structures emit diagnostics. |
+| D.C. / D.S. al Coda | Supported for basic To Coda/Coda metadata | Playback expansion for jump-only scores; marker text layout | Text marker rendering supported | Yes | partial | Phase S10 expands clear D.C. al Coda and D.S. al Coda scores. Missing To Coda/Coda, multiple Coda/Segno, and mixed repeat structures emit diagnostics. |
+| Repeat count | Supported when MusicXML repeat count is present | Playback expansion only | Not visual beyond barline | Playback only | partial | Missing count defaults to two passes. Counts up to four are expanded. Invalid/excessive counts emit diagnostics; excessive counts are clamped to the MVP limit. |
 | Transposition-aware display | Diagnostic | Not implemented | Not rendered | No | diagnostic-only | Written pitch is used for current rendering/coloring. |
 
 ## QA Sample
 
-`Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/notation_coverage_grand_staff.musicxml` is a self-authored grand staff sample for checking these symbols in the app. It intentionally includes both supported and diagnostic-only features so silent failures are easier to spot during QA.
+`Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/notation_coverage_grand_staff.musicxml` is a self-authored grand staff sample for checking broad symbol coverage in the app. `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/s6_notation_refinement_grand_staff.musicxml` is the Phase S6 default QA sample for tie, slur, beam, triplet, and collision checks. `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/s7_repeat_playback_sample.musicxml` is the Phase S7 repeat playback QA sample for intro -> repeated section -> outro playback order. `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/s8_repeat_endings_sample.musicxml` is the Phase S8 repeat-ending QA sample for intro -> repeated body -> first ending -> repeated body -> second ending -> outro playback order. `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/s9_repeat_visuals_sample.musicxml` is the Phase S9 visual ending bracket and jump-marker diagnostic QA sample. The S10 samples (`s10_dc_fine_sample.musicxml`, `s10_ds_fine_sample.musicxml`, `s10_dc_coda_sample.musicxml`, `s10_ds_coda_sample.musicxml`, and `s10_repeat_diagnostics_sample.musicxml`) cover supported jump playback orders and unsupported repeat/jump diagnostics. These samples intentionally include supported and limited features so silent failures are easier to spot during QA.

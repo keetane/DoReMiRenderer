@@ -175,9 +175,14 @@ Phase 15 adds MVP audio playback as an app-side responsibility:
 The MVP audio engine generates simple tones without external assets. Chords play
 all event MIDI pitches together, rests do not sound, and tie continuations do
 not retrigger a note. If audio startup fails, the app can still advance the
-cursor and highlight state. Full repeat expansion, high-quality instruments,
-background audio, tuplets duration accuracy, transposition playback, and latency
-optimization remain future work.
+cursor and highlight state. Phase S7 adds simple repeat playback expansion in
+the SDK playback sequence builder, and Phase S8 adds first/second ending MVP
+expansion plus limited jump-marker diagnostics/handling. Phase S9 adds visual
+first/second ending brackets as SDK layout/rendering elements. The app runtime
+still only consumes an already-ordered `PlaybackEvent` list; it does not parse
+MusicXML repeat syntax. High-quality instruments, complex jump repeat handling,
+tuplets duration accuracy, transposition playback, and latency optimization
+remain future work.
 
 ## Completion Criteria
 
@@ -279,23 +284,27 @@ positions.
 
 Current symbol support is tracked in `NOTATION_SUPPORT_MATRIX.md`. MVP-visible
 items include clefs, time/key signatures, accidentals, common rest values,
-dots, chords, ledger lines, and repeat barlines. Tie arcs, slurs, dynamics,
-tempo text rendering, and final/double barline variants remain partial or
-diagnostic-only and should be fed back into the SDK in future notation hardening
-work.
+dots, chords, ledger lines, repeat barlines, same-system tie/slur curves, safe
+MVP beam groups including minimal mixed eighth/sixteenth secondary beams, and
+basic triplet brackets. Dynamics, tempo text rendering,
+final/double barline variants, complex tuplets, and advanced collision-aware
+engraving remain partial or diagnostic-only and should be fed back into the SDK
+in future notation hardening work.
 
-## Future SMuFL Rendering Boundary
+## SMuFL Rendering Boundary
 
-SMuFL music-font adoption is planned in `SMUFL_INTEGRATION_PLAN.md`. It remains
-an SDK rendering concern, not an app feature. DoReMi Palette should continue to
-open scores through the SDK facade and display `ScoreCanvasView`; it should not
-choose SMuFL glyphs, reparse MusicXML, infer symbol anchors, or compensate for
-renderer coordinates in app code.
+SMuFL music-font adoption is active for S1-S5 and is documented in
+`SMUFL_INTEGRATION_PLAN.md`. It remains an SDK rendering concern, not an app
+feature. DoReMi Palette should continue to open scores through the SDK facade
+and display `ScoreCanvasView`; it should not choose SMuFL glyphs, reparse
+MusicXML, infer symbol anchors, or compensate for renderer coordinates in app
+code.
 
-The planned role of SMuFL is to improve glyph shapes for clefs, rests,
-accidentals, repeats, dynamics, time signature digits, noteheads, and flags.
-Staff lines, ledgers, stems, beams, ties, slurs, highlights, and selection
-overlays can remain Core Graphics paths where geometry is more appropriate.
+The current role of SMuFL is to improve glyph shapes for clefs, rests,
+accidentals, repeat dots, time signature digits, noteheads, and flags.
+Staff lines, ledgers, stems, beams, ties, slurs, highlights, tuplet brackets,
+and selection overlays can remain Core Graphics paths where geometry is more
+appropriate.
 
 ## Phase 16.5 Stabilization Boundary
 
@@ -325,3 +334,15 @@ The current Phase 17A status is that a physical `iPad Pro 2nd` on iPadOS
 `devicectl` install / launch is blocked by a local CoreDeviceService timeout,
 so runtime QA needs Xcode Run or a recovered CoreDevice environment before
 Phase 17B TestFlight preparation starts.
+
+## Phase S10 Repeat / Jump Boundary
+
+Phase S10 keeps repeat and jump navigation in DoReMiRendererKit playback
+sequence construction. DoReMi Palette receives the expanded `PlaybackEvent`
+array and uses it for playback, Practice Mode, Previous / Next, score
+highlighting, keyboard highlighting, and scroll follow. The app must not inspect
+MusicXML words such as D.C., D.S., Fine, Segno, Coda, or To Coda.
+
+Visual jump markers are SDK layout/renderer elements. They are drawn from
+`ScoreLayout` and do not alter the app's Library, Practice, audio, or
+diagnostics ownership boundaries.
