@@ -17,6 +17,7 @@ enum SMuFLGlyph: Hashable, Sendable {
     case restSixteenth
     case restThirtySecond
     case repeatDot
+    case repeatOneBar
     case timeSignatureDigit(Int)
     case noteheadWhole
     case noteheadHalf
@@ -27,6 +28,8 @@ enum SMuFLGlyph: Hashable, Sendable {
     case flagSixteenthDown
     case flagThirtySecondUp
     case flagThirtySecondDown
+    case segno
+    case coda
 
     var string: String {
         String(UnicodeScalar(codepoint)!)
@@ -60,6 +63,8 @@ enum SMuFLGlyph: Hashable, Sendable {
             "𝄿"
         case .repeatDot:
             "•"
+        case .repeatOneBar:
+            "%"
         case let .timeSignatureDigit(value):
             String(value)
         case .noteheadWhole, .noteheadHalf:
@@ -68,6 +73,10 @@ enum SMuFLGlyph: Hashable, Sendable {
             "●"
         case .flagEighthUp, .flagEighthDown, .flagSixteenthUp, .flagSixteenthDown, .flagThirtySecondUp, .flagThirtySecondDown:
             "♪"
+        case .segno:
+            "𝄋"
+        case .coda:
+            "𝄌"
         }
     }
 
@@ -101,6 +110,8 @@ enum SMuFLGlyph: Hashable, Sendable {
             0xE4E8
         case .repeatDot:
             0xE044
+        case .repeatOneBar:
+            0xE500
         case let .timeSignatureDigit(value):
             0xE080 + max(0, min(9, value))
         case .noteheadWhole:
@@ -121,6 +132,10 @@ enum SMuFLGlyph: Hashable, Sendable {
             0xE244
         case .flagThirtySecondDown:
             0xE245
+        case .segno:
+            0xE047
+        case .coda:
+            0xE048
         }
     }
 }

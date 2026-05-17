@@ -25,6 +25,46 @@ import Testing
     #expect(Set(layout.elementByID.keys) == elementIDs)
 }
 
+@Test func scorePainterDrawsEvenMeasureNumbersWhenEnabled() throws {
+    let staffID = StaffID(rawValue: "1")
+    let measures = (1...4).map { number in
+        Measure(
+            id: MeasureID(partIndex: 0, measureNumber: "\(number)"),
+            number: "\(number)",
+            notes: [
+                ScoreNote(
+                    id: NoteID(rawValue: "m\(number).n0"),
+                    pitch: Pitch(step: .c, octave: 4),
+                    onset: MusicalTime(ticks: 0, ticksPerQuarterNote: 4),
+                    duration: MusicalTime(ticks: 4, ticksPerQuarterNote: 4),
+                    voiceID: VoiceID(rawValue: "1"),
+                    staffID: staffID
+                ),
+            ],
+            clef: number == 1 ? Clef(kind: .treble) : nil
+        )
+    }
+    let score = ScoreDocument(parts: [ScorePart(id: "p1", measures: measures)])
+    let layout = try ScoreLayoutEngine().layout(score: score, options: LayoutOptions(measureSpacing: 8))
+    var context = RecordingDrawingContext()
+
+    ScorePainter(smuflFontName: nil).draw(
+        layout: layout,
+        score: score,
+        style: ScoreStyle(measureNumberDisplayMode: .evenMeasures),
+        into: &context
+    )
+
+    #expect(!context.commands.contains { $0.kind == .drawText && $0.text == "1" })
+    #expect(!context.commands.contains { $0.kind == .drawText && $0.text == "3" })
+    #expect(context.commands.contains { $0.kind == .drawText && $0.text == "2" })
+    #expect(context.commands.contains { $0.kind == .drawText && $0.text == "4" })
+
+    let bottomStaffMaxY = try #require(layout.staves.map(\.frame.maxY).max())
+    let secondNumberPoint = try #require(context.commands.first { $0.kind == .drawText && $0.text == "2" }?.point)
+    #expect(secondNumberPoint.y > bottomStaffMaxY)
+}
+
 @Test func scorePainterUsesResolvedNoteAndStaffColors() throws {
     let score = renderingScore()
     let layout = try ScoreLayoutEngine().layout(score: score)
@@ -81,6 +121,99 @@ import Testing
         $0.kind == .drawText
             && $0.text == "n"
             && $0.point == CGPoint(x: accidentalElement.frame.midX, y: accidentalElement.frame.midY)
+    })
+}
+
+@Test func scorePainterColorsNoteAccidentalsFromMatchingDisplayedNotePitch() throws {
+    let score = accidentalRenderingScore()
+    let layout = try ScoreLayoutEngine().layout(score: score)
+    let accidentalElement = try #require(layout.elements.first { $0.kind == .accidental })
+    var context = RecordingDrawingContext()
+
+    ScorePainter(smuflFontName: nil).draw(layout: layout, score: score, style: renderingStyle(), into: &context)
+
+    #expect(context.commands.contains {
+        $0.kind == .drawText
+            && $0.text == "#"
+            && $0.point == CGPoint(x: accidentalElement.frame.midX, y: accidentalElement.frame.midY)
+            && $0.color == defaultEducationalPalette.f
+    })
+}
+
+@Test func scorePainterKeepsAccidentalInkWhenNoteColorIsOff() throws {
+    let score = accidentalRenderingScore()
+    let layout = try ScoreLayoutEngine().layout(score: score)
+    let accidentalElement = try #require(layout.elements.first { $0.kind == .accidental })
+    let style = ScoreStyle(
+        defaultInkColor: .black,
+        noteColorStyle: .monochrome(.black),
+        accidentalStyle: .defaultInk
+    )
+    var context = RecordingDrawingContext()
+
+    ScorePainter(smuflFontName: nil).draw(layout: layout, score: score, style: style, into: &context)
+
+    #expect(context.commands.contains {
+        $0.kind == .drawText
+            && $0.text == "#"
+            && $0.point == CGPoint(x: accidentalElement.frame.midX, y: accidentalElement.frame.midY)
+            && $0.color == .black
+    })
+}
+
+@Test func scorePainterColorsDisplayTransposedAccidentalsFromDisplayedPitch() throws {
+    let score = ScoreDocument(parts: [
+        ScorePart(id: "p1", measures: [
+            Measure(
+                id: MeasureID(partIndex: 0, measureNumber: "1"),
+                number: "1",
+                notes: [
+                    ScoreNote(
+                        id: NoteID(rawValue: "n0"),
+                        pitch: Pitch(step: .c, octave: 4, alter: 1),
+                        onset: MusicalTime(ticks: 0, ticksPerQuarterNote: 4),
+                        duration: MusicalTime(ticks: 4, ticksPerQuarterNote: 4),
+                        voiceID: VoiceID(rawValue: "1"),
+                        staffID: StaffID(rawValue: "1"),
+                        accidental: "sharp"
+                    ),
+                ],
+                clef: Clef(kind: .treble),
+                keySignature: KeySignature(fifths: 0, mode: "major")
+            ),
+        ]),
+    ])
+    let layout = try ScoreLayoutEngine().layout(
+        score: score,
+        options: LayoutOptions(displayTransposeSemitones: 2)
+    )
+    let accidentalElement = try #require(layout.elements.first { $0.kind == .accidental })
+    var context = RecordingDrawingContext()
+
+    ScorePainter(smuflFontName: nil).draw(layout: layout, score: score, style: renderingStyle(), into: &context)
+
+    #expect(accidentalElement.pitchClassHint == .d)
+    #expect(context.commands.contains {
+        $0.kind == .drawText
+            && $0.text == "#"
+            && $0.point == CGPoint(x: accidentalElement.frame.midX, y: accidentalElement.frame.midY)
+            && $0.color == defaultEducationalPalette.d
+    })
+}
+
+@Test func scorePainterColorsKeySignatureAccidentalsByPitchClassWhenNoteColorIsOn() throws {
+    let score = keySignatureRenderingScore()
+    let layout = try ScoreLayoutEngine().layout(score: score)
+    let keyElement = try #require(layout.elements.first { $0.kind == .keySignature && $0.pitchClassHint == .f })
+    var context = RecordingDrawingContext()
+
+    ScorePainter(smuflFontName: nil).draw(layout: layout, score: score, style: renderingStyle(), into: &context)
+
+    #expect(context.commands.contains {
+        $0.kind == .drawText
+            && $0.text == "#"
+            && $0.point == CGPoint(x: keyElement.frame.midX, y: keyElement.frame.midY)
+            && $0.color == defaultEducationalPalette.f
     })
 }
 
@@ -235,7 +368,46 @@ import Testing
         $0.kind == .drawText
             && $0.text == "D.C. al Coda"
             && $0.point == marker.point
+            && $0.fontName == "Georgia-Italic"
+            && $0.size == max(16, markerElement.frame.height * 1.2)
     })
+}
+
+@Test func scorePainterUsesSMuFLSymbolsForSegnoAndCodaMarkers() throws {
+    let measureID = MeasureID(partIndex: 0, measureNumber: "1")
+    let staffID = StaffID(rawValue: "1")
+    let score = ScoreDocument(parts: [
+        ScorePart(id: "p1", measures: [
+            Measure(
+                id: measureID,
+                number: "1",
+                notes: [
+                    ScoreNote(
+                        id: NoteID(rawValue: "n0"),
+                        pitch: Pitch(step: .c, octave: 4),
+                        onset: MusicalTime(ticks: 0, ticksPerQuarterNote: 4),
+                        duration: MusicalTime(ticks: 4, ticksPerQuarterNote: 4),
+                        voiceID: VoiceID(rawValue: "1"),
+                        staffID: staffID
+                    ),
+                ],
+                clef: Clef(kind: .treble),
+                playbackJumpMarkers: [
+                    PlaybackJumpMarker(kind: .segno, text: "Segno"),
+                    PlaybackJumpMarker(kind: .toCoda, text: "To Coda"),
+                    PlaybackJumpMarker(kind: .coda, text: "Coda"),
+                ]
+            ),
+        ]),
+    ])
+    let layout = try ScoreLayoutEngine().layout(score: score)
+    var context = RecordingDrawingContext()
+
+    ScorePainter(smuflFontName: "Bravura").draw(layout: layout, score: score, style: renderingStyle(), into: &context)
+
+    #expect(context.commands.contains { $0.kind == .drawText && $0.text == SMuFLGlyph.segno.string && $0.fontName == "Bravura" })
+    #expect(context.commands.contains { $0.kind == .drawText && $0.text == "To" && $0.fontName == "Georgia-Italic" })
+    #expect(context.commands.filter { $0.kind == .drawText && $0.text == SMuFLGlyph.coda.string && $0.fontName == "Bravura" }.count >= 2)
 }
 
 @Test func smuflGlyphMapReturnsExpectedCoreGlyphs() {
@@ -245,6 +417,8 @@ import Testing
     #expect(SMuFLGlyph.restQuarter.string == String(UnicodeScalar(0xE4E5)!))
     #expect(SMuFLGlyph.noteheadBlack.string == String(UnicodeScalar(0xE0A4)!))
     #expect(SMuFLGlyph.flagEighthUp.string == String(UnicodeScalar(0xE240)!))
+    #expect(SMuFLGlyph.segno.string == String(UnicodeScalar(0xE047)!))
+    #expect(SMuFLGlyph.coda.string == String(UnicodeScalar(0xE048)!))
 }
 
 @Test func smuflFontResourceRegistersForRendering() {
@@ -428,7 +602,8 @@ import Testing
         ]),
     ])
     let layout = try ScoreLayoutEngine().layout(score: score, options: LayoutOptions(staffSpace: 10))
-    let ending = try #require(layout.elements.first { $0.kind == .repeatEnding }?.repeatEnding)
+    let endingElement = try #require(layout.elements.first { $0.kind == .repeatEnding })
+    let ending = try #require(endingElement.repeatEnding)
     var context = RecordingDrawingContext()
 
     ScorePainter(smuflFontName: nil).draw(layout: layout, score: score, style: renderingStyle(), into: &context)
@@ -443,7 +618,13 @@ import Testing
             && $0.lineStart == ending.lineStart
             && $0.lineEnd == ending.startHookEnd
     })
-    #expect(context.commands.contains { $0.kind == .drawText && $0.text == "1." && $0.point == ending.labelPoint })
+    #expect(context.commands.contains {
+        $0.kind == .drawText
+            && $0.text == "1."
+            && $0.point == ending.labelPoint
+            && $0.fontName == "Georgia-Italic"
+            && $0.size == max(16, endingElement.frame.height * 1.2)
+    })
 }
 
 @Test func scorePainterUsesMeasureSystemStavesForRepeatDotsWhenRepeatFrameMissesAStaff() throws {
@@ -481,6 +662,31 @@ import Testing
     let thickRepeatLine = try #require(context.commands.first { $0.kind == .strokeLine && $0.lineWidth == 6 })
     #expect(abs((thickRepeatLine.lineStart?.y ?? 0) - 40) < 0.1)
     #expect(abs((thickRepeatLine.lineEnd?.y ?? 0) - 160) < 0.1)
+}
+
+@Test func scorePainterDrawsOneBarMeasureRepeatGlyph() throws {
+    let measureElement = ElementLayout(
+        id: ScoreElementID(rawValue: "measureRepeat"),
+        kind: .measureRepeat,
+        measureID: MeasureID(partIndex: 0, measureNumber: "1"),
+        staffID: StaffID(rawValue: "1"),
+        frame: CGRect(x: 80, y: 40, width: 30, height: 30),
+        measureRepeat: MeasureRepeat(count: 1)
+    )
+    let layout = ScoreLayout(
+        canvasSize: CGSize(width: 180, height: 120),
+        elements: [measureElement],
+        elementByID: [measureElement.id: measureElement]
+    )
+    var context = RecordingDrawingContext()
+
+    ScorePainter(smuflFontName: nil).draw(layout: layout, style: renderingStyle(), into: &context)
+
+    #expect(context.commands.contains {
+        $0.kind == .drawText
+            && $0.text == SMuFLGlyph.repeatOneBar.fallback
+            && $0.point == CGPoint(x: measureElement.frame.midX, y: measureElement.frame.midY)
+    })
 }
 
 @Test func scorePainterDrawsS6CurvesBeamsAndTupletsFromLayoutElements() throws {
@@ -886,6 +1092,57 @@ private func renderingScore() -> ScoreDocument {
                     ),
                 ],
                 clef: Clef(kind: .treble)
+            ),
+        ]),
+    ])
+}
+
+private func accidentalRenderingScore() -> ScoreDocument {
+    let measureID = MeasureID(partIndex: 0, measureNumber: "1")
+    let staffID = StaffID(rawValue: "1")
+    return ScoreDocument(parts: [
+        ScorePart(id: "p1", measures: [
+            Measure(
+                id: measureID,
+                number: "1",
+                notes: [
+                    ScoreNote(
+                        id: NoteID(rawValue: "sharp-note"),
+                        pitch: Pitch(step: .f, octave: 4, alter: 1),
+                        onset: MusicalTime(ticks: 0, ticksPerQuarterNote: 4),
+                        duration: MusicalTime(ticks: 4, ticksPerQuarterNote: 4),
+                        voiceID: VoiceID(rawValue: "1"),
+                        staffID: staffID,
+                        accidental: "sharp"
+                    ),
+                ],
+                clef: Clef(kind: .treble)
+            ),
+        ]),
+    ])
+}
+
+private func keySignatureRenderingScore() -> ScoreDocument {
+    let measureID = MeasureID(partIndex: 0, measureNumber: "1")
+    let staffID = StaffID(rawValue: "1")
+    return ScoreDocument(parts: [
+        ScorePart(id: "p1", measures: [
+            Measure(
+                id: measureID,
+                number: "1",
+                notes: [
+                    ScoreNote(
+                        id: NoteID(rawValue: "note"),
+                        pitch: Pitch(step: .c, octave: 4),
+                        onset: MusicalTime(ticks: 0, ticksPerQuarterNote: 4),
+                        duration: MusicalTime(ticks: 4, ticksPerQuarterNote: 4),
+                        voiceID: VoiceID(rawValue: "1"),
+                        staffID: staffID
+                    ),
+                ],
+                clef: Clef(kind: .treble),
+                keySignature: KeySignature(fifths: 1, mode: "major"),
+                timeSignature: TimeSignature(beats: 4, beatType: 4)
             ),
         ]),
     ])

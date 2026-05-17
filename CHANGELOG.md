@@ -57,6 +57,42 @@ APIs may change before `1.0`.
   note IDs, and playback events.
 - Added the self-authored `S8 Repeat Endings Sample` grand-staff fixture and
   registered it as the current default launch sample for Phase S8 QA.
+- Added a piano-focused transpose MVP in DoReMi Palette: `transposeSemitones`
+  persists in app settings, playback MIDI pitches are transposed just before
+  audio output, keyboard highlights follow sounding pitches, and current-note /
+  key text can show written versus sounding values. Score rendering remains
+  written-pitch.
+- Added Phase T2 Score Display Transpose / MusicXML Transpose Hardening:
+  DoReMi Palette can now transpose the rendered score layout while preserving
+  the original `ScoreDocument`, `NoteID`, and
+  playback event identity. The SDK layout engine applies display-only pitch,
+  key-signature, and accidental MVP recalculation from layout options, while
+  MusicXML `<transpose>` metadata is parsed and surfaced as diagnostics rather
+  than silently ignored.
+- Added self-authored T2 samples for key transpose, accidental transpose, and
+  MusicXML transpose diagnostic QA.
+- Fixed the T2 display-transpose follow-up QA issues: prefix notation now uses
+  the standard `clef -> key signature -> time signature` order with expanded
+  collision-safe spacing, and note accidentals now resolve to the same pitch
+  color as their associated displayed note when note colors are enabled.
+  Key-signature accidentals also use pitch-class coloring when note colors are
+  enabled.
+- Updated the transpose UI so score display transpose is always enabled by
+  default and the control uses a key picker (`C`, `C#`, `D`, ...) instead of
+  semitone +/- buttons.
+- Added a DoReMi Palette Palette Editor MVP. The toolbar palette button opens a
+  sheet with 12 pitch-class ON/OFF controls, all-on / all-off reset actions, a
+  generated C2-C6 score preview, and a C2-C6 keyboard preview. Disabled pitch
+  classes fall back to neutral ink while preserving layout, playback,
+  transpose, repeat, Practice Mode, and Library behavior.
+- Removed the visible preset pattern picker from the palette sheet and adjusted
+  the preview layout so the C2-C6 score preview is visible in the sheet.
+- Added an app setting for measure-number display. DoReMi Palette enables it by
+  default and renders only odd-numbered measures to keep the score readable.
+- Prepared Phase 17B TestFlight readiness: restored the default launch sample
+  to the normal `DoReMi Palette Sample`, kept S6/S7/S8/S9/S10/T2 QA samples in
+  Library, aligned the app version to `0.1.0` / build `1`, and added release,
+  privacy, and beta-review checklist documents for pre-TestFlight review.
 - Kept Core Graphics fallback rendering for font lookup or registration failure.
 - Dynamics remain diagnostic-only unless represented by existing text
   annotations; system-crossing curves, advanced beams, complex tuplets, and

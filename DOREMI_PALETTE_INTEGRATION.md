@@ -58,6 +58,23 @@ The app must not reparse MusicXML, regenerate `NoteID`, recompute
 The app may inspect public read models such as `ScoreNote`, `Pitch`,
 `RendererDiagnostic`, and `NoteLayout` to drive UI state.
 
+Current DoReMi Palette notation readability uses SDK-layout standard prefix
+order `clef -> key signature -> time signature -> notes` with expanded spacing
+so transposed or multi-accidental key signatures do not collide with bass clefs,
+4/4, repeat-start barlines, or the first note/rest. The app does not compute
+those positions. Accidental glyph colors are resolved through
+`ScoreColorResolver`: note accidentals match the associated displayed note
+pitch color when note colors are enabled, and fall back to ink when note colors
+are disabled.
+
+The Palette Editor MVP is also app-owned. DoReMi Palette persists a 12
+pitch-class enabled set in `AppStorage`, keeps palette pattern selection as an
+internal setting, and creates ordinary `ScoreStyle` color rules for the SDK.
+Disabled pitch classes resolve to neutral ink for notes and keyboard coloring.
+The renderer does not receive app UI state, does not parse MusicXML for the
+palette editor, and continues to draw only from `ScoreLayout` and style
+resolution.
+
 ## SDK Internals The App Must Not Use
 
 - internal parser types
@@ -329,11 +346,11 @@ boundary: DoReMi Palette still opens scores through the SDK facade and uses
 `ScoreCanvasView`, while DoReMiRendererKit remains responsible for parsing,
 layout, rendering, hit testing, diagnostics, and playback-event generation.
 
-The current Phase 17A status is that a physical `iPad Pro 2nd` on iPadOS
-`26.4.2` is detected and the Debug device build succeeds. Codex-side
-`devicectl` install / launch is blocked by a local CoreDeviceService timeout,
-so runtime QA needs Xcode Run or a recovered CoreDevice environment before
-Phase 17B TestFlight preparation starts.
+Physical iPad install / launch and MVP interaction checks have now been
+confirmed by user-side QA. Phase 17B TestFlight readiness is a release
+configuration, legal/privacy, checklist, and archive-preparation pass. It
+restores `DoReMi Palette Sample` as the launch default while leaving S6/S7/S8/
+S9/S10/T2 QA samples in Library for regression checks.
 
 ## Phase S10 Repeat / Jump Boundary
 
@@ -346,3 +363,25 @@ MusicXML words such as D.C., D.S., Fine, Segno, Coda, or To Coda.
 Visual jump markers are SDK layout/renderer elements. They are drawn from
 `ScoreLayout` and do not alter the app's Library, Practice, audio, or
 diagnostics ownership boundaries.
+
+## Piano Transpose Boundary
+
+The piano transpose MVP starts app-side and now always requests display
+transpose from the app UI:
+
+- `transposeSemitones` is stored by DoReMi Palette settings and clamped to
+  `-12...+12`.
+- `PalettePlaybackRuntime` applies transpose only immediately before generated
+  audio playback.
+- Keyboard attack/continuation and next-note highlights use transposed sounding
+  MIDI pitches.
+- The app exposes a key picker (`C`, `C#`, `D`, ...) and stores the selected
+  target as the existing clamped `transposeSemitones` value.
+- DoReMi Palette asks the SDK loader to rebuild
+  `ScoreLayout` from the original `ScoreDocument` using display transpose
+  options. The app still does not reparse MusicXML or calculate score
+  coordinates itself.
+- Written key / sounding key and written note / sounding note are presentation
+  text in DoReMi Palette.
+- MusicXML `<transpose>` metadata is parsed and diagnosed by the SDK. Automatic
+  transposing-instrument concert-pitch conversion remains disabled by default.

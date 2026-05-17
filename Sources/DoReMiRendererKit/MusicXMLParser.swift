@@ -69,7 +69,10 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
     private var currentMeasureTempoEvents: [TempoEvent] = []
     private var currentMeasureRepeatBarlines: [RepeatBarline] = []
     private var currentMeasureRepeatEndings: [RepeatEnding] = []
+    private var currentMeasureRepeat: MeasureRepeat?
     private var currentMeasurePlaybackJumpMarkers: [PlaybackJumpMarker] = []
+    private var currentMusicXMLTranspose: MusicXMLTranspose?
+    private var transposeBuilder: MusicXMLTransposeBuilder?
 
     private var noteBuilder: NoteBuilder?
     private var lyricBuilder: LyricBuilder?
@@ -129,7 +132,10 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             currentMeasureTempoEvents = []
             currentMeasureRepeatBarlines = []
             currentMeasureRepeatEndings = []
+            currentMeasureRepeat = nil
             currentMeasurePlaybackJumpMarkers = []
+            currentMusicXMLTranspose = nil
+            transposeBuilder = nil
         case "note":
             noteBuilder = NoteBuilder()
         case "lyric":
@@ -163,6 +169,15 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             recordRepeat(direction: attributeDict["direction"], times: attributeDict["times"])
         case "ending":
             recordRepeatEnding(number: attributeDict["number"], type: attributeDict["type"])
+        case "measure-repeat":
+            if let repeatType = attributeDict["type"], repeatType != "start" {
+                recordDiagnostic(
+                    severity: .warning,
+                    code: "unsupported.measureRepeatType",
+                    elementName: elementName,
+                    message: "MusicXML measure-repeat type \(repeatType) is recognized but only one-bar repeat start is rendered in the MVP."
+                )
+            }
         case "metronome":
             recordDiagnostic(
                 severity: .warning,
@@ -193,12 +208,15 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
                 message: "Grace-note layout and playback are not supported in Phase 11F."
             )
         case "transpose":
+            transposeBuilder = MusicXMLTransposeBuilder()
             recordDiagnostic(
                 severity: .warning,
                 code: "unsupported.transpose",
                 elementName: elementName,
-                message: "Transposition is not applied in Phase 11F; written pitch is preserved for layout, color, and playback."
+                message: "MusicXML transpose metadata is recognized for diagnostics, but automatic transposing-instrument concert pitch conversion is not applied by the piano transpose MVP."
             )
+        case "double":
+            transposeBuilder?.doublesAtOctave = true
         case "beam":
             break
         default:
@@ -239,7 +257,9 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
                 tempoEvents: currentMeasureTempoEvents,
                 repeatBarlines: currentMeasureRepeatBarlines,
                 repeatEndings: currentMeasureRepeatEndings,
-                playbackJumpMarkers: currentMeasurePlaybackJumpMarkers
+                measureRepeat: currentMeasureRepeat,
+                playbackJumpMarkers: currentMeasurePlaybackJumpMarkers,
+                musicXMLTranspose: currentMusicXMLTranspose
             )
             currentMeasures.append(measure)
         case "divisions":
@@ -252,6 +272,18 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             currentTimeSignature = TimeSignature(beats: Int(text) ?? 4, beatType: currentTimeSignature?.beatType ?? 4)
         case "beat-type":
             currentTimeSignature = TimeSignature(beats: currentTimeSignature?.beats ?? 4, beatType: Int(text) ?? 4)
+        case "diatonic":
+            if parentElement == "transpose" {
+                transposeBuilder?.diatonic = Int(text)
+            }
+        case "chromatic":
+            if parentElement == "transpose" {
+                transposeBuilder?.chromatic = Int(text)
+            }
+        case "octave-change":
+            if parentElement == "transpose" {
+                transposeBuilder?.octaveChange = Int(text)
+            }
         case "sign":
             pendingClefSign = text
         case "clef":
@@ -307,6 +339,20 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             }
         case "barline":
             pendingBarlineLocation = nil
+        case "transpose":
+            currentMusicXMLTranspose = transposeBuilder?.make()
+            transposeBuilder = nil
+        case "measure-repeat":
+            let count = Int(text) ?? 1
+            if count != 1 {
+                recordDiagnostic(
+                    severity: .warning,
+                    code: "unsupported.measureRepeatCount",
+                    elementName: elementName,
+                    message: "MusicXML measure-repeat count \(count) is recognized but only one-bar repeat rendering is supported in the MVP."
+                )
+            }
+            currentMeasureRepeat = MeasureRepeat(count: count)
         case "note":
             finishNote()
         default:
@@ -618,6 +664,22 @@ private struct LyricBuilder {
     var text = ""
 }
 
+private struct MusicXMLTransposeBuilder {
+    var diatonic: Int?
+    var chromatic: Int?
+    var octaveChange: Int?
+    var doublesAtOctave = false
+
+    func make() -> MusicXMLTranspose {
+        MusicXMLTranspose(
+            diatonic: diatonic,
+            chromatic: chromatic,
+            octaveChange: octaveChange,
+            doublesAtOctave: doublesAtOctave
+        )
+    }
+}
+
 private let recognizedMusicXMLElements: Set<String> = [
     "score-partwise",
     "score-timewise",
@@ -668,6 +730,8 @@ private let recognizedMusicXMLElements: Set<String> = [
     "barline",
     "repeat",
     "ending",
+    "measure-style",
+    "measure-repeat",
     "time-modification",
     "actual-notes",
     "normal-notes",
@@ -683,6 +747,9 @@ private let recognizedMusicXMLElements: Set<String> = [
     "dynamics",
     "words",
     "transpose",
+    "diatonic",
+    "octave-change",
+    "double",
     "grace",
     "tuplet",
     "slur",

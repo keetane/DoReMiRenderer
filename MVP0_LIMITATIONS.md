@@ -38,6 +38,19 @@ This document records the known limitations of DoReMiRendererKit after Phase 0 t
   direction-specific flag glyphs anchored near stem ends, pulls note accidentals
   closer to noteheads, and balances rest sizes, but placement and spacing remain
   MVP quality.
+- Prefix notation is laid out in standard order as `clef -> key signature ->
+  time signature -> notes`. The spacing is collision-safe for the current MVP,
+  including display-transposed key signatures, but full publishing-quality
+  prefix spacing remains out of scope.
+- When note colors are enabled, note accidentals use the same pitch color as
+  the associated displayed note. Key-signature accidentals also use pitch-class
+  color in the current MVP; disabling note colors returns accidentals to the
+  default ink color.
+- DoReMi Palette palette editing is pitch-class based in the current MVP. Users
+  can enable or disable color for the 12 pitch classes, but cannot yet assign
+  arbitrary RGB/HEX colors, configure colors per octave, import/export palette
+  files, or sync palettes across devices. Disabled pitch classes fall back to
+  neutral ink rather than a user-selected replacement color.
 - Bravura 1.392 is bundled as a Swift Package resource under the SIL Open Font
   License. `SMUFL_INTEGRATION_PLAN.md` records the S1-S5 implementation and the
   remaining S6 work while keeping `ScoreLayout` as the coordinate source.
@@ -127,6 +140,19 @@ This document records the known limitations of DoReMiRendererKit after Phase 0 t
   newly sounding attacks from tied continuations in score and keyboard
   highlights. Full tie-chain duration merging and tie-curve engraving are not
   implemented.
+- Piano transpose is always shown as display transpose in the app UI. The key
+  picker (`C`, `C#`, `D`, ...) stores the underlying `transposeSemitones`, and
+  generated audio, keyboard highlights, and the rendered score move together.
+  The app requests a display-transposed `ScoreLayout` using the original
+  `ScoreDocument`; note positions, key signatures, and simple accidentals are
+  recalculated for display while original `NoteID` and `PlaybackEvent` identity
+  are preserved.
+- Display transpose is intentionally MVP quality. Enharmonic spelling is simple,
+  measure-level accidental carry-over is limited, complex key changes are not
+  publishing-quality, and MusicXML export is not implemented.
+- MusicXML `<transpose>` metadata is parsed and retained for diagnostics.
+  Automatic transposing-instrument concert-pitch conversion is not enabled by
+  default because the current app feature is piano-focused semitone transpose.
 - Background audio, MIDI, external instruments, high-quality samples, and audio
   recording are not implemented.
 
@@ -164,11 +190,11 @@ Areas that remain intentionally incomplete in the current MVP are:
 - provider-dependent file bookmark recovery beyond the current MVP
 - advanced notation, SMuFL glyph rendering, and publishing-quality engraving
 
-Phase 17A has confirmed physical iPad discovery and Debug device build for
-`iPad Pro 2nd` on iPadOS `26.4.2`. Codex-side install / launch is currently
-blocked by a local CoreDeviceService timeout, so real-device launch, audio,
-file import, persistence, and runtime interaction checks remain pending until
-the app is run from Xcode or CoreDevice is recovered.
+Phase 17A physical iPad QA has been completed by user-side confirmation. Phase
+17B restores the default launch score to the normal learning-oriented
+`DoReMi Palette Sample`, keeps all QA fixtures available from Library, and
+records privacy, license, release-build, archive, and TestFlight checklist
+status before App Store Connect upload.
 
 Phase 13 adds import fixtures, app import-path tests, keyboard/settings/
 diagnostics regression tests, and minimum iPhone manual checks. Real user

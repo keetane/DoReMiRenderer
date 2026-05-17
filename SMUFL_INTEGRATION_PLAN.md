@@ -106,6 +106,10 @@ Renderer:
 - Does not infer coordinates.
 - Does not own color-rule decisions; it follows `ScoreStyle` and
   `ScoreColorResolver`.
+- Draws accidental and key-signature SMuFL glyphs with colors already resolved
+  from layout metadata. Note accidentals match the associated displayed note
+  pitch color when note colors are enabled; key-signature accidentals use
+  pitch-class color in the current MVP.
 
 App:
 
@@ -139,6 +143,10 @@ basic learning readability:
 - Current-note scroll follow is independent of SMuFL. It is driven by
   `ScoreLayout.noteByID` and layout-coordinate anchors, not glyph bounds or
   rendered image analysis.
+- DoReMi Palette's MVP prefix layout uses the standard `clef -> key signature
+  -> time signature` order. Collision avoidance is handled by SDK layout
+  spacing, including display-transposed key signatures and repeat-start
+  barlines.
 
 This hotfix is intentionally shaped so the same domain/layout meaning can feed
 Phase S5 SMuFL glyph selection later. SMuFL should replace the visual glyph

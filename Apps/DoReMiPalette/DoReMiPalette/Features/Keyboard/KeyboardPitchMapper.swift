@@ -48,15 +48,33 @@ struct KeyboardPitchMapper {
     static func highlightedMIDINumbers(
         layout: ScoreLayout,
         currentNoteIDs: Set<NoteID>,
-        range: ClosedRange<Int> = defaultRange
+        range: ClosedRange<Int> = defaultRange,
+        transposeSemitones: Int = 0,
+        displayTransposeEnabled: Bool = false
     ) -> Set<Int> {
         Set(currentNoteIDs.compactMap { noteID in
             guard let pitch = layout.noteLayout(for: noteID)?.pitch else {
                 return nil
             }
             let midi = midiNumber(for: pitch)
-            return range.contains(midi) ? midi : nil
+            let keyboardTranspose = displayTransposeEnabled ? 0 : transposeSemitones
+            guard let transposed = transposedMIDINumber(midi, by: keyboardTranspose) else {
+                return nil
+            }
+            return range.contains(transposed) ? transposed : nil
         })
+    }
+
+    static func transposedMIDINumber(_ midi: Int, by semitones: Int) -> Int? {
+        let transposed = midi + PaletteTranspose.clamped(semitones)
+        guard (0...127).contains(transposed) else {
+            return nil
+        }
+        return transposed
+    }
+
+    static func transposedMIDINumbers(_ pitches: [Int], by semitones: Int) -> Set<Int> {
+        Set(pitches.compactMap { transposedMIDINumber($0, by: semitones) })
     }
 
     static func label(for midi: Int) -> String {
@@ -100,12 +118,21 @@ struct CurrentNoteHighlightState: Equatable {
         isVisible ? self : .empty
     }
 
-    static func make(event: PlaybackEvent?, layout: ScoreLayout) -> CurrentNoteHighlightState {
+    static func make(
+        event: PlaybackEvent?,
+        layout: ScoreLayout,
+        transposeSemitones: Int = 0,
+        displayTransposeEnabled: Bool = false
+    ) -> CurrentNoteHighlightState {
         guard let event else {
             return .empty
         }
 
-        var remainingAttacks = Dictionary(grouping: event.midiPitches, by: { $0 })
+        let eventAttackPitches = displayTransposeEnabled
+            ? event.midiPitches.compactMap { KeyboardPitchMapper.transposedMIDINumber($0, by: transposeSemitones) }
+            : event.midiPitches
+        let keyboardTranspose = displayTransposeEnabled ? 0 : transposeSemitones
+        var remainingAttacks = Dictionary(grouping: eventAttackPitches, by: { $0 })
             .mapValues(\.count)
         var attackNoteIDs: Set<NoteID> = []
         var continuationNoteIDs: Set<NoteID> = []
@@ -121,11 +148,15 @@ struct CurrentNoteHighlightState: Equatable {
             let midi = KeyboardPitchMapper.midiNumber(for: pitch)
             if (remainingAttacks[midi] ?? 0) > 0 {
                 attackNoteIDs.insert(noteID)
-                attackMIDIPitches.insert(midi)
+                if let transposedMidi = KeyboardPitchMapper.transposedMIDINumber(midi, by: keyboardTranspose) {
+                    attackMIDIPitches.insert(transposedMidi)
+                }
                 remainingAttacks[midi, default: 0] -= 1
             } else {
                 continuationNoteIDs.insert(noteID)
-                continuationMIDIPitches.insert(midi)
+                if let transposedMidi = KeyboardPitchMapper.transposedMIDINumber(midi, by: keyboardTranspose) {
+                    continuationMIDIPitches.insert(transposedMidi)
+                }
             }
         }
 
@@ -143,15 +174,27 @@ struct CurrentNoteHighlightState: Equatable {
 struct PracticeNoteDisplay: Equatable {
     let englishName: String
     let solfegeName: String
+    let soundingEnglishName: String?
+    let soundingSolfegeName: String?
+    let transposeDescription: String?
     let summary: String
 
-    static let rest = PracticeNoteDisplay(englishName: "Rest", solfegeName: "休符", summary: "休符")
+    static let rest = PracticeNoteDisplay(
+        englishName: "Rest",
+        solfegeName: "休符",
+        soundingEnglishName: nil,
+        soundingSolfegeName: nil,
+        transposeDescription: nil,
+        summary: "休符"
+    )
 }
 
 struct PracticeNoteNameFormatter {
     static func display(
         layout: ScoreLayout,
-        noteIDs: Set<NoteID>
+        noteIDs: Set<NoteID>,
+        transposeSemitones: Int = 0,
+        displayTransposeEnabled: Bool = false
     ) -> PracticeNoteDisplay {
         guard !noteIDs.isEmpty else {
             return .rest
@@ -166,10 +209,26 @@ struct PracticeNoteNameFormatter {
         let english = sorted.map(englishName(for:)).joined(separator: "-")
         let solfege = sorted.map(solfegeName(for:)).joined(separator: "-")
         let prefix = sorted.count > 1 ? "Chord: " : ""
+        let transpose = displayTransposeEnabled ? 0 : PaletteTranspose.clamped(transposeSemitones)
+        let soundingMidiPitches = sorted.compactMap { pitch in
+            KeyboardPitchMapper.transposedMIDINumber(KeyboardPitchMapper.midiNumber(for: pitch), by: transpose)
+        }
+        let soundingEnglish = soundingMidiPitches.map { KeyboardPitchMapper.label(for: $0) }.joined(separator: "-")
+        let soundingSolfege = soundingMidiPitches.map { solfegeName(forMIDIPitch: $0) }.joined(separator: "-")
+        let transposeDescription = transpose == 0 ? nil : PaletteTranspose.formatted(transpose)
+        let summary: String
+        if transpose == 0 {
+            summary = "\(prefix)\(english) / \(solfege)"
+        } else {
+            summary = "\(prefix)\(english) / \(solfege) → \(soundingEnglish) / \(soundingSolfege) (\(PaletteTranspose.formatted(transpose)))"
+        }
         return PracticeNoteDisplay(
             englishName: english,
             solfegeName: solfege,
-            summary: "\(prefix)\(english) / \(solfege)"
+            soundingEnglishName: transpose == 0 ? nil : soundingEnglish,
+            soundingSolfegeName: transpose == 0 ? nil : soundingSolfege,
+            transposeDescription: transposeDescription,
+            summary: summary
         )
     }
 
@@ -179,6 +238,12 @@ struct PracticeNoteNameFormatter {
 
     static func solfegeName(for pitch: Pitch) -> String {
         "\(solfegeStepName(for: pitch.step))\(accidentalText(for: pitch.alter))"
+    }
+
+    static func solfegeName(forMIDIPitch midi: Int) -> String {
+        let names = ["ド", "ド#", "レ", "レ#", "ミ", "ファ", "ファ#", "ソ", "ソ#", "ラ", "ラ#", "シ"]
+        let pitchClass = midi % 12
+        return names[pitchClass >= 0 ? pitchClass : pitchClass + 12]
     }
 
     private static func englishStepName(for step: PitchStep) -> String {

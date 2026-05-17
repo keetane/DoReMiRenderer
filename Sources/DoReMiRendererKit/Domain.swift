@@ -232,6 +232,25 @@ public struct TimeSignature: Hashable, Codable, Sendable {
     }
 }
 
+public struct MusicXMLTranspose: Hashable, Codable, Sendable {
+    public let diatonic: Int?
+    public let chromatic: Int?
+    public let octaveChange: Int?
+    public let doublesAtOctave: Bool
+
+    public init(
+        diatonic: Int? = nil,
+        chromatic: Int? = nil,
+        octaveChange: Int? = nil,
+        doublesAtOctave: Bool = false
+    ) {
+        self.diatonic = diatonic
+        self.chromatic = chromatic
+        self.octaveChange = octaveChange
+        self.doublesAtOctave = doublesAtOctave
+    }
+}
+
 public struct ScoreDocument: Hashable, Codable, Sendable {
     public let parts: [ScorePart]
 
@@ -263,7 +282,9 @@ public struct Measure: Hashable, Codable, Sendable {
     public let tempoEvents: [TempoEvent]
     public let repeatBarlines: [RepeatBarline]
     public let repeatEndings: [RepeatEnding]
+    public let measureRepeat: MeasureRepeat?
     public let playbackJumpMarkers: [PlaybackJumpMarker]
+    public let musicXMLTranspose: MusicXMLTranspose?
 
     public init(
         id: MeasureID,
@@ -276,7 +297,9 @@ public struct Measure: Hashable, Codable, Sendable {
         tempoEvents: [TempoEvent] = [],
         repeatBarlines: [RepeatBarline] = [],
         repeatEndings: [RepeatEnding] = [],
-        playbackJumpMarkers: [PlaybackJumpMarker] = []
+        measureRepeat: MeasureRepeat? = nil,
+        playbackJumpMarkers: [PlaybackJumpMarker] = [],
+        musicXMLTranspose: MusicXMLTranspose? = nil
     ) {
         self.id = id
         self.number = number
@@ -288,7 +311,9 @@ public struct Measure: Hashable, Codable, Sendable {
         self.tempoEvents = tempoEvents
         self.repeatBarlines = repeatBarlines
         self.repeatEndings = repeatEndings
+        self.measureRepeat = measureRepeat
         self.playbackJumpMarkers = playbackJumpMarkers
+        self.musicXMLTranspose = musicXMLTranspose
     }
 }
 
@@ -603,5 +628,14 @@ public enum ScoreElementKind: Hashable, Codable, Sendable {
     case slur
     case tuplet
     case repeatEnding
+    case measureRepeat
     case playbackJumpMarker
+}
+
+public struct MeasureRepeat: Hashable, Codable, Sendable {
+    public let count: Int
+
+    public init(count: Int = 1) {
+        self.count = max(1, count)
+    }
 }
