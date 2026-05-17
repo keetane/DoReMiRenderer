@@ -637,8 +637,13 @@ renderer path and must remain layout-driven.
 
 ## Phase 17B TestFlight Readiness QA
 
-- [ ] App launch opens `DoReMi Palette Sample` as the normal learning default.
-- [ ] S6/S7/S8/S9/S10/T2 QA samples remain visible and openable from Library.
+- [ ] App launch opens `Canon in D` as the bundled MXL default.
+- [ ] The Library shows the five bundled MXL samples copied from `sample/`.
+- [ ] `12 Variations of Twinkle Twinkle Little Star` is not listed in the
+  bundled sample catalog because its repeat-expanded playback is too long for
+  the default sample set.
+- [ ] Prior S6/S7/S8/S9/S10/T2 QA samples are no longer expected in the bundled
+  app sample catalog after the sample replacement.
 - [ ] Release build succeeds for `generic/platform=iOS`.
 - [ ] Archive succeeds, or any failure is classified as signing / provisioning
   requiring user-side Apple Developer action.
@@ -648,7 +653,7 @@ renderer path and must remain layout-driven.
 - [ ] Privacy notes confirm no account, ads, tracking, analytics, or server
   upload of imported MusicXML.
 - [ ] `ASSET_LICENSES.md` and `THIRD_PARTY_NOTICES.md` record Bravura 1.392,
-  ZIPFoundation, the app icon, and self-authored samples.
+  ZIPFoundation, the app icon, and the user-provided bundled MXL sample set.
 - [ ] `Scripts/check-licenses.sh` and `Scripts/build-docc.sh` pass.
 - [ ] `swift run DoReMiRendererDiagnostics LocalSamples` completes.
 - [ ] iPad Simulator launches and captures Phase 17B screenshots under

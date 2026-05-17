@@ -19,7 +19,6 @@
 		2B0000010000000000000009 /* Features/Diagnostics/DiagnosticsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001019 /* Features/Diagnostics/DiagnosticsPanel.swift */; };
 		2B000001000000000000000A /* Features/Keyboard/KeyboardPitchMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000101A /* Features/Keyboard/KeyboardPitchMapper.swift */; };
 		2B000001000000000000000B /* Features/Keyboard/KeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000101B /* Features/Keyboard/KeyboardView.swift */; };
-		2B000001000000000000000C /* Resources/Samples/phase12_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000101C /* Resources/Samples/phase12_sample.musicxml */; };
 		2B000001000000000000000D /* DoReMiRendererKit in Frameworks */ = {isa = PBXBuildFile; productRef = 2B0000010000000000000041 /* DoReMiRendererKit */; };
 		2B000001000000000000000E /* PaletteScoreLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000101D /* PaletteScoreLoaderTests.swift */; };
 		2B000001000000000000000F /* KeyboardPitchMapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000101E /* KeyboardPitchMapperTests.swift */; };
@@ -31,21 +30,11 @@
 		2B0000010000000000000015 /* Features/Playback/Audio/PaletteAudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001025 /* Features/Playback/Audio/PaletteAudioEngine.swift */; };
 		2B0000010000000000000016 /* Features/Playback/Audio/SimpleToneAudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001026 /* Features/Playback/Audio/SimpleToneAudioEngine.swift */; };
 		2B0000010000000000000017 /* PalettePlaybackRuntimeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001027 /* PalettePlaybackRuntimeTests.swift */; };
-		2B0000010000000000000018 /* Resources/Samples/rhythm_values_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001028 /* Resources/Samples/rhythm_values_sample.musicxml */; };
-		2B0000010000000000000019 /* Resources/Samples/notation_coverage_grand_staff.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001029 /* Resources/Samples/notation_coverage_grand_staff.musicxml */; };
-		2B000001000000000000001A /* Resources/Samples/s6_notation_refinement_grand_staff.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000102A /* Resources/Samples/s6_notation_refinement_grand_staff.musicxml */; };
-		2B000001000000000000001B /* Resources/Samples/s7_repeat_playback_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000102B /* Resources/Samples/s7_repeat_playback_sample.musicxml */; };
-		2B000001000000000000001C /* Resources/Samples/s8_repeat_endings_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000102C /* Resources/Samples/s8_repeat_endings_sample.musicxml */; };
-		2B000001000000000000001D /* Resources/Samples/s9_repeat_visuals_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000102D /* Resources/Samples/s9_repeat_visuals_sample.musicxml */; };
-		2B00000100000000000000A1 /* Resources/Samples/s10_dc_fine_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000102E /* Resources/Samples/s10_dc_fine_sample.musicxml */; };
-		2B00000100000000000000A2 /* Resources/Samples/s10_ds_fine_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000102F /* Resources/Samples/s10_ds_fine_sample.musicxml */; };
-		2B00000100000000000000A3 /* Resources/Samples/s10_dc_coda_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001030 /* Resources/Samples/s10_dc_coda_sample.musicxml */; };
-		2B00000100000000000000A4 /* Resources/Samples/s10_ds_coda_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001031 /* Resources/Samples/s10_ds_coda_sample.musicxml */; };
-		2B00000100000000000000A5 /* Resources/Samples/s10_repeat_diagnostics_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001032 /* Resources/Samples/s10_repeat_diagnostics_sample.musicxml */; };
-		2B00000100000000000000A6 /* Resources/Samples/s10_all_repeat_symbols_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001033 /* Resources/Samples/s10_all_repeat_symbols_sample.musicxml */; };
-		2B00000100000000000000B2 /* Resources/Samples/t2_transpose_key_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001035 /* Resources/Samples/t2_transpose_key_sample.musicxml */; };
-		2B00000100000000000000B3 /* Resources/Samples/t2_transpose_accidentals_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001036 /* Resources/Samples/t2_transpose_accidentals_sample.musicxml */; };
-		2B00000100000000000000B4 /* Resources/Samples/t2_musicxml_transpose_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001037 /* Resources/Samples/t2_musicxml_transpose_sample.musicxml */; };
+		2B00000100000000000000C2 /* Resources/Samples/Canon_in_D.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001042 /* Resources/Samples/Canon_in_D.mxl */; };
+		2B00000100000000000000C3 /* Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001043 /* Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl */; };
+		2B00000100000000000000C4 /* Resources/Samples/Happy_Birthday_To_You_Piano.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001044 /* Resources/Samples/Happy_Birthday_To_You_Piano.mxl */; };
+		2B00000100000000000000C5 /* Resources/Samples/Ode_to_Joy_Easy_variation.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001045 /* Resources/Samples/Ode_to_Joy_Easy_variation.mxl */; };
+		2B00000100000000000000C6 /* Resources/Samples/The_Entertainer_-_Scott_Joplin_-_1902.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001046 /* Resources/Samples/The_Entertainer_-_Scott_Joplin_-_1902.mxl */; };
 		2B00000100000000000000F0 /* DoReMiRendererKit in Frameworks */ = {isa = PBXBuildFile; productRef = 2B0000010000000000000041 /* DoReMiRendererKit */; };
 /* End PBXBuildFile section */
 
@@ -73,7 +62,6 @@
 		2B0000010000000000001019 /* Features/Diagnostics/DiagnosticsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Diagnostics/DiagnosticsPanel.swift; sourceTree = "<group>"; };
 		2B000001000000000000101A /* Features/Keyboard/KeyboardPitchMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Keyboard/KeyboardPitchMapper.swift; sourceTree = "<group>"; };
 		2B000001000000000000101B /* Features/Keyboard/KeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Keyboard/KeyboardView.swift; sourceTree = "<group>"; };
-		2B000001000000000000101C /* Resources/Samples/phase12_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/phase12_sample.musicxml; sourceTree = "<group>"; };
 		2B000001000000000000101D /* PaletteScoreLoaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaletteScoreLoaderTests.swift; sourceTree = "<group>"; };
 		2B000001000000000000101E /* KeyboardPitchMapperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardPitchMapperTests.swift; sourceTree = "<group>"; };
 		2B000001000000000000101F /* DoReMiPaletteTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DoReMiPaletteTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -85,21 +73,11 @@
 		2B0000010000000000001025 /* Features/Playback/Audio/PaletteAudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Playback/Audio/PaletteAudioEngine.swift; sourceTree = "<group>"; };
 		2B0000010000000000001026 /* Features/Playback/Audio/SimpleToneAudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Playback/Audio/SimpleToneAudioEngine.swift; sourceTree = "<group>"; };
 		2B0000010000000000001027 /* PalettePlaybackRuntimeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PalettePlaybackRuntimeTests.swift; sourceTree = "<group>"; };
-		2B0000010000000000001028 /* Resources/Samples/rhythm_values_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/rhythm_values_sample.musicxml; sourceTree = "<group>"; };
-		2B0000010000000000001029 /* Resources/Samples/notation_coverage_grand_staff.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/notation_coverage_grand_staff.musicxml; sourceTree = "<group>"; };
-		2B000001000000000000102A /* Resources/Samples/s6_notation_refinement_grand_staff.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/s6_notation_refinement_grand_staff.musicxml; sourceTree = "<group>"; };
-		2B000001000000000000102B /* Resources/Samples/s7_repeat_playback_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/s7_repeat_playback_sample.musicxml; sourceTree = "<group>"; };
-		2B000001000000000000102C /* Resources/Samples/s8_repeat_endings_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/s8_repeat_endings_sample.musicxml; sourceTree = "<group>"; };
-		2B000001000000000000102D /* Resources/Samples/s9_repeat_visuals_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/s9_repeat_visuals_sample.musicxml; sourceTree = "<group>"; };
-		2B000001000000000000102E /* Resources/Samples/s10_dc_fine_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/s10_dc_fine_sample.musicxml; sourceTree = "<group>"; };
-		2B000001000000000000102F /* Resources/Samples/s10_ds_fine_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/s10_ds_fine_sample.musicxml; sourceTree = "<group>"; };
-		2B0000010000000000001030 /* Resources/Samples/s10_dc_coda_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/s10_dc_coda_sample.musicxml; sourceTree = "<group>"; };
-		2B0000010000000000001031 /* Resources/Samples/s10_ds_coda_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/s10_ds_coda_sample.musicxml; sourceTree = "<group>"; };
-		2B0000010000000000001032 /* Resources/Samples/s10_repeat_diagnostics_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/s10_repeat_diagnostics_sample.musicxml; sourceTree = "<group>"; };
-		2B0000010000000000001033 /* Resources/Samples/s10_all_repeat_symbols_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/s10_all_repeat_symbols_sample.musicxml; sourceTree = "<group>"; };
-		2B0000010000000000001035 /* Resources/Samples/t2_transpose_key_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/t2_transpose_key_sample.musicxml; sourceTree = "<group>"; };
-		2B0000010000000000001036 /* Resources/Samples/t2_transpose_accidentals_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/t2_transpose_accidentals_sample.musicxml; sourceTree = "<group>"; };
-		2B0000010000000000001037 /* Resources/Samples/t2_musicxml_transpose_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/Samples/t2_musicxml_transpose_sample.musicxml; sourceTree = "<group>"; };
+		2B0000010000000000001042 /* Resources/Samples/Canon_in_D.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = Resources/Samples/Canon_in_D.mxl; sourceTree = "<group>"; };
+		2B0000010000000000001043 /* Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl; sourceTree = "<group>"; };
+		2B0000010000000000001044 /* Resources/Samples/Happy_Birthday_To_You_Piano.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = Resources/Samples/Happy_Birthday_To_You_Piano.mxl; sourceTree = "<group>"; };
+		2B0000010000000000001045 /* Resources/Samples/Ode_to_Joy_Easy_variation.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = Resources/Samples/Ode_to_Joy_Easy_variation.mxl; sourceTree = "<group>"; };
+		2B0000010000000000001046 /* Resources/Samples/The_Entertainer_-_Scott_Joplin_-_1902.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = Resources/Samples/The_Entertainer_-_Scott_Joplin_-_1902.mxl; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -153,22 +131,11 @@
 				2B0000010000000000001025 /* Features/Playback/Audio/PaletteAudioEngine.swift */,
 				2B0000010000000000001026 /* Features/Playback/Audio/SimpleToneAudioEngine.swift */,
 				2B0000010000000000001022 /* Assets.xcassets */,
-				2B000001000000000000101C /* Resources/Samples/phase12_sample.musicxml */,
-				2B0000010000000000001028 /* Resources/Samples/rhythm_values_sample.musicxml */,
-				2B0000010000000000001029 /* Resources/Samples/notation_coverage_grand_staff.musicxml */,
-				2B000001000000000000102A /* Resources/Samples/s6_notation_refinement_grand_staff.musicxml */,
-				2B000001000000000000102B /* Resources/Samples/s7_repeat_playback_sample.musicxml */,
-				2B000001000000000000102C /* Resources/Samples/s8_repeat_endings_sample.musicxml */,
-				2B000001000000000000102D /* Resources/Samples/s9_repeat_visuals_sample.musicxml */,
-				2B000001000000000000102E /* Resources/Samples/s10_dc_fine_sample.musicxml */,
-				2B000001000000000000102F /* Resources/Samples/s10_ds_fine_sample.musicxml */,
-				2B0000010000000000001030 /* Resources/Samples/s10_dc_coda_sample.musicxml */,
-				2B0000010000000000001031 /* Resources/Samples/s10_ds_coda_sample.musicxml */,
-				2B0000010000000000001032 /* Resources/Samples/s10_repeat_diagnostics_sample.musicxml */,
-				2B0000010000000000001033 /* Resources/Samples/s10_all_repeat_symbols_sample.musicxml */,
-				2B0000010000000000001035 /* Resources/Samples/t2_transpose_key_sample.musicxml */,
-				2B0000010000000000001036 /* Resources/Samples/t2_transpose_accidentals_sample.musicxml */,
-				2B0000010000000000001037 /* Resources/Samples/t2_musicxml_transpose_sample.musicxml */,
+				2B0000010000000000001042 /* Resources/Samples/Canon_in_D.mxl */,
+				2B0000010000000000001043 /* Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl */,
+				2B0000010000000000001044 /* Resources/Samples/Happy_Birthday_To_You_Piano.mxl */,
+				2B0000010000000000001045 /* Resources/Samples/Ode_to_Joy_Easy_variation.mxl */,
+				2B0000010000000000001046 /* Resources/Samples/The_Entertainer_-_Scott_Joplin_-_1902.mxl */,
 			);
 			path = DoReMiPalette;
 			sourceTree = "<group>";
@@ -284,22 +251,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				2B0000010000000000000012 /* Assets.xcassets in Resources */,
-				2B000001000000000000000C /* Resources/Samples/phase12_sample.musicxml in Resources */,
-				2B0000010000000000000018 /* Resources/Samples/rhythm_values_sample.musicxml in Resources */,
-				2B0000010000000000000019 /* Resources/Samples/notation_coverage_grand_staff.musicxml in Resources */,
-				2B000001000000000000001A /* Resources/Samples/s6_notation_refinement_grand_staff.musicxml in Resources */,
-				2B000001000000000000001B /* Resources/Samples/s7_repeat_playback_sample.musicxml in Resources */,
-				2B000001000000000000001C /* Resources/Samples/s8_repeat_endings_sample.musicxml in Resources */,
-				2B000001000000000000001D /* Resources/Samples/s9_repeat_visuals_sample.musicxml in Resources */,
-				2B00000100000000000000A1 /* Resources/Samples/s10_dc_fine_sample.musicxml in Resources */,
-				2B00000100000000000000A2 /* Resources/Samples/s10_ds_fine_sample.musicxml in Resources */,
-				2B00000100000000000000A3 /* Resources/Samples/s10_dc_coda_sample.musicxml in Resources */,
-				2B00000100000000000000A4 /* Resources/Samples/s10_ds_coda_sample.musicxml in Resources */,
-				2B00000100000000000000A5 /* Resources/Samples/s10_repeat_diagnostics_sample.musicxml in Resources */,
-				2B00000100000000000000A6 /* Resources/Samples/s10_all_repeat_symbols_sample.musicxml in Resources */,
-				2B00000100000000000000B2 /* Resources/Samples/t2_transpose_key_sample.musicxml in Resources */,
-				2B00000100000000000000B3 /* Resources/Samples/t2_transpose_accidentals_sample.musicxml in Resources */,
-				2B00000100000000000000B4 /* Resources/Samples/t2_musicxml_transpose_sample.musicxml in Resources */,
+				2B00000100000000000000C2 /* Resources/Samples/Canon_in_D.mxl in Resources */,
+				2B00000100000000000000C3 /* Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl in Resources */,
+				2B00000100000000000000C4 /* Resources/Samples/Happy_Birthday_To_You_Piano.mxl in Resources */,
+				2B00000100000000000000C5 /* Resources/Samples/Ode_to_Joy_Easy_variation.mxl in Resources */,
+				2B00000100000000000000C6 /* Resources/Samples/The_Entertainer_-_Scott_Joplin_-_1902.mxl in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

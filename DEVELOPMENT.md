@@ -627,10 +627,10 @@ Use the following screenshot paths for manual iPad QA:
 
 ## S9 Repeat Visuals QA
 
-The app includes `s9_repeat_visuals_sample.musicxml` for Phase S9. During Phase
-S9 it may be used as the default bundled sample; Phase 17B restores the normal
-`DoReMi Palette Sample` default and keeps `S9 Repeat Visuals Sample` available
-from Library. Open it from Library and confirm:
+The app previously included `s9_repeat_visuals_sample.musicxml` for Phase S9.
+The bundled app sample catalog has since been replaced with user-provided MXL
+files from `sample/`, so this Phase S9 fixture is historical rather than a
+current bundled Library item.
 
 1. First and second ending numbers are visible above the staff.
 2. Ending bracket horizontal lines and hooks are visible and do not replace
@@ -646,10 +646,14 @@ Suggested screenshots:
 
 ## Phase 17B TestFlight Readiness
 
-Phase 17B is a release-readiness gate, not a feature phase. It restores the app
-launch default to `DoReMi Palette Sample`, keeps all QA samples in Library, and
-records release configuration, privacy, license, and archive status before any
-TestFlight upload.
+Phase 17B is a release-readiness gate, not a feature phase. After the bundled
+sample replacement, the app launch default is
+`Canon in D`, and the sample Library contains the five user-provided MXL files
+copied from `sample/`. `12 Variations of Twinkle Twinkle Little Star` is kept
+out of the bundled sample catalog because its dense repeat-expanded playback is
+too long for the default learning sample set. Release configuration,
+privacy, license, and archive status must be recorded before any TestFlight
+upload.
 
 Run:
 

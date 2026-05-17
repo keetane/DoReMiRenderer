@@ -300,8 +300,8 @@ struct PaletteScoreLoaderTests {
 
         #expect(sampleItem.sourceType == .sample)
         #expect(importedItem.sourceType == .imported)
-        #expect(sampleItem.displayName == "DoReMi Palette Sample")
-        #expect(sample.sourceIdentifier == "sample:phase12_sample.musicxml")
+        #expect(sampleItem.displayName == "Canon in D")
+        #expect(sample.sourceIdentifier == "sample:Canon_in_D.mxl")
     }
 
     @Test func libraryCollectionSortsAndUpdatesDuplicateImports() throws {
@@ -586,355 +586,40 @@ struct PaletteScoreLoaderTests {
 
         session.openLibraryItem(sampleItem, bundle: .main)
 
-        #expect(session.loadedScore?.sourceName == "phase12_sample.musicxml")
+        #expect(session.loadedScore?.sourceName == "Canon_in_D.mxl")
         #expect(session.errorMessage == nil)
     }
 
-    @Test func rhythmValuesSampleLoadsAndContainsExpectedDurations() throws {
-        let loaded = try PaletteScoreLoader().load(
-            data: Self.appSampleData("rhythm_values_sample.musicxml"),
-            sourceName: "rhythm_values_sample.musicxml"
-        )
-        let renderer = DoReMiRenderer()
-        let eventsWithRests = renderer.makePlaybackSequence(
-            score: loaded.score,
-            options: PlaybackOptions(includeRests: true)
-        )
-        let pitchedEvents = loaded.playbackEvents
-        let durations = pitchedEvents.map { Self.quarterNotes(for: $0.nominalDuration) }
-
-        #expect(durations.contains(4.0))
-        #expect(durations.contains(2.0))
-        #expect(durations.contains(1.0))
-        #expect(durations.contains(0.5))
-        #expect(eventsWithRests.contains { $0.midiPitches.isEmpty && Self.quarterNotes(for: $0.nominalDuration) == 1.0 })
-        #expect(eventsWithRests.contains { $0.midiPitches.isEmpty && Self.quarterNotes(for: $0.nominalDuration) == 0.5 })
-        let whole: Double = 4.0
-        let half: Double = 2.0
-        let quarter: Double = 1.0
-        let eighth: Double = 0.5
-        #expect(whole > quarter)
-        #expect(half > quarter)
-        #expect(eighth < quarter)
-    }
-
-    @Test func rhythmValuesSampleKeepsRepeatedC4AsSeparateEventsInOnsetOrder() throws {
-        let loaded = try PaletteScoreLoader().load(
-            data: Self.appSampleData("rhythm_values_sample.musicxml"),
-            sourceName: "rhythm_values_sample.musicxml"
-        )
-        let repeatedC4Events = loaded.playbackEvents.filter { $0.midiPitches == [60] }
-        let onsetKeys = repeatedC4Events.map { "\($0.onset.ticks)/\($0.onset.ticksPerQuarterNote)" }
-
-        #expect(repeatedC4Events.count >= 4)
-        #expect(Set(onsetKeys).count > 1)
-    }
-
-    @Test func sampleCatalogIncludesRhythmValuesSample() throws {
+    @Test func sampleCatalogContainsOnlyBundledMXLFilesFromSampleDirectory() throws {
         let catalog = SampleScoreCatalog.default
-        let rhythmSample = try #require(catalog.samples.first { $0.resourceName == "rhythm_values_sample" })
+        let expected: [(String, String, String)] = [
+            ("Canon_in_D", "mxl", "Canon in D"),
+            ("Fur_Elise_-_Beethoven_-_for_beginner_piano", "mxl", "Fur Elise - Beginner Piano"),
+            ("Happy_Birthday_To_You_Piano", "mxl", "Happy Birthday To You Piano"),
+            ("Ode_to_Joy_Easy_variation", "mxl", "Ode to Joy Easy Variation"),
+            ("The_Entertainer_-_Scott_Joplin_-_1902", "mxl", "The Entertainer"),
+        ]
 
-        #expect(rhythmSample.displayName == "Rhythm Values Sample")
-        #expect(catalog.libraryItems().contains { $0.displayName == "Rhythm Values Sample" && $0.sourceType == .sample })
+        #expect(catalog.samples.count == expected.count)
+        #expect(catalog.samples.map(\.resourceName) == expected.map(\.0))
+        #expect(catalog.samples.allSatisfy { $0.fileExtension == "mxl" })
+        #expect(catalog.samples.map(\.displayName) == expected.map(\.2))
     }
 
-    @Test func t2TransposeSamplesLoadAndMusicXMLTransposeEmitsDiagnostic() throws {
+    @Test func bundledMXLReplacementSamplesLoadFromBundle() throws {
         let catalog = SampleScoreCatalog.default
         let loader = PaletteScoreLoader()
-        let sampleNames = [
-            "t2_transpose_key_sample",
-            "t2_transpose_accidentals_sample",
-            "t2_musicxml_transpose_sample",
-        ]
 
-        for resourceName in sampleNames {
-            let sample = try #require(catalog.samples.first { $0.resourceName == resourceName })
+        for sample in catalog.samples {
             let url = try #require(sample.url(in: Bundle.main))
             let loaded = try loader.load(data: Data(contentsOf: url), sourceName: url.lastPathComponent)
+
+            #expect(!loaded.score.parts.isEmpty)
+            #expect(loaded.score.parts.contains { !$0.measures.isEmpty })
             #expect(!loaded.playbackEvents.isEmpty)
-            if resourceName == "t2_musicxml_transpose_sample" {
-                #expect(loaded.score.parts.first?.measures.first?.musicXMLTranspose?.chromatic == 2)
-                #expect(loaded.diagnostics.contains { $0.code == "unsupported.transpose" })
-            }
+            #expect(loaded.layout.canvasSize.width > 0)
+            #expect(loaded.layout.canvasSize.height > 0)
         }
-    }
-
-    @Test func notationCoverageGrandStaffSampleLoadsAndIsListed() throws {
-        let catalog = SampleScoreCatalog.default
-        let sample = try #require(catalog.samples.first { $0.resourceName == "notation_coverage_grand_staff" })
-        let loaded = try PaletteScoreLoader().load(
-            data: Self.appSampleData("notation_coverage_grand_staff.musicxml"),
-            sourceName: "notation_coverage_grand_staff.musicxml"
-        )
-
-        #expect(sample.displayName == "Notation Coverage Sample")
-        #expect(catalog.libraryItems().contains { $0.displayName == "Notation Coverage Sample" && $0.sourceType == .sample })
-        #expect(loaded.score.parts.first?.measures.count == 10)
-        #expect(loaded.score.parts.first?.measures.first?.clefsByStaff[StaffID(rawValue: "2")]?.kind == .bass)
-        #expect(loaded.layout.elements.contains { $0.kind == .clef })
-        #expect(loaded.layout.elements.contains { $0.kind == .timeSignature })
-        #expect(loaded.layout.elements.contains { $0.kind == .keySignature })
-        #expect(loaded.layout.elements.contains { $0.kind == .barline && $0.repeatBarline != nil })
-        #expect(loaded.layout.elements.contains { $0.kind == .dot })
-        #expect(loaded.playbackEvents.count > 10)
-        #expect(!loaded.diagnostics.contains { $0.code == "repeat.playbackExpansionUnsupported" })
-
-        let upperClef = try #require(loaded.layout.elements.first {
-            $0.kind == .clef && $0.staffID == StaffID(rawValue: "1") && $0.measureID?.rawValue.contains("1") == true
-        })
-        let upperKey = try #require(loaded.layout.elements.first {
-            $0.kind == .keySignature && $0.staffID == StaffID(rawValue: "1") && $0.measureID?.rawValue.contains("1") == true
-        })
-        let upperTime = try #require(loaded.layout.elements.first {
-            $0.kind == .timeSignature && $0.staffID == StaffID(rawValue: "1") && $0.measureID?.rawValue.contains("1") == true
-        })
-        let lowerTime = try #require(loaded.layout.elements.first {
-            $0.kind == .timeSignature && $0.staffID == StaffID(rawValue: "2") && $0.measureID?.rawValue.contains("1") == true
-        })
-        #expect(upperClef.frame.maxX < upperKey.frame.minX)
-        #expect(upperKey.frame.maxX < upperTime.frame.minX)
-        #expect(upperTime.timeSignature == TimeSignature(beats: 4, beatType: 4))
-        #expect(lowerTime.timeSignature == TimeSignature(beats: 4, beatType: 4))
-        #expect(lowerTime.frame.width > 0)
-    }
-
-    @Test func s6NotationRefinementSampleIsDefaultAndContainsS6Elements() throws {
-        let catalog = SampleScoreCatalog.default
-        let defaultSample = try #require(catalog.defaultSample)
-        let sample = try #require(catalog.samples.first { $0.resourceName == "s6_notation_refinement_grand_staff" })
-        let loaded = try PaletteScoreLoader().load(
-            data: Self.appSampleData("s6_notation_refinement_grand_staff.musicxml"),
-            sourceName: "s6_notation_refinement_grand_staff.musicxml"
-        )
-
-        #expect(defaultSample.resourceName == "phase12_sample")
-        #expect(sample.displayName == "S6 Notation Refinement Sample")
-        #expect(catalog.libraryItems().contains { $0.displayName == "S6 Notation Refinement Sample" && $0.sourceType == .sample })
-        #expect(loaded.score.parts.first?.measures.count == 15)
-        #expect(loaded.score.parts.first?.measures.first?.clefsByStaff[StaffID(rawValue: "2")]?.kind == .bass)
-        #expect(loaded.layout.elements.contains { $0.kind == .beam })
-        #expect(loaded.layout.elements.contains { $0.kind == .tie })
-        #expect(loaded.layout.elements.contains { $0.kind == .slur })
-        #expect(loaded.layout.elements.contains { $0.kind == .tuplet && $0.tuplet?.number == "3" })
-        #expect(loaded.layout.elements.contains { $0.kind == .tuplet && $0.tuplet?.number == "5" })
-        #expect(loaded.layout.elements.contains { $0.kind == .tuplet && $0.tuplet?.number == "7" })
-        #expect(loaded.layout.elements.contains { $0.kind == .lyric })
-        #expect(loaded.layout.elements.contains { $0.kind == .fingering })
-        #expect(loaded.layout.elements.contains { $0.kind == .barline && $0.repeatBarline != nil })
-        #expect(loaded.playbackEvents.count > 20)
-
-        let measure14 = try #require(loaded.score.parts.first?.measures.first { $0.id.rawValue == "0.14" })
-        let measure15 = try #require(loaded.score.parts.first?.measures.first { $0.id.rawValue == "0.15" })
-        let measure15PitchedNoteIDs = Set(measure15.notes.filter { $0.pitch != nil }.map(\.id))
-        #expect(measure14.notes.filter { $0.pitch != nil && $0.noteValueKind == .sixteenth }.count == 6)
-        #expect(measure15.notes.filter { $0.pitch != nil && $0.noteValueKind == .thirtySecond }.count == 6)
-        #expect(loaded.layout.elements.contains { element in
-            element.kind == .beam
-                && !(Set(element.beam?.noteIDs ?? []).isDisjoint(with: measure15PitchedNoteIDs))
-                && (element.beam?.secondarySegments.count ?? 0) >= 2
-        })
-    }
-
-    @Test func s7RepeatPlaybackSampleLoadsAndExpandsSimpleRepeat() throws {
-        let catalog = SampleScoreCatalog.default
-        let defaultSample = try #require(catalog.defaultSample)
-        let sample = try #require(catalog.samples.first { $0.resourceName == "s7_repeat_playback_sample" })
-        let loaded = try PaletteScoreLoader().load(
-            data: Self.appSampleData("s7_repeat_playback_sample.musicxml"),
-            sourceName: "s7_repeat_playback_sample.musicxml"
-        )
-
-        #expect(defaultSample.resourceName == "phase12_sample")
-        #expect(sample.displayName == "S7 Repeat Playback Sample")
-        #expect(catalog.libraryItems().contains { $0.displayName == "S7 Repeat Playback Sample" && $0.sourceType == .sample })
-        #expect(loaded.score.parts.first?.measures.count == 4)
-        #expect(loaded.layout.elements.contains { $0.kind == .barline && $0.repeatBarline?.direction == .forward })
-        #expect(loaded.layout.elements.contains { $0.kind == .barline && $0.repeatBarline?.direction == .backward })
-        #expect(!loaded.diagnostics.contains { $0.code == "repeat.playbackExpansionUnsupported" })
-
-        let measureTransitions = loaded.playbackEvents.map(\.measureID.rawValue).reduce(into: [String]()) { result, measureID in
-            if result.last != measureID {
-                result.append(measureID)
-            }
-        }
-        #expect(measureTransitions == ["0.1", "0.2", "0.3", "0.2", "0.3", "0.4"])
-        #expect(loaded.playbackEvents.filter { $0.measureID.rawValue == "0.2" }.count == 8)
-        #expect(loaded.playbackEvents.filter { $0.measureID.rawValue == "0.3" }.count == 8)
-    }
-
-    @Test func s8RepeatEndingsSampleLoadsAndExpandsFirstSecondEndings() throws {
-        let catalog = SampleScoreCatalog.default
-        let defaultSample = try #require(catalog.defaultSample)
-        let sample = try #require(catalog.samples.first { $0.resourceName == "s8_repeat_endings_sample" })
-        let loaded = try PaletteScoreLoader().load(
-            data: Self.appSampleData("s8_repeat_endings_sample.musicxml"),
-            sourceName: "s8_repeat_endings_sample.musicxml"
-        )
-
-        #expect(defaultSample.resourceName == "phase12_sample")
-        #expect(sample.displayName == "S8 Repeat Endings Sample")
-        #expect(catalog.libraryItems().contains { $0.displayName == "S8 Repeat Endings Sample" && $0.sourceType == .sample })
-        #expect(loaded.score.parts.first?.measures.count == 6)
-        #expect(loaded.score.parts.first?.measures[3].repeatEndings.contains { $0.numbers == [1] && $0.kind == .start } == true)
-        #expect(loaded.score.parts.first?.measures[4].repeatEndings.contains { $0.numbers == [2] && $0.kind == .start } == true)
-
-        let measureTransitions = loaded.playbackEvents.map(\.measureID.rawValue).reduce(into: [String]()) { result, measureID in
-            if result.last != measureID {
-                result.append(measureID)
-            }
-        }
-        #expect(measureTransitions == ["0.1", "0.2", "0.3", "0.4", "0.2", "0.3", "0.5", "0.6"])
-        #expect(loaded.playbackEvents.filter { $0.measureID.rawValue == "0.2" }.count == 8)
-        #expect(loaded.playbackEvents.filter { $0.measureID.rawValue == "0.3" }.count == 8)
-        #expect(loaded.playbackEvents.filter { $0.measureID.rawValue == "0.4" }.count == 4)
-        #expect(loaded.playbackEvents.filter { $0.measureID.rawValue == "0.5" }.count == 4)
-    }
-
-    @Test func s9RepeatVisualsSampleLoadsDrawsEndingBracketsAndKeepsPlaybackOrder() throws {
-        let catalog = SampleScoreCatalog.default
-        let defaultSample = try #require(catalog.defaultSample)
-        let sample = try #require(catalog.samples.first { $0.resourceName == "s9_repeat_visuals_sample" })
-        let loaded = try PaletteScoreLoader().load(
-            data: Self.appSampleData("s9_repeat_visuals_sample.musicxml"),
-            sourceName: "s9_repeat_visuals_sample.musicxml"
-        )
-
-        #expect(defaultSample.resourceName == "phase12_sample")
-        #expect(sample.displayName == "S9 Repeat Visuals Sample")
-        #expect(catalog.libraryItems().contains { $0.displayName == "S9 Repeat Visuals Sample" && $0.sourceType == .sample })
-        #expect(loaded.score.parts.first?.measures.count == 7)
-        #expect(loaded.layout.elements.contains { $0.kind == .repeatEnding && $0.repeatEnding?.label == "1." })
-        #expect(loaded.layout.elements.contains { $0.kind == .repeatEnding && $0.repeatEnding?.label == "2." })
-        #expect(loaded.layout.elements.contains { $0.kind == .measureRepeat })
-        #expect(loaded.diagnostics.contains { $0.code == "jump.dalSegnoUnsupported" })
-
-        let measureTransitions = loaded.playbackEvents.map(\.measureID.rawValue).reduce(into: [String]()) { result, measureID in
-            if result.last != measureID {
-                result.append(measureID)
-            }
-        }
-        #expect(measureTransitions == ["0.1", "0.2", "0.3", "0.4", "0.2", "0.3", "0.5", "0.6"])
-        #expect(loaded.playbackEvents.filter { $0.measureID.rawValue == "0.4" }.count == 4)
-        #expect(loaded.playbackEvents.filter { $0.measureID.rawValue == "0.5" }.count == 4)
-    }
-
-    @Test func s10JumpSamplesLoadAndExpandExpectedPlaybackOrders() throws {
-        let catalog = SampleScoreCatalog.default
-        let expected: [(resource: String, displayName: String, order: [String])] = [
-            ("s10_dc_fine_sample", "S10 D.C. al Fine Sample", ["0.1", "0.2", "0.3", "0.4", "0.1", "0.2", "0.3"]),
-            ("s10_ds_fine_sample", "S10 D.S. al Fine Sample", ["0.1", "0.2", "0.3", "0.4", "0.2", "0.3"]),
-            ("s10_dc_coda_sample", "S10 D.C. al Coda Sample", ["0.1", "0.2", "0.3", "0.1", "0.2", "0.4", "0.5"]),
-            ("s10_ds_coda_sample", "S10 D.S. al Coda Sample", ["0.1", "0.2", "0.3", "0.4", "0.2", "0.3", "0.5", "0.6"]),
-        ]
-
-        for sampleCase in expected {
-            let sample = try #require(catalog.samples.first { $0.resourceName == sampleCase.resource })
-            let loaded = try PaletteScoreLoader().load(
-                data: Self.appSampleData("\(sampleCase.resource).musicxml"),
-                sourceName: "\(sampleCase.resource).musicxml"
-            )
-            let measureTransitions = loaded.playbackEvents.map(\.measureID.rawValue).reduce(into: [String]()) { result, measureID in
-                if result.last != measureID {
-                    result.append(measureID)
-                }
-            }
-
-            #expect(sample.displayName == sampleCase.displayName)
-            #expect(catalog.libraryItems().contains { $0.displayName == sampleCase.displayName && $0.sourceType == .sample })
-            #expect(measureTransitions == sampleCase.order)
-            #expect(loaded.layout.elements.contains { $0.kind == .playbackJumpMarker })
-            #expect(!loaded.diagnostics.contains { $0.code == "jump.codaUnsupported" })
-        }
-    }
-
-    @Test func s10RepeatDiagnosticsSampleLoadsAndEmitsSpecificWarnings() throws {
-        let catalog = SampleScoreCatalog.default
-        let sample = try #require(catalog.samples.first { $0.resourceName == "s10_repeat_diagnostics_sample" })
-        let loaded = try PaletteScoreLoader().load(
-            data: Self.appSampleData("s10_repeat_diagnostics_sample.musicxml"),
-            sourceName: "s10_repeat_diagnostics_sample.musicxml"
-        )
-
-        #expect(sample.displayName == "S10 Repeat Diagnostics Sample")
-        #expect(loaded.layout.elements.contains { $0.kind == .repeatEnding && $0.repeatEnding?.label == "3." })
-        #expect(loaded.layout.elements.contains { $0.kind == .playbackJumpMarker && $0.playbackJumpMarker?.label == "D.S. al Coda" })
-        #expect(loaded.diagnostics.contains { $0.code == "repeat.nestedUnsupported" })
-        #expect(loaded.diagnostics.contains { $0.code == "repeat.endingNumberUnsupported" })
-        #expect(loaded.diagnostics.contains { $0.code == "jump.multipleSegnoUnsupported" })
-        #expect(loaded.diagnostics.contains { $0.code == "jump.withRepeatsUnsupported" })
-    }
-
-    @Test func s10AllRepeatSymbolsSampleLoadsAndShowsRepeatMarkersForManualQA() throws {
-        let catalog = SampleScoreCatalog.default
-        let sample = try #require(catalog.samples.first { $0.resourceName == "s10_all_repeat_symbols_sample" })
-        let loaded = try PaletteScoreLoader().load(
-            data: Self.appSampleData("s10_all_repeat_symbols_sample.musicxml"),
-            sourceName: "s10_all_repeat_symbols_sample.musicxml"
-        )
-
-        let markerLabels = Set(loaded.layout.elements.compactMap(\.playbackJumpMarker?.label))
-
-        #expect(sample.displayName == "S10 All Repeat Symbols Sample")
-        #expect(catalog.libraryItems().contains { $0.displayName == "S10 All Repeat Symbols Sample" && $0.sourceType == .sample })
-        #expect(loaded.layout.elements.contains { $0.kind == .barline && $0.repeatBarline?.direction == .forward })
-        #expect(loaded.layout.elements.contains { $0.kind == .barline && $0.repeatBarline?.direction == .backward })
-        #expect(loaded.layout.elements.contains { $0.kind == .repeatEnding && $0.repeatEnding?.label == "1." })
-        #expect(loaded.layout.elements.contains { $0.kind == .repeatEnding && $0.repeatEnding?.label == "2." })
-        #expect(markerLabels.isSuperset(of: [
-            "Segno",
-            "To Coda",
-            "Fine",
-            "D.C.",
-            "D.C. al Fine",
-            "D.C. al Coda",
-            "D.S.",
-            "D.S. al Fine",
-            "Coda",
-            "D.S. al Coda",
-        ]))
-        #expect(loaded.diagnostics.contains { $0.code == "jump.withRepeatsUnsupported" })
-    }
-
-    @Test func s6MeasureSixMixedBeamPatternsStayOnEighthVisualGrid() throws {
-        let loaded = try PaletteScoreLoader().load(
-            data: Self.appSampleData("s6_notation_refinement_grand_staff.musicxml"),
-            sourceName: "s6_notation_refinement_grand_staff.musicxml"
-        )
-        let measureSix = try #require(loaded.score.parts.first?.measures.first { $0.id.rawValue == "0.6" })
-        let upperNotes = measureSix.notes
-            .filter { $0.staffID == StaffID(rawValue: "1") && $0.voiceID == VoiceID(rawValue: "1") }
-
-        let firstMixedBeam = Array(upperNotes.prefix(3))
-        let secondMixedBeam = Array(upperNotes.dropFirst(3).prefix(3))
-        let simpleEighthBeam = Array(upperNotes.dropFirst(6).prefix(2))
-
-        #expect(firstMixedBeam.map(\.noteValueKind) == [.sixteenth, .sixteenth, .eighth])
-        #expect(firstMixedBeam.map(\.duration.ticks).reduce(0, +) == 12)
-        #expect(secondMixedBeam.map(\.noteValueKind) == [.sixteenth, .sixteenth, .eighth])
-        #expect(secondMixedBeam.map(\.duration.ticks).reduce(0, +) == 12)
-        #expect(simpleEighthBeam.map(\.noteValueKind) == [.eighth, .eighth])
-        #expect(simpleEighthBeam.map(\.duration.ticks).reduce(0, +) == 12)
-
-        let firstLayouts = try firstMixedBeam.map { note in
-            try #require(loaded.layout.noteLayout(for: note.id))
-        }
-        let secondLayouts = try secondMixedBeam.map { note in
-            try #require(loaded.layout.noteLayout(for: note.id))
-        }
-        let simpleLayouts = try simpleEighthBeam.map { note in
-            try #require(loaded.layout.noteLayout(for: note.id))
-        }
-
-        let firstGapA = firstLayouts[1].noteheadCenter.x - firstLayouts[0].noteheadCenter.x
-        let firstGapB = firstLayouts[2].noteheadCenter.x - firstLayouts[1].noteheadCenter.x
-        let secondGapA = secondLayouts[1].noteheadCenter.x - secondLayouts[0].noteheadCenter.x
-        let secondGapB = secondLayouts[2].noteheadCenter.x - secondLayouts[1].noteheadCenter.x
-        let simpleEighthGap = simpleLayouts[1].noteheadCenter.x - simpleLayouts[0].noteheadCenter.x
-
-        #expect(abs(firstGapA - firstGapB) < 0.001)
-        #expect(abs(secondGapA - secondGapB) < 0.001)
-        #expect(abs((firstGapA * 2) - simpleEighthGap) < 0.001)
-        #expect(abs((secondGapA * 2) - simpleEighthGap) < 0.001)
     }
 
     @Test func currentHighlightStateSplitsMixedTieContinuationAndAttackEvent() throws {
@@ -1111,6 +796,24 @@ struct PaletteScoreLoaderTests {
           <note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
           <note><pitch><step>D</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
           <note><rest/><duration>1</duration><voice>1</voice><type>quarter</type></note>
+        </measure>
+      </part>
+    </score-partwise>
+    """.utf8)
+
+    static let tempoMusicXML = Data("""
+    <?xml version="1.0" encoding="UTF-8"?>
+    <score-partwise version="4.0">
+      <part-list><score-part id="P1"><part-name>Tempo</part-name></score-part></part-list>
+      <part id="P1">
+        <measure number="1">
+          <attributes>
+            <divisions>1</divisions>
+            <time><beats>4</beats><beat-type>4</beat-type></time>
+            <clef><sign>G</sign><line>2</line></clef>
+          </attributes>
+          <direction><sound tempo="96"/></direction>
+          <note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
         </measure>
       </part>
     </score-partwise>

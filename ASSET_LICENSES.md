@@ -30,16 +30,25 @@
   and notice records must be rechecked before TestFlight, App Store, or other
   external distribution.
 
-## DoReMi Palette App Sample
+## DoReMi Palette Bundled MXL Samples
 
-`Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/phase12_sample.musicxml`
+`Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/`
 
-- Origin: Original sample created for DoReMi Palette Phase 12 integration.
-- Contains copyrighted third party music: No.
-- Permitted project use: commercial, test, demo, screenshot, and documentation use
-  within DoReMiRendererKit, DoReMiRendererExample, and DoReMiPalette.
-- Redistribution outside this repository: governed by the repository `LICENSE`
-  unless a separate written permission is provided.
+- `Canon_in_D.mxl`
+- `Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl`
+- `Happy_Birthday_To_You_Piano.mxl`
+- `Ode_to_Joy_Easy_variation.mxl`
+- `The_Entertainer_-_Scott_Joplin_-_1902.mxl`
+
+- Origin: User-provided sample replacement set copied from
+  `/Users/keetane/Documents/apps/DoReMiRenderer/sample`.
+- Contains copyrighted third party music: the set includes well-known public
+  domain melodies and arrangements, but the arrangement/export rights should be
+  rechecked before external distribution.
+- Permitted project use: bundled app testing, demo, screenshot, and internal
+  TestFlight preparation use subject to the user's rights in the provided files.
+- Redistribution outside this repository: requires confirmation that each
+  arrangement and MusicXML/MXL export may be redistributed.
 
 ## DoReMi Palette Import QA Fixtures
 
@@ -101,90 +110,7 @@ No additional non-code assets are included in MVP0.
 
 ## Phase 17B TestFlight Readiness Audit
 
-As of Phase 17B, bundled app assets are limited to the self-authored MusicXML
-fixtures listed in this file, the user-provided DoReMi Palette app icon, and
-the Bravura 1.392 SMuFL font under the SIL Open Font License. No GPL/LGPL asset
-or dependency is intentionally included.
-
-## rhythm_values_sample.musicxml
-
-`Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/rhythm_values_sample.musicxml`
-is a self-authored DoReMi Palette QA fixture. It contains only simple original
-rhythm-value examples for whole, half, quarter, eighth, rest, repeated-note, and
-simple chord playback and rendering verification, including a dotted-note
-example. It may be used for commercial, test, and demo purposes within this
-project.
-
-## notation_coverage_grand_staff.musicxml
-
-`Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/notation_coverage_grand_staff.musicxml`
-is a self-authored DoReMi Palette QA fixture. It contains only short original
-grand-staff notation examples for treble/bass clefs, time and key signatures,
-accidentals, rests, dotted notes, ties, slurs, repeats, chords, ledger lines,
-tempo metadata, and dynamics diagnostics. It may be used for commercial, test,
-demo, screenshot, and documentation purposes within this project.
-
-## s6_notation_refinement_grand_staff.musicxml
-
-`Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/s6_notation_refinement_grand_staff.musicxml`
-is a self-authored DoReMi Palette QA fixture. It contains only short original
-grand-staff notation examples for Phase S6 tie curves, slur curves, simple and
-mixed eighth/sixteenth beam groups, basic triplets, rests, accidentals, chords,
-lyrics/fingering, and repeat barlines. It may be used for commercial, test,
-demo, screenshot, and documentation purposes within this project.
-
-## s7_repeat_playback_sample.musicxml
-
-`Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/s7_repeat_playback_sample.musicxml`
-is a self-authored DoReMi Palette QA fixture. It contains only short original
-grand-staff notation examples for Phase S7 repeat playback expansion, including
-an intro, a simple forward/backward repeat section, and an outro. It may be used
-for commercial, test, demo, screenshot, and documentation purposes within this
-project.
-
-## s8_repeat_endings_sample.musicxml
-
-`Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/s8_repeat_endings_sample.musicxml`
-is a self-authored DoReMi Palette QA fixture. It contains only short original
-grand-staff notation examples for Phase S8 repeat-ending playback expansion,
-including an intro, a repeated body, first ending, second ending, and outro. It
-may be used for commercial, test, demo, screenshot, and documentation purposes
-within this project.
-
-## s9_repeat_visuals_sample.musicxml
-
-`Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/s9_repeat_visuals_sample.musicxml`
-is a self-authored DoReMi Palette QA fixture. It contains only short original
-grand-staff notation examples for Phase S9 repeat-ending visual brackets,
-first/second ending playback regression, and unsupported jump-marker diagnostic
-checks. It may be used for commercial, test, demo, screenshot, and documentation
-purposes within this project.
-
-## Phase S10 repeat / jump samples
-
-The following files are self-authored DoReMi Palette QA fixtures:
-
-- `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/s10_dc_fine_sample.musicxml`
-- `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/s10_ds_fine_sample.musicxml`
-- `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/s10_dc_coda_sample.musicxml`
-- `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/s10_ds_coda_sample.musicxml`
-- `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/s10_repeat_diagnostics_sample.musicxml`
-- `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/s10_all_repeat_symbols_sample.musicxml`
-
-They contain only short original grand-staff notation examples for Phase S10
-D.C./D.S./Fine/Coda playback expansion, all-repeat-symbol visual QA, and
-repeat/jump diagnostic QA. They may be used for commercial, test, demo,
-screenshot, and documentation purposes within this project.
-
-## Phase T2 transpose samples
-
-The following files are self-authored DoReMi Palette QA fixtures:
-
-- `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/t2_transpose_key_sample.musicxml`
-- `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/t2_transpose_accidentals_sample.musicxml`
-- `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/t2_musicxml_transpose_sample.musicxml`
-
-They contain only short original notation examples for display transpose, key
-signature transpose, accidental transpose, and MusicXML `<transpose>` diagnostic
-QA. They may be used for commercial, test, demo, screenshot, and documentation
-purposes within this project.
+As of the bundled MXL sample replacement, app sample assets are the
+user-provided MXL files listed above, the user-provided DoReMi Palette app icon,
+and the Bravura 1.392 SMuFL font under the SIL Open Font License. No GPL/LGPL
+asset or dependency is intentionally included.

@@ -1,4 +1,5 @@
 *.mxl
+!Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/*.mxl
 *.pdf
 .build/
 .swiftpm/

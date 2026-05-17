@@ -2,16 +2,13 @@
 
 ## Internal Testing Scope
 
-- Open the default `DoReMi Palette Sample`.
-- Open QA samples from Library:
-  - Rhythm Values Sample
-  - Notation Coverage Sample
-  - S6 Notation Refinement Sample
-  - S7 Repeat Playback Sample
-  - S8 Repeat Endings Sample
-  - S9 Repeat Visuals Sample
-  - S10 repeat / jump samples
-  - T2 transpose samples
+- Open the default `Canon in D` sample.
+- Open the bundled MXL samples from Library:
+  - Canon in D
+  - Fur Elise - Beginner Piano
+  - Happy Birthday To You Piano
+  - Ode to Joy Easy Variation
+  - The Entertainer
 - Verify Playback: Play, Pause, Stop, Reset, tempo picker, repeat/jump order,
   tied continuation behavior, and no stuck notes.
 - Verify Practice Mode stepping, current-note marker, next-note marker, and
@@ -36,4 +33,3 @@
 ## Screenshot Folder
 
 Use `/tmp/DoReMiPaletteQA/phase-17b/` for Phase 17B manual screenshots.
-

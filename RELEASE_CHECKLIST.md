@@ -2,10 +2,13 @@
 
 ## Phase 17B TestFlight Readiness
 
-- Default launch sample: `DoReMi Palette Sample`
-  (`phase12_sample.musicxml`).
-- QA samples: S6, S7, S8, S9, S10, and T2 samples remain available from
-  Library.
+- Default launch sample: `Canon in D` (`Canon_in_D.mxl`).
+- Bundled sample Library: five user-provided `.mxl` files copied from
+  `sample/`. `12 Variations of Twinkle Twinkle Little Star` is intentionally
+  excluded because its dense repeat-expanded playback is too long for the
+  default bundled sample set.
+- Previous S6/S7/S8/S9/S10/T2 QA samples were removed from the app bundle when
+  the bundled sample set was replaced.
 - Display name: `DoReMi Palette`.
 - Bundle identifier: `com.doremipalette.app`.
 - Version: `0.1.0`.

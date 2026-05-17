@@ -105,100 +105,34 @@ struct SampleScoreCatalog: Hashable {
 
     static let `default` = SampleScoreCatalog(samples: [
         SampleScoreItem(
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000012")!,
-            displayName: "DoReMi Palette Sample",
-            resourceName: "phase12_sample",
-            fileExtension: "musicxml"
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000102")!,
+            displayName: "Canon in D",
+            resourceName: "Canon_in_D",
+            fileExtension: "mxl"
         ),
         SampleScoreItem(
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000018")!,
-            displayName: "S9 Repeat Visuals Sample",
-            resourceName: "s9_repeat_visuals_sample",
-            fileExtension: "musicxml"
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000103")!,
+            displayName: "Fur Elise - Beginner Piano",
+            resourceName: "Fur_Elise_-_Beethoven_-_for_beginner_piano",
+            fileExtension: "mxl"
         ),
         SampleScoreItem(
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000019")!,
-            displayName: "S10 D.C. al Fine Sample",
-            resourceName: "s10_dc_fine_sample",
-            fileExtension: "musicxml"
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000104")!,
+            displayName: "Happy Birthday To You Piano",
+            resourceName: "Happy_Birthday_To_You_Piano",
+            fileExtension: "mxl"
         ),
         SampleScoreItem(
-            id: UUID(uuidString: "00000000-0000-0000-0000-00000000001A")!,
-            displayName: "S10 D.S. al Fine Sample",
-            resourceName: "s10_ds_fine_sample",
-            fileExtension: "musicxml"
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000105")!,
+            displayName: "Ode to Joy Easy Variation",
+            resourceName: "Ode_to_Joy_Easy_variation",
+            fileExtension: "mxl"
         ),
         SampleScoreItem(
-            id: UUID(uuidString: "00000000-0000-0000-0000-00000000001B")!,
-            displayName: "S10 D.C. al Coda Sample",
-            resourceName: "s10_dc_coda_sample",
-            fileExtension: "musicxml"
-        ),
-        SampleScoreItem(
-            id: UUID(uuidString: "00000000-0000-0000-0000-00000000001C")!,
-            displayName: "S10 D.S. al Coda Sample",
-            resourceName: "s10_ds_coda_sample",
-            fileExtension: "musicxml"
-        ),
-        SampleScoreItem(
-            id: UUID(uuidString: "00000000-0000-0000-0000-00000000001D")!,
-            displayName: "S10 Repeat Diagnostics Sample",
-            resourceName: "s10_repeat_diagnostics_sample",
-            fileExtension: "musicxml"
-        ),
-        SampleScoreItem(
-            id: UUID(uuidString: "00000000-0000-0000-0000-00000000001E")!,
-            displayName: "S10 All Repeat Symbols Sample",
-            resourceName: "s10_all_repeat_symbols_sample",
-            fileExtension: "musicxml"
-        ),
-        SampleScoreItem(
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000021")!,
-            displayName: "T2 Transpose Key Sample",
-            resourceName: "t2_transpose_key_sample",
-            fileExtension: "musicxml"
-        ),
-        SampleScoreItem(
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000022")!,
-            displayName: "T2 Transpose Accidentals Sample",
-            resourceName: "t2_transpose_accidentals_sample",
-            fileExtension: "musicxml"
-        ),
-        SampleScoreItem(
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000023")!,
-            displayName: "T2 MusicXML Transpose Sample",
-            resourceName: "t2_musicxml_transpose_sample",
-            fileExtension: "musicxml"
-        ),
-        SampleScoreItem(
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000017")!,
-            displayName: "S8 Repeat Endings Sample",
-            resourceName: "s8_repeat_endings_sample",
-            fileExtension: "musicxml"
-        ),
-        SampleScoreItem(
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000016")!,
-            displayName: "S7 Repeat Playback Sample",
-            resourceName: "s7_repeat_playback_sample",
-            fileExtension: "musicxml"
-        ),
-        SampleScoreItem(
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000015")!,
-            displayName: "S6 Notation Refinement Sample",
-            resourceName: "s6_notation_refinement_grand_staff",
-            fileExtension: "musicxml"
-        ),
-        SampleScoreItem(
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000013")!,
-            displayName: "Rhythm Values Sample",
-            resourceName: "rhythm_values_sample",
-            fileExtension: "musicxml"
-        ),
-        SampleScoreItem(
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000014")!,
-            displayName: "Notation Coverage Sample",
-            resourceName: "notation_coverage_grand_staff",
-            fileExtension: "musicxml"
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000106")!,
+            displayName: "The Entertainer",
+            resourceName: "The_Entertainer_-_Scott_Joplin_-_1902",
+            fileExtension: "mxl"
         )
     ])
 

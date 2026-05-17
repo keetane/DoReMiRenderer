@@ -324,8 +324,9 @@ safe simple beam groups, mixed eighth/sixteenth secondary beam checks, and basic
 triplet brackets while keeping SMuFL glyphs for notation shapes. Phase S7 adds
 simple repeat playback expansion, Phase S8 adds first/second ending playback
 expansion, and Phase S9 adds visible ending brackets. For Phase 17B TestFlight
-readiness, the default app launch sample is back to the normal `DoReMi Palette
-Sample`; S6/S7/S8/S9/S10/T2 QA samples remain available from Library.
+readiness, the app can ship bundled MXL samples. The current bundled sample set
+is the five user-provided `.mxl` files copied from `sample/`; earlier QA
+MusicXML fixtures are no longer part of the app sample catalog.
 
 DoReMi Palette also includes a Print MVP and a score layout switcher. The app
 can display either the existing horizontal one-row score (`横一段`) or an A4-width
@@ -368,78 +369,24 @@ enabling practice stops playback, and pressing Play returns to normal playback.
 Practice Mode remains MVP-level: no scoring, microphone input, MIDI keyboard
 input, AI analysis, or transposition-aware note-name display yet.
 
-### Rhythm Values Sample
+### Bundled MXL Samples
 
-DoReMi Palette includes a bundled `Rhythm Values Sample` for playback QA. It is
-self-authored and covers whole, half, quarter, eighth, rests, repeated C notes,
-and a simple chord. Generated-tone playback uses an app-side note gate so
-repeated same-pitch notes are separated without changing score duration or
-layout.
+The previous bundled QA MusicXML samples were removed from the app bundle when
+the sample set was replaced with user-provided `.mxl` files from `sample/`.
+The Library now exposes these bundled MXL samples:
 
-### Notation Coverage Sample
+- `Canon in D`
+- `Fur Elise - Beginner Piano`
+- `Happy Birthday To You Piano`
+- `Ode to Joy Easy Variation`
+- `The Entertainer`
 
-DoReMi Palette includes a bundled `Notation Coverage Sample`. It is a
-self-authored grand staff score for checking common symbols: treble and bass
-clefs, time and key signatures, accidentals, rests, dotted notes, chords,
-ledger lines, repeat barlines, and limited/diagnostic items such as dynamics.
-See [NOTATION_SUPPORT_MATRIX.md](NOTATION_SUPPORT_MATRIX.md) for the current
-parser/layout/renderer/app support status of each symbol. This sample remains a
-broad QA score for SMuFL before/after comparisons.
-
-### S6 Notation Refinement Sample
-
-DoReMi Palette includes a bundled `S6 Notation Refinement Sample`. It is a
-self-authored grand staff score for checking same-system tie/slur curves, simple
-beam groups, mixed eighth/sixteenth beams, basic triplet brackets, accidentals
-near beams, chords, and repeat barlines. It is the current default launch sample
-only when Phase S6 notation QA is active; otherwise it remains available from
-Library.
-
-### S7 Repeat Playback Sample
-
-DoReMi Palette includes a bundled `S7 Repeat Playback Sample`. It is a
-self-authored grand staff score for checking simple repeat playback order:
-intro, repeat section first pass, repeat section second pass, and outro. It is
-available from the Library.
-
-### S8 Repeat Endings Sample
-
-DoReMi Palette includes a bundled `S8 Repeat Endings Sample`. It is a
-self-authored grand staff score for checking first/second ending playback order:
-intro, repeated body, first ending, repeated body again, second ending, and
-outro. It remains available from the Library.
-
-### S9 Repeat Visuals Sample
-
-DoReMi Palette includes a bundled `S9 Repeat Visuals Sample`. It is a
-self-authored grand staff score for checking first/second ending brackets,
-ending numbers, repeat-ending playback regression, and unsupported jump-marker
-diagnostics. It remains available from Library after Phase 17B; it is no longer
-the default launch sample.
-
-### S10 Repeat / Jump Samples
-
-DoReMi Palette includes bundled S10 samples for D.C. al Fine, D.S. al Fine,
-D.C. al Coda, D.S. al Coda, and repeat/jump diagnostics. They are
-self-authored grand staff fixtures for verifying supported jump-only playback
-orders, visible Fine / D.C. / D.S. / Segno / Coda / To Coda markers, repeat
-count behavior, and diagnostic handling for unsafe repeat/jump combinations.
-`S10 All Repeat Symbols Sample` additionally places the supported and
-diagnostic repeat/jump symbols in one score for manual visual QA.
-They remain available from the Library; the default launch sample is not changed
-by S10.
-
-### T2 Transpose Samples
-
-DoReMi Palette includes bundled T2 samples for score display transpose QA:
-`T2 Transpose Key Sample`, `T2 Transpose Accidentals Sample`, and
-`T2 MusicXML Transpose Sample`. They are self-authored fixtures for checking
-the always-on score display transpose mode, display key-signature transpose, simple
-accidental recalculation, and MusicXML `<transpose>` diagnostics. The samples
-remain available from Library; T2 does not change the default launch sample.
-The app transpose control is a key picker (`C`, `C#`, `D`, ...) rather than a
-semitone +/- control; playback, keyboard highlights, and the rendered score use
-the selected key together.
+`Canon in D` is the default launch score. `12 Variations of Twinkle Twinkle
+Little Star` was removed from the bundled sample list because its dense repeat
+structure makes the repeat-expanded playback too long for a default learning
+sample. The app transpose control is a key
+picker (`C`, `C#`, `D`, ...) rather than a semitone +/- control; playback,
+keyboard highlights, and the rendered score use the selected key together.
 
 ### Palette Editor MVP
 

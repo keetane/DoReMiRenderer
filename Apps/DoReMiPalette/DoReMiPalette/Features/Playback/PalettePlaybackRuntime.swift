@@ -25,6 +25,7 @@ final class PalettePlaybackRuntime {
     private let audioEngine: PaletteAudioEngine
     private var playbackTask: Task<Void, Never>?
     private var usesManualTempoOverride = false
+    private static let defaultTempoBPM: Double = 120
     private static let minimumAudibleDuration: TimeInterval = 0.06
     static let transposeRange = -12...12
 
@@ -79,6 +80,7 @@ final class PalettePlaybackRuntime {
         self.events = events
         tempoEvents = metadata?.tempoEvents.sorted { $0.onset < $1.onset } ?? []
         usesManualTempoOverride = false
+        tempoBPM = initialTempoBPM(for: events)
         currentEventIndex = 0
         notifyCurrentIndex()
     }
@@ -348,6 +350,17 @@ final class PalettePlaybackRuntime {
 
     private func notifyCurrentIndex() {
         onEventIndexChange?(currentEventIndex)
+    }
+
+    private func initialTempoBPM(for events: [PlaybackEvent]) -> Double {
+        guard let firstEvent = events.first else {
+            return Self.defaultTempoBPM
+        }
+        return tempoEvents
+            .last { $0.onset <= firstEvent.onset }
+            .map(\.bpm)
+            .map(Self.clampedTempo)
+            ?? Self.defaultTempoBPM
     }
 
     private func tempoBPM(for event: PlaybackEvent?) -> Double {
