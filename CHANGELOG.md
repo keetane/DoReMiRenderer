@@ -93,6 +93,11 @@ APIs may change before `1.0`.
   to the normal `DoReMi Palette Sample`, kept S6/S7/S8/S9/S10/T2 QA samples in
   Library, aligned the app version to `0.1.0` / build `1`, and added release,
   privacy, and beta-review checklist documents for pre-TestFlight review.
+- Replaced the DoReMi Palette bundled sample scores with user-provided MXL
+  files from `sample/`. The default launch score is now `Canon in D`; `12
+  Variations of Twinkle Twinkle Little Star` was removed from the app sample
+  catalog because its dense repeat-expanded playback is too long for the default
+  learning sample set.
 - Kept Core Graphics fallback rendering for font lookup or registration failure.
 - Dynamics remain diagnostic-only unless represented by existing text
   annotations; system-crossing curves, advanced beams, complex tuplets, and

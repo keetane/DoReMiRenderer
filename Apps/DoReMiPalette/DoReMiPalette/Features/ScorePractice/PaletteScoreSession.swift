@@ -397,6 +397,7 @@ final class PaletteScoreSession: ObservableObject {
         practiceSession.configure(events: events)
         practiceSession.setEnabled(false)
         playbackRuntime.configure(events: events, metadata: metadata)
+        playbackTempoBPM = playbackRuntime.effectiveTempoBPM
         playbackState = playbackRuntime.state
         audioErrorMessage = nil
     }
