@@ -264,15 +264,13 @@ Purpose:
 
 Current Phase 17A status:
 
-- Physical device discovery is working for `iPad Pro 2nd` on iPadOS `26.4.2`
-  with device ID `00008027-001905583CC3802E`.
-- The DoReMi Palette Debug device build succeeds for that iPad destination.
-- Codex-side `devicectl` install / launch is currently blocked by a local
-  CoreDeviceService initialization timeout, so physical runtime QA is not yet
-  complete.
-- Phase 17B TestFlight preparation should not start until the app has been
-  installed/launched on the real iPad and the Phase 17A checklist has been
-  completed.
+- Physical iPad install / launch and manual MVP checks have been completed by
+  user-side QA.
+- Phase 17B TestFlight readiness is now the active release-preparation gate.
+- Phase 17B restores the default launch sample to `DoReMi Palette Sample`,
+  leaves all notation/repeat/transpose QA samples available from Library,
+  confirms release signing/build settings, and records privacy, license, known
+  limitation, and beta-review notes before any App Store Connect upload.
 
 Focus:
 
@@ -483,7 +481,7 @@ Phase S9: Advanced Repeat Visuals / Jump Marker Hardening MVP - complete
   system-crossing ending brackets as documented limitations; S10 handles the
   limited jump-only D.S./Coda playback paths.
 
-Phase S10: Complete Repeat Symbols Before TestFlight - in progress
+Phase S10: Complete Repeat Symbols Before TestFlight - complete
 
 - Prioritize remaining repeat and jump playback before TestFlight so the app
   fails with diagnostics instead of silently misplaying common navigation marks.
@@ -503,6 +501,46 @@ Phase S10: Complete Repeat Symbols Before TestFlight - in progress
   orders are verified, unsupported structures emit diagnostics, app playback and
   Practice Mode continue to consume only expanded `PlaybackEvent` sequences, and
   non-repeat samples remain unchanged.
+
+Piano Transpose MVP - complete
+
+- Add an app-side `transposeSemitones` setting for piano practice, persisted in
+  `AppStorage` and clamped to `-12...+12`.
+- Transpose generated playback and keyboard highlights at the app runtime
+  layer without changing `ScoreDocument`, `ScoreLayout`, `NoteID`, or
+  `PlaybackEvent`.
+- Show written note/key and sounding note/key when transpose is nonzero.
+- Keep score-display transposition, key-signature redraw, MusicXML
+  `<transpose>`, and transposing-instrument concert-pitch handling as future
+  work.
+
+Phase T2: Score Display Transpose / MusicXML Transpose Hardening - complete
+
+- Make display transpose the default app behavior and replace semitone +/- UI
+  with a key picker (`C`, `C#`, `D`, ...).
+- Rebuild `ScoreLayout` from the original `ScoreDocument` with display-only
+  transpose options. The original score, MusicXML file,
+  `NoteID`, `ScoreElementID`, and playback events are not rewritten.
+- Recalculate display pitch positions, MVP key signatures, note colors, and
+  simple accidentals for the transposed score view.
+- Keep playback, keyboard highlight, Practice Mode, and repeat/jump expansion
+  aligned with the existing sounding transpose setting.
+- Parse MusicXML `<transpose>` metadata and report it through diagnostics.
+  Automatic transposing-instrument concert-pitch conversion remains a planned
+  hardening item rather than a default behavior.
+- Add T2 key, accidental, and MusicXML transpose diagnostic samples.
+
+Palette Editor MVP - complete
+
+- Add a DoReMi Palette toolbar palette entry point and sheet-based editor.
+- Keep preset palette selection internal and expose persisted 12 pitch-class
+  ON/OFF controls with all-on/all-off/reset actions.
+- Show generated C2-C6 score and keyboard previews in the sheet so users can see
+  the pitch-class color filter before returning to the score.
+- Apply disabled pitch classes through app-created `ScoreStyle` color rules and
+  keyboard coloring without moving app UI state into the SDK renderer.
+- Leave arbitrary RGB/HEX editing, octave-specific enablement, import/export,
+  and cloud sync as future palette hardening.
 
 The `notation_coverage_grand_staff.musicxml` and `rhythm_values_sample.musicxml`
 samples are the primary before/after QA fixtures for this track. Snapshot

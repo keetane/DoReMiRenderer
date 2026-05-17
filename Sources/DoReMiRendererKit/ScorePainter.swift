@@ -30,6 +30,7 @@ extension ScoreDrawingContext {
 struct ScorePainter: Sendable {
     private let smuflFontName: String?
     private let smuflSizePolicy = SMuFLGlyphSizePolicy()
+    private let repeatTextFontName = "Georgia-Italic"
 
     init(smuflFontName: String? = SMuFLFont.registeredFontName()) {
         self.smuflFontName = smuflFontName
@@ -60,6 +61,55 @@ struct ScorePainter: Sendable {
         drawTuplets(layout: layout, score: score, style: style, selection: effectiveSelection, into: &context)
         drawAccidentals(layout: layout, score: score, style: style, selection: effectiveSelection, into: &context)
         drawTextAnnotations(layout: layout, score: score, style: style, selection: effectiveSelection, into: &context)
+        drawMeasureNumbers(layout: layout, style: style, into: &context)
+    }
+
+    private func drawMeasureNumbers<Context: ScoreDrawingContext>(
+        layout: ScoreLayout,
+        style: ScoreStyle,
+        into context: inout Context
+    ) {
+        guard style.measureNumberDisplayMode != .hidden else {
+            return
+        }
+        let fontSize: CGFloat = 11
+        for measure in layout.measures where shouldDrawMeasureNumber(measure) {
+            let bottomStaffFrame = bottomStaffFrame(for: measure, in: layout) ?? measure.frame
+            let point = CGPoint(
+                x: measure.frame.minX + fontSize * 0.45,
+                y: bottomStaffFrame.maxY + fontSize * 1.15
+            )
+            context.drawText(
+                measureNumberText(for: measure),
+                at: point,
+                color: style.defaultInkColor,
+                size: fontSize,
+                fontName: nil
+            )
+        }
+    }
+
+    private func bottomStaffFrame(for measure: MeasureLayout, in layout: ScoreLayout) -> CGRect? {
+        layout.staves
+            .filter { $0.systemIndex == measure.systemIndex }
+            .max { lhs, rhs in
+                if lhs.frame.maxY != rhs.frame.maxY {
+                    return lhs.frame.maxY < rhs.frame.maxY
+                }
+                return lhs.staffID.rawValue < rhs.staffID.rawValue
+            }?
+            .frame
+    }
+
+    private func shouldDrawMeasureNumber(_ measure: MeasureLayout) -> Bool {
+        guard let number = Int(measureNumberText(for: measure).trimmingCharacters(in: .whitespacesAndNewlines)) else {
+            return false
+        }
+        return number % 2 == 0
+    }
+
+    private func measureNumberText(for measure: MeasureLayout) -> String {
+        measure.measureID.rawValue.split(separator: ".", maxSplits: 1).last.map(String.init) ?? measure.measureID.rawValue
     }
 
     private func drawStructuralSymbols<Context: ScoreDrawingContext>(
@@ -73,6 +123,7 @@ struct ScorePainter: Sendable {
             || element.kind == .timeSignature
             || element.kind == .barline
             || element.kind == .repeatEnding
+            || element.kind == .measureRepeat
             || element.kind == .playbackJumpMarker {
             let resolved = style.colorResolver.resolvedStyle(
                 for: element,
@@ -100,6 +151,8 @@ struct ScorePainter: Sendable {
                 drawBarline(element: element, layout: layout, color: color, into: &context)
             case .repeatEnding:
                 drawRepeatEnding(element: element, color: color, into: &context)
+            case .measureRepeat:
+                drawMeasureRepeat(element: element, color: color, into: &context)
             case .playbackJumpMarker:
                 drawPlaybackJumpMarker(element: element, color: color, into: &context)
             default:
@@ -195,9 +248,21 @@ struct ScorePainter: Sendable {
             repeatEnding.label,
             at: repeatEnding.labelPoint,
             color: color,
-            size: max(11, element.frame.height * 0.46),
-            fontName: nil
+            size: repeatTextSize(for: element),
+            fontName: repeatTextFontName
         )
+    }
+
+    private func drawMeasureRepeat<Context: ScoreDrawingContext>(
+        element: ElementLayout,
+        color: ScoreColor,
+        into context: inout Context
+    ) {
+        let point = CGPoint(x: element.frame.midX, y: element.frame.midY)
+        let size = max(28, element.frame.height * 1.05)
+        if !drawSMuFLGlyph(.repeatOneBar, at: point, color: color, size: size, into: &context) {
+            context.drawText(SMuFLGlyph.repeatOneBar.fallback, at: point, color: color, size: size, fontName: nil)
+        }
     }
 
     private func drawPlaybackJumpMarker<Context: ScoreDrawingContext>(
@@ -208,13 +273,41 @@ struct ScorePainter: Sendable {
         guard let marker = element.playbackJumpMarker else {
             return
         }
+        let textSize = repeatTextSize(for: element)
+        let symbolSize = max(26, element.frame.height * 1.32)
+        switch marker.marker.kind {
+        case .segno:
+            if !drawSMuFLGlyph(.segno, at: marker.point, color: color, size: symbolSize, into: &context) {
+                context.drawText(SMuFLGlyph.segno.fallback, at: marker.point, color: color, size: symbolSize, fontName: nil)
+            }
+            return
+        case .coda:
+            if !drawSMuFLGlyph(.coda, at: marker.point, color: color, size: symbolSize, into: &context) {
+                context.drawText(SMuFLGlyph.coda.fallback, at: marker.point, color: color, size: symbolSize, fontName: nil)
+            }
+            return
+        case .toCoda:
+            let textPoint = CGPoint(x: marker.point.x, y: marker.point.y)
+            context.drawText("To", at: textPoint, color: color, size: textSize, fontName: repeatTextFontName)
+            let glyphPoint = CGPoint(x: marker.point.x + textSize * 1.05, y: marker.point.y)
+            if !drawSMuFLGlyph(.coda, at: glyphPoint, color: color, size: symbolSize * 0.9, into: &context) {
+                context.drawText(SMuFLGlyph.coda.fallback, at: glyphPoint, color: color, size: symbolSize * 0.9, fontName: nil)
+            }
+            return
+        default:
+            break
+        }
         context.drawText(
             marker.label,
             at: marker.point,
             color: color,
-            size: max(10, element.frame.height * 0.58),
-            fontName: nil
+            size: textSize,
+            fontName: repeatTextFontName
         )
+    }
+
+    private func repeatTextSize(for element: ElementLayout) -> CGFloat {
+        max(16, element.frame.height * 1.2)
     }
 
     private func drawStaffLines<Context: ScoreDrawingContext>(

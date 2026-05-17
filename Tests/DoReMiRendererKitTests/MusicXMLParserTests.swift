@@ -75,6 +75,8 @@ import Testing
     #expect(notes[0].accidental == "sharp")
     #expect(notes[0].ties == [.start])
     #expect(notes[1].ties == [.stop])
+    let transpose = try #require(result.score.parts.first?.measures.first?.musicXMLTranspose)
+    #expect(transpose.chromatic == 2)
     #expect(result.diagnostics.contains { $0.severity == .warning && $0.code == "unsupported.transpose" })
 }
 

@@ -19,22 +19,36 @@ The Phase 13+ app-execution roadmap is tracked in [ROADMAP.md](ROADMAP.md), and 
   time-signature digits, noteheads, and flags, with SDK-side size and anchor
   tuning for iPad learning readability.
 - Resolve note, staff line, ledger line, accidental, and highlight colors through `ScoreStyle` and `ScoreColorResolver`.
+- Prefix notation uses the standard order `clef -> key signature -> time
+  signature`, with expanded SDK layout spacing so clefs, display-transposed key
+  signatures, time signatures, and the first note/rest do not collide.
+- When note colors are enabled, note accidentals match the associated displayed
+  note pitch color. Key-signature accidentals use pitch-class color in the
+  current MVP.
 - Perform MVP0 hit testing with `ScoreLayout.hitTest(point:radius:)`.
 - Generate playback step events without audio output.
+- DoReMi Palette consumes playback events for generated-tone audio, Practice
+  Mode, repeat/jump playback, keyboard highlight, and piano transpose.
 - Run iOS Simulator snapshot tests for basic rendering regression coverage.
 - Read basic lyrics, fingering, key signatures, tempo metadata, and repeat
   metadata with explicit diagnostics for unsupported advanced notation.
+- DoReMi Palette can transpose generated playback and keyboard highlights by
+  `-12...+12` semitones while leaving the score written-pitch.
+- DoReMi Palette includes a Palette Editor MVP with 12 pitch-class ON/OFF
+  controls, a C2-C6 keyboard preview, and a generated C2-C6 score preview.
+  Arbitrary RGB editing and octave-specific color enablement are future work.
 
 ## Not Supported
 
 - `score-timewise`
 - Full MusicXML coverage
-- Repeat playback expansion
-- Slur, ornament, tuplet bracket, beam, and grace-note engraving
+- Full repeat/jump navigation beyond documented S7-S10 MVP cases
+- Ornament, grace-note engraving, and publishing-quality slur/beam/tuplet engraving
 - Encrypted or unusual MXL archive layouts
 - Publishing-quality engraving
 - Complex multi-voice collision avoidance
-- Audio playback, AVFoundation, MIDI
+- SDK-owned audio playback, MIDI, score-display transposition, key-signature
+  redraw, and MusicXML `<transpose>` / transposing-instrument support
 - Pinch zoom, advanced automatic scroll follow, and horizontal page navigation
 - Complex selection state, multiple selection, drag, annotations
 
@@ -309,9 +323,9 @@ Phase S6 adds MVP Core Graphics path rendering for same-system tie/slur curves,
 safe simple beam groups, mixed eighth/sixteenth secondary beam checks, and basic
 triplet brackets while keeping SMuFL glyphs for notation shapes. Phase S7 adds
 simple repeat playback expansion, Phase S8 adds first/second ending playback
-expansion, and Phase S9 adds visible ending brackets. The default app launch
-sample is currently `S9 Repeat Visuals Sample` for repeat-visual QA; earlier
-bundled samples remain available from Library.
+expansion, and Phase S9 adds visible ending brackets. For Phase 17B TestFlight
+readiness, the default app launch sample is back to the normal `DoReMi Palette
+Sample`; S6/S7/S8/S9/S10/T2 QA samples remain available from Library.
 
 DoReMi Palette also includes a Print MVP and a score layout switcher. The app
 can display either the existing horizontal one-row score (`横一段`) or an A4-width
@@ -334,6 +348,9 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for recording and diff artifact details.
 - [LICENSE](LICENSE)
 - [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
 - [ASSET_LICENSES.md](ASSET_LICENSES.md)
+- [PRIVACY_NOTES.md](PRIVACY_NOTES.md)
+- [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md)
+- [TESTFLIGHT_CHECKLIST.md](TESTFLIGHT_CHECKLIST.md)
 - [LEGAL_GUIDELINES.md](LEGAL_GUIDELINES.md)
 
 ## Legal Disclaimer
@@ -397,7 +414,8 @@ outro. It remains available from the Library.
 DoReMi Palette includes a bundled `S9 Repeat Visuals Sample`. It is a
 self-authored grand staff score for checking first/second ending brackets,
 ending numbers, repeat-ending playback regression, and unsupported jump-marker
-diagnostics. It is the current default launch sample for Phase S9 verification.
+diagnostics. It remains available from Library after Phase 17B; it is no longer
+the default launch sample.
 
 ### S10 Repeat / Jump Samples
 
@@ -410,6 +428,30 @@ count behavior, and diagnostic handling for unsafe repeat/jump combinations.
 diagnostic repeat/jump symbols in one score for manual visual QA.
 They remain available from the Library; the default launch sample is not changed
 by S10.
+
+### T2 Transpose Samples
+
+DoReMi Palette includes bundled T2 samples for score display transpose QA:
+`T2 Transpose Key Sample`, `T2 Transpose Accidentals Sample`, and
+`T2 MusicXML Transpose Sample`. They are self-authored fixtures for checking
+the always-on score display transpose mode, display key-signature transpose, simple
+accidental recalculation, and MusicXML `<transpose>` diagnostics. The samples
+remain available from Library; T2 does not change the default launch sample.
+The app transpose control is a key picker (`C`, `C#`, `D`, ...) rather than a
+semitone +/- control; playback, keyboard highlights, and the rendered score use
+the selected key together.
+
+### Palette Editor MVP
+
+The app-level palette editor opens from the toolbar palette button. It preserves
+the existing palette selection and Note Color / Staff Color switches, then adds
+pitch-class enablement for `C`, `C#`, `D`, ... `B`. Disabled pitch classes fall
+back to neutral ink in score notes and keyboard previews/highlights. The preview
+score is generated in app memory from C2 through C6 and is not a bundled
+MusicXML asset.
+
+This remains an app feature: the SDK receives regular `ScoreStyle` color rules,
+and the renderer does not know about app UI state.
 
 ## Phase 16.5 Stabilization
 

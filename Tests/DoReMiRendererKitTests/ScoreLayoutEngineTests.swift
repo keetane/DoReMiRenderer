@@ -48,6 +48,50 @@ import Testing
     #expect(restElement.noteID == restID)
 }
 
+@Test func displayTransposeMovesPitchWithoutChangingNoteID() throws {
+    let noteID = NoteID(rawValue: "written-c")
+    let score = makeScore(notes: [
+        makeNote(id: noteID.rawValue, pitch: Pitch(step: .c, octave: 4), onsetTicks: 0),
+    ])
+
+    let written = try ScoreLayoutEngine().layout(score: score, options: LayoutOptions(staffSpace: 12))
+    let transposed = try ScoreLayoutEngine().layout(
+        score: score,
+        options: LayoutOptions(staffSpace: 12, displayTransposeSemitones: 2)
+    )
+
+    #expect(written.noteLayout(for: noteID)?.pitch == Pitch(step: .c, octave: 4))
+    #expect(transposed.noteLayout(for: noteID)?.pitch == Pitch(step: .d, octave: 4))
+    #expect(transposed.noteLayout(for: noteID)?.noteID == noteID)
+    #expect(written.noteLayout(for: noteID)?.noteheadCenter.y != transposed.noteLayout(for: noteID)?.noteheadCenter.y)
+}
+
+@Test func displayTransposeUpdatesKeySignatureAndAccidentalElements() throws {
+    let noteID = NoteID(rawValue: "sharp-note")
+    let score = ScoreDocument(parts: [
+        ScorePart(id: "p1", measures: [
+            Measure(
+                id: MeasureID(partIndex: 0, measureNumber: "1"),
+                number: "1",
+                notes: [
+                    makeNote(id: noteID.rawValue, pitch: Pitch(step: .c, octave: 4, alter: 1), onsetTicks: 0, accidental: "sharp"),
+                ],
+                clef: Clef(kind: .treble),
+                keySignature: KeySignature(fifths: 0, mode: "major")
+            ),
+        ]),
+    ])
+
+    let layout = try ScoreLayoutEngine().layout(
+        score: score,
+        options: LayoutOptions(staffSpace: 12, displayTransposeSemitones: 2)
+    )
+
+    #expect(layout.noteLayout(for: noteID)?.pitch == Pitch(step: .d, octave: 4, alter: 1))
+    #expect(layout.elements.contains { $0.kind == .keySignature && $0.keySignature?.fifths == 2 })
+    #expect(layout.elementLayout(for: ScoreElementID(rawValue: "\(noteID.rawValue).accidental"))?.accidental == "sharp")
+}
+
 @Test func wholeRestIsCenteredWithinMeasure() throws {
     let score = makeScore(notes: [
         makeNote(id: "whole-rest", pitch: nil, onsetTicks: 0, durationTicks: 16, noteValueKind: .whole),
@@ -417,7 +461,8 @@ import Testing
                 repeatBarlines: [
                     RepeatBarline(direction: .forward),
                     RepeatBarline(direction: .backward),
-                ]
+                ],
+                measureRepeat: MeasureRepeat(count: 1)
             ),
         ]),
     ])
@@ -429,19 +474,144 @@ import Testing
     #expect(layout.elements.contains { $0.kind == ScoreElementKind.keySignature && $0.keySignature?.fifths == 1 })
     #expect(layout.elements.contains { $0.kind == ScoreElementKind.barline && $0.repeatBarline?.direction == .forward })
     #expect(layout.elements.contains { $0.kind == ScoreElementKind.barline && $0.repeatBarline?.direction == .backward })
+    #expect(layout.elements.contains { $0.kind == ScoreElementKind.measureRepeat && $0.measureRepeat?.count == 1 })
 
     let clef = try #require(layout.elements.first { $0.kind == .clef })
     let key = try #require(layout.elements.first { $0.kind == .keySignature })
     let time = try #require(layout.elements.first { $0.kind == .timeSignature })
     let forwardRepeat = try #require(layout.elements.first { $0.kind == .barline && $0.repeatBarline?.direction == .forward })
     let backwardRepeat = try #require(layout.elements.first { $0.kind == .barline && $0.repeatBarline?.direction == .backward })
+    let measureRepeat = try #require(layout.elements.first { $0.kind == .measureRepeat })
     let firstNote = try #require(layout.noteLayout(for: NoteID(rawValue: "n0")))
     #expect(clef.frame.maxX < key.frame.minX)
     #expect(key.frame.maxX < time.frame.minX)
     #expect(time.frame.maxX < forwardRepeat.frame.minX)
     #expect(forwardRepeat.frame.maxX < firstNote.noteheadFrame.minX)
     #expect(backwardRepeat.frame.midX > firstNote.noteheadFrame.midX)
+    #expect(measureRepeat.frame.midX > clef.frame.minX)
+    #expect(measureRepeat.frame.midX < backwardRepeat.frame.midX)
     #expect(time.frame.maxX < firstNote.noteheadFrame.minX)
+}
+
+@Test func prefixOrderPlacesKeySignatureBeforeTimeSignatureWithoutOverlap() throws {
+    let measureID = MeasureID(partIndex: 0, measureNumber: "1")
+    let score = ScoreDocument(parts: [
+        ScorePart(id: "p1", measures: [
+            Measure(
+                id: measureID,
+                number: "1",
+                notes: [
+                    makeNote(id: "upper", pitch: Pitch(step: .c, octave: 5), onsetTicks: 0, staffID: StaffID(rawValue: "1")),
+                    makeNote(id: "lower", pitch: Pitch(step: .c, octave: 3), onsetTicks: 0, staffID: StaffID(rawValue: "2")),
+                ],
+                clefsByStaff: [
+                    StaffID(rawValue: "1"): Clef(kind: .treble),
+                    StaffID(rawValue: "2"): Clef(kind: .bass),
+                ],
+                keySignature: KeySignature(fifths: -5, mode: "major"),
+                timeSignature: TimeSignature(beats: 4, beatType: 4)
+            ),
+        ]),
+    ])
+
+    let layout = try ScoreLayoutEngine().layout(score: score)
+
+    for staffID in [StaffID(rawValue: "1"), StaffID(rawValue: "2")] {
+        let clef = try #require(layout.elements.first { $0.kind == .clef && $0.staffID == staffID })
+        let time = try #require(layout.elements.first { $0.kind == .timeSignature && $0.staffID == staffID })
+        let keyElements = layout.elements
+            .filter { $0.kind == .keySignature && $0.staffID == staffID }
+            .sorted { $0.frame.minX < $1.frame.minX }
+        let firstKey = try #require(keyElements.first)
+        let lastKey = try #require(keyElements.last)
+        let note = try #require(layout.noteByID.values.first { $0.staffID == staffID })
+
+        #expect(clef.frame.maxX < firstKey.frame.minX)
+        #expect(lastKey.frame.maxX < time.frame.minX)
+        #expect(time.frame.maxX < note.noteheadFrame.minX)
+        for pair in zip(keyElements, keyElements.dropFirst()) {
+            #expect(pair.1.frame.midX - pair.0.frame.midX <= 8)
+        }
+    }
+}
+
+@Test func displayTransposeKeySignatureUsesStandardPrefixSpacing() throws {
+    let noteID = NoteID(rawValue: "display-note")
+    let measureID = MeasureID(partIndex: 0, measureNumber: "1")
+    let score = ScoreDocument(parts: [
+        ScorePart(id: "p1", measures: [
+            Measure(
+                id: measureID,
+                number: "1",
+                notes: [makeNote(id: noteID.rawValue, pitch: Pitch(step: .c, octave: 4), onsetTicks: 0)],
+                clef: Clef(kind: .treble),
+                keySignature: KeySignature(fifths: 0, mode: "major"),
+                timeSignature: TimeSignature(beats: 4, beatType: 4)
+            ),
+        ]),
+    ])
+
+    let layout = try ScoreLayoutEngine().layout(
+        score: score,
+        options: LayoutOptions(displayTransposeSemitones: 2)
+    )
+    let time = try #require(layout.elements.first { $0.kind == .timeSignature })
+    let key = try #require(layout.elements.first { $0.kind == .keySignature })
+    let note = try #require(layout.noteLayout(for: noteID))
+
+    #expect(key.keySignature?.fifths == 2)
+    #expect(key.frame.maxX < time.frame.minX)
+    #expect(time.frame.maxX < note.noteheadFrame.minX)
+}
+
+@Test func prefixOrderWithoutKeySignaturePlacesTimeAfterClef() throws {
+    let noteID = NoteID(rawValue: "no-key-note")
+    let score = ScoreDocument(parts: [
+        ScorePart(id: "p1", measures: [
+            Measure(
+                id: MeasureID(partIndex: 0, measureNumber: "1"),
+                number: "1",
+                notes: [makeNote(id: noteID.rawValue, pitch: Pitch(step: .c, octave: 4), onsetTicks: 0)],
+                clef: Clef(kind: .treble),
+                timeSignature: TimeSignature(beats: 4, beatType: 4)
+            ),
+        ]),
+    ])
+
+    let layout = try ScoreLayoutEngine().layout(score: score)
+    let clef = try #require(layout.elements.first { $0.kind == .clef })
+    let time = try #require(layout.elements.first { $0.kind == .timeSignature })
+    let note = try #require(layout.noteLayout(for: noteID))
+
+    #expect(clef.frame.maxX < time.frame.minX)
+    #expect(time.frame.maxX < note.noteheadFrame.minX)
+}
+
+@Test func prefixOrderWithoutTimeSignaturePlacesKeyAfterClef() throws {
+    let noteID = NoteID(rawValue: "no-time-note")
+    let score = ScoreDocument(parts: [
+        ScorePart(id: "p1", measures: [
+            Measure(
+                id: MeasureID(partIndex: 0, measureNumber: "1"),
+                number: "1",
+                notes: [makeNote(id: noteID.rawValue, pitch: Pitch(step: .c, octave: 4), onsetTicks: 0)],
+                clef: Clef(kind: .treble),
+                keySignature: KeySignature(fifths: 2, mode: "major")
+            ),
+        ]),
+    ])
+
+    let layout = try ScoreLayoutEngine().layout(score: score)
+    let clef = try #require(layout.elements.first { $0.kind == .clef })
+    let keyElements = layout.elements
+        .filter { $0.kind == .keySignature }
+        .sorted { $0.frame.minX < $1.frame.minX }
+    let firstKey = try #require(keyElements.first)
+    let lastKey = try #require(keyElements.last)
+    let note = try #require(layout.noteLayout(for: noteID))
+
+    #expect(clef.frame.maxX < firstKey.frame.minX)
+    #expect(lastKey.frame.maxX < note.noteheadFrame.minX)
 }
 
 @Test func repeatEndingLayoutElementsAreGeneratedAboveStaff() throws {
@@ -488,6 +658,7 @@ import Testing
     #expect(firstEnding.frame.minY >= 0)
     #expect(firstEnding.frame.maxX <= layout.canvasSize.width)
     #expect(firstEnding.repeatEnding?.lineStart.x ?? 0 < firstEnding.repeatEnding?.lineEnd.x ?? 0)
+    #expect((firstEnding.repeatEnding?.lineStart.y ?? 0) < (firstEnding.repeatEnding?.labelPoint.y ?? 0))
 }
 
 @Test func playbackJumpMarkerLayoutElementsAreGeneratedAboveStaff() throws {

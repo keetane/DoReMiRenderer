@@ -43,10 +43,32 @@ Phase 15 uses a generated tone audio engine in the app target.
 
 - Tone quality is intentionally simple.
 - Background audio is not supported.
-- Repeat expansion is not implemented.
 - Full tuplet duration interpretation remains limited.
-- Transposition-aware playback remains limited.
+- Score-display transposition is not implemented. The app can transpose the
+  generated playback and keyboard highlights by semitone, but written notation,
+  key signature drawing, and accidentals remain unchanged.
 - Latency optimization is not a Phase 15 goal.
+
+## Piano Transpose MVP
+
+DoReMi Palette has an app-side piano transpose setting for practice use.
+
+- `transposeSemitones` is persisted with `AppStorage`, clamped to `-12...+12`,
+  and defaults to `0`.
+- `PlaybackSequenceBuilder` still emits written-pitch `PlaybackEvent` values.
+- `PalettePlaybackRuntime` applies transpose immediately before calling the
+  audio engine: `event.midiPitches.map { $0 + transposeSemitones }`.
+- Out-of-range MIDI pitches are skipped safely; rests and tie-continuation-only
+  events still do not call audio playback.
+- Chords transpose every attack pitch. Repeated same-pitch events remain
+  separate attacks after transposition.
+- Score highlighting remains tied to written `NoteID` positions. Keyboard
+  attack/continuation highlights use the sounding MIDI pitches.
+- The current-note UI can show written note and sounding note side by side, for
+  example `表示: C4 / ド` and `再生: D4 / レ (+2)`.
+- Written key is derived from the parsed MusicXML key signature when available;
+  sounding key is displayed by semitone-shifting that key for the active
+  transpose value. The score itself is not re-keyed.
 
 ## Note Gate Ratio
 
@@ -130,6 +152,33 @@ app-side runtime receives events:
 Unsupported repeat structures such as third endings, nested repeats, ambiguous
 endings, repeat+jump mixtures, multiple Segno/Coda markers, and complex jumps
 remain diagnostic-only.
+
+## Piano Transpose And Display Transpose
+
+DoReMi Palette treats piano transpose as an app-side setting:
+
+- `transposeSemitones` is clamped to `-12...+12` and persists in `AppStorage`.
+- Playback transposes `PlaybackEvent.midiPitches` immediately before audio
+  output. Rests and tie-continuation-only events remain silent.
+- Chords transpose every attack pitch, and repeated same-pitch events remain
+  separate attacks after transposition.
+- Keyboard attack/continuation highlights use the sounding MIDI pitches.
+
+Phase T2 adds score display transpose as the app's default transpose mode:
+
+- The app key picker (`C`, `C#`, `D`, ...) stores the selected target key as the
+  existing clamped `transposeSemitones` value.
+- The app asks the loader to rebuild layout from the original score with a
+  display transpose option. Playback events are not rebuilt or renamed, and the
+  runtime still only plays the already-expanded event list.
+- `ScoreLayout` applies display-only pitch positions, key signatures, and
+  simple accidental recomputation. Renderer and playback runtime do not parse
+  MusicXML and do not perform score transposition themselves.
+
+MusicXML `<transpose>` metadata is parsed and diagnosed, but automatic
+transposing-instrument concert-pitch conversion is not enabled in this piano
+MVP. This avoids hidden pitch changes for imported scores until the app has an
+explicit concert/written pitch policy.
 
 ## Phase 16.5 Stabilization
 

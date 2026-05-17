@@ -99,6 +99,13 @@ Phase 11F lyrics/fingering and key signature fixtures.
 
 No additional non-code assets are included in MVP0.
 
+## Phase 17B TestFlight Readiness Audit
+
+As of Phase 17B, bundled app assets are limited to the self-authored MusicXML
+fixtures listed in this file, the user-provided DoReMi Palette app icon, and
+the Bravura 1.392 SMuFL font under the SIL Open Font License. No GPL/LGPL asset
+or dependency is intentionally included.
+
 ## rhythm_values_sample.musicxml
 
 `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/rhythm_values_sample.musicxml`
@@ -168,3 +175,16 @@ They contain only short original grand-staff notation examples for Phase S10
 D.C./D.S./Fine/Coda playback expansion, all-repeat-symbol visual QA, and
 repeat/jump diagnostic QA. They may be used for commercial, test, demo,
 screenshot, and documentation purposes within this project.
+
+## Phase T2 transpose samples
+
+The following files are self-authored DoReMi Palette QA fixtures:
+
+- `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/t2_transpose_key_sample.musicxml`
+- `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/t2_transpose_accidentals_sample.musicxml`
+- `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/t2_musicxml_transpose_sample.musicxml`
+
+They contain only short original notation examples for display transpose, key
+signature transpose, accidental transpose, and MusicXML `<transpose>` diagnostic
+QA. They may be used for commercial, test, demo, screenshot, and documentation
+purposes within this project.

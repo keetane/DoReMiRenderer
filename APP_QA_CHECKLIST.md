@@ -68,6 +68,19 @@ or TestFlight preparation.
 - [x] Import failure shows an error message.
 - [x] Invalid and unsupported import failures keep the existing score in app-loader tests.
 
+## Transpose / Prefix / Accidental Color Checks
+
+- [x] Display transpose can rebuild the score layout without mutating the
+  original score or playback events.
+- [x] Prefix order is the standard `clef -> key signature -> time signature ->
+  notes` while keeping clef/key/time collisions fixed.
+- [x] Display-transposed key signatures use the same collision-safe standard
+  prefix spacing.
+- [x] Note accidental colors match the associated displayed note color when
+  Note Color is ON.
+- [x] Note accidentals use default ink when Note Color is OFF.
+- [x] Key-signature accidentals use pitch-class color when Note Color is ON.
+
 ## Keyboard Checks
 
 - [x] Keyboard is visible on iPad.
@@ -89,6 +102,28 @@ or TestFlight preparation.
 - [x] Note/staff color changes do not change layout or playback identity.
 - [x] Zoom scale does not change the layout coordinate hit-test model.
 - [ ] Full relaunch persistence manual check on physical app lifecycle.
+
+## Palette Editor Checks
+
+- [x] Toolbar exposes a `パレット` entry point.
+- [x] Palette sheet has no visible preset pattern picker and includes
+  all-on/all-off/reset actions, 12 pitch-class buttons, C2-C6 score preview,
+  and C2-C6 keyboard preview.
+- [x] Default pitch-class color state is all ON.
+- [x] Pitch-class enabled state persists through `AppStorage`.
+- [x] Disabled pitch classes fall back to neutral ink in note color resolution.
+- [x] Note Color OFF ignores pitch-class filtering and uses default ink.
+- [x] Keyboard preview and highlights use the same pitch-class enabled state.
+- [x] Palette filtering does not mutate layout, note IDs, playback events,
+  transpose state, repeat expansion, Library, or Diagnostics.
+
+Palette editor screenshot targets:
+
+- `/tmp/doremipalette_palette_button.png`
+- `/tmp/doremipalette_palette_sheet_all_on.png`
+- `/tmp/doremipalette_palette_sheet_c_off.png`
+- `/tmp/doremipalette_palette_preview_keyboard.png`
+- `/tmp/doremipalette_palette_preview_score.png`
 
 ## Screenshot Targets
 
@@ -567,7 +602,9 @@ renderer path and must remain layout-driven.
 ## Phase S9 Repeat Visuals QA
 
 - [ ] `S9 Repeat Visuals Sample` is visible in Library.
-- [ ] App launch opens `S9 Repeat Visuals Sample` during Phase S9 QA.
+- [ ] App launch opens `S9 Repeat Visuals Sample` only when Phase S9 QA is the
+  active focus. Phase 17B returns the default launch score to `DoReMi Palette
+  Sample`.
 - [ ] First ending and second ending numbers are visible above the staff.
 - [ ] Ending bracket lines and hooks are visible and do not replace repeat
   start/end barlines.
@@ -597,6 +634,67 @@ renderer path and must remain layout-driven.
 - [ ] Practice Mode, Previous / Next, score highlight, keyboard highlight, and
   scroll follow use the expanded S10 playback order.
 - [ ] Non-repeat samples and the S7/S8/S9 repeat samples still load and play.
+
+## Phase 17B TestFlight Readiness QA
+
+- [ ] App launch opens `DoReMi Palette Sample` as the normal learning default.
+- [ ] S6/S7/S8/S9/S10/T2 QA samples remain visible and openable from Library.
+- [ ] Release build succeeds for `generic/platform=iOS`.
+- [ ] Archive succeeds, or any failure is classified as signing / provisioning
+  requiring user-side Apple Developer action.
+- [ ] App display name is `DoReMi Palette`.
+- [ ] Bundle identifier, version, build number, signing style, app icon, and
+  launch screen settings are recorded in the release checklist.
+- [ ] Privacy notes confirm no account, ads, tracking, analytics, or server
+  upload of imported MusicXML.
+- [ ] `ASSET_LICENSES.md` and `THIRD_PARTY_NOTICES.md` record Bravura 1.392,
+  ZIPFoundation, the app icon, and self-authored samples.
+- [ ] `Scripts/check-licenses.sh` and `Scripts/build-docc.sh` pass.
+- [ ] `swift run DoReMiRendererDiagnostics LocalSamples` completes.
+- [ ] iPad Simulator launches and captures Phase 17B screenshots under
+  `/tmp/DoReMiPaletteQA/phase-17b/`.
+
+## Piano Transpose MVP QA
+
+- [x] App tests cover transpose model clamping to `-12...+12`.
+- [x] App tests cover playback transpose for single notes and chords.
+- [x] App tests cover rest and tie-continuation behavior remaining silent.
+- [x] App tests cover keyboard highlight transposition without changing written
+  `NoteID` / `ScoreLayout`.
+- [x] App tests cover written versus sounding current-note display.
+- [x] App tests cover written and sounding key display for major/minor keys.
+- [x] App tests cover transpose setting persistence through `AppStorage` keys.
+- [ ] Simulator manual check: key picker selection above the written key raises
+  generated audio, score layout, and keyboard highlight together.
+- [ ] Simulator manual check: key picker selection below the written key lowers
+  generated audio, score layout, and keyboard highlight together.
+- [ ] Practice Mode uses the same transpose setting for sounding note display
+  and keyboard highlight.
+- [ ] Repeat / D.C. / D.S. / Coda samples still play without crashing under a
+  nonzero transpose.
+
+## Phase T2 Score Display Transpose QA
+
+- [x] SDK tests cover display transpose layout pitch changes without changing
+  original note IDs.
+- [x] SDK tests cover transposed key-signature layout and simple accidental
+  rendering.
+- [x] Parser tests cover MusicXML `<transpose>` metadata retention and
+  diagnostics.
+- [x] App tests cover display transpose relayout preserving playback event
+  identity.
+- [x] `T2 Transpose Key Sample`, `T2 Transpose Accidentals Sample`, and
+  `T2 MusicXML Transpose Sample` are visible in Library.
+- [ ] Simulator manual check: key picker (`C`, `C#`, `D`, ...) moves score
+  notes, key signature, playback, and keyboard highlights together.
+- [ ] Simulator manual check: score display transpose is enabled by default and
+  there is no `譜面も移調` toggle in the control bar or settings.
+- [ ] Simulator manual check: transposed accidentals are visible and not
+  obviously duplicated.
+- [ ] Simulator manual check: MusicXML transpose sample shows a diagnostic
+  notice and does not silently apply concert-pitch conversion.
+- [ ] Repeat / D.C. / D.S. / Coda samples still load and play with display
+  transpose toggled on and off.
 
 ## Phase 17A Real iPad QA
 

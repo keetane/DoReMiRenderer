@@ -216,6 +216,11 @@ public struct GlyphStyle: Hashable, Codable, Sendable {
     }
 }
 
+public enum MeasureNumberDisplayMode: String, Hashable, Codable, Sendable {
+    case hidden
+    case evenMeasures
+}
+
 public struct ScoreStyle: Sendable {
     public var backgroundColor: ScoreColor
     public var defaultInkColor: ScoreColor
@@ -225,6 +230,7 @@ public struct ScoreStyle: Sendable {
     public var accidentalStyle: AccidentalColorStyle
     public var highlightStyle: HighlightStyle
     public var glyphStyle: GlyphStyle
+    public var measureNumberDisplayMode: MeasureNumberDisplayMode
     public var colorResolver: ScoreColorResolver
 
     public init(
@@ -236,6 +242,7 @@ public struct ScoreStyle: Sendable {
         accidentalStyle: AccidentalColorStyle = .defaultInk,
         highlightStyle: HighlightStyle = HighlightStyle(color: ScoreColor(red: 1, green: 0.9, blue: 0.2, alpha: 0.35)),
         glyphStyle: GlyphStyle = GlyphStyle(color: .black),
+        measureNumberDisplayMode: MeasureNumberDisplayMode = .hidden,
         colorResolver: ScoreColorResolver = ScoreColorResolver()
     ) {
         self.backgroundColor = backgroundColor
@@ -246,6 +253,7 @@ public struct ScoreStyle: Sendable {
         self.accidentalStyle = accidentalStyle
         self.highlightStyle = highlightStyle
         self.glyphStyle = glyphStyle
+        self.measureNumberDisplayMode = measureNumberDisplayMode
         self.colorResolver = colorResolver
     }
 }
@@ -274,7 +282,7 @@ public struct ScoreColorResolver: Sendable {
             currentNoteIDs: currentNoteIDs
         )
 
-        if let noteID = element.noteID, currentNoteIDs.contains(noteID) {
+        if let noteID = element.noteID, currentNoteIDs.contains(noteID), element.kind != .accidental {
             return ResolvedVisualStyle(
                 fillColor: style.highlightStyle.color,
                 strokeColor: style.highlightStyle.color,
@@ -299,7 +307,10 @@ public struct ScoreColorResolver: Sendable {
             let color = resolvedLedgerLineColor(for: element, score: score, layout: layout, style: style, context: context)
             return ResolvedVisualStyle(fillColor: nil, strokeColor: color, lineWidth: 1, opacity: color.alpha)
         case .accidental:
-            let color = resolvedAccidentalColor(for: element, score: score, style: style, context: context)
+            let color = resolvedAccidentalColor(for: element, score: score, layout: layout, style: style, context: context)
+            return ResolvedVisualStyle(fillColor: color, strokeColor: color, lineWidth: nil, opacity: color.alpha)
+        case .keySignature:
+            let color = resolvedKeySignatureColor(for: element, style: style)
             return ResolvedVisualStyle(fillColor: color, strokeColor: color, lineWidth: nil, opacity: color.alpha)
         default:
             return ResolvedVisualStyle(
@@ -388,6 +399,7 @@ public struct ScoreColorResolver: Sendable {
     private func resolvedAccidentalColor(
         for element: ElementLayout,
         score: ScoreDocument,
+        layout: ScoreLayout,
         style: ScoreStyle,
         context: ColorContext
     ) -> ScoreColor {
@@ -395,13 +407,26 @@ public struct ScoreColorResolver: Sendable {
         case .defaultInk:
             return style.defaultInkColor
         case .matchNotePitch:
-            guard let note = score.note(for: element.noteID) else {
-                return style.defaultInkColor
+            if let noteElement = element.noteID
+                .flatMap({ layout.noteLayout(for: $0)?.noteheadElementID })
+                .flatMap({ layout.elementLayout(for: $0) }) {
+                return resolvedNoteColor(for: noteElement, score: score, layout: layout, style: style, context: context)
             }
-            return style.noteColorStyle.color(for: note, fallback: style.defaultInkColor, context: context)
+            return style.defaultInkColor
         case .rule(let rule):
             return rule.color(for: element, note: score.note(for: element.noteID), context: context)
         }
+    }
+
+    private func resolvedKeySignatureColor(
+        for element: ElementLayout,
+        style: ScoreStyle
+    ) -> ScoreColor {
+        guard case .pitchClass(let palette) = style.noteColorStyle,
+              let pitchClass = element.pitchClassHint else {
+            return style.defaultInkColor
+        }
+        return palette.color(for: pitchClass)
     }
 }
 

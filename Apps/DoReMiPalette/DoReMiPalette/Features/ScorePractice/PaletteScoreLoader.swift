@@ -28,6 +28,7 @@ struct PaletteLoadedScore {
     let a4Layout: ScoreLayout
     var layoutMode: PaletteScoreLayoutMode
     let diagnostics: [RendererDiagnostic]
+    let baseDiagnostics: [RendererDiagnostic]
     let playbackEvents: [PlaybackEvent]
     let playbackMetadata: PlaybackMetadata
 
@@ -73,18 +74,58 @@ struct PaletteScoreLoader {
     func load(data: Data, sourceName: String) throws -> PaletteLoadedScore {
         let input = try scoreInput(for: sourceName, data: data)
         let parseResult = try renderer.parseWithDiagnostics(input: input)
-        let horizontalLayoutResult = try renderer.layoutWithDiagnostics(
+        let layouts = try makeLayouts(score: parseResult.score, displayTransposeSemitones: 0)
+        let playbackEvents = renderer.makePlaybackSequence(
             score: parseResult.score,
+            options: PlaybackOptions(includeRests: true)
+        )
+        let playbackMetadata = renderer.makePlaybackMetadata(score: parseResult.score)
+        let baseDiagnostics = parseResult.diagnostics + playbackMetadata.diagnostics
+        return PaletteLoadedScore(
+            sourceName: sourceName,
+            score: parseResult.score,
+            horizontalLayout: layouts.horizontal.layout,
+            a4Layout: layouts.a4.layout,
+            layoutMode: .horizontal,
+            diagnostics: baseDiagnostics + layouts.horizontal.diagnostics + layouts.a4.diagnostics,
+            baseDiagnostics: baseDiagnostics,
+            playbackEvents: playbackEvents,
+            playbackMetadata: playbackMetadata
+        )
+    }
+
+    func relayout(_ loaded: PaletteLoadedScore, displayTransposeSemitones: Int) throws -> PaletteLoadedScore {
+        let layouts = try makeLayouts(score: loaded.score, displayTransposeSemitones: displayTransposeSemitones)
+        return PaletteLoadedScore(
+            sourceName: loaded.sourceName,
+            score: loaded.score,
+            horizontalLayout: layouts.horizontal.layout,
+            a4Layout: layouts.a4.layout,
+            layoutMode: loaded.layoutMode,
+            diagnostics: loaded.baseDiagnostics + layouts.horizontal.diagnostics + layouts.a4.diagnostics,
+            baseDiagnostics: loaded.baseDiagnostics,
+            playbackEvents: loaded.playbackEvents,
+            playbackMetadata: loaded.playbackMetadata
+        )
+    }
+
+    private func makeLayouts(
+        score: ScoreDocument,
+        displayTransposeSemitones: Int
+    ) throws -> (horizontal: ScoreLayoutResult, a4: ScoreLayoutResult) {
+        let horizontalLayoutResult = try renderer.layoutWithDiagnostics(
+            score: score,
             options: LayoutOptions(
                 pageWidth: 980,
                 staffSpace: 16,
                 systemSpacing: 96,
                 measureSpacing: 36,
-                displayMode: .horizontal
+                displayMode: .horizontal,
+                displayTransposeSemitones: displayTransposeSemitones
             )
         )
         let a4LayoutResult = try renderer.layoutWithDiagnostics(
-            score: parseResult.score,
+            score: score,
             options: LayoutOptions(
                 pageWidth: 595,
                 pageHeight: 842,
@@ -92,24 +133,11 @@ struct PaletteScoreLoader {
                 systemSpacing: 72,
                 measureSpacing: 24,
                 displayMode: .print,
-                showPageMargins: true
+                showPageMargins: true,
+                displayTransposeSemitones: displayTransposeSemitones
             )
         )
-        let playbackEvents = renderer.makePlaybackSequence(
-            score: parseResult.score,
-            options: PlaybackOptions(includeRests: true)
-        )
-        let playbackMetadata = renderer.makePlaybackMetadata(score: parseResult.score)
-        return PaletteLoadedScore(
-            sourceName: sourceName,
-            score: parseResult.score,
-            horizontalLayout: horizontalLayoutResult.layout,
-            a4Layout: a4LayoutResult.layout,
-            layoutMode: .horizontal,
-            diagnostics: parseResult.diagnostics + horizontalLayoutResult.diagnostics + a4LayoutResult.diagnostics + playbackMetadata.diagnostics,
-            playbackEvents: playbackEvents,
-            playbackMetadata: playbackMetadata
-        )
+        return (horizontalLayoutResult, a4LayoutResult)
     }
 
     func scoreInput(for fileName: String, data: Data) throws -> ScoreInput {

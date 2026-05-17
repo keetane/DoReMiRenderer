@@ -189,12 +189,16 @@ struct PaletteScoreLoaderTests {
         defaults.set(false, forKey: PaletteSettingsKeys.keyboardVisible)
         defaults.set(2.0, forKey: PaletteSettingsKeys.zoomScale)
         defaults.set(PaletteScoreLayoutMode.a4.rawValue, forKey: PaletteSettingsKeys.scoreLayoutMode)
+        defaults.set(2, forKey: PaletteSettingsKeys.transposeSemitones)
+        defaults.set(true, forKey: PaletteSettingsKeys.displayTransposeEnabled)
 
         #expect(defaults.bool(forKey: PaletteSettingsKeys.noteColorVisible) == false)
         #expect(defaults.bool(forKey: PaletteSettingsKeys.staffColorVisible) == true)
         #expect(defaults.bool(forKey: PaletteSettingsKeys.keyboardVisible) == false)
         #expect(defaults.double(forKey: PaletteSettingsKeys.zoomScale) == 2.0)
         #expect(defaults.string(forKey: PaletteSettingsKeys.scoreLayoutMode) == PaletteScoreLayoutMode.a4.rawValue)
+        #expect(defaults.integer(forKey: PaletteSettingsKeys.transposeSemitones) == 2)
+        #expect(defaults.bool(forKey: PaletteSettingsKeys.displayTransposeEnabled) == true)
     }
 
     @Test func diagnosticsPresentationSummarizesWarningsAndErrorsInJapanese() {
@@ -296,8 +300,8 @@ struct PaletteScoreLoaderTests {
 
         #expect(sampleItem.sourceType == .sample)
         #expect(importedItem.sourceType == .imported)
-        #expect(sampleItem.displayName == "S9 Repeat Visuals Sample")
-        #expect(sample.sourceIdentifier == "sample:s9_repeat_visuals_sample.musicxml")
+        #expect(sampleItem.displayName == "DoReMi Palette Sample")
+        #expect(sample.sourceIdentifier == "sample:phase12_sample.musicxml")
     }
 
     @Test func libraryCollectionSortsAndUpdatesDuplicateImports() throws {
@@ -582,7 +586,7 @@ struct PaletteScoreLoaderTests {
 
         session.openLibraryItem(sampleItem, bundle: .main)
 
-        #expect(session.loadedScore?.sourceName == "s9_repeat_visuals_sample.musicxml")
+        #expect(session.loadedScore?.sourceName == "phase12_sample.musicxml")
         #expect(session.errorMessage == nil)
     }
 
@@ -634,6 +638,27 @@ struct PaletteScoreLoaderTests {
         #expect(catalog.libraryItems().contains { $0.displayName == "Rhythm Values Sample" && $0.sourceType == .sample })
     }
 
+    @Test func t2TransposeSamplesLoadAndMusicXMLTransposeEmitsDiagnostic() throws {
+        let catalog = SampleScoreCatalog.default
+        let loader = PaletteScoreLoader()
+        let sampleNames = [
+            "t2_transpose_key_sample",
+            "t2_transpose_accidentals_sample",
+            "t2_musicxml_transpose_sample",
+        ]
+
+        for resourceName in sampleNames {
+            let sample = try #require(catalog.samples.first { $0.resourceName == resourceName })
+            let url = try #require(sample.url(in: Bundle.main))
+            let loaded = try loader.load(data: Data(contentsOf: url), sourceName: url.lastPathComponent)
+            #expect(!loaded.playbackEvents.isEmpty)
+            if resourceName == "t2_musicxml_transpose_sample" {
+                #expect(loaded.score.parts.first?.measures.first?.musicXMLTranspose?.chromatic == 2)
+                #expect(loaded.diagnostics.contains { $0.code == "unsupported.transpose" })
+            }
+        }
+    }
+
     @Test func notationCoverageGrandStaffSampleLoadsAndIsListed() throws {
         let catalog = SampleScoreCatalog.default
         let sample = try #require(catalog.samples.first { $0.resourceName == "notation_coverage_grand_staff" })
@@ -682,7 +707,7 @@ struct PaletteScoreLoaderTests {
             sourceName: "s6_notation_refinement_grand_staff.musicxml"
         )
 
-        #expect(defaultSample.resourceName == "s9_repeat_visuals_sample")
+        #expect(defaultSample.resourceName == "phase12_sample")
         #expect(sample.displayName == "S6 Notation Refinement Sample")
         #expect(catalog.libraryItems().contains { $0.displayName == "S6 Notation Refinement Sample" && $0.sourceType == .sample })
         #expect(loaded.score.parts.first?.measures.count == 15)
@@ -719,7 +744,7 @@ struct PaletteScoreLoaderTests {
             sourceName: "s7_repeat_playback_sample.musicxml"
         )
 
-        #expect(defaultSample.resourceName == "s9_repeat_visuals_sample")
+        #expect(defaultSample.resourceName == "phase12_sample")
         #expect(sample.displayName == "S7 Repeat Playback Sample")
         #expect(catalog.libraryItems().contains { $0.displayName == "S7 Repeat Playback Sample" && $0.sourceType == .sample })
         #expect(loaded.score.parts.first?.measures.count == 4)
@@ -746,7 +771,7 @@ struct PaletteScoreLoaderTests {
             sourceName: "s8_repeat_endings_sample.musicxml"
         )
 
-        #expect(defaultSample.resourceName == "s9_repeat_visuals_sample")
+        #expect(defaultSample.resourceName == "phase12_sample")
         #expect(sample.displayName == "S8 Repeat Endings Sample")
         #expect(catalog.libraryItems().contains { $0.displayName == "S8 Repeat Endings Sample" && $0.sourceType == .sample })
         #expect(loaded.score.parts.first?.measures.count == 6)
@@ -774,12 +799,13 @@ struct PaletteScoreLoaderTests {
             sourceName: "s9_repeat_visuals_sample.musicxml"
         )
 
-        #expect(defaultSample.resourceName == "s9_repeat_visuals_sample")
+        #expect(defaultSample.resourceName == "phase12_sample")
         #expect(sample.displayName == "S9 Repeat Visuals Sample")
         #expect(catalog.libraryItems().contains { $0.displayName == "S9 Repeat Visuals Sample" && $0.sourceType == .sample })
-        #expect(loaded.score.parts.first?.measures.count == 6)
+        #expect(loaded.score.parts.first?.measures.count == 7)
         #expect(loaded.layout.elements.contains { $0.kind == .repeatEnding && $0.repeatEnding?.label == "1." })
         #expect(loaded.layout.elements.contains { $0.kind == .repeatEnding && $0.repeatEnding?.label == "2." })
+        #expect(loaded.layout.elements.contains { $0.kind == .measureRepeat })
         #expect(loaded.diagnostics.contains { $0.code == "jump.dalSegnoUnsupported" })
 
         let measureTransitions = loaded.playbackEvents.map(\.measureID.rawValue).reduce(into: [String]()) { result, measureID in

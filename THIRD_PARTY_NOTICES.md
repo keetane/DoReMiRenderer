@@ -56,3 +56,7 @@ implementation references.
 ## Current Status
 
 No GPL or LGPL dependencies are used by DoReMiRendererKit MVP0.
+
+Phase 17B TestFlight readiness rechecked the listed third-party notices before
+archive preparation. No new third-party code, font, audio, analytics, tracking,
+advertising, or cloud dependency was added for the release-readiness pass.

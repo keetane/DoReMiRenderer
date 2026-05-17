@@ -111,6 +111,21 @@ import Testing
     #expect(measures[4].playbackJumpMarkers.contains { $0.kind == .daCapoAlFine })
 }
 
+@Test func parserRetainsOneBarMeasureRepeatMetadata() throws {
+    let result = try MusicXMLParser().parse(data: Data(measureRepeatXML.utf8))
+    let measure = try #require(result.score.parts.first?.measures.first)
+
+    #expect(measure.measureRepeat == MeasureRepeat(count: 1))
+    var unsupportedMeasureRepeatDiagnostics: [RendererDiagnostic] = []
+    for diagnostic in result.diagnostics {
+        let elementName = diagnostic.location?.elementName
+        if elementName == "measure-style" || elementName == "measure-repeat" {
+            unsupportedMeasureRepeatDiagnostics.append(diagnostic)
+        }
+    }
+    #expect(unsupportedMeasureRepeatDiagnostics.isEmpty)
+}
+
 @Test func playbackMetadataReportsTempoAndRepeatFallbackDiagnostics() throws {
     let renderer = DoReMiRenderer()
     let score = try renderer.parseMusicXML(data: Data(tempoRepeatXML.utf8))
@@ -286,6 +301,20 @@ private let repeatEndingJumpXML = """
       <note><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><staff>1</staff></note>
     </measure>
   </part>
+</score-partwise>
+"""
+
+private let measureRepeatXML = """
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Measure Repeat</part-name></score-part></part-list>
+  <part id="P1"><measure number="1">
+    <attributes>
+      <divisions>4</divisions>
+      <clef><sign>G</sign><line>2</line></clef>
+      <measure-style><measure-repeat type="start">1</measure-repeat></measure-style>
+    </attributes>
+    <note><rest/><duration>16</duration><voice>1</voice><type>whole</type><staff>1</staff></note>
+  </measure></part>
 </score-partwise>
 """
 

@@ -207,6 +207,21 @@ Current Phase 16.5 stabilization status:
   and system-crossing tie chains remain limited.
 - Dynamic text and tempo words are not rendered. `<sound tempo="">` is retained
   for playback metadata, but visible tempo words remain future work.
+- DoReMi Palette supports a piano-focused transpose setting for generated
+  playback, keyboard highlight, current-note sounding text, and sounding-key
+  text. Phase T2 adds optional display transpose: when `譜面も移調` is enabled,
+  `ScoreLayout` is rebuilt from the original score with transposed display
+  pitch, MVP key signatures, and simple accidentals while preserving original
+  note IDs and playback events.
+- Prefix notation is laid out in standard engraving order (`clef -> key
+  signature -> time signature`) with MVP collision-safe spacing for bass clefs,
+  display-transposed key signatures, and first note/rest placement.
+- Note accidentals inherit the associated displayed note's pitch color when
+  note colors are enabled, including display-transposed layouts. Key-signature
+  accidentals use pitch-class color in the current MVP.
+- MusicXML `<transpose>` metadata is parsed and reported through diagnostics.
+  Automatic transposing-instrument concert-pitch conversion is not applied by
+  default in the piano MVP.
 - Unsupported or partial items must be reflected in `NOTATION_SUPPORT_MATRIX.md`
   so the app does not silently imply full engraving support.
 

@@ -22,6 +22,14 @@ Recheck Rhythm Values Sample for notehead/stem/flag/rest balance and Notation
 Coverage Sample for clef/key/time/accidental spacing. Snapshot diffs should be
 limited to intentional glyph size or placement changes.
 
+Current prefix QA should check the standard engraving order
+`clef -> key signature -> time signature -> notes`. The SDK layout spacing must
+still keep key signatures clear of bass clefs, 4/4, repeat-start barlines, and
+the first note/rest, including display-transposed key signatures. When note
+colors are enabled, note accidental glyphs must match the associated displayed
+note color; key-signature accidentals use pitch-class color. With note colors
+disabled, accidentals should render in the default ink color.
+
 ## MusicXML Compatibility Diagnostics
 
 Private and third-party MusicXML samples belong in `LocalSamples/`, which is
@@ -619,9 +627,10 @@ Use the following screenshot paths for manual iPad QA:
 
 ## S9 Repeat Visuals QA
 
-The app includes `s9_repeat_visuals_sample.musicxml` as the current default
-bundled sample for Phase S9. Open `S9 Repeat Visuals Sample` at app launch or
-from Library and confirm:
+The app includes `s9_repeat_visuals_sample.musicxml` for Phase S9. During Phase
+S9 it may be used as the default bundled sample; Phase 17B restores the normal
+`DoReMi Palette Sample` default and keeps `S9 Repeat Visuals Sample` available
+from Library. Open it from Library and confirm:
 
 1. First and second ending numbers are visible above the staff.
 2. Ending bracket horizontal lines and hooks are visible and do not replace
@@ -634,6 +643,49 @@ from Library and confirm:
    Diagnostics still work with the expanded playback sequence.
 
 Suggested screenshots:
+
+## Phase 17B TestFlight Readiness
+
+Phase 17B is a release-readiness gate, not a feature phase. It restores the app
+launch default to `DoReMi Palette Sample`, keeps all QA samples in Library, and
+records release configuration, privacy, license, and archive status before any
+TestFlight upload.
+
+Run:
+
+```sh
+swift test
+xcodebuild build \
+  -project Apps/DoReMiPalette/DoReMiPalette.xcodeproj \
+  -scheme DoReMiPalette \
+  -destination 'platform=iOS Simulator,id=841B3A9F-3010-454E-99D4-605C198419E0'
+xcodebuild test \
+  -project Apps/DoReMiPalette/DoReMiPalette.xcodeproj \
+  -scheme DoReMiPalette \
+  -destination 'platform=iOS Simulator,id=841B3A9F-3010-454E-99D4-605C198419E0'
+xcodebuild test \
+  -project Examples/DoReMiRendererExample/DoReMiRendererExample.xcodeproj \
+  -scheme DoReMiRendererExample \
+  -destination 'platform=iOS Simulator,id=841B3A9F-3010-454E-99D4-605C198419E0'
+xcodebuild build \
+  -project Apps/DoReMiPalette/DoReMiPalette.xcodeproj \
+  -scheme DoReMiPalette \
+  -configuration Release \
+  -destination 'generic/platform=iOS'
+xcodebuild archive \
+  -project Apps/DoReMiPalette/DoReMiPalette.xcodeproj \
+  -scheme DoReMiPalette \
+  -configuration Release \
+  -destination 'generic/platform=iOS' \
+  -archivePath /tmp/DoReMiPalette.xcarchive \
+  -allowProvisioningUpdates
+Scripts/check-licenses.sh
+Scripts/build-docc.sh
+swift run DoReMiRendererDiagnostics LocalSamples
+```
+
+Manual QA screenshots should be grouped under
+`/tmp/DoReMiPaletteQA/phase-17b/`, not scattered directly under `/tmp`.
 
 - `/tmp/doremipalette_s9_repeat_visuals_sample.png`
 - `/tmp/doremipalette_s9_first_ending_visual.png`
@@ -817,3 +869,75 @@ Focused samples:
 When adding repeat/jump support, keep explicit expansion limits in place and
 prefer a warning diagnostic over any ambiguous or potentially looping playback
 order.
+
+## Piano Transpose QA
+
+DoReMi Palette transpose is an app-side piano practice feature. It must not
+alter SDK score parsing, `NoteID`, `ScoreElementID`, or `PlaybackEvent`
+identity.
+
+Checklist:
+
+1. Use the control bar or Settings sheet key picker (`C`, `C#`, `D`, ...) to
+   choose a different target key and return to the original key.
+2. Confirm generated playback, score layout, score highlight, and keyboard
+   highlight move together to the selected display key.
+3. Confirm keyboard attack, continuation, chord, and next-note highlights use
+   transposed MIDI pitches.
+4. Confirm current-note text shows written and sounding notes when transpose is
+   nonzero.
+5. Confirm key text shows written key and sounding key when the parsed
+   MusicXML key signature is available.
+6. Confirm Practice Mode, Previous / Next, repeat-expanded samples, and jump
+   samples use the same transpose setting without reparsing MusicXML.
+
+## Phase T2 Score Display Transpose QA
+
+T2 display transpose is always enabled in the app UI. It still must not rewrite
+the original `ScoreDocument` or MusicXML file.
+
+Checklist:
+
+1. Use the key picker (`C`, `C#`, `D`, ...) and confirm the score layout, key
+   signature, simple accidentals, playback, and keyboard highlights move to the
+   selected display pitch.
+2. Confirm the picker maps from the current written key to the selected target
+   key and persists through app relaunch.
+3. Confirm `NoteID`-based score highlight, keyboard highlight, Practice Mode,
+   Previous / Next, and repeat-expanded samples still work.
+4. Open `T2 MusicXML Transpose Sample` and confirm diagnostics report
+   MusicXML `<transpose>` metadata instead of silently applying automatic
+   concert-pitch conversion.
+5. Treat enharmonic spelling, complex key changes, and transposing-instrument
+   concert-pitch handling as MVP limitations unless a focused test proves the
+   case.
+
+## Palette Editor QA
+
+The DoReMi Palette palette editor is app-owned. It passes filtered pitch-class
+color rules into `ScoreStyle`; the SDK renderer does not store app UI state.
+
+Checklist:
+
+1. Launch DoReMi Palette and confirm the toolbar `パレット` button is visible.
+2. Open the palette sheet and confirm there is no visible preset pattern
+   picker, then confirm `全ON`, `全OFF`, `リセット`, 12 pitch-class buttons,
+   C2-C6 score preview, and C2-C6 keyboard preview are visible in the sheet.
+3. Confirm the default state is all pitch classes enabled.
+4. Toggle `C` off and confirm C pitch classes fall back to neutral ink in the
+   preview score and keyboard while other pitch classes remain colored.
+5. Toggle `C` back on or use `リセット` and confirm color is restored.
+6. Confirm Note Color OFF still renders notes in ink, independent of the
+   pitch-class enabled state.
+7. Confirm Staff Color ON follows the same enabled pitch-class filter for the
+   staff-line color hints available in the MVP.
+8. Confirm Playback, Practice Mode, transpose, repeat samples, Library, and
+   Diagnostics still work.
+
+Suggested screenshots:
+
+- `/tmp/doremipalette_palette_button.png`
+- `/tmp/doremipalette_palette_sheet_all_on.png`
+- `/tmp/doremipalette_palette_sheet_c_off.png`
+- `/tmp/doremipalette_palette_preview_keyboard.png`
+- `/tmp/doremipalette_palette_preview_score.png`

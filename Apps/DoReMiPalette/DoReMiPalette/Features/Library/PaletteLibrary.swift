@@ -105,6 +105,12 @@ struct SampleScoreCatalog: Hashable {
 
     static let `default` = SampleScoreCatalog(samples: [
         SampleScoreItem(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000012")!,
+            displayName: "DoReMi Palette Sample",
+            resourceName: "phase12_sample",
+            fileExtension: "musicxml"
+        ),
+        SampleScoreItem(
             id: UUID(uuidString: "00000000-0000-0000-0000-000000000018")!,
             displayName: "S9 Repeat Visuals Sample",
             resourceName: "s9_repeat_visuals_sample",
@@ -147,6 +153,24 @@ struct SampleScoreCatalog: Hashable {
             fileExtension: "musicxml"
         ),
         SampleScoreItem(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000021")!,
+            displayName: "T2 Transpose Key Sample",
+            resourceName: "t2_transpose_key_sample",
+            fileExtension: "musicxml"
+        ),
+        SampleScoreItem(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000022")!,
+            displayName: "T2 Transpose Accidentals Sample",
+            resourceName: "t2_transpose_accidentals_sample",
+            fileExtension: "musicxml"
+        ),
+        SampleScoreItem(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000023")!,
+            displayName: "T2 MusicXML Transpose Sample",
+            resourceName: "t2_musicxml_transpose_sample",
+            fileExtension: "musicxml"
+        ),
+        SampleScoreItem(
             id: UUID(uuidString: "00000000-0000-0000-0000-000000000017")!,
             displayName: "S8 Repeat Endings Sample",
             resourceName: "s8_repeat_endings_sample",
@@ -162,12 +186,6 @@ struct SampleScoreCatalog: Hashable {
             id: UUID(uuidString: "00000000-0000-0000-0000-000000000015")!,
             displayName: "S6 Notation Refinement Sample",
             resourceName: "s6_notation_refinement_grand_staff",
-            fileExtension: "musicxml"
-        ),
-        SampleScoreItem(
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000012")!,
-            displayName: "DoReMi Palette Sample",
-            resourceName: "phase12_sample",
             fileExtension: "musicxml"
         ),
         SampleScoreItem(

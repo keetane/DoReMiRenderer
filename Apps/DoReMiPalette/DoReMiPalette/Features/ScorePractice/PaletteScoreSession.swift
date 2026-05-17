@@ -11,6 +11,8 @@ final class PaletteScoreSession: ObservableObject {
     @Published private(set) var playbackState: PalettePlaybackState = .stopped
     @Published private(set) var audioErrorMessage: String?
     @Published private(set) var playbackTempoBPM: Double
+    @Published private(set) var transposeSemitones: Int
+    @Published private(set) var displayTransposeEnabled: Bool = true
     @Published private(set) var practiceSession = PalettePracticeSession()
     @Published var playbackCursor = PalettePlaybackCursor(events: [])
     @Published var lastHitSummary = "音符または五線をタップしてください"
@@ -35,6 +37,7 @@ final class PaletteScoreSession: ObservableObject {
         self.libraryFileResolver = libraryFileResolver
         self.playbackRuntime = playbackRuntime
         self.playbackTempoBPM = playbackRuntime.tempoBPM
+        self.transposeSemitones = playbackRuntime.transposeSemitones
         self.libraryCollection = LibraryCollection(
             sampleItems: sampleCatalog.libraryItems(),
             importedItems: libraryStore.loadImportedItems()
@@ -55,12 +58,28 @@ final class PaletteScoreSession: ObservableObject {
         guard let layout = loadedScore?.layout else {
             return .empty
         }
-        return CurrentNoteHighlightState.make(event: currentPlaybackEvent, layout: layout)
+        return CurrentNoteHighlightState.make(
+            event: currentPlaybackEvent,
+            layout: layout,
+            transposeSemitones: transposeSemitones,
+            displayTransposeEnabled: displayTransposeEnabled
+        )
     }
 
     var nextNoteMIDIPitches: Set<Int> {
         let event = practiceSession.isEnabled ? practiceSession.nextPitchedEvent : playbackCursor.nextPitchedEvent
-        return Set(event?.midiPitches ?? [])
+        return KeyboardPitchMapper.transposedMIDINumbers(event?.midiPitches ?? [], by: transposeSemitones)
+    }
+
+    var currentKeyDisplay: PaletteKeyDisplay? {
+        guard let score = loadedScore?.score else {
+            return nil
+        }
+        return PaletteKeyDisplay.make(
+            score: score,
+            transposeSemitones: transposeSemitones,
+            displayTransposeEnabled: displayTransposeEnabled
+        )
     }
 
     var isPracticeModeEnabled: Bool {
@@ -167,6 +186,25 @@ final class PaletteScoreSession: ObservableObject {
     func setPlaybackTempoBPM(_ tempo: Double) {
         playbackRuntime.setTempoBPM(tempo)
         playbackTempoBPM = playbackRuntime.tempoBPM
+    }
+
+    func setTransposeSemitones(_ semitones: Int) {
+        let clamped = PaletteTranspose.clamped(semitones)
+        playbackRuntime.setTransposeSemitones(clamped)
+        transposeSemitones = playbackRuntime.transposeSemitones
+        relayoutForDisplayTransposeIfNeeded()
+    }
+
+    func resetTranspose() {
+        setTransposeSemitones(0)
+    }
+
+    func setDisplayTransposeEnabled(_ enabled: Bool) {
+        guard displayTransposeEnabled != enabled else {
+            return
+        }
+        displayTransposeEnabled = enabled
+        relayoutForDisplayTransposeIfNeeded(force: true)
     }
 
     func setScoreLayoutMode(_ mode: PaletteScoreLayoutMode) {
@@ -286,8 +324,9 @@ final class PaletteScoreSession: ObservableObject {
         defer { isLoading = false }
         do {
             let loaded = try loader.load(data: data, sourceName: sourceName)
-            loadedScore = loaded
-            diagnostics = loaded.diagnostics
+            let displayed = try relayoutIfNeeded(loaded)
+            loadedScore = displayed
+            diagnostics = displayed.diagnostics
             errorMessage = nil
             resetPlaybackEvents(loaded.playbackEvents, metadata: loaded.playbackMetadata)
             lastHitSummary = "\(sourceName) を読み込みました"
@@ -309,13 +348,14 @@ final class PaletteScoreSession: ObservableObject {
         defer { isLoading = false }
         do {
             let loaded = try loader.load(data: data, sourceName: sourceName)
-            loadedScore = loaded
-            diagnostics = loaded.diagnostics
+            let displayed = try relayoutIfNeeded(loaded)
+            loadedScore = displayed
+            diagnostics = displayed.diagnostics
             errorMessage = nil
             resetPlaybackEvents(loaded.playbackEvents, metadata: loaded.playbackMetadata)
             lastHitSummary = "\(sourceName) を読み込みました"
             recordImportedLibraryItem(
-                loaded: loaded,
+                loaded: displayed,
                 sourceURL: sourceURL,
                 bookmarkData: bookmarkData,
                 currentZoomScale: currentZoomScale,
@@ -359,6 +399,27 @@ final class PaletteScoreSession: ObservableObject {
         playbackRuntime.configure(events: events, metadata: metadata)
         playbackState = playbackRuntime.state
         audioErrorMessage = nil
+    }
+
+    private func relayoutForDisplayTransposeIfNeeded(force: Bool = false) {
+        guard let loadedScore else {
+            return
+        }
+        guard force || displayTransposeEnabled else {
+            return
+        }
+        do {
+            let displayed = try relayoutIfNeeded(loadedScore)
+            self.loadedScore = displayed
+            diagnostics = displayed.diagnostics
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func relayoutIfNeeded(_ loaded: PaletteLoadedScore) throws -> PaletteLoadedScore {
+        let semitones = displayTransposeEnabled ? transposeSemitones : 0
+        return try loader.relayout(loaded, displayTransposeSemitones: semitones)
     }
 
     private func bindPlaybackRuntime() {

@@ -20,21 +20,25 @@ final class PalettePlaybackRuntime {
     private(set) var currentEventIndex = 0
     private(set) var tempoBPM: Double
     private(set) var noteGateRatio: Double
+    private(set) var transposeSemitones: Int
 
     private let audioEngine: PaletteAudioEngine
     private var playbackTask: Task<Void, Never>?
     private var usesManualTempoOverride = false
     private static let minimumAudibleDuration: TimeInterval = 0.06
+    static let transposeRange = -12...12
 
     init(
         events: [PlaybackEvent] = [],
         tempoBPM: Double = 120,
         noteGateRatio: Double = 0.85,
+        transposeSemitones: Int = 0,
         audioEngine: PaletteAudioEngine = SimpleToneAudioEngine()
     ) {
         self.events = events
         self.tempoBPM = Self.clampedTempo(tempoBPM)
         self.noteGateRatio = Self.clampedGateRatio(noteGateRatio)
+        self.transposeSemitones = Self.clampedTranspose(transposeSemitones)
         self.audioEngine = audioEngine
     }
 
@@ -51,7 +55,7 @@ final class PalettePlaybackRuntime {
     }
 
     var currentMidiPitches: [Int] {
-        currentEvent?.midiPitches ?? []
+        currentEvent.map(transposedMIDIPitches(for:)) ?? []
     }
 
     var transportState: PalettePlaybackState {
@@ -102,6 +106,20 @@ final class PalettePlaybackRuntime {
 
     func setNoteGateRatio(_ ratio: Double) {
         noteGateRatio = Self.clampedGateRatio(ratio)
+    }
+
+    func setTransposeSemitones(_ semitones: Int) {
+        let clamped = Self.clampedTranspose(semitones)
+        guard clamped != transposeSemitones else {
+            return
+        }
+        transposeSemitones = clamped
+
+        guard state == .playing, let event = currentEvent else {
+            return
+        }
+        audioEngine.silence()
+        triggerAudio(for: event)
     }
 
     func play() {
@@ -265,6 +283,10 @@ final class PalettePlaybackRuntime {
         triggerAudio(for: event)
     }
 
+    func transposedMIDIPitches(for event: PlaybackEvent) -> [Int] {
+        event.midiPitches.compactMap { Self.transposedMIDIPitch($0, by: transposeSemitones) }
+    }
+
     private func runPlaybackLoop() async {
         while !Task.isCancelled, state == .playing, currentEventIndex < events.count {
             let event = events[currentEventIndex]
@@ -298,11 +320,17 @@ final class PalettePlaybackRuntime {
         }
         do {
             try audioEngine.start()
-            let groupedPitches = Dictionary(grouping: event.midiPitches) { midiPitch in
-                soundDurationSeconds(for: midiPitch, in: event)
+            let playablePitches = event.midiPitches.compactMap { midiPitch -> (pitch: Int, duration: TimeInterval)? in
+                guard let transposedPitch = Self.transposedMIDIPitch(midiPitch, by: transposeSemitones) else {
+                    return nil
+                }
+                return (transposedPitch, soundDurationSeconds(for: midiPitch, in: event))
+            }
+            let groupedPitches = Dictionary(grouping: playablePitches) { item in
+                item.duration
             }
             for (duration, pitches) in groupedPitches where duration > 0 {
-                audioEngine.play(midiPitches: pitches, duration: duration, velocity: 0.8)
+                audioEngine.play(midiPitches: pitches.map(\.pitch), duration: duration, velocity: 0.8)
             }
         } catch {
             onAudioError?(error)
@@ -348,6 +376,18 @@ final class PalettePlaybackRuntime {
             return 0.85
         }
         return min(max(ratio, 0.50), 1.00)
+    }
+
+    static func clampedTranspose(_ semitones: Int) -> Int {
+        min(max(semitones, transposeRange.lowerBound), transposeRange.upperBound)
+    }
+
+    static func transposedMIDIPitch(_ midiPitch: Int, by semitones: Int) -> Int? {
+        let transposedPitch = midiPitch + clampedTranspose(semitones)
+        guard (0...127).contains(transposedPitch) else {
+            return nil
+        }
+        return transposedPitch
     }
 }
 

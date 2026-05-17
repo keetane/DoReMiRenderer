@@ -381,6 +381,40 @@ struct PalettePlaybackRuntimeTests {
         #expect(audio.playedPitches == [[60, 64]])
     }
 
+    @Test @MainActor func transposeZeroKeepsPlaybackMIDIPitchesUnchanged() throws {
+        let audio = MockPaletteAudioEngine()
+        let event = try #require(Self.events(from: PaletteScoreLoaderTests.validMusicXML).first)
+        let runtime = PalettePlaybackRuntime(events: [event], transposeSemitones: 0, audioEngine: audio)
+
+        runtime.triggerAudioForCurrentEvent()
+
+        #expect(audio.playedPitches == [[60]])
+        #expect(runtime.currentMidiPitches == [60])
+    }
+
+    @Test @MainActor func transposeAppliesToPlaybackAndChordPitches() throws {
+        let audio = MockPaletteAudioEngine()
+        let chord = try #require(Self.events(from: PaletteScoreLoaderTests.chordMusicXML).first)
+        let runtime = PalettePlaybackRuntime(events: [chord], transposeSemitones: 2, audioEngine: audio)
+
+        runtime.triggerAudioForCurrentEvent()
+
+        #expect(audio.playedPitches == [[62, 66]])
+        #expect(runtime.currentMidiPitches == [62, 66])
+
+        runtime.setTransposeSemitones(-2)
+        runtime.triggerAudioForCurrentEvent()
+
+        #expect(audio.playedPitches.last == [58, 62])
+    }
+
+    @Test @MainActor func transposeClampsSettingAndSkipsOutOfRangePitches() throws {
+        let runtime = PalettePlaybackRuntime(events: [], transposeSemitones: 200)
+
+        #expect(runtime.transposeSemitones == 12)
+        #expect(PalettePlaybackRuntime.transposedMIDIPitch(126, by: runtime.transposeSemitones) == nil)
+    }
+
     @Test @MainActor func notationCoverageLastMeasuresUsePerPitchSoundDurations() throws {
         let events = try Self.events(from: Self.notationCoverageSampleMusicXML, includeRests: true)
         let measureNineFirst = try #require(events.first {
@@ -490,6 +524,38 @@ struct PalettePlaybackRuntimeTests {
 
         #expect(session.playbackCursor.currentNoteID != first)
         #expect(Set(try #require(session.loadedScore?.layout.noteByID.keys)) == noteIDs)
+    }
+
+    @Test @MainActor func sessionTransposeUpdatesKeyboardHighlightWithoutMutatingPlaybackEvents() throws {
+        let runtime = PalettePlaybackRuntime()
+        let session = PaletteScoreSession(playbackRuntime: runtime)
+        try session.load(data: PaletteScoreLoaderTests.validMusicXML, sourceName: "unit.musicxml")
+        let firstEvent = try #require(session.playbackCursor.currentEvent)
+        let noteIDs = Set(try #require(session.loadedScore?.layout.noteByID.keys))
+
+        session.setTransposeSemitones(2)
+
+        #expect(session.transposeSemitones == 2)
+        #expect(session.currentHighlightState.attackMIDIPitches == [62])
+        #expect(session.playbackCursor.currentEvent == firstEvent)
+        #expect(Set(try #require(session.loadedScore?.layout.noteByID.keys)) == noteIDs)
+    }
+
+    @Test @MainActor func displayTransposeRelayoutsScoreWithoutChangingPlaybackEventIdentity() throws {
+        let session = PaletteScoreSession()
+        try session.load(data: PaletteScoreLoaderTests.validMusicXML, sourceName: "unit.musicxml")
+        let firstEvent = try #require(session.playbackCursor.currentEvent)
+        let firstNoteID = try #require(firstEvent.noteIDs.first)
+        let writtenPitch = try #require(session.loadedScore?.layout.noteLayout(for: firstNoteID)?.pitch)
+
+        session.setTransposeSemitones(2)
+        session.setDisplayTransposeEnabled(true)
+
+        let displayedPitch = try #require(session.loadedScore?.layout.noteLayout(for: firstNoteID)?.pitch)
+        #expect(writtenPitch != displayedPitch)
+        #expect(displayedPitch == Pitch(step: .d, octave: 4))
+        #expect(session.playbackCursor.currentEvent == firstEvent)
+        #expect(session.currentHighlightState.attackMIDIPitches == [62])
     }
 
     private static func events(from data: Data, includeRests: Bool = false) throws -> [PlaybackEvent] {
