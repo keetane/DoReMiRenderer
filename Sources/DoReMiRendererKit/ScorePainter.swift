@@ -441,12 +441,34 @@ struct ScorePainter: Sendable {
         selection: ScoreSelection,
         into context: inout Context
     ) {
-        for element in layout.elements where element.kind == .notehead
-            || element.kind == .rest
-            || element.kind == .stem
-            || element.kind == .beam
-            || element.kind == .flag
-            || element.kind == .dot {
+        let drawingOrder: [[ScoreElementKind]] = [
+            [.rest],
+            [.stem, .beam, .flag],
+            [.notehead],
+            [.dot],
+        ]
+        for kinds in drawingOrder {
+            for element in layout.elements where kinds.contains(element.kind) {
+                drawNoteOrRestElement(
+                    element,
+                    layout: layout,
+                    score: score,
+                    style: style,
+                    selection: selection,
+                    into: &context
+                )
+            }
+        }
+    }
+
+    private func drawNoteOrRestElement<Context: ScoreDrawingContext>(
+        _ element: ElementLayout,
+        layout: ScoreLayout,
+        score: ScoreDocument,
+        style: ScoreStyle,
+        selection: ScoreSelection,
+        into context: inout Context
+    ) {
             let resolved = style.colorResolver.resolvedStyle(
                 for: element,
                 score: score,
@@ -470,7 +492,6 @@ struct ScorePainter: Sendable {
             default:
                 break
             }
-        }
     }
 
     private func drawCurves<Context: ScoreDrawingContext>(

@@ -12,6 +12,9 @@ final class PaletteScoreSession: ObservableObject {
     @Published private(set) var audioErrorMessage: String?
     @Published private(set) var playbackTempoBPM: Double
     @Published private(set) var transposeSemitones: Int
+    @Published private(set) var metronomeEnabled: Bool
+    @Published private(set) var metronomeCompoundMode: PaletteMetronomeCompoundMode
+    @Published private(set) var metronomeClickSoundStyle: PaletteMetronomeClickSoundStyle
     @Published private(set) var displayTransposeEnabled: Bool = true
     @Published private(set) var practiceSession = PalettePracticeSession()
     @Published var playbackCursor = PalettePlaybackCursor(events: [])
@@ -38,6 +41,9 @@ final class PaletteScoreSession: ObservableObject {
         self.playbackRuntime = playbackRuntime
         self.playbackTempoBPM = playbackRuntime.tempoBPM
         self.transposeSemitones = playbackRuntime.transposeSemitones
+        self.metronomeEnabled = playbackRuntime.metronomeEnabled
+        self.metronomeCompoundMode = playbackRuntime.metronomeCompoundMode
+        self.metronomeClickSoundStyle = playbackRuntime.metronomeClickSoundStyle
         self.libraryCollection = LibraryCollection(
             sampleItems: sampleCatalog.libraryItems(),
             importedItems: libraryStore.loadImportedItems()
@@ -186,6 +192,28 @@ final class PaletteScoreSession: ObservableObject {
     func setPlaybackTempoBPM(_ tempo: Double) {
         playbackRuntime.setTempoBPM(tempo)
         playbackTempoBPM = playbackRuntime.tempoBPM
+    }
+
+    func setMetronomeEnabled(_ enabled: Bool) {
+        playbackRuntime.setMetronomeEnabled(enabled)
+        metronomeEnabled = playbackRuntime.metronomeEnabled
+    }
+
+    func setMetronomeCompoundMode(_ mode: PaletteMetronomeCompoundMode) {
+        playbackRuntime.setMetronomeCompoundMode(mode)
+        metronomeCompoundMode = playbackRuntime.metronomeCompoundMode
+    }
+
+    func setMetronomeClickSoundStyle(_ style: PaletteMetronomeClickSoundStyle) {
+        playbackRuntime.setMetronomeClickSoundStyle(style)
+        metronomeClickSoundStyle = playbackRuntime.metronomeClickSoundStyle
+    }
+
+    @discardableResult
+    func registerTapTempo() -> Double? {
+        let tempo = playbackRuntime.registerTapTempo()
+        playbackTempoBPM = playbackRuntime.tempoBPM
+        return tempo
     }
 
     func setTransposeSemitones(_ semitones: Int) {

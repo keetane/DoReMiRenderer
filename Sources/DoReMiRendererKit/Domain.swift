@@ -253,9 +253,11 @@ public struct MusicXMLTranspose: Hashable, Codable, Sendable {
 
 public struct ScoreDocument: Hashable, Codable, Sendable {
     public let parts: [ScorePart]
+    public let title: String?
 
-    public init(parts: [ScorePart]) {
+    public init(parts: [ScorePart], title: String? = nil) {
         self.parts = parts
+        self.title = title
     }
 }
 

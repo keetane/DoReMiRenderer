@@ -14,7 +14,11 @@ struct PaletteSettingsView: View {
     @Binding var scoreLayoutModeRawValue: String
     @Binding var transposeSemitones: Int
     @Binding var displayTransposeEnabled: Bool
+    @Binding var metronomeEnabled: Bool
+    @Binding var metronomeCompoundModeRawValue: String
+    @Binding var metronomeClickSoundStyleRawValue: String
     var writtenKeyPitchClass: Int? = nil
+    var onTapTempo: () -> Void = {}
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -29,6 +33,26 @@ struct PaletteSettingsView: View {
                     Toggle("現在の音を表示", isOn: $currentNoteDisplayVisible)
                     Toggle("次の音を表示", isOn: $nextNoteDisplayVisible)
                     Toggle("小節数を表示", isOn: $measureNumbersVisible)
+                }
+                Section("再生") {
+                    Toggle("メトロノーム", isOn: $metronomeEnabled)
+                    Picker("複合拍子", selection: $metronomeCompoundModeRawValue) {
+                        ForEach(PaletteMetronomeCompoundMode.allCases) { mode in
+                            Text(mode.displayName).tag(mode.rawValue)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    Picker("クリック音", selection: $metronomeClickSoundStyleRawValue) {
+                        ForEach(PaletteMetronomeClickSoundStyle.allCases) { style in
+                            Text(style.displayName).tag(style.rawValue)
+                        }
+                    }
+                    Button("Tap Tempo") {
+                        onTapTempo()
+                    }
+                    Text("再生中にテンポへ同期したクリックを鳴らします。6/8などは大拍または細分を選べます。")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
                 Section("譜面レイアウト") {
                     Picker("譜面レイアウト", selection: $scoreLayoutModeRawValue) {

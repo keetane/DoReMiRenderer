@@ -47,6 +47,9 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
     private var elementStack: [String] = []
     private var textBuffer = ""
     private var rootElement: String?
+    private var workTitle: String?
+    private var movementTitle: String?
+    private var movementNumber: String?
 
     private var partListNames: [String: String] = [:]
     private var parts: [ScorePart] = []
@@ -237,6 +240,12 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
         let text = textBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
 
         switch elementName {
+        case "work-title":
+            workTitle = nonEmptyText(text)
+        case "movement-title":
+            movementTitle = nonEmptyText(text)
+        case "movement-number":
+            movementNumber = nonEmptyText(text)
         case "part-name":
             if let currentPartID {
                 partListNames[currentPartID] = text
@@ -374,17 +383,26 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             if policy == .fail {
                 throw MusicXMLParserError.unsupportedFeature(diagnostic)
             }
-            return ParseResult(score: ScoreDocument(parts: []), diagnostics: diagnostics)
+            return ParseResult(score: ScoreDocument(parts: [], title: scoreTitle), diagnostics: diagnostics)
         }
         if policy == .fail, let fatalUnsupportedDiagnostic {
             throw MusicXMLParserError.unsupportedFeature(fatalUnsupportedDiagnostic)
         }
-        return ParseResult(score: ScoreDocument(parts: parts), diagnostics: diagnostics)
+        return ParseResult(score: ScoreDocument(parts: parts, title: scoreTitle), diagnostics: diagnostics)
     }
 
     private var parentElement: String? {
         guard elementStack.count >= 2 else { return nil }
         return elementStack[elementStack.count - 2]
+    }
+
+    private var scoreTitle: String? {
+        movementTitle ?? workTitle ?? movementNumber
+    }
+
+    private func nonEmptyText(_ text: String) -> String? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
     }
 
     private func finishNote() {
@@ -683,6 +701,11 @@ private struct MusicXMLTransposeBuilder {
 private let recognizedMusicXMLElements: Set<String> = [
     "score-partwise",
     "score-timewise",
+    "work",
+    "work-number",
+    "work-title",
+    "movement-number",
+    "movement-title",
     "part-list",
     "score-part",
     "part-name",

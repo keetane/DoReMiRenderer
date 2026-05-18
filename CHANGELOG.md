@@ -98,6 +98,20 @@ APIs may change before `1.0`.
   Variations of Twinkle Twinkle Little Star` was removed from the app sample
   catalog because its dense repeat-expanded playback is too long for the default
   learning sample set.
+- Added a DoReMi Palette Metronome MVP. The app now has a persisted
+  metronome ON/OFF setting, starts generated strong/weak clicks with Play,
+  stops them on Pause / Stop / Reset / playback end, and follows the current
+  playback BPM without adding audio responsibilities to DoReMiRendererKit.
+- Fixed mid-playback metronome enable sync so turning the metronome ON during
+  playback waits for the next beat boundary instead of starting a new beat cycle
+  at the toggle moment.
+- Updated the metronome to follow parsed MusicXML time signatures for its beat
+  cycle, so 3/4 scores accent every three clicks instead of using a fixed 4/4
+  pattern.
+- Added Metronome Advanced MVP controls: compound-meter large-beat/subdivision
+  modes for 6/8, 9/8, and 12/8, strong/medium/weak accent patterns, tap tempo,
+  and generated click sound styles without adding audio responsibilities to
+  DoReMiRendererKit.
 - Kept Core Graphics fallback rendering for font lookup or registration failure.
 - Dynamics remain diagnostic-only unless represented by existing text
   annotations; system-crossing curves, advanced beams, complex tuplets, and

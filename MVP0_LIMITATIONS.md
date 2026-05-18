@@ -122,6 +122,15 @@ This document records the known limitations of DoReMiRendererKit after Phase 0 t
 - Generated tones use a minimum audible duration for short pitched events while
   keeping event scheduling duration unchanged. Real audio timing still needs
   user-side listening QA on Simulator or device.
+- Metronome MVP is app-side and uses generated click tones synchronized to the
+  current playback BPM. It starts with Play when enabled and stops on Pause,
+  Stop, Reset, and playback end. When enabled during playback, it waits for the
+  next beat boundary rather than treating the toggle moment as beat 1. Parsed
+  MusicXML time signatures drive the beat cycle, and the Advanced MVP adds
+  6/8, 9/8, and 12/8 large-beat/subdivision modes, strong/medium/weak accent
+  patterns, tap tempo, and generated click sound styles. Standalone practice
+  metronome, custom imported click samples, user-edited arbitrary accent
+  patterns, and sample-accurate scheduling remain future work.
 - Mixed visual events can contain tied continuations and new attack pitches; the
   app plays the `midiPitches` attack list and does not sound continuation-only
   events.

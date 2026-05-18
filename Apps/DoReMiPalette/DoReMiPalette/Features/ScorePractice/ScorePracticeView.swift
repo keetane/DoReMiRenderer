@@ -18,6 +18,9 @@ struct ScorePracticeView: View {
     @Binding var scoreLayoutModeRawValue: String
     @Binding var transposeSemitones: Int
     @Binding var displayTransposeEnabled: Bool
+    @Binding var metronomeEnabled: Bool
+    @Binding var metronomeCompoundModeRawValue: String
+    @Binding var metronomeClickSoundStyleRawValue: String
     @Binding var pitchClassColorEnabledRawValue: String
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -74,7 +77,11 @@ struct ScorePracticeView: View {
                     scoreLayoutModeRawValue: $scoreLayoutModeRawValue,
                     transposeSemitones: $transposeSemitones,
                     displayTransposeEnabled: $displayTransposeEnabled,
-                    writtenKeyPitchClass: session.currentKeyDisplay?.writtenPitchClass
+                    metronomeEnabled: $metronomeEnabled,
+                    metronomeCompoundModeRawValue: $metronomeCompoundModeRawValue,
+                    metronomeClickSoundStyleRawValue: $metronomeClickSoundStyleRawValue,
+                    writtenKeyPitchClass: session.currentKeyDisplay?.writtenPitchClass,
+                    onTapTempo: { session.registerTapTempo() }
                 )
             }
             .onAppear {
@@ -96,6 +103,15 @@ struct ScorePracticeView: View {
             }
             .onChange(of: session.loadedScore?.sourceName) { _, _ in
                 session.setScoreLayoutMode(selectedScoreLayoutMode)
+            }
+            .onChange(of: metronomeEnabled) { _, newValue in
+                session.setMetronomeEnabled(newValue)
+            }
+            .onChange(of: metronomeCompoundModeRawValue) { _, newValue in
+                session.setMetronomeCompoundMode(PaletteMetronomeCompoundMode.fromRawValue(newValue))
+            }
+            .onChange(of: metronomeClickSoundStyleRawValue) { _, newValue in
+                session.setMetronomeClickSoundStyle(PaletteMetronomeClickSoundStyle.fromRawValue(newValue))
             }
         }
     }
@@ -266,7 +282,15 @@ struct ScorePracticeView: View {
     }
 
     private var displayToggles: some View {
-        displayToggle("Keyboard", isOn: $keyboardVisible)
+        HStack(spacing: 12) {
+            displayToggle("Keyboard", isOn: $keyboardVisible)
+            displayToggle("メトロノーム", isOn: $metronomeEnabled)
+            Button("Tap", systemImage: "metronome") {
+                session.registerTapTempo()
+            }
+            .buttonStyle(.borderless)
+            .disabled(session.playbackCursor.events.isEmpty)
+        }
     }
 
     private func displayToggle(_ title: String, isOn: Binding<Bool>) -> some View {
@@ -392,6 +416,7 @@ struct ScorePracticeView: View {
             let highlight = session.currentHighlightState.visible(if: currentNoteDisplayVisible)
             let pitchColorState = PalettePitchClassColorState(encodedValue: pitchClassColorEnabledRawValue)
             VStack(spacing: 0) {
+                scoreTitleBar(loaded)
                 ScoreCanvasView(
                     layout: loaded.layout,
                     score: loaded.score,
@@ -442,6 +467,22 @@ struct ScorePracticeView: View {
                 description: Text(session.errorMessage ?? "Sample Reload または 読み込み を試してください。")
             )
         }
+    }
+
+    private func scoreTitleBar(_ loaded: PaletteLoadedScore) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "music.note")
+                .foregroundStyle(.secondary)
+            Text(loaded.displayName)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, isCompact ? 14 : 24)
+        .padding(.vertical, 7)
+        .background(Color(.secondarySystemBackground))
     }
 
     private var diagnosticsIcon: String {

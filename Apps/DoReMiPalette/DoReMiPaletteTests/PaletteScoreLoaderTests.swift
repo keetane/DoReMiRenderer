@@ -16,6 +16,19 @@ struct PaletteScoreLoaderTests {
         #expect(loaded.diagnostics.isEmpty)
     }
 
+    @Test func displayNamePrefersMusicXMLTitle() throws {
+        let validXML = String(decoding: Self.validMusicXML, as: UTF8.self)
+        let titledXML = validXML.replacing(
+            "<part-list>",
+            with:
+            "<work><work-title>Loader Title</work-title></work><part-list>"
+        )
+        let loaded = try PaletteScoreLoader().load(data: Data(titledXML.utf8), sourceName: "unit.musicxml")
+
+        #expect(loaded.score.title == "Loader Title")
+        #expect(loaded.displayName == "Loader Title")
+    }
+
     @Test func parseFailureThrows() {
         #expect(throws: Error.self) {
             _ = try PaletteScoreLoader().load(data: Data("<score-partwise>".utf8), sourceName: "broken.musicxml")
@@ -191,6 +204,9 @@ struct PaletteScoreLoaderTests {
         defaults.set(PaletteScoreLayoutMode.a4.rawValue, forKey: PaletteSettingsKeys.scoreLayoutMode)
         defaults.set(2, forKey: PaletteSettingsKeys.transposeSemitones)
         defaults.set(true, forKey: PaletteSettingsKeys.displayTransposeEnabled)
+        defaults.set(true, forKey: PaletteSettingsKeys.metronomeEnabled)
+        defaults.set(PaletteMetronomeCompoundMode.subdivision.rawValue, forKey: PaletteSettingsKeys.metronomeCompoundMode)
+        defaults.set(PaletteMetronomeClickSoundStyle.wood.rawValue, forKey: PaletteSettingsKeys.metronomeClickSoundStyle)
 
         #expect(defaults.bool(forKey: PaletteSettingsKeys.noteColorVisible) == false)
         #expect(defaults.bool(forKey: PaletteSettingsKeys.staffColorVisible) == true)
@@ -199,6 +215,9 @@ struct PaletteScoreLoaderTests {
         #expect(defaults.string(forKey: PaletteSettingsKeys.scoreLayoutMode) == PaletteScoreLayoutMode.a4.rawValue)
         #expect(defaults.integer(forKey: PaletteSettingsKeys.transposeSemitones) == 2)
         #expect(defaults.bool(forKey: PaletteSettingsKeys.displayTransposeEnabled) == true)
+        #expect(defaults.bool(forKey: PaletteSettingsKeys.metronomeEnabled) == true)
+        #expect(defaults.string(forKey: PaletteSettingsKeys.metronomeCompoundMode) == PaletteMetronomeCompoundMode.subdivision.rawValue)
+        #expect(defaults.string(forKey: PaletteSettingsKeys.metronomeClickSoundStyle) == PaletteMetronomeClickSoundStyle.wood.rawValue)
     }
 
     @Test func diagnosticsPresentationSummarizesWarningsAndErrorsInJapanese() {

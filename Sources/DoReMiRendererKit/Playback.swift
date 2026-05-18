@@ -51,17 +51,30 @@ public struct PlaybackOptions: Hashable, Codable, Sendable {
 
 public struct PlaybackMetadata: Hashable, Sendable {
     public let tempoEvents: [TempoEvent]
+    public let timeSignatureEvents: [TimeSignatureEvent]
     public let repeatBarlines: [RepeatBarline]
     public let diagnostics: [RendererDiagnostic]
 
     init(
         tempoEvents: [TempoEvent],
+        timeSignatureEvents: [TimeSignatureEvent] = [],
         repeatBarlines: [RepeatBarline],
         diagnostics: [RendererDiagnostic]
     ) {
         self.tempoEvents = tempoEvents
+        self.timeSignatureEvents = timeSignatureEvents
         self.repeatBarlines = repeatBarlines
         self.diagnostics = diagnostics
+    }
+}
+
+public struct TimeSignatureEvent: Hashable, Sendable {
+    public let measureID: MeasureID
+    public let timeSignature: TimeSignature
+
+    public init(measureID: MeasureID, timeSignature: TimeSignature) {
+        self.measureID = measureID
+        self.timeSignature = timeSignature
     }
 }
 
@@ -81,6 +94,11 @@ struct PlaybackSequenceBuilder: Sendable {
         let repeats = measures.flatMap(\.repeatBarlines)
         return PlaybackMetadata(
             tempoEvents: measures.flatMap(\.tempoEvents),
+            timeSignatureEvents: measures.compactMap { measure in
+                measure.timeSignature.map {
+                    TimeSignatureEvent(measureID: measure.id, timeSignature: $0)
+                }
+            },
             repeatBarlines: repeats,
             diagnostics: RepeatExpansionPlanner.diagnostics(score: score)
         )

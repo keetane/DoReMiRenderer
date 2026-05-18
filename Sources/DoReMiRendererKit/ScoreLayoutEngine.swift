@@ -949,11 +949,11 @@ struct ScoreLayoutEngine: Sendable {
                 if (noteByID[id]?.noteValueKind.flagCount ?? 0) >= beamLevel {
                     run.append(id)
                 } else {
-                    appendSecondaryRun(run, to: &segments, noteByID: noteByID, stemsByNoteID: stemsByNoteID, yOnPrimary: yOnPrimary, offset: secondaryOffset * CGFloat(beamLevel - 1))
+                    appendSecondaryRun(run, to: &segments, orderedIDs: representativeIDs, noteByID: noteByID, stemsByNoteID: stemsByNoteID, yOnPrimary: yOnPrimary, offset: secondaryOffset * CGFloat(beamLevel - 1))
                     run = []
                 }
             }
-            appendSecondaryRun(run, to: &segments, noteByID: noteByID, stemsByNoteID: stemsByNoteID, yOnPrimary: yOnPrimary, offset: secondaryOffset * CGFloat(beamLevel - 1))
+            appendSecondaryRun(run, to: &segments, orderedIDs: representativeIDs, noteByID: noteByID, stemsByNoteID: stemsByNoteID, yOnPrimary: yOnPrimary, offset: secondaryOffset * CGFloat(beamLevel - 1))
         }
         return segments
     }
@@ -961,6 +961,7 @@ struct ScoreLayoutEngine: Sendable {
     private func appendSecondaryRun(
         _ run: [NoteID],
         to segments: inout [BeamSegmentLayout],
+        orderedIDs: [NoteID],
         noteByID: [NoteID: NoteLayout],
         stemsByNoteID: [NoteID: ElementLayout],
         yOnPrimary: (CGFloat) -> CGFloat,
@@ -980,7 +981,14 @@ struct ScoreLayoutEngine: Sendable {
             endX = lastStem.frame.midX
         } else {
             let hookLength = firstLayout.noteheadFrame.width * 0.95
-            endX = startX + (drawsDown ? -hookLength : hookLength)
+            let index = orderedIDs.firstIndex(of: firstID)
+            if let index, index > orderedIDs.startIndex, let previousStem = stemsByNoteID[orderedIDs[orderedIDs.index(before: index)]] {
+                endX = startX + (previousStem.frame.midX < startX ? -hookLength : hookLength)
+            } else if let index, orderedIDs.index(after: index) < orderedIDs.endIndex, let nextStem = stemsByNoteID[orderedIDs[orderedIDs.index(after: index)]] {
+                endX = startX + (nextStem.frame.midX < startX ? -hookLength : hookLength)
+            } else {
+                endX = startX + (drawsDown ? -hookLength : hookLength)
+            }
         }
         segments.append(BeamSegmentLayout(
             start: CGPoint(x: startX, y: yOnPrimary(startX) + signedOffset),
@@ -1197,7 +1205,7 @@ struct ScoreLayoutEngine: Sendable {
         }
 
         let dotSize = max(2, noteFrame.height * 0.28)
-        let firstDotOffset = note.pitch == nil ? -noteFrame.width * 0.06 : noteFrame.width * 0.45
+        let firstDotOffset = note.pitch == nil ? -noteFrame.width * 0.06 : noteFrame.width * 0.12
         for index in 0..<note.dotCount {
             let dotFrame = CGRect(
                 x: noteFrame.maxX + firstDotOffset + CGFloat(index) * dotSize * 1.8,

@@ -39,6 +39,45 @@ Phase 15 uses a generated tone audio engine in the app target.
 - Tie continuations do not trigger a new attack.
 - If audio startup fails, the UI cursor can still advance.
 
+## Metronome MVP
+
+The metronome is also app-owned. DoReMiRendererKit does not import
+AVFoundation and the renderer does not know about metronome state.
+
+- `metronomeEnabled` is persisted in DoReMi Palette app settings and defaults
+  to OFF.
+- `PalettePlaybackRuntime` starts the metronome when Play starts and the
+  setting is enabled.
+- Pause, Stop, Reset, and playback end cancel the metronome task and silence
+  generated audio through the existing app audio layer.
+- The click interval follows the current runtime tempo. Tempo changes while
+  playing restart runtime scheduling and resync the metronome from the current
+  playback event.
+- Turning the metronome ON during playback does not treat that toggle moment as
+  beat 1. The runtime uses the current `PlaybackEvent` onset plus elapsed time
+  in that event, waits until the next metronome beat boundary, and then starts
+  the accent cycle from that musical position.
+- Strong, medium, and weak clicks use generated tones with distinct pitch,
+  duration, and velocity. Click sound styles (`Classic`, `Soft`, `Wood`, and
+  `Electronic`) change those generated parameters without adding audio assets.
+- The runtime reads parsed MusicXML time signatures from playback metadata.
+  Simple meters such as 3/4 use the score's beat count for the strong/weak
+  cycle, so beat 1 is accented every three clicks. If no time signature is
+  available, the app falls back to 4/4.
+- Compound meters `6/8`, `9/8`, and `12/8` support two modes. `大拍`
+  groups dotted-quarter large beats by default (`6/8` becomes two clicks per
+  measure), while `細分` clicks each written eighth subdivision with medium
+  accents on secondary large beats.
+- Tap tempo records the most recent tap intervals, resets after long gaps, and
+  clamps the result to the runtime's 30...240 BPM range. During playback it is
+  treated as a tempo change and resyncs the metronome from the current
+  playback position.
+- User-edited arbitrary accent patterns, imported click samples, standalone
+  practice metronome, and sample-accurate scheduling remain future work.
+- Practice Mode does not start a standalone metronome. If the user presses Play
+  from Practice Mode, the normal playback path is used and the metronome follows
+  the same Play behavior.
+
 ## Known MVP Limits
 
 - Tone quality is intentionally simple.
