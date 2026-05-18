@@ -192,7 +192,11 @@ Phase 15 adds MVP audio playback as an app-side responsibility:
 The MVP audio engine generates simple tones without external assets. Chords play
 all event MIDI pitches together, rests do not sound, and tie continuations do
 not retrigger a note. If audio startup fails, the app can still advance the
-cursor and highlight state. Phase S7 adds simple repeat playback expansion in
+cursor and highlight state. The Metronome MVP is app-side as well: the Palette
+runtime owns the persisted ON/OFF setting, starts generated strong/weak clicks
+with Play, follows the current BPM, and stops on Pause / Stop / Reset /
+playback end. DoReMiRendererKit does not own metronome state, scheduling, or
+AVFoundation code. Phase S7 adds simple repeat playback expansion in
 the SDK playback sequence builder, and Phase S8 adds first/second ending MVP
 expansion plus limited jump-marker diagnostics/handling. Phase S9 adds visual
 first/second ending brackets as SDK layout/rendering elements. The app runtime

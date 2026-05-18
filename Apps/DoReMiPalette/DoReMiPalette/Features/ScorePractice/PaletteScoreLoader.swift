@@ -44,6 +44,14 @@ struct PaletteLoadedScore {
     var printLayout: ScoreLayout {
         a4Layout
     }
+
+    var displayName: String {
+        if let title = score.title?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !title.isEmpty {
+            return title
+        }
+        return sourceName
+    }
 }
 
 enum PaletteScoreLayoutMode: String, CaseIterable, Identifiable {

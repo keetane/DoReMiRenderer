@@ -117,6 +117,38 @@ or TestFlight preparation.
 - [x] Palette filtering does not mutate layout, note IDs, playback events,
   transpose state, repeat expansion, Library, or Diagnostics.
 
+## Metronome MVP Checks
+
+- [x] App exposes a Metronome ON/OFF control in the playback/display control
+  area.
+- [x] Settings exposes the same Metronome ON/OFF setting.
+- [x] Metronome enabled state persists through `AppStorage`.
+- [x] Mock runtime tests confirm Play starts clicks only when enabled.
+- [x] Mock runtime tests confirm Pause / Stop / Reset / playback end stop the
+  metronome path.
+- [x] Mock runtime tests confirm strong and weak generated clicks use distinct
+  pitches and velocities.
+- [x] Mock runtime tests confirm enabling Metronome during playback waits for
+  the next beat boundary instead of treating the toggle moment as beat 1.
+- [x] Mock runtime tests confirm a 3/4 MusicXML sample clicks
+  strong-weak-weak before the next strong beat.
+- [x] Mock runtime tests confirm `6/8` defaults to two large beats and can
+  switch to six subdivision clicks.
+- [x] Mock runtime tests confirm `9/8` and `12/8` large-beat patterns.
+- [x] Mock runtime tests confirm Tap Tempo averaging, long-gap reset, and BPM
+  clamping.
+- [x] Mock runtime tests confirm generated click sound style switching.
+- [x] Tempo changes restart playback scheduling and metronome timing without
+  changing the current event index.
+- [ ] User-side listening QA: confirm `6/8` large-beat and subdivision modes
+  feel distinct.
+- [ ] User-side listening QA: confirm Tap Tempo and click sound styles are
+  comfortable on Simulator or iPad hardware.
+- [ ] User-side listening QA: confirm the strong click and weak click are
+  audibly distinct on Simulator or iPad hardware.
+- [ ] User-side listening QA: confirm clicks remain comfortable with score
+  playback audio enabled.
+
 Palette editor screenshot targets:
 
 - `/tmp/doremipalette_palette_button.png`

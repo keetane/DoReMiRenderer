@@ -542,6 +542,21 @@ Palette Editor MVP - complete
 - Leave arbitrary RGB/HEX editing, octave-specific enablement, import/export,
   and cloud sync as future palette hardening.
 
+Metronome MVP - complete
+
+- Add a persisted app-side `metronomeEnabled` setting with controls in the main
+  playback area and Settings.
+- Reuse generated app audio tones for strong and weak clicks without adding
+  AVFoundation or scheduling responsibility to DoReMiRendererKit.
+- Start clicks with Play when enabled, stop them on Pause / Stop / Reset /
+  playback end, and follow the current playback BPM.
+- Metronome Advanced MVP adds compound-meter large-beat/subdivision modes for
+  `6/8`, `9/8`, and `12/8`, strong/medium/weak accent patterns, Tap Tempo, and
+  generated click sound styles.
+- Keep Practice Mode as manual stepping; standalone practice metronome,
+  arbitrary accent editing, imported click sounds, and sample-accurate
+  scheduling remain future hardening.
+
 The `notation_coverage_grand_staff.musicxml` and `rhythm_values_sample.musicxml`
 samples are the primary before/after QA fixtures for this track. Snapshot
 baseline updates are expected during implementation phases, but only after

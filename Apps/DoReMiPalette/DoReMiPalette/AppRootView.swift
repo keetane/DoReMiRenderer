@@ -15,6 +15,9 @@ enum PaletteSettingsKeys {
     static let transposeSemitones = "doremi.palette.transposeSemitones"
     static let displayTransposeEnabled = "doremi.palette.displayTransposeEnabled"
     static let pitchClassColorEnabled = "doremi.palette.pitchClassColorEnabled"
+    static let metronomeEnabled = "doremi.palette.metronomeEnabled"
+    static let metronomeCompoundMode = "doremi.palette.metronomeCompoundMode"
+    static let metronomeClickSoundStyle = "doremi.palette.metronomeClickSoundStyle"
 }
 
 struct AppRootView: View {
@@ -33,6 +36,9 @@ struct AppRootView: View {
     @AppStorage(PaletteSettingsKeys.transposeSemitones) private var transposeSemitones = 0
     @AppStorage(PaletteSettingsKeys.displayTransposeEnabled) private var displayTransposeEnabled = true
     @AppStorage(PaletteSettingsKeys.pitchClassColorEnabled) private var pitchClassColorEnabledRawValue = PalettePitchClassColorState.defaultEncodedValue
+    @AppStorage(PaletteSettingsKeys.metronomeEnabled) private var metronomeEnabled = false
+    @AppStorage(PaletteSettingsKeys.metronomeCompoundMode) private var metronomeCompoundModeRawValue = PaletteMetronomeCompoundMode.largeBeat.rawValue
+    @AppStorage(PaletteSettingsKeys.metronomeClickSoundStyle) private var metronomeClickSoundStyleRawValue = PaletteMetronomeClickSoundStyle.classic.rawValue
 
     var body: some View {
         ScorePracticeView(
@@ -50,6 +56,9 @@ struct AppRootView: View {
             scoreLayoutModeRawValue: $scoreLayoutModeRawValue,
             transposeSemitones: $transposeSemitones,
             displayTransposeEnabled: $displayTransposeEnabled,
+            metronomeEnabled: $metronomeEnabled,
+            metronomeCompoundModeRawValue: $metronomeCompoundModeRawValue,
+            metronomeClickSoundStyleRawValue: $metronomeClickSoundStyleRawValue,
             pitchClassColorEnabledRawValue: $pitchClassColorEnabledRawValue
         )
         .task {
@@ -58,6 +67,9 @@ struct AppRootView: View {
             }
             session.setDisplayTransposeEnabled(true)
             session.setTransposeSemitones(transposeSemitones)
+            session.setMetronomeEnabled(metronomeEnabled)
+            session.setMetronomeCompoundMode(PaletteMetronomeCompoundMode.fromRawValue(metronomeCompoundModeRawValue))
+            session.setMetronomeClickSoundStyle(PaletteMetronomeClickSoundStyle.fromRawValue(metronomeClickSoundStyleRawValue))
             session.loadBundledSampleIfNeeded()
         }
     }

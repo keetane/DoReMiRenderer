@@ -397,6 +397,13 @@ Manual Simulator playback checks:
 8. On Rhythm Values Sample, confirm repeated same-pitch notes and short notes
    advance through the audio path. If the automation environment cannot provide
    audible output, rely on mock-audio tests and ask for user-side listening QA.
+9. Turn Metronome ON, press Play, and confirm a strong first beat and weaker
+   following beats. Pause, Stop, and Reset should stop clicks immediately.
+10. Change BPM while Metronome is ON and playback is running. The click interval
+    should follow the new BPM without moving to a different playback event.
+11. Start Play with Metronome OFF, turn it ON mid-measure, and confirm the
+    first click waits for the next beat boundary instead of treating the toggle
+    moment as beat 1.
 
 Capture screenshots with:
 
@@ -413,6 +420,48 @@ xcrun simctl io booted recordVideo /tmp/doremipalette_phase15_playback.mov
 If audio is not audible in the automation environment, verify that the UI cursor
 advances and rely on mock audio tests for event-to-audio behavior. The user
 should still manually confirm audible output on their Simulator or device.
+
+## Metronome MVP QA
+
+The metronome is implemented only in the DoReMi Palette app layer. It reuses
+generated tones through the app audio engine and does not add AVFoundation or
+metronome state to DoReMiRendererKit.
+
+Automated checks live in `PalettePlaybackRuntimeTests`:
+
+- default OFF and runtime enable/disable;
+- Play starts generated clicks only when enabled;
+- strong and weak clicks use distinct generated pitches and velocities;
+- enabling the metronome mid-playback waits until the next beat boundary and
+  preserves the expected strong/weak beat phase;
+- parsed MusicXML time signatures drive the metronome beat cycle, including a
+  3/4 regression that clicks strong-weak-weak before the next strong beat;
+- compound-meter tests cover `6/8` large-beat mode, `6/8` subdivision mode,
+  and `9/8` / `12/8` large-beat accent patterns;
+- tap tempo tests cover recent-tap averaging, long-gap reset, and BPM clamping;
+- click sound style tests cover generated parameter changes without external
+  sound assets;
+- disabling while playing stops future clicks;
+- existing playback, transpose, repeat, Practice Mode, Library, and
+  Diagnostics tests remain unchanged.
+
+Manual QA still needs listening confirmation because Codex cannot judge the
+actual audio mix:
+
+1. Enable Metronome from the main controls or Settings.
+2. Press Play and confirm beat 1 is stronger than beats 2-4.
+3. Pause, Stop, and Reset; no click should continue.
+4. Change BPM during playback; clicks should follow the new interval.
+5. Start playback with Metronome OFF, turn it ON mid-measure, and confirm it
+   joins on the next beat rather than immediately clicking out of phase.
+6. Open a 3/4 sample and confirm the strong click repeats every three beats.
+7. Open a 6/8 sample. In `大拍`, confirm two large clicks per measure; in
+   `細分`, confirm six subdivision clicks with a secondary accent.
+8. Use Tap Tempo several times and confirm the BPM picker/runtime follows the
+   tapped tempo.
+9. Switch click sound styles and confirm the generated click character changes.
+10. Open a repeat sample and confirm repeat navigation does not crash or desync
+   the transport.
 
 ## Tie Continuation Highlight QA
 

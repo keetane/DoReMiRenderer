@@ -45,6 +45,198 @@ struct PalettePlaybackRuntimeTests {
         #expect(runtime.eventDurationSeconds(for: event) < defaultDuration)
     }
 
+    @Test @MainActor func metronomeDefaultsOffAndCanBeEnabled() throws {
+        let runtime = PalettePlaybackRuntime(events: try Self.events(from: PaletteScoreLoaderTests.validMusicXML))
+
+        #expect(runtime.metronomeEnabled == false)
+
+        runtime.setMetronomeEnabled(true)
+
+        #expect(runtime.metronomeEnabled == true)
+    }
+
+    @Test @MainActor func metronomePlaysStrongAndWeakClicksWhenEnabled() throws {
+        let audio = MockPaletteAudioEngine()
+        let runtime = PalettePlaybackRuntime(
+            events: try Self.events(from: Self.longMetronomeMusicXML),
+            tempoBPM: 240,
+            metronomeEnabled: true,
+            audioEngine: audio
+        )
+
+        runtime.triggerMetronomeClickForTesting(isStrongBeat: true)
+        runtime.triggerMetronomeClickForTesting(isStrongBeat: false)
+
+        #expect(audio.playedPitches.contains([96]))
+        #expect(audio.playedPitches.contains([84]))
+        #expect(audio.playedVelocities.contains(0.72))
+        #expect(audio.playedVelocities.contains(0.46))
+    }
+
+    @Test @MainActor func metronomeDoesNotClickWhenDisabled() async throws {
+        let audio = MockPaletteAudioEngine()
+        let runtime = PalettePlaybackRuntime(
+            events: try Self.events(from: PaletteScoreLoaderTests.validMusicXML),
+            tempoBPM: 240,
+            metronomeEnabled: false,
+            audioEngine: audio
+        )
+
+        runtime.play()
+        try await Task.sleep(nanoseconds: 80_000_000)
+        runtime.stop()
+
+        #expect(!audio.playedPitches.contains([96]))
+        #expect(!audio.playedPitches.contains([84]))
+    }
+
+    @Test @MainActor func enablingMetronomeDuringPlaybackStartsOnNextBeatAndDisablingStops() async throws {
+        let audio = MockPaletteAudioEngine()
+        let runtime = PalettePlaybackRuntime(
+            events: try Self.events(from: Self.longMetronomeMusicXML),
+            tempoBPM: 240,
+            audioEngine: audio
+        )
+
+        runtime.play()
+        try await Task.sleep(nanoseconds: 80_000_000)
+        runtime.setMetronomeEnabled(true)
+        let clickCountImmediatelyAfterEnable = audio.metronomeClickCount
+        try await Task.sleep(nanoseconds: 80_000_000)
+        let clickCountBeforeNextBeat = audio.metronomeClickCount
+        try await Task.sleep(nanoseconds: 200_000_000)
+        runtime.setMetronomeEnabled(false)
+        let clickCountAfterDisable = audio.metronomeClickCount
+        try await Task.sleep(nanoseconds: 300_000_000)
+        runtime.stop()
+
+        #expect(clickCountImmediatelyAfterEnable == 0)
+        #expect(clickCountBeforeNextBeat == 0)
+        #expect(clickCountAfterDisable >= 1)
+        #expect(audio.metronomeClickCount == clickCountAfterDisable)
+        #expect(audio.playedPitches.contains([84]))
+        #expect(!audio.playedPitches.contains([96]))
+    }
+
+    @Test @MainActor func metronomeUsesParsedThreeFourTimeSignatureForStrongBeatCycle() throws {
+        let loaded = try PaletteScoreLoader().load(
+            data: Self.threeFourMetronomeMusicXML,
+            sourceName: "three-four.musicxml"
+        )
+        let runtime = PalettePlaybackRuntime()
+        runtime.configure(events: loaded.playbackEvents, metadata: loaded.playbackMetadata)
+        runtime.setTempoBPM(240)
+
+        #expect(loaded.playbackMetadata.timeSignatureEvents.contains {
+            $0.timeSignature == TimeSignature(beats: 3, beatType: 4)
+        })
+        #expect(runtime.metronomeBeatIsStrongForTesting(beatIndex: 0, eventIndex: 0))
+        #expect(!runtime.metronomeBeatIsStrongForTesting(beatIndex: 1, eventIndex: 0))
+        #expect(!runtime.metronomeBeatIsStrongForTesting(beatIndex: 2, eventIndex: 0))
+        #expect(runtime.metronomeBeatIsStrongForTesting(beatIndex: 3, eventIndex: 0))
+        #expect(abs(runtime.metronomeIntervalSecondsForTesting(eventIndex: 0) - 0.25) < 0.001)
+    }
+
+    @Test @MainActor func metronomeUsesLargeBeatPatternForSixEightByDefault() throws {
+        let loaded = try PaletteScoreLoader().load(
+            data: Self.sixEightMetronomeMusicXML,
+            sourceName: "six-eight.musicxml"
+        )
+        let runtime = PalettePlaybackRuntime()
+        runtime.configure(events: loaded.playbackEvents, metadata: loaded.playbackMetadata)
+        runtime.setTempoBPM(240)
+
+        #expect(loaded.playbackMetadata.timeSignatureEvents.contains {
+            $0.timeSignature == TimeSignature(beats: 6, beatType: 8)
+        })
+        #expect(runtime.metronomeBeatsPerMeasureForTesting(eventIndex: 0) == 2)
+        #expect(runtime.metronomeAccentForTesting(beatIndex: 0, eventIndex: 0) == .strong)
+        #expect(runtime.metronomeAccentForTesting(beatIndex: 1, eventIndex: 0) == .weak)
+        #expect(runtime.metronomeAccentForTesting(beatIndex: 2, eventIndex: 0) == .strong)
+        #expect(abs(runtime.metronomeIntervalSecondsForTesting(eventIndex: 0) - 0.375) < 0.001)
+    }
+
+    @Test @MainActor func metronomeSubdivisionPatternForSixEightUsesSixClicksWithMediumSecondLargeBeat() throws {
+        let loaded = try PaletteScoreLoader().load(
+            data: Self.sixEightMetronomeMusicXML,
+            sourceName: "six-eight.musicxml"
+        )
+        let runtime = PalettePlaybackRuntime()
+        runtime.configure(events: loaded.playbackEvents, metadata: loaded.playbackMetadata)
+        runtime.setTempoBPM(240)
+        runtime.setMetronomeCompoundMode(.subdivision)
+
+        #expect(runtime.metronomeBeatsPerMeasureForTesting(eventIndex: 0) == 6)
+        #expect(runtime.metronomeAccentForTesting(beatIndex: 0, eventIndex: 0) == .strong)
+        #expect(runtime.metronomeAccentForTesting(beatIndex: 1, eventIndex: 0) == .weak)
+        #expect(runtime.metronomeAccentForTesting(beatIndex: 3, eventIndex: 0) == .medium)
+        #expect(abs(runtime.metronomeIntervalSecondsForTesting(eventIndex: 0) - 0.125) < 0.001)
+    }
+
+    @Test @MainActor func metronomeLargeBeatPatternsCoverNineEightAndTwelveEight() throws {
+        let nineEight = try PaletteScoreLoader().load(
+            data: Self.compoundMetronomeMusicXML(beats: 9),
+            sourceName: "nine-eight.musicxml"
+        )
+        let twelveEight = try PaletteScoreLoader().load(
+            data: Self.compoundMetronomeMusicXML(beats: 12),
+            sourceName: "twelve-eight.musicxml"
+        )
+        let runtime = PalettePlaybackRuntime()
+
+        runtime.configure(events: nineEight.playbackEvents, metadata: nineEight.playbackMetadata)
+        #expect(runtime.metronomeBeatsPerMeasureForTesting(eventIndex: 0) == 3)
+        #expect(runtime.metronomeAccentForTesting(beatIndex: 0, eventIndex: 0) == .strong)
+        #expect(runtime.metronomeAccentForTesting(beatIndex: 1, eventIndex: 0) == .weak)
+        #expect(runtime.metronomeAccentForTesting(beatIndex: 2, eventIndex: 0) == .weak)
+
+        runtime.configure(events: twelveEight.playbackEvents, metadata: twelveEight.playbackMetadata)
+        #expect(runtime.metronomeBeatsPerMeasureForTesting(eventIndex: 0) == 4)
+        #expect(runtime.metronomeAccentForTesting(beatIndex: 0, eventIndex: 0) == .strong)
+        #expect(runtime.metronomeAccentForTesting(beatIndex: 2, eventIndex: 0) == .medium)
+    }
+
+    @Test @MainActor func unknownMeterFallsBackToSimpleBeatPattern() throws {
+        let loaded = try PaletteScoreLoader().load(
+            data: Self.compoundMetronomeMusicXML(beats: 7),
+            sourceName: "seven-eight.musicxml"
+        )
+        let runtime = PalettePlaybackRuntime()
+        runtime.configure(events: loaded.playbackEvents, metadata: loaded.playbackMetadata)
+
+        #expect(runtime.metronomeBeatsPerMeasureForTesting(eventIndex: 0) == 7)
+        #expect(runtime.metronomeAccentForTesting(beatIndex: 0, eventIndex: 0) == .strong)
+        #expect(runtime.metronomeAccentForTesting(beatIndex: 1, eventIndex: 0) == .weak)
+    }
+
+    @Test @MainActor func tapTempoAveragesRecentTapsClampsAndResetsAfterLongGap() throws {
+        let runtime = PalettePlaybackRuntime()
+        let start = Date(timeIntervalSinceReferenceDate: 1_000)
+
+        #expect(runtime.registerTapTempo(at: start) == nil)
+        #expect(runtime.registerTapTempo(at: start.addingTimeInterval(0.5)) == 120)
+        #expect(abs((runtime.registerTapTempo(at: start.addingTimeInterval(1.1)) ?? 0) - 109.09) < 0.01)
+        #expect(runtime.registerTapTempo(at: start.addingTimeInterval(4.0)) == nil)
+        #expect(runtime.registerTapTempo(at: start.addingTimeInterval(4.1)) == 240)
+    }
+
+    @Test @MainActor func clickSoundStyleChangesGeneratedClickParameters() throws {
+        let audio = MockPaletteAudioEngine()
+        let runtime = PalettePlaybackRuntime(audioEngine: audio)
+
+        runtime.triggerMetronomeClickForTesting(isStrongBeat: true)
+        runtime.setMetronomeClickSoundStyle(.soft)
+        runtime.triggerMetronomeClickForTesting(isStrongBeat: true)
+        runtime.setMetronomeClickSoundStyle(.wood)
+        runtime.triggerMetronomeClickForTesting(isStrongBeat: true)
+        runtime.setMetronomeClickSoundStyle(.electronic)
+        runtime.triggerMetronomeClickForTesting(isStrongBeat: true)
+
+        #expect(audio.playedPitches == [[96], [88], [76], [108]])
+        #expect(audio.playedVelocities[1] < audio.playedVelocities[0])
+        #expect(audio.playedDurations.allSatisfy { $0 > 0 && $0 < 0.05 })
+    }
+
     @Test @MainActor func noteGateRatioDefaultsClampsAndShortensSoundOnly() throws {
         let event = try #require(Self.events(from: PaletteScoreLoaderTests.validMusicXML).first)
         let runtime = PalettePlaybackRuntime(events: [event], tempoBPM: 120)
@@ -151,6 +343,27 @@ struct PalettePlaybackRuntimeTests {
 
         #expect(schedulingInterval.isFinite)
         #expect(schedulingInterval > 0)
+    }
+
+    @Test @MainActor func canonOpeningUsesFileTempoAndStableEighthScheduling() throws {
+        let loaded = try PaletteScoreLoader().load(
+            data: Self.appSampleData("Canon_in_D.mxl"),
+            sourceName: "Canon_in_D.mxl"
+        )
+        let runtime = PalettePlaybackRuntime()
+        runtime.configure(events: loaded.playbackEvents, metadata: loaded.playbackMetadata)
+        let firstMeasureEvents = loaded.playbackEvents.enumerated().filter {
+            $0.element.measureID.rawValue == "0.1"
+        }
+
+        #expect(runtime.tempoBPM == 100)
+        #expect(firstMeasureEvents.count >= 8)
+
+        let intervals = firstMeasureEvents.prefix(8).map {
+            runtime.schedulingIntervalSeconds(from: $0.offset)
+        }
+
+        #expect(intervals.allSatisfy { abs($0 - 0.3) < 0.001 })
     }
 
     @Test @MainActor func s6StandaloneQuintupletAndSeptupletUseTupletPlaybackIntervals() throws {
@@ -583,6 +796,19 @@ struct PalettePlaybackRuntimeTests {
         return loaded.playbackEvents
     }
 
+    private static func appSampleData(_ fileName: String) throws -> Data {
+        let testFile = URL(fileURLWithPath: #filePath)
+        let projectRoot = testFile
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let sampleURL = projectRoot
+            .appendingPathComponent("DoReMiPalette")
+            .appendingPathComponent("Resources")
+            .appendingPathComponent("Samples")
+            .appendingPathComponent(fileName)
+        return try Data(contentsOf: sampleURL)
+    }
+
     @MainActor
     private func scheduledIntervals(
         forMeasure measureID: String,
@@ -599,6 +825,92 @@ struct PalettePlaybackRuntimeTests {
 
     private static var rhythmValuesSampleMusicXML: Data {
         repeatedC4MusicXML
+    }
+
+    private static let longMetronomeMusicXML = Data("""
+    <?xml version="1.0" encoding="UTF-8"?>
+    <score-partwise version="4.0">
+      <part-list><score-part id="P1"><part-name>Metronome</part-name></score-part></part-list>
+      <part id="P1">
+        <measure number="1">
+          <attributes>
+            <divisions>1</divisions>
+            <time><beats>4</beats><beat-type>4</beat-type></time>
+            <clef><sign>G</sign><line>2</line></clef>
+          </attributes>
+          <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>whole</type></note>
+        </measure>
+      </part>
+    </score-partwise>
+    """.utf8)
+
+    private static let threeFourMetronomeMusicXML = Data("""
+    <?xml version="1.0" encoding="UTF-8"?>
+    <score-partwise version="4.0">
+      <part-list><score-part id="P1"><part-name>Three Four Metronome</part-name></score-part></part-list>
+      <part id="P1">
+        <measure number="1">
+          <attributes>
+            <divisions>1</divisions>
+            <time><beats>3</beats><beat-type>4</beat-type></time>
+            <clef><sign>G</sign><line>2</line></clef>
+          </attributes>
+          <note><pitch><step>C</step><octave>4</octave></pitch><duration>3</duration><voice>1</voice><type>half</type><dot/></note>
+        </measure>
+        <measure number="2">
+          <attributes>
+            <time><beats>3</beats><beat-type>4</beat-type></time>
+          </attributes>
+          <note><pitch><step>D</step><octave>4</octave></pitch><duration>3</duration><voice>1</voice><type>half</type><dot/></note>
+        </measure>
+      </part>
+    </score-partwise>
+    """.utf8)
+
+    private static let sixEightMetronomeMusicXML = Data("""
+    <?xml version="1.0" encoding="UTF-8"?>
+    <score-partwise version="4.0">
+      <part-list><score-part id="P1"><part-name>Six Eight Metronome</part-name></score-part></part-list>
+      <part id="P1">
+        <measure number="1">
+          <attributes>
+            <divisions>2</divisions>
+            <time><beats>6</beats><beat-type>8</beat-type></time>
+            <clef><sign>G</sign><line>2</line></clef>
+          </attributes>
+          <note>
+            <pitch><step>C</step><octave>4</octave></pitch>
+            <duration>6</duration>
+            <voice>1</voice>
+            <type>half</type>
+          </note>
+        </measure>
+      </part>
+    </score-partwise>
+    """.utf8)
+
+    private static func compoundMetronomeMusicXML(beats: Int) -> Data {
+        Data("""
+        <?xml version="1.0" encoding="UTF-8"?>
+        <score-partwise version="4.0">
+          <part-list><score-part id="P1"><part-name>\(beats) Eight Metronome</part-name></score-part></part-list>
+          <part id="P1">
+            <measure number="1">
+              <attributes>
+                <divisions>2</divisions>
+                <time><beats>\(beats)</beats><beat-type>8</beat-type></time>
+                <clef><sign>G</sign><line>2</line></clef>
+              </attributes>
+              <note>
+                <pitch><step>C</step><octave>4</octave></pitch>
+                <duration>\(beats)</duration>
+                <voice>1</voice>
+                <type>whole</type>
+              </note>
+            </measure>
+          </part>
+        </score-partwise>
+        """.utf8)
     }
 
     private static var phase12SampleMusicXML: Data {
@@ -791,11 +1103,16 @@ private final class MockPaletteAudioEngine: PaletteAudioEngine {
     private let startError: Error?
     private(set) var playedPitches: [[Int]] = []
     private(set) var playedDurations: [TimeInterval] = []
+    private(set) var playedVelocities: [Double] = []
     private(set) var silenceCount = 0
     private(set) var lastFailure: Error?
 
     init(startError: Error? = nil) {
         self.startError = startError
+    }
+
+    var metronomeClickCount: Int {
+        playedPitches.filter { $0 == [96] || $0 == [84] }.count
     }
 
     func start() throws {
@@ -817,6 +1134,7 @@ private final class MockPaletteAudioEngine: PaletteAudioEngine {
     func play(midiPitches: [Int], duration: TimeInterval, velocity: Double) {
         playedPitches.append(midiPitches)
         playedDurations.append(duration)
+        playedVelocities.append(velocity)
     }
 
     func play(event: PlaybackEvent, tempoBPM: Double, velocity: Double) {

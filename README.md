@@ -29,6 +29,10 @@ The Phase 13+ app-execution roadmap is tracked in [ROADMAP.md](ROADMAP.md), and 
 - Generate playback step events without audio output.
 - DoReMi Palette consumes playback events for generated-tone audio, Practice
   Mode, repeat/jump playback, keyboard highlight, and piano transpose.
+- DoReMi Palette includes an app-side Metronome MVP that follows the current
+  playback BPM, emits generated strong/medium/weak clicks, supports simple
+  compound-meter large-beat/subdivision modes, Tap Tempo, and generated click
+  sound styles, and starts/stops with the transport controls.
 - Run iOS Simulator snapshot tests for basic rendering regression coverage.
 - Read basic lyrics, fingering, key signatures, tempo metadata, and repeat
   metadata with explicit diagnostics for unsupported advanced notation.

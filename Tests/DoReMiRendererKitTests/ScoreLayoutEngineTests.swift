@@ -118,6 +118,20 @@ import Testing
     #expect(abs(dotElement.frame.midY - restElement.frame.midY) < restElement.frame.height * 0.1)
 }
 
+@Test func dottedNoteDotStaysCloseToNotehead() throws {
+    let score = makeScore(notes: [
+        makeNote(id: "dotted-note", pitch: Pitch(step: .f, octave: 4), onsetTicks: 0, durationTicks: 3, noteValueKind: .eighth, dotCount: 1),
+    ])
+
+    let layout = try ScoreLayoutEngine().layout(score: score)
+    let note = try #require(layout.noteLayout(for: NoteID(rawValue: "dotted-note")))
+    let dotElement = try #require(layout.elementLayout(for: ScoreElementID(rawValue: "dotted-note.dot.0")))
+
+    #expect(dotElement.frame.minX > note.noteheadFrame.maxX)
+    #expect(dotElement.frame.minX - note.noteheadFrame.maxX < note.noteheadFrame.width * 0.25)
+    #expect(abs(dotElement.frame.midY - note.noteheadFrame.midY) < note.noteheadFrame.height * 0.1)
+}
+
 @Test func noteValueKindsCreateExpectedLayoutElements() throws {
     let score = makeScore(notes: [
         makeNote(id: "whole", pitch: Pitch(step: .c, octave: 4), onsetTicks: 0, durationTicks: 16, noteValueKind: .whole),
@@ -233,6 +247,21 @@ import Testing
     #expect(layout.elementLayout(for: ScoreElementID(rawValue: "sixteenth-a.flag")) == nil)
     #expect(layout.elementLayout(for: ScoreElementID(rawValue: "sixteenth-b.flag")) == nil)
     #expect(layout.elementLayout(for: ScoreElementID(rawValue: "eighth-a.flag")) == nil)
+}
+
+@Test func singleSixteenthAtEndOfMixedBeamUsesBackwardSecondaryHook() throws {
+    let score = makeScore(notes: [
+        makeNote(id: "eighth-a", pitch: Pitch(step: .g, octave: 4), onsetTicks: 0, durationTicks: 2, noteValueKind: .eighth),
+        makeNote(id: "sixteenth-a", pitch: Pitch(step: .g, octave: 4), onsetTicks: 2, durationTicks: 1, noteValueKind: .sixteenth),
+    ])
+
+    let layout = try ScoreLayoutEngine().layout(score: score)
+    let beam = try #require(layout.elements.first { $0.kind == .beam }?.beam)
+    let secondary = try #require(beam.secondarySegments.first)
+    let sixteenthStem = try #require(layout.elementLayout(for: ScoreElementID(rawValue: "sixteenth-a.stem")))
+
+    #expect(secondary.start.x == sixteenthStem.frame.midX)
+    #expect(secondary.end.x < secondary.start.x)
 }
 
 @Test func beamGroupsStayWithinBeatBoundaries() throws {

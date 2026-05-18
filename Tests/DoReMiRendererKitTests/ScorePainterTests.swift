@@ -76,6 +76,92 @@ import Testing
     #expect(context.commands.contains { $0.kind == .strokeLine && $0.color == defaultEducationalPalette.e })
 }
 
+@Test func scorePainterKeepsStemInkWhenNoteColorIsOnAndHighlighted() throws {
+    let score = renderingScore()
+    let layout = try ScoreLayoutEngine().layout(score: score)
+    let stemElement = try #require(layout.elements.first { $0.kind == .stem })
+    var context = RecordingDrawingContext()
+
+    ScorePainter(smuflFontName: nil).draw(
+        layout: layout,
+        score: score,
+        style: renderingStyle(),
+        currentNoteIDs: stemElement.noteID.map { [$0] } ?? [],
+        into: &context
+    )
+
+    let stemCommand = try #require(context.commands.first {
+        $0.kind == .strokeLine
+            && $0.lineStart?.x == stemElement.frame.midX
+            && $0.lineEnd?.x == stemElement.frame.midX
+            && abs(($0.lineStart?.y ?? 0) - ($0.lineEnd?.y ?? 0)) > 1
+    })
+    #expect(stemCommand.color == .black)
+}
+
+@Test func scorePainterKeepsFlagInkWhenNoteColorIsOnAndHighlighted() throws {
+    let measureID = MeasureID(partIndex: 0, measureNumber: "1")
+    let staffID = StaffID(rawValue: "1")
+    let noteID = NoteID(rawValue: "eighth")
+    let score = ScoreDocument(parts: [
+        ScorePart(id: "p1", measures: [
+            Measure(
+                id: measureID,
+                number: "1",
+                notes: [
+                    ScoreNote(
+                        id: noteID,
+                        pitch: Pitch(step: .c, octave: 4),
+                        onset: MusicalTime(ticks: 0, ticksPerQuarterNote: 4),
+                        duration: MusicalTime(ticks: 2, ticksPerQuarterNote: 4),
+                        noteValueKind: .eighth,
+                        voiceID: VoiceID(rawValue: "1"),
+                        staffID: staffID
+                    ),
+                ],
+                clef: Clef(kind: .treble)
+            ),
+        ]),
+    ])
+    let layout = try ScoreLayoutEngine().layout(score: score)
+    var context = RecordingDrawingContext()
+
+    ScorePainter(smuflFontName: "Bravura").draw(
+        layout: layout,
+        score: score,
+        style: renderingStyle(),
+        currentNoteIDs: [noteID],
+        into: &context
+    )
+
+    let flagCommand = try #require(context.commands.first {
+        $0.kind == .drawText
+            && $0.text == SMuFLGlyph.flagEighthUp.string
+            && $0.fontName == "Bravura"
+    })
+    #expect(flagCommand.color == .black)
+}
+
+@Test func scorePainterDrawsNoteheadsAfterStems() throws {
+    let score = durationRenderingScore()
+    let layout = try ScoreLayoutEngine().layout(score: score)
+    let stemElement = try #require(layout.elementLayout(for: ScoreElementID(rawValue: "quarter.stem")))
+    var context = RecordingDrawingContext()
+
+    ScorePainter(smuflFontName: nil).draw(layout: layout, score: score, style: renderingStyle(), into: &context)
+
+    let stemIndex = try #require(context.commands.firstIndex {
+        $0.kind == .strokeLine
+            && $0.lineStart?.x == stemElement.frame.midX
+            && $0.lineEnd?.x == stemElement.frame.midX
+            && abs(($0.lineStart?.y ?? 0) - ($0.lineEnd?.y ?? 0)) > 1
+    })
+    let quarterNoteheadIndex = try #require(context.commands.firstIndex {
+        $0.kind == .fillEllipse && $0.color == defaultEducationalPalette.e
+    })
+    #expect(quarterNoteheadIndex > stemIndex)
+}
+
 @Test func scorePainterDrawsContinuationHighlightDistinctFromCurrentHighlight() throws {
     let score = durationRenderingScore()
     let layout = try ScoreLayoutEngine().layout(score: score)

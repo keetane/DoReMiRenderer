@@ -25,6 +25,13 @@ import Testing
         resultAgain.score.parts.flatMap(\.measures).flatMap(\.notes).map(\.id))
 }
 
+@Test func parserReadsScoreTitleMetadata() throws {
+    let result = try parseMusicXML(titledScoreXML)
+
+    #expect(result.score.title == "Movement Title")
+    #expect(!result.diagnostics.contains { $0.code == "unsupported.work-title" || $0.code == "unsupported.movement-title" })
+}
+
 @Test func parserKeepsGrandStaffNoteIDsUniqueForSameVoiceAndOnset() throws {
     let notes = try parseMusicXML(grandStaffXML).score.parts.flatMap(\.measures).flatMap(\.notes)
 
@@ -133,6 +140,23 @@ private let singleMelodyXML = """
       <note>
         <pitch><step>D</step><octave>4</octave></pitch>
         <duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+    </measure>
+  </part>
+</score-partwise>
+"""
+
+private let titledScoreXML = """
+<score-partwise version="4.0">
+  <work><work-title>Work Title</work-title></work>
+  <movement-title>Movement Title</movement-title>
+  <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes><divisions>4</divisions></attributes>
+      <note>
+        <pitch><step>C</step><octave>4</octave></pitch>
+        <duration>4</duration><voice>1</voice><staff>1</staff>
       </note>
     </measure>
   </part>

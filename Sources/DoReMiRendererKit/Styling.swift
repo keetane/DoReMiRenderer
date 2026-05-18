@@ -282,7 +282,11 @@ public struct ScoreColorResolver: Sendable {
             currentNoteIDs: currentNoteIDs
         )
 
-        if let noteID = element.noteID, currentNoteIDs.contains(noteID), element.kind != .accidental {
+        if let noteID = element.noteID,
+           currentNoteIDs.contains(noteID),
+           element.kind != .accidental,
+           element.kind != .stem,
+           element.kind != .flag {
             return ResolvedVisualStyle(
                 fillColor: style.highlightStyle.color,
                 strokeColor: style.highlightStyle.color,
@@ -297,7 +301,9 @@ public struct ScoreColorResolver: Sendable {
             return ResolvedVisualStyle(fillColor: color, strokeColor: color, lineWidth: nil, opacity: color.alpha)
         case .rest:
             return ResolvedVisualStyle(fillColor: style.defaultInkColor, strokeColor: style.defaultInkColor, lineWidth: nil, opacity: style.defaultInkColor.alpha)
-        case .stem, .flag, .dot:
+        case .stem, .flag:
+            return ResolvedVisualStyle(fillColor: style.defaultInkColor, strokeColor: style.defaultInkColor, lineWidth: nil, opacity: style.defaultInkColor.alpha)
+        case .dot:
             let color = resolvedNoteColor(for: element, score: score, layout: layout, style: style, context: context)
             return ResolvedVisualStyle(fillColor: color, strokeColor: color, lineWidth: nil, opacity: color.alpha)
         case .staffLine:
