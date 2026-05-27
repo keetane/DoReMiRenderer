@@ -30,7 +30,14 @@ struct PaletteStyleFactory {
                         scaleTonicPitchClass: scaleTonicPitchClass
                     ))
                 : .monochrome(.black),
-            ledgerLineStyle: noteColorVisible ? .matchNotePitch : .defaultInk,
+            ledgerLineStyle: staffColorVisible
+                ? .rule(PalettePitchClassLedgerLineColorRule(
+                    palette: palette,
+                    enabledState: pitchClassColorState,
+                    disabledColor: .black,
+                    scaleTonicPitchClass: scaleTonicPitchClass
+                ))
+                : .defaultInk,
             accidentalStyle: noteColorVisible ? .matchNotePitch : .defaultInk,
             highlightStyle: HighlightStyle(color: ScoreColor(red: 0.1, green: 0.45, blue: 1.0, alpha: 0.28)),
             measureNumberDisplayMode: measureNumbersVisible ? .evenMeasures : .hidden
@@ -421,6 +428,39 @@ struct PalettePitchClassStaffLineColorRule: StaffLineColorRule {
 
     func color(for staffLine: StaffLineLayout, context: ColorContext) -> ScoreColor {
         let pitchClassHint = staffLine.pitchClassHint ?? staffLinePitchClass(clefKind: staffLine.clefKind, lineIndex: staffLine.lineIndex)
+        let chromaticPitchClass = PalettePitchClassColorState.pitchClass(for: pitchClassHint)
+        let palettePitchClass: PitchClass
+        if let scaleTonicPitchClass,
+           let scalePitchClass = KeyboardScaleColor.majorScalePitchClass(
+            midi: chromaticPitchClass,
+            tonicPitchClass: scaleTonicPitchClass
+           ) {
+            palettePitchClass = scalePitchClass
+        } else {
+            palettePitchClass = pitchClassHint
+        }
+        let enabledPitchClass = KeyboardScaleColor.enabledPitchClass(
+            midi: chromaticPitchClass,
+            scaleTonicPitchClass: scaleTonicPitchClass
+        ) ?? chromaticPitchClass
+        guard enabledState.isEnabled(pitchClass: enabledPitchClass) else {
+            return disabledColor
+        }
+        return palette.color(for: palettePitchClass)
+    }
+}
+
+struct PalettePitchClassLedgerLineColorRule: LedgerLineColorRule {
+    let palette: ScaleColorPalette
+    let enabledState: PalettePitchClassColorState
+    let disabledColor: ScoreColor
+    let scaleTonicPitchClass: Int?
+
+    func color(for ledgerLine: LedgerLineLayout, note: ScoreNote?, context: ColorContext) -> ScoreColor {
+        let pitchClassHint = ledgerLine.pitchClassHint
+            ?? context.clef.map { staffPitchClass(clefKind: $0.kind, lineStepFromMiddle: ledgerLine.lineStepFromMiddle) }
+            ?? note?.pitch?.pitchClass
+            ?? .c
         let chromaticPitchClass = PalettePitchClassColorState.pitchClass(for: pitchClassHint)
         let palettePitchClass: PitchClass
         if let scaleTonicPitchClass,

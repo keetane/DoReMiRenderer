@@ -30,6 +30,38 @@ colors are enabled, note accidental glyphs must match the associated displayed
 note color; key-signature accidentals use pitch-class color. With note colors
 disabled, accidentals should render in the default ink color.
 
+Measure-width QA should verify that the SDK, not the app, decides measure
+frames. `ScoreLayoutEngine` applies readable minimum widths for normal measures
+and a 75% normal-width minimum for first-measure pickup candidates and trailing
+incomplete final measures. Weak-start measures should not collapse to their
+single onset, and clef/key/time/repeat prefixes must still be included in the
+width budget. Non-final wrapped systems distribute leftover width across their
+measures; final systems are intentionally not fully justified. The current MVP
+keeps compact short-note and beam-group spacing inside each measure rather than
+stretching those groups across the full justified bar. Compact short-note
+groups use a Fur Elise-style readable minimum visual gap and stay anchored near
+their rhythmic onset instead of becoming either left-flush or artificially
+centered in the normalized measure.
+
+## Playback Timing QA
+
+Playback timing is measured in the app runtime, not in the renderer. For Debug
+Simulator checks, launch DoReMi Palette with:
+
+```sh
+DOREMI_AUTOPLAY_PLAYBACK=1
+DOREMI_AUTOPLAY_SAMPLE_RESOURCE=Canon_in_D
+DOREMI_PLAYBACK_TIMING_LOG=1
+DOREMI_PLAYBACK_TIMING_LOG_PATH=/tmp/DoReMiPaletteQA/playback-timing/01_canon_timing.txt
+```
+
+`PalettePlaybackRuntime` uses a monotonic absolute schedule so late UI frames do
+not accumulate into tempo drift. The generated-tone engine is prewarmed before
+the first scheduled onset; do not move buffer generation back into the per-note
+audio trigger path. Timing logs should be interpreted together with CPU samples
+and real-device listening, since Simulator audio timing is not identical to
+hardware.
+
 ## MusicXML Compatibility Diagnostics
 
 Private and third-party MusicXML samples belong in `LocalSamples/`, which is
@@ -103,10 +135,68 @@ Manual simulator checks for Phase 12:
 - note color and staff color toggles work
 - `Previous` / `Next` move the current-note highlight
 - tapping a note updates the current note
-- zoom `1.0x`, `1.5x`, and `2.0x` render correctly
+- pinch zoom changes the score scale continuously without breaking tap
+  selection or current-note follow
+- Settings can reset the score zoom to `1.0x`
+- reloading the bundled sample, opening a Library item, or importing a file
+  resets the visible score zoom to `1.0x`; the main transport row should not
+  expose the layout switcher or zoom percentage
 - keyboard highlight follows the current note
 - diagnostics sheet opens and shows warnings/errors in Japanese
 - file import accepts `.musicxml`, `.xml`, and `.mxl`
+
+Measure navigation manual QA:
+
+- Confirm the transport row shows `current / total` measures between Previous
+  and Next.
+- Enter a valid measure number in the inline field and confirm the
+  current note, keyboard highlight, and scroll follow move to that measure.
+- Enter `0`, a value above the total, and non-numeric input to confirm
+  validation prevents movement.
+- While playback is running, jump to another measure and confirm playback
+  pauses and generated audio/metronome clicks stop.
+- In Practice Mode, jump to a measure and confirm the practice step follows the
+  same expanded playback event index.
+- In repeat / D.C. / D.S. samples, confirm the displayed measure number is the
+  score measure number, not the expanded playback step count.
+
+Playback performance QA:
+
+- Heavy-score playback should keep audio scheduling independent from SwiftUI
+  redraw pressure. The runtime path uses a stable static score render key,
+  visible-rect culling, cached CoreText/SMuFL text lines, lightweight highlight
+  overlays, throttled current-note text updates, and cached generated audio
+  buffers.
+- Static-canvas rendering uses the UIKit/CoreGraphics coordinate system, so
+  CoreText/SMuFL glyph drawing must compensate for the flipped y-axis inside the
+  glyph helper rather than changing `ScoreLayout` coordinates.
+- Current-note follow in large scores should not measure every note during
+  playback. It should prefer raw current playback note IDs, stable measure-level
+  anchors, viewport margin checks, and throttled playback follow; Previous /
+  Next, Practice navigation, and Measure Jump remain immediate follow paths.
+- When validating a performance change, open at least two heavier samples from
+  Library, start Play, and confirm the cursor advances without visible full-score
+  redraw storms or severe tempo drift. The 2026-05-26 final pass recorded Canon
+  in D, Mozart Piano Sonata No. 16, and Fur Elise measurements under
+  `/tmp/DoReMiPaletteQA/performance-final/`.
+- Runtime uses a UIKit static-canvas path for performance. XCTest/snapshot runs
+  intentionally fall back to SwiftUI Canvas so flattened snapshots remain
+  renderable.
+- The 2026-05-27 critical regression pass stores orientation, follow,
+  metronome, performance, and timing evidence under
+  `/tmp/DoReMiPaletteQA/critical-regression/`.
+
+First-use guide manual QA:
+
+- Clear `doremi.palette.onboardingCompleted` or install fresh, then confirm the
+  coach mark appears after the bundled sample loads.
+- Step through Settings, display settings, current-note/keyboard, measure jump,
+  Previous/Next, Play/Stop, and key/transpose guide cards.
+- Confirm the Settings step opens the settings sheet and the following step
+  returns to the main score view.
+- Confirm Back / Next / Skip / Done work and that completion prevents automatic
+  replay on relaunch.
+- Open Settings and use `使い方ガイドを再表示` to replay the guide.
 
 Phase 13 expands this checklist to include real import verification, iPhone
 minimum layout checks, and small UI polish adjustments. Keep the roadmap in
@@ -328,12 +418,13 @@ The scroll follower tests verify:
 - missing `NoteID` returns no target
 - offscreen notes return a target
 - target offsets clamp to zero and content bounds
-- scale `1.0x` and `2.0x` produce expected centered offsets
+- scale `1.0x`, `2.0x`, and continuous pinch-derived values produce expected
+  centered offsets
 - already visible notes inside the viewport margin do not request scrolling
 - playback-step and tap-derived note IDs can be converted into scroll targets
 
-Manual iPad Simulator checks should confirm that `Previous` / `Next` and note
-taps keep the highlighted note visible at `1.0x`, `1.5x`, and `2.0x`.
+Manual iPad Simulator checks should confirm that pinch zooming in/out,
+`Previous` / `Next`, and note taps keep the highlighted note visible.
 
 `ScoreCanvasView` uses transparent note anchors placed at `ScoreLayout`
 notehead centers. The current-note follow path uses measured note bounds in the
@@ -436,6 +527,10 @@ Automated checks live in `PalettePlaybackRuntimeTests`:
   preserves the expected strong/weak beat phase;
 - parsed MusicXML time signatures drive the metronome beat cycle, including a
   3/4 regression that clicks strong-weak-weak before the next strong beat;
+- metronome click-plan tests verify every 3/4 and 4/4 measure occurrence starts
+  with beat 0 as a strong click, pickup measures do not drift the following
+  measure, and starting the metronome mid-measure keeps the score measure's
+  beat index instead of resetting the cycle;
 - compound-meter tests cover `6/8` large-beat mode, `6/8` subdivision mode,
   and `9/8` / `12/8` large-beat accent patterns;
 - tap tempo tests cover recent-tap averaging, long-gap reset, and BPM clamping;
@@ -455,6 +550,8 @@ actual audio mix:
 5. Start playback with Metronome OFF, turn it ON mid-measure, and confirm it
    joins on the next beat rather than immediately clicking out of phase.
 6. Open a 3/4 sample and confirm the strong click repeats every three beats.
+   The strong click should be fixed to each score measure head; it must not
+   rotate through the measure over time.
 7. Open a 6/8 sample. In `大拍`, confirm two large clicks per measure; in
    `細分`, confirm six subdivision clicks with a secondary accent.
 8. Use Tap Tempo several times and confirm the BPM picker/runtime follows the
@@ -574,7 +671,9 @@ the current Core Graphics hotfix behavior: single-voice notes below the middle
 staff line use upward stems, and notes on or above the middle staff line use
 downward stems. Chord tones in the same part/measure/staff/voice/onset share
 one MVP direction based on average staff position. Full one-stem chord engraving
-and multi-voice collision handling remain future work.
+and publishing-quality multi-voice collision handling remain future work, but
+measure duration and onset spacing should account for the longest active voice
+instead of a single voice only.
 
 Renderer snapshot coverage includes `rhythm-values.png`. When note-value drawing
 changes intentionally, update the snapshot baseline with the normal snapshot
@@ -601,9 +700,10 @@ Library / sample scores and confirm:
 
 ## S6 Notation Refinement QA
 
-The app includes `s6_notation_refinement_grand_staff.musicxml` as the focused
-Phase S6 bundled sample. Open `S6 Notation Refinement Sample` from Library and
-confirm:
+The historical `s6_notation_refinement_grand_staff.musicxml` fixture is no
+longer part of the TestFlight-facing Library. Keep this coverage in SDK/app
+tests or development fixtures; if the fixture is restored for local QA, open
+`S6 Notation Refinement Sample` only from a development build and confirm:
 
 1. Consecutive eighth notes render as simple beams where safe.
 2. A rest breaks a beam group.
@@ -634,8 +734,10 @@ parser, layout, renderer, or app-visible behavior changes.
 
 ## S7 Repeat Playback QA
 
-The app includes `s7_repeat_playback_sample.musicxml` for Phase S7 regression.
-Open `S7 Repeat Playback Sample` from Library and confirm:
+The historical `s7_repeat_playback_sample.musicxml` fixture is no longer part
+of the TestFlight-facing Library. Keep this coverage in SDK/app tests or
+development fixtures; if the fixture is restored for local QA, open
+`S7 Repeat Playback Sample` only from a development build and confirm:
 
 1. Repeat start and repeat end barlines are visible.
 2. Playback order is Measure 1, Measure 2, Measure 3, Measure 2, Measure 3,
@@ -644,7 +746,8 @@ Open `S7 Repeat Playback Sample` from Library and confirm:
    repeated measures on the second pass.
 4. Practice Mode Next / Previous steps through the expanded playback sequence.
 5. Unsupported repeat structures produce diagnostics instead of silent failure.
-6. The S6 notation refinement sample remains available and unchanged in Library.
+6. The S6 notation refinement fixture remains available to development tests
+   when that local QA fixture set is restored.
 
 Use the following screenshot paths for manual iPad QA:
 
@@ -656,8 +759,10 @@ Use the following screenshot paths for manual iPad QA:
 
 ## S8 Repeat Endings QA
 
-The app includes `s8_repeat_endings_sample.musicxml` as the Phase S8 bundled
-sample. Open `S8 Repeat Endings Sample` from Library and confirm:
+The historical `s8_repeat_endings_sample.musicxml` fixture is no longer part of
+the TestFlight-facing Library. Keep this coverage in SDK/app tests or
+development fixtures; if the fixture is restored for local QA, open
+`S8 Repeat Endings Sample` only from a development build and confirm:
 
 1. Playback order is Measure 1, Measure 2, Measure 3, Measure 4, Measure 2,
    Measure 3, Measure 5, Measure 6.
@@ -697,12 +802,14 @@ Suggested screenshots:
 
 Phase 17B is a release-readiness gate, not a feature phase. After the bundled
 sample replacement, the app launch default is
-`Canon in D`, and the sample Library contains the five user-provided MXL files
-copied from `sample/`. `12 Variations of Twinkle Twinkle Little Star` is kept
-out of the bundled sample catalog because its dense repeat-expanded playback is
-too long for the default learning sample set. Release configuration,
-privacy, license, and archive status must be recorded before any TestFlight
-upload.
+`Ode to Joy Easy Variation`, and the TestFlight-facing sample Library contains
+only `Ode to Joy Easy Variation` and `Fur Elise - Beginner Piano`.
+`Happy Birthday To You Piano` is kept out of the app bundle after the
+pre-TestFlight rights review because its MusicXML metadata names an arranger and
+has no embedded rights grant. `12 Variations of Twinkle Twinkle Little Star`,
+`Canon in D`, and `The Entertainer` are also kept out of the bundled sample
+catalog. Release configuration, privacy, license, and archive status must be
+recorded before any TestFlight upload.
 
 Run:
 
@@ -919,6 +1026,10 @@ Focused samples:
   D.C. al Coda, D.S., D.S. al Fine, Coda, and D.S. al Coda in one score. This
   sample intentionally mixes repeats and jumps, so diagnostics are expected.
 
+These S10-focused samples are development fixtures, not current TestFlight
+Library entries. The TestFlight-facing Library remains the two-song learning
+set.
+
 When adding repeat/jump support, keep explicit expansion limits in place and
 prefer a warning diagnostic over any ambiguous or potentially looping playback
 order.
@@ -958,9 +1069,10 @@ Checklist:
    key and persists through app relaunch.
 3. Confirm `NoteID`-based score highlight, keyboard highlight, Practice Mode,
    Previous / Next, and repeat-expanded samples still work.
-4. Open `T2 MusicXML Transpose Sample` and confirm diagnostics report
-   MusicXML `<transpose>` metadata instead of silently applying automatic
-   concert-pitch conversion.
+4. Use the T2 development fixture or app/SDK tests to confirm diagnostics
+   report MusicXML `<transpose>` metadata instead of silently applying
+   automatic concert-pitch conversion. The historical T2 sample is not a
+   current TestFlight Library entry.
 5. Treat enharmonic spelling, complex key changes, and transposing-instrument
    concert-pitch handling as MVP limitations unless a focused test proves the
    case.

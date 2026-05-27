@@ -67,6 +67,15 @@ those positions. Accidental glyph colors are resolved through
 pitch color when note colors are enabled, and fall back to ink when note colors
 are disabled.
 
+Measure width is also SDK-owned. DoReMi Palette consumes `ScoreLayout.measure`
+frames as-is; it does not widen pickup measures, normalize short-note spacing,
+or compensate prefix positions in app code. The current layout engine gives
+normal measures a readable minimum width and gives first-measure pickup
+candidates and trailing incomplete final measures a 75% normal-width minimum.
+Non-final wrapped systems receive MVP width justification, while final systems
+remain deliberately under-justified. Beam grouping, hit testing, scroll follow,
+and playback IDs stay stable.
+
 The Palette Editor MVP is also app-owned. DoReMi Palette persists a 12
 pitch-class enabled set in `AppStorage`, keeps palette pattern selection as an
 internal setting, and creates ordinary `ScoreStyle` color rules for the SDK.
@@ -74,6 +83,23 @@ Disabled pitch classes resolve to neutral ink for notes and keyboard coloring.
 The renderer does not receive app UI state, does not parse MusicXML for the
 palette editor, and continues to draw only from `ScoreLayout` and style
 resolution.
+
+Measure navigation is app-owned and read-only with respect to the SDK. DoReMi
+Palette derives total measure count from `ScoreDocument.parts.first?.measures`,
+maps current playback events and selected notes back to their existing
+`MeasureID`, and uses the expanded `PlaybackEvent` list to select jump targets.
+The app does not reparse MusicXML, regenerate `NoteID`, or calculate score
+coordinates. Jumping to a measure updates the runtime index, current note IDs,
+keyboard highlight, and existing `ScoreCanvasView` scroll follow state; active
+playback is paused before the jump so audio and metronome tasks cannot continue
+from the previous position.
+
+The first-use guide is app-owned. DoReMi Palette stores guide completion in
+`AppStorage`, registers SwiftUI view anchors for key controls, and draws a
+coach-mark overlay in the app layer. The SDK, renderer, `ScoreLayout`,
+`PlaybackRuntime`, `NoteID`, and playback events do not know about onboarding.
+If a SwiftUI anchor is unavailable, the guide falls back to a centered card
+instead of asking the SDK for coordinates.
 
 ## SDK Internals The App Must Not Use
 
@@ -138,6 +164,10 @@ Phase 13 part 2 adds app-side regression coverage for keyboard pitch mapping,
 current-note keyboard highlighting, chord/rest/out-of-range keyboard behavior,
 settings persistence keys, diagnostics presentation, tap selection, zoom
 coordinate conversion, and color-setting layout/playback invariance.
+The current app zoom interaction is pinch-first: AppStorage keeps a continuous
+`0.8x...3.0x` scale, ScorePracticeView passes that scale into
+`ScoreCanvasView`, and SDK layout coordinates remain unchanged for hit testing
+and current-note follow.
 
 Manual Simulator QA confirmed iPad keyboard visibility, iPad diagnostics and
 settings sheets, iPhone keyboard ON/OFF visual state, iPhone diagnostics, and
@@ -194,9 +224,12 @@ all event MIDI pitches together, rests do not sound, and tie continuations do
 not retrigger a note. If audio startup fails, the app can still advance the
 cursor and highlight state. The Metronome MVP is app-side as well: the Palette
 runtime owns the persisted ON/OFF setting, starts generated strong/weak clicks
-with Play, follows the current BPM, and stops on Pause / Stop / Reset /
-playback end. DoReMiRendererKit does not own metronome state, scheduling, or
-AVFoundation code. Phase S7 adds simple repeat playback expansion in
+with Play, follows the current BPM, builds measure-based click plans from the
+expanded `PlaybackEvent` sequence, and stops on Pause / Stop / Reset /
+playback end. Each planned click remains app state and records the measure
+occurrence, beat index, time signature, and accent; DoReMiRendererKit does not
+own metronome state, scheduling, or AVFoundation code. Phase S7 adds simple
+repeat playback expansion in
 the SDK playback sequence builder, and Phase S8 adds first/second ending MVP
 expansion plus limited jump-marker diagnostics/handling. Phase S9 adds visual
 first/second ending brackets as SDK layout/rendering elements. The app runtime
@@ -352,9 +385,24 @@ layout, rendering, hit testing, diagnostics, and playback-event generation.
 
 Physical iPad install / launch and MVP interaction checks have now been
 confirmed by user-side QA. Phase 17B TestFlight readiness is a release
-configuration, legal/privacy, checklist, and archive-preparation pass. It
-restores `DoReMi Palette Sample` as the launch default while leaving S6/S7/S8/
-S9/S10/T2 QA samples in Library for regression checks.
+configuration, legal/privacy, checklist, and archive-preparation pass. The
+TestFlight-facing bundled Library is intentionally limited to two learning MXL
+samples: `Ode to Joy Easy Variation` and `Fur Elise - Beginner Piano`.
+`Happy Birthday To You Piano` is excluded after the pre-TestFlight rights review
+because its MusicXML metadata names an arranger and has no embedded rights
+grant. Historical S6/S7/S8/S9/S10/T2 QA samples are not restored to the
+user-facing Library; repeat, transpose, notation, and layout QA coverage should
+live in SDK/app tests and development fixtures instead.
+
+Playback timing hardening remains app-side. `PalettePlaybackRuntime` schedules
+generated audio against a monotonic absolute clock and prewarms the app audio
+engine, while DoReMiRendererKit continues to provide only `PlaybackEvent`
+metadata. UI cursor updates, score highlights, scroll follow, and keyboard
+highlights follow playback state; they must not block generated audio triggers.
+Current-note follow uses SDK-provided layout identity and lightweight
+measure-level anchors; DoReMi Palette does not recompute score coordinates.
+The UIKit static-canvas path compensates SMuFL/CoreText glyph orientation inside
+the renderer drawing helper without changing layout or app hit-test ownership.
 
 ## Phase S10 Repeat / Jump Boundary
 

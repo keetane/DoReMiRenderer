@@ -88,6 +88,7 @@ struct KeyboardView: View {
             }
         }
         .accessibilityLabel("Piano keyboard")
+        .accessibilityElement(children: .ignore)
     }
 
     private func color(for midi: Int) -> Color {
@@ -285,7 +286,7 @@ private struct WhiteKey: View {
                     .accessibilityHidden(true)
             }
         }
-        .accessibilityLabel(KeyboardPitchMapper.label(for: midi))
+        .accessibilityHidden(true)
     }
 
     private var fillColor: Color {
@@ -393,7 +394,7 @@ private struct BlackKey: View {
             }
         }
         .shadow(radius: 1, y: 1)
-        .accessibilityLabel(KeyboardPitchMapper.label(for: midi))
+        .accessibilityHidden(true)
     }
 
     private var fillColor: Color {

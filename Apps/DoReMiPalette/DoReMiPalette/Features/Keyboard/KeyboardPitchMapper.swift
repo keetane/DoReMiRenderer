@@ -208,7 +208,6 @@ struct PracticeNoteNameFormatter {
         }
         let english = sorted.map(englishName(for:)).joined(separator: "-")
         let solfege = sorted.map(solfegeName(for:)).joined(separator: "-")
-        let prefix = sorted.count > 1 ? "Chord: " : ""
         let transpose = displayTransposeEnabled ? 0 : PaletteTranspose.clamped(transposeSemitones)
         let soundingMidiPitches = sorted.compactMap { pitch in
             KeyboardPitchMapper.transposedMIDINumber(KeyboardPitchMapper.midiNumber(for: pitch), by: transpose)
@@ -218,9 +217,9 @@ struct PracticeNoteNameFormatter {
         let transposeDescription = transpose == 0 ? nil : PaletteTranspose.formatted(transpose)
         let summary: String
         if transpose == 0 {
-            summary = "\(prefix)\(english) / \(solfege)"
+            summary = "\(english) / \(solfege)"
         } else {
-            summary = "\(prefix)\(english) / \(solfege) → \(soundingEnglish) / \(soundingSolfege) (\(PaletteTranspose.formatted(transpose)))"
+            summary = "\(english) / \(solfege) → \(soundingEnglish) / \(soundingSolfege) (\(PaletteTranspose.formatted(transpose)))"
         }
         return PracticeNoteDisplay(
             englishName: english,

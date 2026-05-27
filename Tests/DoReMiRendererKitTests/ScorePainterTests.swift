@@ -2,6 +2,38 @@ import CoreGraphics
 import Testing
 @testable import DoReMiRendererKit
 
+@Test func coreGraphicsTextDrawingCancelsUIKitYFlipForSMuFLGlyphs() throws {
+    let colorSpace = CGColorSpaceCreateDeviceRGB()
+    let context = try #require(CGContext(
+        data: nil,
+        width: 32,
+        height: 32,
+        bitsPerComponent: 8,
+        bytesPerRow: 32 * 4,
+        space: colorSpace,
+        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+    ))
+
+    context.translateBy(x: 0, y: 32)
+    context.scaleBy(x: 1, y: -1)
+
+    let normal = CoreGraphicsScoreDrawingContext.coreTextDrawingScale(
+        context: context,
+        mirroredHorizontally: false,
+        mirroredVertically: false
+    )
+    let mirroredDownStem = CoreGraphicsScoreDrawingContext.coreTextDrawingScale(
+        context: context,
+        mirroredHorizontally: false,
+        mirroredVertically: true
+    )
+
+    #expect(normal.x == 1)
+    #expect(normal.y == -1)
+    #expect(mirroredDownStem.x == 1)
+    #expect(mirroredDownStem.y == 1)
+}
+
 @Test func scorePainterConsumesLayoutElementsWithoutMutatingLayout() throws {
     let score = renderingScore()
     let layout = try ScoreLayoutEngine().layout(score: score)
@@ -60,7 +92,8 @@ import Testing
     #expect(context.commands.contains { $0.kind == .drawText && $0.text == "2" })
     #expect(context.commands.contains { $0.kind == .drawText && $0.text == "4" })
 
-    let bottomStaffMaxY = try #require(layout.staves.map(\.frame.maxY).max())
+    let secondMeasure = try #require(layout.measures.first { $0.measureID == MeasureID(partIndex: 0, measureNumber: "2") })
+    let bottomStaffMaxY = try #require(layout.staves.filter { $0.systemIndex == secondMeasure.systemIndex }.map(\.frame.maxY).max())
     let secondNumberPoint = try #require(context.commands.first { $0.kind == .drawText && $0.text == "2" }?.point)
     #expect(secondNumberPoint.y > bottomStaffMaxY)
 }
@@ -932,9 +965,8 @@ import Testing
     let flagCommand = try #require(context.commands.first { $0.text == SMuFLGlyph.flagEighthUp.string && $0.fontName == "Bravura" })
     let point = try #require(flagCommand.point)
     #expect(point.x > stemEnd.x)
-    #expect(point.y > stemEnd.y)
-    #expect(point.x - stemEnd.x < 8)
-    #expect(point.y - stemEnd.y < 8)
+    #expect(point.x - stemEnd.x <= flag.frame.width * 0.25)
+    #expect(abs(point.y - (stemEnd.y + 15)) < 0.001)
 }
 
 @Test func scorePainterAnchorsDownStemSMuFLFlagNearStemEnd() throws {
@@ -969,8 +1001,9 @@ import Testing
         $0.text == SMuFLGlyph.flagEighthUp.string && $0.fontName == "Bravura" && !$0.mirroredHorizontally && $0.mirroredVertically
     })
     let point = try #require(flagCommand.point)
-    #expect(stemEnd.x - point.x < 8)
-    #expect(stemEnd.y - point.y < 8)
+    #expect(point.x > stemEnd.x)
+    #expect(point.x - stemEnd.x <= flag.frame.width * 0.25)
+    #expect(abs(point.y - (stemEnd.y - 15)) < 0.001)
 }
 
 @Test func smuflGlyphSizePolicyKeepsLearningGlyphsReadable() throws {

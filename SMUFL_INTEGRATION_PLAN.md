@@ -147,6 +147,11 @@ basic learning readability:
   -> time signature` order. Collision avoidance is handled by SDK layout
   spacing, including display-transposed key signatures and repeat-start
   barlines.
+- Measure width normalization is also SDK layout work. `ScoreLayoutEngine`
+  keeps normal measures at a readable minimum width, prevents first-measure
+  pickup/anacrusis bars and trailing incomplete final bars from collapsing
+  below 75% of that normal minimum, includes prefix requirements before SMuFL
+  glyphs are drawn, and applies MVP justification to non-final wrapped systems.
 
 This hotfix is intentionally shaped so the same domain/layout meaning can feed
 Phase S5 SMuFL glyph selection later. SMuFL should replace the visual glyph

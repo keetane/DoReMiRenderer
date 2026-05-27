@@ -7,6 +7,32 @@ Initial experimental MVP0 release.
 This version is intended for integration review and early adopter testing. Public
 APIs may change before `1.0`.
 
+### Playback timing hardening
+
+- Changed DoReMi Palette playback scheduling to use a monotonic absolute
+  schedule instead of chaining each event from the previous wake-up time, so a
+  delayed UI frame or audio start does not accumulate tempo drift.
+- Added app-side audio buffer prewarming before playback to keep generated-tone
+  engine startup and first-use buffer generation out of the note onset path.
+- Added DEBUG-only playback timing instrumentation and an autoplay launch
+  harness for Simulator timing checks.
+- Rechecked Canon in D, Mozart Piano Sonata No. 16, Fur Elise, The Entertainer,
+  and Twinkle in the iPad Simulator. Timing logs are saved under
+  `/tmp/DoReMiPaletteQA/playback-timing/`.
+- Fixed TestFlight critical regressions found after the performance pass:
+  CoreGraphics/UIKit static-canvas SMuFL text now compensates for the flipped
+  context so clefs, noteheads, rests, flags, accidentals, and text markers draw
+  upright; current-note follow now uses raw current playback note IDs plus
+  lightweight measure anchors so large scores follow again without reintroducing
+  all-note geometry work; and metronome time signatures are carried forward by
+  measure.
+- Fixed the remaining metronome meter-sync regression by replacing the
+  event-local beat phase with a measure-based click plan generated from the
+  expanded playback sequence. Every 3/4 and 4/4 measure occurrence now anchors
+  beat 0 as the strong click, pickup measures do not drift following measures,
+  and turning the metronome ON mid-playback starts from the next planned click
+  instead of restarting a local beat cycle.
+
 ### SMuFL glyph rendering
 
 - Added Bravura 1.392 as a bundled SDK resource under the SIL Open Font
@@ -89,15 +115,19 @@ APIs may change before `1.0`.
   the preview layout so the C2-C6 score preview is visible in the sheet.
 - Added an app setting for measure-number display. DoReMi Palette enables it by
   default and renders only odd-numbered measures to keep the score readable.
-- Prepared Phase 17B TestFlight readiness: restored the default launch sample
-  to the normal `DoReMi Palette Sample`, kept S6/S7/S8/S9/S10/T2 QA samples in
-  Library, aligned the app version to `0.1.0` / build `1`, and added release,
-  privacy, and beta-review checklist documents for pre-TestFlight review.
+- Prepared Phase 17B TestFlight readiness: fixed the TestFlight-facing Library
+  to bundled learning MXL samples, kept historical S6/S7/S8/S9/S10/T2
+  QA coverage as development/test fixture responsibility rather than
+  user-facing Library entries, aligned the app version to `0.1.0` / build `1`,
+  and added release, privacy, and beta-review checklist documents for
+  pre-TestFlight review.
 - Replaced the DoReMi Palette bundled sample scores with user-provided MXL
-  files from `sample/`. The default launch score is now `Canon in D`; `12
-  Variations of Twinkle Twinkle Little Star` was removed from the app sample
-  catalog because its dense repeat-expanded playback is too long for the default
-  learning sample set.
+  files from `sample/`. The default launch score is now `Ode to Joy Easy
+  Variation`; `Happy Birthday To You Piano` is excluded from the TestFlight app
+  bundle after the rights review because its MusicXML metadata names an
+  arranger and has no embedded rights grant. `12 Variations of Twinkle Twinkle
+  Little Star`, `Canon in D`, and `The Entertainer` are also excluded from the
+  app sample catalog.
 - Added a DoReMi Palette Metronome MVP. The app now has a persisted
   metronome ON/OFF setting, starts generated strong/weak clicks with Play,
   stops them on Pause / Stop / Reset / playback end, and follows the current
@@ -112,6 +142,45 @@ APIs may change before `1.0`.
   modes for 6/8, 9/8, and 12/8, strong/medium/weak accent patterns, tap tempo,
   and generated click sound styles without adding audio responsibilities to
   DoReMiRendererKit.
+- Added a measure navigation MVP in DoReMi Palette. The transport row now
+  shows the current score measure and total measure count between Previous and
+  Next, with an inline field for moving to a validated measure number. Jumps
+  reuse the expanded playback event list, update current note /
+  keyboard / scroll follow state, pause active playback for safety, and keep
+  Practice Mode in sync.
+- Normalized SDK measure widths so one-note pickup measures no longer collapse
+  to their content width. `ScoreLayoutEngine` now applies an absolute minimum
+  width, a normal-measure minimum width, and a first-measure pickup ratio while
+  preserving rhythmic spacing, beam grouping, prefix spacing, stable IDs, and
+  playback events.
+- Hardened measure layout with trailing incomplete-measure minimum widths,
+  non-final system justification, multi-voice duration/onset-aware spacing, and
+  compact short-note spacing that avoids stretching beamed groups across a
+  widened bar. Fur Elise-style sixteenth passages now keep readable visual gaps
+  and stay anchored near their rhythmic onset instead of becoming left-flush or
+  artificially centered inside normalized measures.
+- Added app-side pinch zoom for DoReMi Palette score viewing. The score now
+  uses a persisted continuous `0.8x...3.0x` scale and keeps hit testing and
+  current-note scroll follow tied to unchanged `ScoreLayout` coordinates.
+  Loading a different score or reloading the bundled sample resets the visible
+  scale to `1.0x`; Settings keeps the layout selector plus slider and Reset
+  Zoom action, while the main screen no longer shows the layout switcher or
+  zoom percentage.
+- Added a first-use guide for DoReMi Palette. Coach marks step through the
+  Settings button, display settings, current-note/keyboard feedback, measure
+  jump, Previous/Next, Play/Stop, and key/transpose controls with Back / Next /
+  Skip / Done actions. Completion is persisted locally, and Settings includes a
+  replay action for the guide.
+- Refreshed TestFlight readiness notes after the first-use guide and latest
+  bundled-sample set: the default launch sample is `Ode to Joy Easy Variation`,
+  release config is `0.1.0` / build `1`, and beta/privacy notes now reflect
+  on-device processing plus local-only guide and settings persistence.
+- Stabilized large-score playback performance before TestFlight by separating
+  static score drawing from playback cursor updates, adding visible-rect
+  culling and CoreText/SMuFL text caching, throttling current-note UI updates,
+  suppressing per-note scroll follow in large playback layouts, caching
+  generated audio buffers, and tolerating duplicate structural `ScoreElementID`
+  values in layout lookup maps.
 - Kept Core Graphics fallback rendering for font lookup or registration failure.
 - Dynamics remain diagnostic-only unless represented by existing text
   annotations; system-crossing curves, advanced beams, complex tuplets, and

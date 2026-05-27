@@ -28,6 +28,47 @@ The app playback runtime advances over the existing `PlaybackEvent` sequence.
   playing, the runtime cancels the current scheduling task, silences audio,
   keeps the current event index, and resumes from that event with the new tempo.
 
+## Playback Performance Hardening
+
+The TestFlight readiness performance pass separates audio scheduling from heavy
+score UI work so large bundled MXL samples do not make playback drift.
+
+- `ScoreCanvasView` keeps static score drawing keyed separately from current
+  note cursor updates. Runtime playback uses a UIKit static canvas path, while
+  XCTest/snapshot rendering falls back to SwiftUI Canvas for deterministic
+  flattened screenshots.
+- Current-note highlights are drawn as lightweight overlays instead of
+  repainting the full score on every cursor tick.
+- Large A4/performance layouts avoid all-note geometry measurement and repeated
+  recentering during playback. Current-note follow uses stable measure anchors
+  and only scrolls when the playback note leaves the viewport margin, while
+  manual navigation and measure jump remain immediate.
+- Current-note text updates are throttled while playback is running. The audio
+  event scheduler remains independent from those UI refreshes.
+- `ScorePainter` uses visible-rect culling and caches CoreText/SMuFL text lines
+  to avoid redrawing offscreen notation and rebuilding glyph text each frame.
+- `SimpleToneAudioEngine` caches generated audio buffers and reuses short
+  single-pitch buffers instead of rebuilding tones for every event.
+- The layout lookup table tolerates duplicate structural `ScoreElementID`
+  values by keeping the first element for reference lookup, avoiding crashes on
+  large third-party samples while preserving note IDs and playback events.
+- The static UIKit/CoreGraphics rendering path compensates CoreText/SMuFL glyph
+  drawing for the flipped y-axis locally in the glyph helper; `ScoreLayout`
+  coordinates and hit testing remain unchanged.
+
+Final Simulator spot checks on 2026-05-26 covered Canon in D, Mozart Piano
+Sonata No. 16, and Fur Elise. Point-in-time CPU samples stayed in the low
+single-to-low-double digit range in the iPad Pro 13-inch (M5) simulator, and
+`ScoreStaticCanvasUIView.draw(_:)` was not observed as a continuous hot path in
+the sampled playback windows. Real-device audible timing should still be
+confirmed before broad external TestFlight distribution.
+
+The 2026-05-27 critical regression pass rechecked the playback path after
+restoring current-note follow and fixing SMuFL glyph orientation. Ode to Joy
+Simulator timing recorded average jitter around 11.6 ms and p95 around 26.3 ms
+under `/tmp/DoReMiPaletteQA/critical-regression/`, with follow restored through
+measure anchors rather than all-note anchor measurement.
+
 ## Audio Engine
 
 Phase 15 uses a generated tone audio engine in the app target.
@@ -53,16 +94,22 @@ AVFoundation and the renderer does not know about metronome state.
 - The click interval follows the current runtime tempo. Tempo changes while
   playing restart runtime scheduling and resync the metronome from the current
   playback event.
+- The runtime builds an app-side metronome click plan from the expanded
+  `PlaybackEvent` sequence. Each planned click records the measure occurrence,
+  score measure ID, beat index within that measure, absolute playback time,
+  time signature, and accent. This keeps every 3/4 and 4/4 measure anchored so
+  beat 0 is strong, including after repeat and jump expansion.
 - Turning the metronome ON during playback does not treat that toggle moment as
-  beat 1. The runtime uses the current `PlaybackEvent` onset plus elapsed time
-  in that event, waits until the next metronome beat boundary, and then starts
-  the accent cycle from that musical position.
+  beat 1. The runtime uses the current event's monotonic start time plus the
+  precomputed measure-based click plan, then starts from the next planned click
+  boundary.
 - Strong, medium, and weak clicks use generated tones with distinct pitch,
   duration, and velocity. Click sound styles (`Classic`, `Soft`, `Wood`, and
   `Electronic`) change those generated parameters without adding audio assets.
-- The runtime reads parsed MusicXML time signatures from playback metadata.
-  Simple meters such as 3/4 use the score's beat count for the strong/weak
-  cycle, so beat 1 is accented every three clicks. If no time signature is
+- The runtime reads parsed MusicXML time signatures from playback metadata and
+  carries them forward by measure. Simple meters such as 3/4 use the score's
+  beat count for each measure occurrence, so beat 1 is accented every measure,
+  not merely every N clicks from playback start. If no time signature is
   available, the app falls back to 4/4.
 - Compound meters `6/8`, `9/8`, and `12/8` support two modes. `大拍`
   groups dotted-quarter large beats by default (`6/8` becomes two clicks per
@@ -116,9 +163,10 @@ Playback uses two durations:
 - Event scheduling duration: the musical `PlaybackEvent.nominalDuration` converted by tempo.
 - Sound duration: `eventDuration * noteGateRatio`.
 
-The default `noteGateRatio` is `0.85`, clamped to `0.50...1.00`. This shortens
-only the generated tone length. It does not change `PlaybackEvent`, `ScoreLayout`,
-`NoteID`, current-note cursor timing, or score highlighting.
+The default `noteGateRatio` is `1.00`, clamped to `0.50...1.00`. Lower manual
+values shorten only the generated tone length. They do not change
+`PlaybackEvent`, `ScoreLayout`, `NoteID`, current-note cursor timing, or score
+highlighting.
 
 The runtime also applies a small minimum audible duration to pitched generated
 tones. The minimum is capped by the event scheduling duration, so short notes do
@@ -176,6 +224,10 @@ app-side runtime receives events:
 - Practice Mode uses the same expanded sequence, so repeated measures and
   supported endings are revisited by step navigation as well as automatic
   playback.
+- DoReMi Palette's measure jump UI also uses the expanded sequence. A jump to
+  a score measure selects the first matching event in that sequence, updates
+  current-note state, and pauses active playback before moving so generated
+  audio and metronome scheduling cannot continue from the previous position.
 - Phase S9 adds first/second ending visual bracket rendering in layout and
   painting only; it does not change the expanded playback event order.
 - Phase S10 hardens jump-only repeat navigation before TestFlight. D.S. al Fine,
@@ -236,3 +288,38 @@ when the following remain true:
 Simulator and mock tests cover these rules, but real-device listening remains a
 Phase 17 gate item because Simulator audio availability and latency can differ
 from hardware.
+
+## Playback Timing Hardening
+
+The DoReMi Palette app runtime now schedules playback against a monotonic
+absolute clock. Each event has an expected elapsed playback time, and the next
+sleep duration is calculated from the original playback start plus accumulated
+musical intervals. This prevents a late wake-up, SwiftUI update, or scroll/highlight
+delay from shifting every later event.
+
+Generated audio is still an app-side responsibility. `DoReMiRendererKit` has no
+AVFoundation dependency and does not know about playback scheduling. Before
+playback starts, the app prewarms the generated-tone engine and prepares
+upcoming pitch/duration buffers so first-use buffer synthesis is not performed
+inside the note onset path. `SimpleToneAudioEngine` still performs immediate
+player-node scheduling; sample-accurate future scheduling remains outside the
+MVP.
+
+DEBUG builds support timing capture with:
+
+- `DOREMI_AUTOPLAY_PLAYBACK=1`
+- `DOREMI_AUTOPLAY_SAMPLE_RESOURCE=<resourceName>`
+- `DOREMI_PLAYBACK_TIMING_LOG=1`
+- `DOREMI_PLAYBACK_TIMING_LOG_PATH=/tmp/DoReMiPaletteQA/playback-timing/<file>.txt`
+
+The 2026-05-27 iPad Simulator timing pass measured:
+
+- Canon in D: average 6.542 ms, p95 15.295 ms, max 19.200 ms.
+- Mozart Piano Sonata No. 16: average 6.052 ms, p95 14.922 ms, max 28.474 ms.
+- Fur Elise - Beginner Piano: average 9.914 ms, p95 17.391 ms, max 18.768 ms.
+- The Entertainer: average 8.117 ms, p95 18.273 ms, max 26.375 ms.
+- Twinkle Twinkle Little Star: average 15.715 ms, p95 31.072 ms, max 32.440 ms.
+
+Simulator timing is a regression signal, not a substitute for final real-device
+listening. Real iPad listening remains required before treating playback feel as
+fully signed off.

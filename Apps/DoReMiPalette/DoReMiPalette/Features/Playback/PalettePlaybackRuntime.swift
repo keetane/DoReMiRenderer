@@ -53,6 +53,17 @@ enum PaletteMetronomeAccent: Equatable {
     case weak
 }
 
+#if DEBUG
+struct PaletteMetronomeClickPlanEntry: Equatable {
+    let playbackTime: TimeInterval
+    let eventIndex: Int
+    let measureID: MeasureID
+    let beatIndexInMeasure: Int
+    let accent: PaletteMetronomeAccent
+    let timeSignature: TimeSignature
+}
+#endif
+
 @MainActor
 final class PalettePlaybackRuntime {
     var onStateChange: ((PalettePlaybackState) -> Void)?
@@ -81,18 +92,57 @@ final class PalettePlaybackRuntime {
     private let audioEngine: PaletteAudioEngine
     private var playbackTask: Task<Void, Never>?
     private var metronomeTask: Task<Void, Never>?
+    private var measureOrderByID: [MeasureID: Int] = [:]
+    private var orderedTempoEvents: [OrderedTempoEvent] = []
+    private var globalTempoEvents: [TempoEvent] = []
+    private var timeSignatureByMeasureID: [MeasureID: TimeSignature] = [:]
+    private var playbackScheduleStartMonotonic: TimeInterval?
+    private var currentEventStartedAtMonotonic: TimeInterval?
+    private var metronomePlanStartMonotonic: TimeInterval?
+    private var metronomeClickPlan: [MetronomeScheduledClick] = []
+    private var metronomeClickCursor = 0
     private var metronomeBeatIndex = 0
     private var currentEventStartedAt: Date?
     private var tapTempoDates: [Date] = []
     private var usesManualTempoOverride = false
+#if DEBUG
+    private var playbackTimingSamples: [PlaybackTimingSample] = []
+#endif
     private static let defaultTempoBPM: Double = 120
     private static let minimumAudibleDuration: TimeInterval = 0.06
+    private static let audioPrewarmEventLimit = 512
     static let transposeRange = -12...12
+
+#if DEBUG
+    private struct PlaybackTimingSample {
+        let eventIndex: Int
+        let expectedElapsed: TimeInterval
+        let actualElapsed: TimeInterval
+        let jitterMilliseconds: Double
+        let eventInterval: TimeInterval
+        let midiPitchCount: Int
+    }
+#endif
+
+    private struct OrderedTempoEvent {
+        let measureOrder: Int
+        let onset: MusicalTime
+        let bpm: Double
+    }
+
+    private struct MetronomeScheduledClick {
+        let playbackTime: TimeInterval
+        let eventIndex: Int
+        let measureID: MeasureID
+        let beatIndexInMeasure: Int
+        let accent: PaletteMetronomeAccent
+        let timeSignature: TimeSignature
+    }
 
     init(
         events: [PlaybackEvent] = [],
         tempoBPM: Double = 120,
-        noteGateRatio: Double = 0.85,
+        noteGateRatio: Double = 1.0,
         transposeSemitones: Int = 0,
         metronomeEnabled: Bool = false,
         metronomeCompoundMode: PaletteMetronomeCompoundMode = .largeBeat,
@@ -144,8 +194,17 @@ final class PalettePlaybackRuntime {
     func configure(events: [PlaybackEvent], metadata: PlaybackMetadata?) {
         stop()
         self.events = events
-        tempoEvents = metadata?.tempoEvents.sorted { $0.onset < $1.onset } ?? []
+        measureOrderByID = Self.measureOrderByID(for: events)
+        tempoEvents = metadata?.tempoEvents ?? []
         timeSignatureEvents = metadata?.timeSignatureEvents ?? []
+        orderedTempoEvents = Self.orderedTempoEvents(from: tempoEvents, measureOrderByID: measureOrderByID)
+        globalTempoEvents = tempoEvents
+            .filter { $0.measureID == nil }
+            .sorted { lhs, rhs in lhs.onset < rhs.onset }
+        timeSignatureByMeasureID = Self.timeSignatureByMeasureID(
+            from: timeSignatureEvents,
+            measureOrderByID: measureOrderByID
+        )
         usesManualTempoOverride = false
         tempoBPM = initialTempoBPM(for: events)
         currentEventIndex = 0
@@ -167,11 +226,15 @@ final class PalettePlaybackRuntime {
         playbackTask?.cancel()
         playbackTask = nil
         audioEngine.silence()
+        prewarmAudioForUpcomingEvents(startingAt: currentEventIndex)
+        let scheduleStart = Self.monotonicTime()
+        playbackScheduleStartMonotonic = scheduleStart
+        currentEventStartedAtMonotonic = scheduleStart
         currentEventStartedAt = Date()
         restartMetronomeIfNeeded(resetBeat: false)
         notifyCurrentIndex()
         playbackTask = Task { [weak self] in
-            await self?.runPlaybackLoop()
+            await self?.runPlaybackLoop(scheduleStart: scheduleStart)
         }
     }
 
@@ -251,7 +314,7 @@ final class PalettePlaybackRuntime {
     }
 
     func metronomeBeatIsStrongForTesting(beatIndex: Int, eventIndex: Int) -> Bool {
-        guard let event = events[safe: eventIndex] else {
+        guard events[safe: eventIndex] != nil else {
             return beatIndex == 0
         }
         return metronomeAccentForTesting(beatIndex: beatIndex, eventIndex: eventIndex) == .strong
@@ -290,11 +353,19 @@ final class PalettePlaybackRuntime {
         }
         playbackTask?.cancel()
         audioEngine.silence()
+        playbackScheduleStartMonotonic = nil
+#if DEBUG
+        playbackTimingSamples.removeAll()
+#endif
+        prewarmAudioForUpcomingEvents(startingAt: currentEventIndex)
+        let scheduleStart = Self.monotonicTime()
+        playbackScheduleStartMonotonic = scheduleStart
+        currentEventStartedAtMonotonic = scheduleStart
         currentEventStartedAt = Date()
         state = .playing
         startMetronome(resetBeat: currentEventIndex == 0, alignToCurrentPlaybackPosition: true)
         playbackTask = Task { [weak self] in
-            await self?.runPlaybackLoop()
+            await self?.runPlaybackLoop(scheduleStart: scheduleStart)
         }
     }
 
@@ -307,7 +378,12 @@ final class PalettePlaybackRuntime {
         stopMetronome()
         audioEngine.silence()
         currentEventStartedAt = nil
+        playbackScheduleStartMonotonic = nil
+        currentEventStartedAtMonotonic = nil
         state = .paused
+#if DEBUG
+        flushPlaybackTimingReportIfNeeded(reason: "pause")
+#endif
     }
 
     func stop() {
@@ -316,7 +392,12 @@ final class PalettePlaybackRuntime {
         stopMetronome(resetBeat: true)
         audioEngine.silence()
         currentEventStartedAt = nil
+        playbackScheduleStartMonotonic = nil
+        currentEventStartedAtMonotonic = nil
         state = .stopped
+#if DEBUG
+        flushPlaybackTimingReportIfNeeded(reason: "stop")
+#endif
     }
 
     func reset() {
@@ -334,7 +415,10 @@ final class PalettePlaybackRuntime {
         currentEventIndex = min(max(currentEventIndex + offset, 0), events.count - 1)
         notifyCurrentIndex()
         if state == .playing, let event = currentEvent {
+            let now = Self.monotonicTime()
             currentEventStartedAt = Date()
+            currentEventStartedAtMonotonic = now
+            playbackScheduleStartMonotonic = now
             restartMetronomeIfNeeded(resetBeat: false)
             triggerAudio(for: event)
         }
@@ -349,7 +433,10 @@ final class PalettePlaybackRuntime {
         currentEventIndex = min(max(index, 0), events.count - 1)
         notifyCurrentIndex()
         if state == .playing, let event = currentEvent {
+            let now = Self.monotonicTime()
             currentEventStartedAt = Date()
+            currentEventStartedAtMonotonic = now
+            playbackScheduleStartMonotonic = now
             restartMetronomeIfNeeded(resetBeat: false)
             triggerAudio(for: event)
         }
@@ -381,7 +468,10 @@ final class PalettePlaybackRuntime {
         currentEventIndex = index
         notifyCurrentIndex()
         if state == .playing, let event = currentEvent {
+            let now = Self.monotonicTime()
             currentEventStartedAt = Date()
+            currentEventStartedAtMonotonic = now
+            playbackScheduleStartMonotonic = now
             restartMetronomeIfNeeded(resetBeat: false)
             triggerAudio(for: event)
         }
@@ -459,16 +549,39 @@ final class PalettePlaybackRuntime {
         event.midiPitches.compactMap { Self.transposedMIDIPitch($0, by: transposeSemitones) }
     }
 
-    private func runPlaybackLoop() async {
+    private func runPlaybackLoop(scheduleStart: TimeInterval) async {
+        var scheduledElapsed: TimeInterval = 0
+
         while !Task.isCancelled, state == .playing, currentEventIndex < events.count {
             let event = events[currentEventIndex]
-            currentEventStartedAt = Date()
-            notifyCurrentIndex()
+            let expectedElapsed = scheduledElapsed
+            let actualElapsed = max(0, Self.monotonicTime() - scheduleStart)
+            let eventStartedAt = Date()
+            currentEventStartedAt = eventStartedAt
+            currentEventStartedAtMonotonic = scheduleStart + expectedElapsed
             let duration = schedulingIntervalSeconds(from: currentEventIndex)
+#if DEBUG
+            recordPlaybackTiming(
+                eventIndex: currentEventIndex,
+                expectedElapsed: expectedElapsed,
+                actualElapsed: actualElapsed,
+                eventInterval: duration,
+                midiPitchCount: event.midiPitches.count
+            )
+#endif
             triggerAudio(for: event)
+            notifyCurrentIndex()
+            scheduledElapsed += duration
 
             do {
-                try await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
+                let sleepDuration = Self.absoluteSleepDuration(
+                    scheduleStart: scheduleStart,
+                    scheduledElapsed: scheduledElapsed,
+                    now: Self.monotonicTime()
+                )
+                if sleepDuration > 0 {
+                    try await Task.sleep(nanoseconds: UInt64(sleepDuration * 1_000_000_000))
+                }
             } catch {
                 return
             }
@@ -482,8 +595,13 @@ final class PalettePlaybackRuntime {
                 stopMetronome(resetBeat: true)
                 audioEngine.silence()
                 currentEventStartedAt = nil
+                playbackScheduleStartMonotonic = nil
+                currentEventStartedAtMonotonic = nil
                 state = .stopped
                 notifyCurrentIndex()
+#if DEBUG
+                flushPlaybackTimingReportIfNeeded(reason: "end")
+#endif
                 return
             }
         }
@@ -512,6 +630,37 @@ final class PalettePlaybackRuntime {
         }
     }
 
+    private func prewarmAudioForUpcomingEvents(startingAt startIndex: Int) {
+        guard events.indices.contains(startIndex) else {
+            return
+        }
+        do {
+            try audioEngine.start()
+        } catch {
+            onAudioError?(error)
+            return
+        }
+        let endIndex = min(events.count, startIndex + Self.audioPrewarmEventLimit)
+        for event in events[startIndex..<endIndex] where !event.midiPitches.isEmpty {
+            let playablePitches = event.midiPitches.compactMap { midiPitch -> (pitch: Int, duration: TimeInterval)? in
+                guard let transposedPitch = Self.transposedMIDIPitch(midiPitch, by: transposeSemitones) else {
+                    return nil
+                }
+                return (transposedPitch, soundDurationSeconds(for: midiPitch, in: event))
+            }
+            let groupedPitches = Dictionary(grouping: playablePitches) { item in
+                item.duration
+            }
+            for (duration, pitches) in groupedPitches where duration > 0 {
+                audioEngine.prepare(
+                    midiPitches: pitches.map(\.pitch),
+                    duration: duration,
+                    velocity: 0.8
+                )
+            }
+        }
+    }
+
     private func restartMetronomeIfNeeded(resetBeat: Bool) {
         guard state == .playing, metronomeEnabled else {
             return
@@ -524,40 +673,51 @@ final class PalettePlaybackRuntime {
             return
         }
         metronomeTask?.cancel()
-        let plan = alignToCurrentPlaybackPosition
-            ? metronomeStartPlan(resetBeat: resetBeat)
-            : MetronomeStartPlan(initialDelay: 0, beatIndex: resetBeat ? 0 : metronomeBeatIndex)
-        metronomeBeatIndex = plan.beatIndex
+        metronomePlanStartMonotonic = currentEventStartedAtMonotonic
+            ?? playbackScheduleStartMonotonic
+            ?? Self.monotonicTime()
+        rebuildMetronomeClickPlan()
+        let elapsed = currentMetronomePlanElapsed()
+        metronomeClickCursor = nextMetronomeClickIndex(
+            after: elapsed,
+            allowImmediate: resetBeat && elapsed < 0.02
+        )
+        metronomeBeatIndex = metronomeClickPlan[safe: metronomeClickCursor]?.beatIndexInMeasure ?? 0
         metronomeTask = Task { [weak self] in
-            await self?.runMetronomeLoop(initialDelay: plan.initialDelay)
+            await self?.runMetronomeLoop()
         }
     }
 
     private func stopMetronome(resetBeat: Bool = false) {
         metronomeTask?.cancel()
         metronomeTask = nil
+        metronomePlanStartMonotonic = nil
         if resetBeat {
             metronomeBeatIndex = 0
+            metronomeClickCursor = 0
         }
     }
 
-    private func runMetronomeLoop(initialDelay: TimeInterval = 0) async {
-        if initialDelay > 0 {
-            do {
-                try await Task.sleep(nanoseconds: UInt64(initialDelay * 1_000_000_000))
-            } catch {
-                return
-            }
-        }
+    private func runMetronomeLoop() async {
         while !Task.isCancelled, state == .playing, metronomeEnabled {
-            triggerMetronomeClick(accent: metronomeAccent(metronomeBeatIndex))
-            metronomeBeatIndex += 1
-            let interval = metronomeIntervalSeconds()
+            guard let click = metronomeClickPlan[safe: metronomeClickCursor] else {
+                return
+            }
+            let delay = click.playbackTime - currentMetronomePlanElapsed()
             do {
-                try await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
+                if delay > 0 {
+                    try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                }
             } catch {
                 return
             }
+            guard !Task.isCancelled, state == .playing, metronomeEnabled else {
+                return
+            }
+            metronomeBeatIndex = click.beatIndexInMeasure
+            recordMetronomeClickIfNeeded(click)
+            triggerMetronomeClick(accent: click.accent)
+            metronomeClickCursor += 1
         }
     }
 
@@ -574,6 +734,42 @@ final class PalettePlaybackRuntime {
             onAudioError?(error)
         }
     }
+
+    private func recordMetronomeClickIfNeeded(_ click: MetronomeScheduledClick) {
+#if DEBUG
+        let line = [
+            "DPM_METRONOME",
+            "playbackTime=\(String(format: "%.6f", click.playbackTime))",
+            "eventIndex=\(click.eventIndex)",
+            "measureID=\(click.measureID.rawValue)",
+            "beatIndex=\(click.beatIndexInMeasure)",
+            "accent=\(click.accent)",
+            "timeSignature=\(click.timeSignature.beats)/\(click.timeSignature.beatType)",
+            "tempoBPM=\(String(format: "%.3f", tempoBPM(for: events[safe: click.eventIndex])))",
+        ].joined(separator: " ")
+        if ProcessInfo.processInfo.environment["DOREMI_METRONOME_CLICK_LOG"] == "1" {
+            print(line)
+        }
+        guard let path = ProcessInfo.processInfo.environment["DOREMI_METRONOME_CLICK_LOG_PATH"],
+              !path.isEmpty
+        else {
+            return
+        }
+        do {
+            let url = URL(fileURLWithPath: path)
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            let existing = (try? String(contentsOf: url, encoding: .utf8)) ?? ""
+            let output = existing.isEmpty ? line : existing + "\n" + line
+            try output.write(to: url, atomically: true, encoding: .utf8)
+        } catch {
+            print("DPM_METRONOME_LOG_WRITE_FAILED \(error.localizedDescription)")
+        }
+#endif
+    }
+
 
     private func metronomeIntervalSeconds() -> TimeInterval {
         let event = currentEvent
@@ -606,53 +802,169 @@ final class PalettePlaybackRuntime {
         return metronomePattern(for: event).accent(at: beatIndex)
     }
 
-    private struct MetronomeStartPlan {
-        let initialDelay: TimeInterval
-        let beatIndex: Int
+    private func rebuildMetronomeClickPlan() {
+        metronomeClickPlan = buildMetronomeClickPlan(startingAt: currentEventIndex)
     }
 
-    private func metronomeStartPlan(resetBeat: Bool) -> MetronomeStartPlan {
-        guard let event = currentEvent else {
-            return MetronomeStartPlan(initialDelay: 0, beatIndex: resetBeat ? 0 : metronomeBeatIndex)
+    private func currentMetronomePlanElapsed() -> TimeInterval {
+        guard let metronomePlanStartMonotonic else {
+            return 0
+        }
+        return max(0, Self.monotonicTime() - metronomePlanStartMonotonic)
+    }
+
+    private func nextMetronomeClickIndex(after elapsed: TimeInterval, allowImmediate: Bool) -> Int {
+        let tolerance = allowImmediate ? 0.002 : -0.002
+        return metronomeClickPlan.firstIndex { click in
+            if allowImmediate {
+                return click.playbackTime >= elapsed - tolerance
+            }
+            return click.playbackTime > elapsed + 0.002
+        } ?? metronomeClickPlan.count
+    }
+
+    private func buildMetronomeClickPlan(startingAt requestedStartIndex: Int) -> [MetronomeScheduledClick] {
+        guard !events.isEmpty else {
+            return []
+        }
+        let startIndex = min(max(requestedStartIndex, 0), events.count - 1)
+        let firstOccurrenceStart = contiguousMeasureStart(containing: startIndex)
+        var eventStartTimes: [Int: TimeInterval] = [:]
+        var elapsed: TimeInterval = 0
+        for index in startIndex..<events.count {
+            eventStartTimes[index] = elapsed
+            elapsed += schedulingIntervalSeconds(from: index)
         }
 
-        let pattern = metronomePattern(for: event)
-        let ticksPerBeat = pattern.ticksPerBeat
-        guard ticksPerBeat > 0 else {
-            return MetronomeStartPlan(initialDelay: 0, beatIndex: resetBeat ? 0 : metronomeBeatIndex)
+        var clicks: [MetronomeScheduledClick] = []
+        var occurrenceStart = firstOccurrenceStart
+        while occurrenceStart < events.count {
+            let measureID = events[occurrenceStart].measureID
+            var occurrenceEnd = occurrenceStart + 1
+            while occurrenceEnd < events.count, events[occurrenceEnd].measureID == measureID {
+                occurrenceEnd += 1
+            }
+            appendMetronomeClicks(
+                occurrenceStart: occurrenceStart,
+                occurrenceEnd: occurrenceEnd,
+                planStartIndex: startIndex,
+                eventStartTimes: eventStartTimes,
+                to: &clicks
+            )
+            occurrenceStart = occurrenceEnd
+        }
+        return clicks.sorted { lhs, rhs in
+            if lhs.playbackTime != rhs.playbackTime {
+                return lhs.playbackTime < rhs.playbackTime
+            }
+            return lhs.beatIndexInMeasure < rhs.beatIndexInMeasure
+        }
+    }
+
+    private func appendMetronomeClicks(
+        occurrenceStart: Int,
+        occurrenceEnd: Int,
+        planStartIndex: Int,
+        eventStartTimes: [Int: TimeInterval],
+        to clicks: inout [MetronomeScheduledClick]
+    ) {
+        guard occurrenceStart < occurrenceEnd else {
+            return
+        }
+        let occurrenceEvents = events[occurrenceStart..<occurrenceEnd]
+        let firstEvent = events[occurrenceStart]
+        let referenceIndex = max(occurrenceStart, planStartIndex)
+        guard referenceIndex < occurrenceEnd,
+              let referencePlaybackStart = eventStartTimes[referenceIndex]
+        else {
+            return
+        }
+        let referenceEvent = events[referenceIndex]
+        let timeSignature = timeSignature(for: firstEvent)
+        let pattern = metronomePattern(for: firstEvent, timeSignature: timeSignature)
+        guard pattern.ticksPerBeat > 0 else {
+            return
+        }
+        let measureStart = occurrenceEvents.map(\.onset).min() ?? firstEvent.onset
+        let measureEnd = occurrenceEvents
+            .map { $0.onset + $0.nominalDuration }
+            .max() ?? measureStart
+        let beatQuarters = Double(pattern.ticksPerBeat) / Double(firstEvent.onset.ticksPerQuarterNote)
+        let startQuarters = musicalQuarters(measureStart)
+        let endQuarters = musicalQuarters(measureEnd)
+        let referenceQuarters = musicalQuarters(referenceEvent.onset)
+        let occurrencePlaybackStart = referencePlaybackStart
+            - secondsForQuarters(max(0, referenceQuarters - startQuarters), event: referenceEvent)
+        guard beatQuarters.isFinite,
+              beatQuarters > 0,
+              endQuarters > startQuarters
+        else {
+            return
         }
 
-        let measureStart = events
-            .filter { $0.measureID == event.measureID }
-            .map(\.onset)
-            .min() ?? event.onset
-        let onsetInMeasure = event.onset - measureStart
-        let elapsedTicks = elapsedTicksInCurrentEvent(for: event)
-        let totalTicks = max(0, Double(onsetInMeasure.ticks) + elapsedTicks)
-        let ticksIntoBeat = totalTicks.truncatingRemainder(dividingBy: Double(ticksPerBeat))
-        let beatsPerMeasure = pattern.accents.count
-        let currentBeatIndex = Int(totalTicks / Double(ticksPerBeat)) % beatsPerMeasure
-
-        guard ticksIntoBeat > 0.0001 else {
-            return MetronomeStartPlan(initialDelay: 0, beatIndex: currentBeatIndex)
+        let firstBeatNumber = Int(ceil((startQuarters / beatQuarters) - 0.000_001))
+        let lastBeatNumber = Int(floor(((endQuarters - 0.000_001) / beatQuarters)))
+        guard lastBeatNumber >= firstBeatNumber else {
+            return
         }
 
-        let ticksUntilNextBeat = Double(ticksPerBeat) - ticksIntoBeat
-        let secondsUntilNextBeat = durationSecondsForTicks(
-            ticksUntilNextBeat,
-            ticksPerQuarterNote: event.onset.ticksPerQuarterNote,
-            event: event
-        )
-            ?? metronomeIntervalSeconds()
-        let nextBeatIndex = (currentBeatIndex + 1) % beatsPerMeasure
-        return MetronomeStartPlan(
-            initialDelay: min(max(secondsUntilNextBeat, 0.01), metronomeIntervalSeconds()),
-            beatIndex: nextBeatIndex
-        )
+        for beatNumber in firstBeatNumber...lastBeatNumber {
+            let beatStartQuarters = Double(beatNumber) * beatQuarters
+            let relativeQuarters = beatStartQuarters - startQuarters
+            guard relativeQuarters >= -0.000_001 else {
+                continue
+            }
+            let beatPlaybackTime = occurrencePlaybackStart
+                + secondsForQuarters(relativeQuarters, event: firstEvent)
+            guard beatPlaybackTime >= -0.002 else {
+                continue
+            }
+            let beatIndexInMeasure = positiveModulo(beatNumber, pattern.accents.count)
+            clicks.append(MetronomeScheduledClick(
+                playbackTime: max(0, beatPlaybackTime),
+                eventIndex: occurrenceStart,
+                measureID: firstEvent.measureID,
+                beatIndexInMeasure: beatIndexInMeasure,
+                accent: pattern.accent(at: beatIndexInMeasure),
+                timeSignature: timeSignature
+            ))
+        }
+    }
+
+    private func contiguousMeasureStart(containing index: Int) -> Int {
+        guard events.indices.contains(index) else {
+            return index
+        }
+        let measureID = events[index].measureID
+        var start = index
+        while start > 0, events[start - 1].measureID == measureID {
+            start -= 1
+        }
+        return start
     }
 
     private func metronomeBeatsPerMeasure(for event: PlaybackEvent) -> Int {
         metronomePattern(for: event).accents.count
+    }
+
+    private func musicalQuarters(_ time: MusicalTime) -> Double {
+        Double(time.ticks) / Double(time.ticksPerQuarterNote)
+    }
+
+    private func secondsForQuarters(_ quarters: Double, event: PlaybackEvent) -> TimeInterval {
+        let tempo = tempoBPM(for: event)
+        guard quarters.isFinite, tempo.isFinite, tempo > 0 else {
+            return 0
+        }
+        return quarters * 60.0 / tempo
+    }
+
+    private func positiveModulo(_ value: Int, _ divisor: Int) -> Int {
+        guard divisor > 0 else {
+            return 0
+        }
+        let result = value % divisor
+        return result >= 0 ? result : result + divisor
     }
 
     private func ticksPerMetronomeBeat(for event: PlaybackEvent, timeSignature: TimeSignature) -> Int {
@@ -775,10 +1087,7 @@ final class PalettePlaybackRuntime {
     }
 
     private func timeSignature(for event: PlaybackEvent) -> TimeSignature {
-        timeSignatureEvents
-            .last { $0.measureID == event.measureID }
-            .map(\.timeSignature)
-            ?? TimeSignature(beats: 4, beatType: 4)
+        timeSignatureByMeasureID[event.measureID] ?? TimeSignature(beats: 4, beatType: 4)
     }
 
     private func elapsedTicksInCurrentEvent(for event: PlaybackEvent) -> Double {
@@ -851,11 +1160,7 @@ final class PalettePlaybackRuntime {
         guard let firstEvent = events.first else {
             return Self.defaultTempoBPM
         }
-        return tempoEvents
-            .last { $0.onset <= firstEvent.onset }
-            .map(\.bpm)
-            .map(Self.clampedTempo)
-            ?? Self.defaultTempoBPM
+        return metadataTempoBPM(for: firstEvent) ?? Self.defaultTempoBPM
     }
 
     private func tempoBPM(for event: PlaybackEvent?) -> Double {
@@ -865,11 +1170,79 @@ final class PalettePlaybackRuntime {
         guard let event else {
             return tempoBPM
         }
-        return tempoEvents
-            .last { $0.onset <= event.onset }
-            .map(\.bpm)
-            .map(Self.clampedTempo)
-            ?? tempoBPM
+        return metadataTempoBPM(for: event) ?? tempoBPM
+    }
+
+    private func metadataTempoBPM(for event: PlaybackEvent) -> Double? {
+        var candidateBPM: Double?
+        if let eventMeasureOrder = measureOrderByID[event.measureID],
+           let tempoEvent = orderedTempoEvent(atOrBeforeMeasureOrder: eventMeasureOrder, onset: event.onset) {
+            candidateBPM = tempoEvent.bpm
+        }
+        if let globalTempoEvent = globalTempoEvent(atOrBefore: event.onset) {
+            candidateBPM = globalTempoEvent.bpm
+        }
+        return candidateBPM.map(Self.clampedTempo)
+    }
+
+    private func tempoEventApplies(_ tempoEvent: TempoEvent, to event: PlaybackEvent) -> Bool {
+        guard let tempoMeasureID = tempoEvent.measureID else {
+            return tempoEvent.onset <= event.onset
+        }
+        guard let tempoMeasureOrder = measureOrderByID[tempoMeasureID],
+              let eventMeasureOrder = measureOrderByID[event.measureID]
+        else {
+            return tempoMeasureID == event.measureID && tempoEvent.onset <= event.onset
+        }
+        if tempoMeasureOrder < eventMeasureOrder {
+            return true
+        }
+        if tempoMeasureOrder == eventMeasureOrder {
+            return tempoEvent.onset <= event.onset
+        }
+        return false
+    }
+
+    private func orderedTempoEvent(atOrBeforeMeasureOrder measureOrder: Int, onset: MusicalTime) -> OrderedTempoEvent? {
+        guard !orderedTempoEvents.isEmpty else {
+            return nil
+        }
+        var low = 0
+        var high = orderedTempoEvents.count
+        while low < high {
+            let mid = (low + high) / 2
+            let tempoEvent = orderedTempoEvents[mid]
+            if tempoEvent.measureOrder < measureOrder ||
+                (tempoEvent.measureOrder == measureOrder && tempoEvent.onset <= onset) {
+                low = mid + 1
+            } else {
+                high = mid
+            }
+        }
+        guard low > 0 else {
+            return nil
+        }
+        return orderedTempoEvents[low - 1]
+    }
+
+    private func globalTempoEvent(atOrBefore onset: MusicalTime) -> TempoEvent? {
+        guard !globalTempoEvents.isEmpty else {
+            return nil
+        }
+        var low = 0
+        var high = globalTempoEvents.count
+        while low < high {
+            let mid = (low + high) / 2
+            if globalTempoEvents[mid].onset <= onset {
+                low = mid + 1
+            } else {
+                high = mid
+            }
+        }
+        guard low > 0 else {
+            return nil
+        }
+        return globalTempoEvents[low - 1]
     }
 
     private static func clampedTempo(_ tempo: Double) -> Double {
@@ -879,9 +1252,108 @@ final class PalettePlaybackRuntime {
         return min(max(tempo, 30), 240)
     }
 
+    private static func sleepDuration(
+        eventInterval: TimeInterval,
+        eventStartedAt: Date,
+        now: Date
+    ) -> TimeInterval {
+        guard eventInterval.isFinite, eventInterval > 0 else {
+            return 0
+        }
+        let processingElapsed = max(0, now.timeIntervalSince(eventStartedAt))
+        return max(0, eventInterval - processingElapsed)
+    }
+
+    private static func absoluteSleepDuration(
+        scheduleStart: TimeInterval,
+        scheduledElapsed: TimeInterval,
+        now: TimeInterval
+    ) -> TimeInterval {
+        guard scheduleStart.isFinite,
+              scheduledElapsed.isFinite,
+              now.isFinite,
+              scheduledElapsed > 0
+        else {
+            return 0
+        }
+        return max(0, scheduleStart + scheduledElapsed - now)
+    }
+
+    private static func monotonicTime() -> TimeInterval {
+        ProcessInfo.processInfo.systemUptime
+    }
+
+    private static func measureOrderByID(for events: [PlaybackEvent]) -> [MeasureID: Int] {
+        var order: [MeasureID: Int] = [:]
+        for event in events where order[event.measureID] == nil {
+            order[event.measureID] = order.count
+        }
+        return order
+    }
+
+    private static func orderedTempoEvents(
+        from tempoEvents: [TempoEvent],
+        measureOrderByID: [MeasureID: Int]
+    ) -> [OrderedTempoEvent] {
+        tempoEvents.compactMap { tempoEvent in
+            guard let measureID = tempoEvent.measureID,
+                  let measureOrder = measureOrderByID[measureID]
+            else {
+                return nil
+            }
+            return OrderedTempoEvent(
+                measureOrder: measureOrder,
+                onset: tempoEvent.onset,
+                bpm: tempoEvent.bpm
+            )
+        }
+        .sorted { lhs, rhs in
+            if lhs.measureOrder != rhs.measureOrder {
+                return lhs.measureOrder < rhs.measureOrder
+            }
+            return lhs.onset < rhs.onset
+        }
+    }
+
+    private static func timeSignatureByMeasureID(
+        from events: [TimeSignatureEvent],
+        measureOrderByID: [MeasureID: Int]
+    ) -> [MeasureID: TimeSignature] {
+        let orderedSignatures = events
+            .compactMap { event -> (measureOrder: Int, measureID: MeasureID, timeSignature: TimeSignature)? in
+                guard let order = measureOrderByID[event.measureID] else {
+                    return nil
+                }
+                return (order, event.measureID, event.timeSignature)
+            }
+            .sorted { lhs, rhs in
+                if lhs.measureOrder != rhs.measureOrder {
+                    return lhs.measureOrder < rhs.measureOrder
+                }
+                return lhs.measureID.rawValue < rhs.measureID.rawValue
+            }
+
+        var signatureIndex = 0
+        var current = TimeSignature(beats: 4, beatType: 4)
+        var result: [MeasureID: TimeSignature] = [:]
+        let measuresInPlaybackOrder = measureOrderByID
+            .map { (measureID: $0.key, order: $0.value) }
+            .sorted { lhs, rhs in lhs.order < rhs.order }
+
+        for measure in measuresInPlaybackOrder {
+            while signatureIndex < orderedSignatures.count,
+                  orderedSignatures[signatureIndex].measureOrder <= measure.order {
+                current = orderedSignatures[signatureIndex].timeSignature
+                signatureIndex += 1
+            }
+            result[measure.measureID] = current
+        }
+        return result
+    }
+
     private static func clampedGateRatio(_ ratio: Double) -> Double {
         guard ratio.isFinite else {
-            return 0.85
+            return 1.00
         }
         return min(max(ratio, 0.50), 1.00)
     }
@@ -898,6 +1370,136 @@ final class PalettePlaybackRuntime {
         return transposedPitch
     }
 }
+
+#if DEBUG
+extension PalettePlaybackRuntime {
+    static func sleepDurationForTesting(
+        eventInterval: TimeInterval,
+        processingElapsed: TimeInterval
+    ) -> TimeInterval {
+        sleepDuration(
+            eventInterval: eventInterval,
+            eventStartedAt: Date(timeIntervalSinceReferenceDate: 0),
+            now: Date(timeIntervalSinceReferenceDate: max(0, processingElapsed))
+        )
+    }
+
+    static func absoluteSleepDurationForTesting(
+        scheduleStart: TimeInterval,
+        scheduledElapsed: TimeInterval,
+        now: TimeInterval
+    ) -> TimeInterval {
+        absoluteSleepDuration(
+            scheduleStart: scheduleStart,
+            scheduledElapsed: scheduledElapsed,
+            now: now
+        )
+    }
+
+    func playbackTimingJitterMillisecondsForTesting() -> [Double] {
+        playbackTimingSamples.map(\.jitterMilliseconds)
+    }
+
+    func metronomeClickPlanForTesting(startingAt index: Int = 0) -> [PaletteMetronomeClickPlanEntry] {
+        buildMetronomeClickPlan(startingAt: index).map { click in
+            PaletteMetronomeClickPlanEntry(
+                playbackTime: click.playbackTime,
+                eventIndex: click.eventIndex,
+                measureID: click.measureID,
+                beatIndexInMeasure: click.beatIndexInMeasure,
+                accent: click.accent,
+                timeSignature: click.timeSignature
+            )
+        }
+    }
+
+    func nextMetronomeClickForTesting(
+        after elapsed: TimeInterval,
+        startingAt index: Int = 0,
+        allowImmediate: Bool = false
+    ) -> PaletteMetronomeClickPlanEntry? {
+        metronomeClickPlan = buildMetronomeClickPlan(startingAt: index)
+        let clickIndex = nextMetronomeClickIndex(after: elapsed, allowImmediate: allowImmediate)
+        guard let click = metronomeClickPlan[safe: clickIndex] else {
+            return nil
+        }
+        return PaletteMetronomeClickPlanEntry(
+            playbackTime: click.playbackTime,
+            eventIndex: click.eventIndex,
+            measureID: click.measureID,
+            beatIndexInMeasure: click.beatIndexInMeasure,
+            accent: click.accent,
+            timeSignature: click.timeSignature
+        )
+    }
+
+    private func recordPlaybackTiming(
+        eventIndex: Int,
+        expectedElapsed: TimeInterval,
+        actualElapsed: TimeInterval,
+        eventInterval: TimeInterval,
+        midiPitchCount: Int
+    ) {
+        let jitterMilliseconds = (actualElapsed - expectedElapsed) * 1_000
+        let sample = PlaybackTimingSample(
+            eventIndex: eventIndex,
+            expectedElapsed: expectedElapsed,
+            actualElapsed: actualElapsed,
+            jitterMilliseconds: jitterMilliseconds,
+            eventInterval: eventInterval,
+            midiPitchCount: midiPitchCount
+        )
+        playbackTimingSamples.append(sample)
+        if ProcessInfo.processInfo.environment["DOREMI_PLAYBACK_TIMING_LOG"] == "1" {
+            print(
+                "DPM_TIMING eventIndex=\(eventIndex) expected=\(String(format: "%.6f", expectedElapsed)) actual=\(String(format: "%.6f", actualElapsed)) jitterMs=\(String(format: "%.3f", jitterMilliseconds)) interval=\(String(format: "%.6f", eventInterval)) midiPitches=\(midiPitchCount)"
+            )
+        }
+    }
+
+    private func flushPlaybackTimingReportIfNeeded(reason: String) {
+        guard let path = ProcessInfo.processInfo.environment["DOREMI_PLAYBACK_TIMING_LOG_PATH"],
+              !path.isEmpty,
+              !playbackTimingSamples.isEmpty
+        else {
+            return
+        }
+        let jitters = playbackTimingSamples.map(\.jitterMilliseconds)
+        let average = jitters.reduce(0, +) / Double(jitters.count)
+        let sorted = jitters.sorted()
+        let p95Index = min(sorted.count - 1, max(0, Int(Double(sorted.count - 1) * 0.95)))
+        let maxJitter = sorted.last ?? 0
+        var lines: [String] = [
+            "reason=\(reason)",
+            "events=\(playbackTimingSamples.count)",
+            "averageJitterMs=\(String(format: "%.3f", average))",
+            "p95JitterMs=\(String(format: "%.3f", sorted[p95Index]))",
+            "maxJitterMs=\(String(format: "%.3f", maxJitter))",
+            "eventIndex,expectedElapsed,actualElapsed,jitterMs,eventInterval,midiPitchCount",
+        ]
+        lines.append(contentsOf: playbackTimingSamples.map { sample in
+            [
+                "\(sample.eventIndex)",
+                String(format: "%.6f", sample.expectedElapsed),
+                String(format: "%.6f", sample.actualElapsed),
+                String(format: "%.3f", sample.jitterMilliseconds),
+                String(format: "%.6f", sample.eventInterval),
+                "\(sample.midiPitchCount)",
+            ].joined(separator: ",")
+        })
+        do {
+            let url = URL(fileURLWithPath: path)
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try lines.joined(separator: "\n").write(to: url, atomically: true, encoding: .utf8)
+        } catch {
+            print("DPM_TIMING_REPORT_WRITE_FAILED \(error.localizedDescription)")
+        }
+    }
+}
+#endif
 
 private extension Array {
     subscript(safe index: Int) -> Element? {

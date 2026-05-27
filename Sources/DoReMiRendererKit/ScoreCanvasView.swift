@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 public struct ScoreCanvasView: View {
     public let layout: ScoreLayout
@@ -7,17 +10,19 @@ public struct ScoreCanvasView: View {
     public let selection: ScoreSelection?
     public let currentNoteIDs: Set<NoteID>
     public let continuationNoteIDs: Set<NoteID>
+    public let followNoteIDs: Set<NoteID>?
     public let scale: CGFloat
     public let contentOffset: CGPoint
     public let viewportSize: CGSize
     public let scrollAxes: Axis.Set
     public let followsCurrentNote: Bool
     public let scrollFollowMargin: CGFloat
+    public let staticRenderKey: String?
     public let onTap: ((HitTestResult) -> Void)?
 
     @State private var lastScrollFollowCenter: CGPoint?
     @State private var lastScrollFollowScale: CGFloat = 1
-    @State private var measuredNoteFrames: [NoteID: CGRect] = [:]
+    @State private var pendingScrollFollowTask: Task<Void, Never>?
 
     public init(
         layout: ScoreLayout,
@@ -26,12 +31,14 @@ public struct ScoreCanvasView: View {
         selection: ScoreSelection? = nil,
         currentNoteID: NoteID? = nil,
         continuationNoteIDs: Set<NoteID> = [],
+        followNoteIDs: Set<NoteID>? = nil,
         scale: CGFloat = 1,
         contentOffset: CGPoint = .zero,
         viewportSize: CGSize = .zero,
         scrollAxes: Axis.Set = [],
         followsCurrentNote: Bool = false,
         scrollFollowMargin: CGFloat = 48,
+        staticRenderKey: String? = nil,
         onTap: ((HitTestResult) -> Void)? = nil
     ) {
         self.init(
@@ -41,12 +48,14 @@ public struct ScoreCanvasView: View {
             selection: selection,
             currentNoteIDs: currentNoteID.map { [$0] } ?? [],
             continuationNoteIDs: continuationNoteIDs,
+            followNoteIDs: followNoteIDs,
             scale: scale,
             contentOffset: contentOffset,
             viewportSize: viewportSize,
             scrollAxes: scrollAxes,
             followsCurrentNote: followsCurrentNote,
             scrollFollowMargin: scrollFollowMargin,
+            staticRenderKey: staticRenderKey,
             onTap: onTap
         )
     }
@@ -58,12 +67,14 @@ public struct ScoreCanvasView: View {
         selection: ScoreSelection? = nil,
         currentNoteIDs: Set<NoteID>,
         continuationNoteIDs: Set<NoteID> = [],
+        followNoteIDs: Set<NoteID>? = nil,
         scale: CGFloat = 1,
         contentOffset: CGPoint = .zero,
         viewportSize: CGSize = .zero,
         scrollAxes: Axis.Set = [],
         followsCurrentNote: Bool = false,
         scrollFollowMargin: CGFloat = 48,
+        staticRenderKey: String? = nil,
         onTap: ((HitTestResult) -> Void)? = nil
     ) {
         self.layout = layout
@@ -72,12 +83,14 @@ public struct ScoreCanvasView: View {
         self.selection = selection
         self.currentNoteIDs = currentNoteIDs
         self.continuationNoteIDs = continuationNoteIDs
+        self.followNoteIDs = followNoteIDs
         self.scale = max(scale, ScoreViewportTransform.minimumScale)
         self.contentOffset = contentOffset
         self.viewportSize = viewportSize
         self.scrollAxes = scrollAxes
         self.followsCurrentNote = followsCurrentNote
         self.scrollFollowMargin = max(0, scrollFollowMargin)
+        self.staticRenderKey = staticRenderKey
         self.onTap = onTap
     }
 
@@ -91,29 +104,29 @@ public struct ScoreCanvasView: View {
                         scrollableCanvasContent
                     }
                     .coordinateSpace(name: ScoreCanvasScrollCoordinateSpace.name)
-                    .onPreferenceChange(ScoreCanvasNoteFramePreferenceKey.self) { frames in
-                        measuredNoteFrames = frames
-                    }
                     .onAppear {
-                        scrollToCurrentNote(with: proxy, viewportSize: effectiveViewportSize(geometry.size), force: true)
+                        scheduleScrollToCurrentNote(with: proxy, viewportSize: effectiveViewportSize(geometry.size), force: true)
                     }
                     .onChange(of: currentFollowNoteID) { _, _ in
-                        scrollToCurrentNote(with: proxy, viewportSize: effectiveViewportSize(geometry.size))
+                        scheduleScrollToCurrentNote(with: proxy, viewportSize: effectiveViewportSize(geometry.size))
+                    }
+                    .onChange(of: followNoteIDs) { _, _ in
+                        scheduleScrollToCurrentNote(with: proxy, viewportSize: effectiveViewportSize(geometry.size))
                     }
                     .onChange(of: currentNoteIDs) { _, _ in
-                        scrollToCurrentNote(with: proxy, viewportSize: effectiveViewportSize(geometry.size))
+                        scheduleScrollToCurrentNote(with: proxy, viewportSize: effectiveViewportSize(geometry.size))
                     }
                     .onChange(of: continuationNoteIDs) { _, _ in
-                        scrollToCurrentNote(with: proxy, viewportSize: effectiveViewportSize(geometry.size))
+                        scheduleScrollToCurrentNote(with: proxy, viewportSize: effectiveViewportSize(geometry.size))
                     }
                     .onChange(of: scale) { _, _ in
                         lastScrollFollowCenter = nil
                         lastScrollFollowScale = scale
-                        scrollToCurrentNote(with: proxy, viewportSize: effectiveViewportSize(geometry.size), force: true)
+                        scheduleScrollToCurrentNote(with: proxy, viewportSize: effectiveViewportSize(geometry.size), force: true)
                     }
                     .onChange(of: layout.canvasSize) { _, _ in
                         lastScrollFollowCenter = nil
-                        scrollToCurrentNote(with: proxy, viewportSize: effectiveViewportSize(geometry.size), force: true)
+                        scheduleScrollToCurrentNote(with: proxy, viewportSize: effectiveViewportSize(geometry.size), force: true)
                     }
                 }
             }
@@ -130,19 +143,19 @@ public struct ScoreCanvasView: View {
     }
 
     private var canvasContent: some View {
-        Canvas { context, _ in
-            context.scaleBy(x: scale, y: scale)
-            var drawingContext = SwiftUICanvasScoreDrawingContext(context: context)
-            ScorePainter().draw(
+        ZStack(alignment: .topLeading) {
+            ScoreStaticCanvasLayer(
                 layout: layout,
                 score: score,
                 style: style,
-                selection: selection,
-                currentNoteIDs: currentNoteIDs,
-                continuationNoteIDs: continuationNoteIDs,
-                into: &drawingContext
+                selection: nil,
+                scale: scale,
+                padding: 0,
+                contentSize: transform.scaledContentSize,
+                renderKey: staticCanvasRenderKey
             )
-            context = drawingContext.context
+            .equatable()
+            highlightOverlay(padding: 0)
         }
         .frame(width: transform.scaledContentSize.width, height: transform.scaledContentSize.height)
         .contentShape(Rectangle())
@@ -158,8 +171,8 @@ public struct ScoreCanvasView: View {
     private var scrollableCanvasContent: some View {
         ZStack(alignment: .topLeading) {
             scrollableCanvas
-            noteMeasurementAnchors
             measureFollowAnchors
+            currentFollowAnchors
         }
         .frame(width: scrollableContentSize.width, height: scrollableContentSize.height)
     }
@@ -177,20 +190,19 @@ public struct ScoreCanvasView: View {
     }
 
     private var scrollableCanvas: some View {
-        Canvas { context, _ in
-            context.translateBy(x: scrollContentPadding, y: scrollContentPadding)
-            context.scaleBy(x: scale, y: scale)
-            var drawingContext = SwiftUICanvasScoreDrawingContext(context: context)
-            ScorePainter().draw(
+        ZStack(alignment: .topLeading) {
+            ScoreStaticCanvasLayer(
                 layout: layout,
                 score: score,
                 style: style,
-                selection: selection,
-                currentNoteIDs: currentNoteIDs,
-                continuationNoteIDs: continuationNoteIDs,
-                into: &drawingContext
+                selection: nil,
+                scale: scale,
+                padding: scrollContentPadding,
+                contentSize: scrollableContentSize,
+                renderKey: staticCanvasRenderKey
             )
-            context = drawingContext.context
+            .equatable()
+            highlightOverlay(padding: scrollContentPadding)
         }
         .frame(width: scrollableContentSize.width, height: scrollableContentSize.height)
         .contentShape(Rectangle())
@@ -207,84 +219,260 @@ public struct ScoreCanvasView: View {
         )
     }
 
-    @ViewBuilder
-    private var noteMeasurementAnchors: some View {
-        ForEach(layout.noteByID.keys.sorted { $0.rawValue < $1.rawValue }, id: \.self) { noteID in
-            if let noteLayout = layout.noteByID[noteID] {
-                let anchorX = scrollContentPadding + noteLayout.noteheadFrame.minX * scale
-                let anchorY = scrollContentPadding + noteLayout.noteheadFrame.minY * scale
-                VStack(alignment: .leading, spacing: 0) {
-                    Spacer(minLength: anchorY)
-                        .frame(height: anchorY)
-                    HStack(alignment: .top, spacing: 0) {
-                        Spacer(minLength: anchorX)
-                            .frame(width: anchorX)
-                        Color.clear
-                            .frame(
-                                width: max(1, noteLayout.noteheadFrame.width * scale),
-                                height: max(1, noteLayout.noteheadFrame.height * scale)
-                            )
-                            .background(
-                                GeometryReader { proxy in
-                                    Color.clear.preference(
-                                        key: ScoreCanvasNoteFramePreferenceKey.self,
-                                        value: [noteID: proxy.frame(in: .named(ScoreCanvasScrollCoordinateSpace.name))]
-                                    )
-                                }
-                            )
-                            .id(ScoreCanvasScrollAnchor(noteID: noteID, kind: .notehead))
-                        Spacer(minLength: 0)
-                    }
-                    Spacer(minLength: 0)
-                }
-                .frame(
-                    width: scrollableContentSize.width,
-                    height: scrollableContentSize.height,
-                    alignment: .topLeading
-                )
-                .allowsHitTesting(false)
+    private var staticCanvasRenderKey: String {
+        var hasher = Hasher()
+        hasher.combine(Int(layout.canvasSize.width.rounded()))
+        hasher.combine(Int(layout.canvasSize.height.rounded()))
+        hasher.combine(layout.systems.count)
+        hasher.combine(layout.staves.count)
+        hasher.combine(layout.measures.count)
+        hasher.combine(layout.elements.count)
+        hasher.combine(layout.staffLines.count)
+        hasher.combine(layout.ledgerLines.count)
+        hasher.combine(layout.noteByID.count)
+        for measure in layout.measures.prefix(12) {
+            hasher.combine(measure.measureID)
+            hasher.combine(Int(measure.frame.minX.rounded()))
+            hasher.combine(Int(measure.frame.width.rounded()))
+        }
+        for measure in layout.measures.suffix(12) {
+            hasher.combine(measure.measureID)
+            hasher.combine(Int(measure.frame.minX.rounded()))
+            hasher.combine(Int(measure.frame.width.rounded()))
+        }
+        for element in layout.elements.prefix(24) {
+            hasher.combine(element.id)
+            hasher.combine(element.kind)
+            hasher.combine(Int(element.frame.minX.rounded()))
+            hasher.combine(Int(element.frame.minY.rounded()))
+        }
+        for element in layout.elements.suffix(24) {
+            hasher.combine(element.id)
+            hasher.combine(element.kind)
+            hasher.combine(Int(element.frame.minX.rounded()))
+            hasher.combine(Int(element.frame.minY.rounded()))
+        }
+        if let staticRenderKey {
+            hasher.combine(staticRenderKey)
+        } else {
+            hasher.combine(String(reflecting: style.backgroundColor))
+            hasher.combine(String(reflecting: style.defaultInkColor))
+            hasher.combine(String(reflecting: style.staffLineStyle))
+            hasher.combine(String(reflecting: style.noteColorStyle))
+            hasher.combine(String(reflecting: style.ledgerLineStyle))
+            hasher.combine(String(reflecting: style.accidentalStyle))
+            hasher.combine(String(reflecting: style.glyphStyle))
+            hasher.combine(String(reflecting: style.measureNumberDisplayMode))
+        }
+        return String(hasher.finalize())
+    }
+
+    private func highlightOverlay(padding: CGFloat) -> some View {
+        ZStack(alignment: .topLeading) {
+            ForEach(continuationHighlightRects(padding: padding), id: \.id) { highlight in
+                Ellipse()
+                    .fill(Color(scoreColor: highlight.fillColor))
+                    .overlay(
+                        Ellipse()
+                            .stroke(Color(scoreColor: highlight.strokeColor), lineWidth: highlight.strokeWidth)
+                    )
+                    .frame(width: highlight.frame.width, height: highlight.frame.height)
+                    .position(x: highlight.frame.midX, y: highlight.frame.midY)
+            }
+            ForEach(currentHighlightBarRects(padding: padding), id: \.id) { highlight in
+                Rectangle()
+                    .fill(Color(scoreColor: highlight.color))
+                    .frame(width: highlight.frame.width, height: highlight.frame.height)
+                    .position(x: highlight.frame.midX, y: highlight.frame.midY)
             }
         }
+        .frame(width: padding == 0 ? transform.scaledContentSize.width : scrollableContentSize.width,
+               height: padding == 0 ? transform.scaledContentSize.height : scrollableContentSize.height)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    private struct CurrentHighlightBar {
+        let id: String
+        let frame: CGRect
+        let color: ScoreColor
+    }
+
+    private struct ContinuationHighlight {
+        let id: NoteID
+        let frame: CGRect
+        let fillColor: ScoreColor
+        let strokeColor: ScoreColor
+        let strokeWidth: CGFloat
+    }
+
+    private func currentHighlightBarRects(padding: CGFloat) -> [CurrentHighlightBar] {
+        let color = ScoreColor(red: 0.08, green: 0.72, blue: 1, alpha: 0.78)
+        var drawnBarKeys: Set<String> = []
+        var bars: [CurrentHighlightBar] = []
+        for noteID in currentNoteIDs.sorted(by: { $0.rawValue < $1.rawValue }) {
+            guard let noteLayout = layout.noteLayout(for: noteID) else {
+                continue
+            }
+            let staffFrame = noteLayout.staffID.flatMap { staffID in
+                layout.staves
+                    .filter { $0.staffID == staffID }
+                    .min {
+                        abs($0.middleLineY - noteLayout.noteheadCenter.y) < abs($1.middleLineY - noteLayout.noteheadCenter.y)
+                    }?
+                    .frame
+            }
+            let referenceFrame = staffFrame ?? noteLayout.noteheadFrame
+            let width = max(3, noteLayout.noteheadFrame.width * 0.16)
+            let x = noteLayout.noteheadFrame.minX - noteLayout.noteheadFrame.width * 0.05
+            let y = referenceFrame.minY - width
+            let height = referenceFrame.height + width * 2
+            let barKey = [
+                noteLayout.staffID?.rawValue ?? "staff",
+                String(Int(x.rounded())),
+                String(Int(y.rounded())),
+                String(Int(height.rounded())),
+            ].joined(separator: ".")
+            guard drawnBarKeys.insert(barKey).inserted else {
+                continue
+            }
+            let scaledFrame = CGRect(
+                x: padding + x * scale,
+                y: padding + y * scale,
+                width: width * scale,
+                height: height * scale
+            )
+            bars.append(CurrentHighlightBar(id: barKey, frame: scaledFrame, color: color))
+        }
+        return bars
+    }
+
+    private func continuationHighlightRects(padding: CGFloat) -> [ContinuationHighlight] {
+        let base = style.highlightStyle.color
+        let fill = ScoreColor(red: base.red, green: base.green, blue: base.blue, alpha: min(base.alpha, 0.14))
+        let stroke = ScoreColor(red: base.red, green: base.green, blue: base.blue, alpha: min(max(base.alpha, 0.28), 0.42))
+        return continuationNoteIDs
+            .subtracting(currentNoteIDs)
+            .sorted(by: { $0.rawValue < $1.rawValue })
+            .compactMap { noteID in
+                guard let noteLayout = layout.noteLayout(for: noteID) else {
+                    return nil
+                }
+                let frame = noteLayout.noteheadFrame.insetBy(dx: -6, dy: -6)
+                let scaledFrame = CGRect(
+                    x: padding + frame.minX * scale,
+                    y: padding + frame.minY * scale,
+                    width: frame.width * scale,
+                    height: frame.height * scale
+                )
+                return ContinuationHighlight(
+                    id: noteID,
+                    frame: scaledFrame,
+                    fillColor: fill,
+                    strokeColor: stroke,
+                    strokeWidth: 1.5
+                )
+            }
     }
 
     @ViewBuilder
     private var measureFollowAnchors: some View {
-        ForEach(layout.noteByID.keys.sorted { $0.rawValue < $1.rawValue }, id: \.self) { noteID in
-            if let noteLayout = layout.noteByID[noteID] {
-                let anchorX = scrollContentPadding + ScoreCanvasFollowHeuristics.measureLeadingX(
-                    for: noteLayout,
-                    in: layout
-                ) * scale
-                let anchorY = scrollContentPadding + noteLayout.noteheadFrame.minY * scale
-                VStack(alignment: .leading, spacing: 0) {
-                    Spacer(minLength: anchorY)
-                        .frame(height: anchorY)
-                    HStack(alignment: .top, spacing: 0) {
-                        Spacer(minLength: anchorX)
-                            .frame(width: anchorX)
-                        Color.clear
-                            .frame(
-                                width: max(1, noteLayout.noteheadFrame.width * scale),
-                                height: max(1, noteLayout.noteheadFrame.height * scale)
-                            )
-                            .id(ScoreCanvasScrollAnchor(noteID: noteID, kind: .measureLeading))
-                        Spacer(minLength: 0)
-                    }
+        ForEach(layout.measures, id: \.measureID) { measure in
+            let anchor = measureFollowAnchorPoint(for: measure)
+            VStack(alignment: .leading, spacing: 0) {
+                Spacer(minLength: anchor.y)
+                    .frame(height: anchor.y)
+                HStack(alignment: .top, spacing: 0) {
+                    Spacer(minLength: anchor.x)
+                        .frame(width: anchor.x)
+                    Color.clear
+                        .frame(width: 1, height: 1)
+                        .id(ScoreCanvasMeasureScrollAnchor(measureID: measure.measureID))
                     Spacer(minLength: 0)
                 }
-                .frame(
-                    width: scrollableContentSize.width,
-                    height: scrollableContentSize.height,
-                    alignment: .topLeading
-                )
-                .allowsHitTesting(false)
+                Spacer(minLength: 0)
             }
+            .frame(
+                width: scrollableContentSize.width,
+                height: scrollableContentSize.height,
+                alignment: .topLeading
+            )
+                .allowsHitTesting(false)
         }
+    }
+
+    private func measureFollowAnchorPoint(for measure: MeasureLayout) -> CGPoint {
+        let firstNoteInMeasure = layout.noteByID.values
+            .filter { $0.measureID == measure.measureID }
+            .min { lhs, rhs in
+                if lhs.noteheadFrame.minX == rhs.noteheadFrame.minX {
+                    return lhs.noteheadFrame.minY < rhs.noteheadFrame.minY
+                }
+                return lhs.noteheadFrame.minX < rhs.noteheadFrame.minX
+            }
+        let layoutX: CGFloat
+        let layoutY: CGFloat
+        if let firstNoteInMeasure {
+            layoutX = ScoreCanvasFollowHeuristics.measureLeadingX(for: firstNoteInMeasure, in: layout)
+            layoutY = firstNoteInMeasure.noteheadFrame.minY
+        } else {
+            layoutX = measure.frame.minX
+            layoutY = measure.frame.minY
+        }
+        return CGPoint(
+            x: scrollContentPadding + layoutX * scale,
+            y: scrollContentPadding + layoutY * scale
+        )
+    }
+
+    @ViewBuilder
+    private var currentFollowAnchors: some View {
+        if let noteID = currentFollowNoteID,
+           let noteLayout = layout.noteByID[noteID] {
+            followAnchor(
+                noteID: noteID,
+                noteLayout: noteLayout,
+                kind: .notehead,
+                x: noteLayout.noteheadFrame.minX,
+                y: noteLayout.noteheadFrame.minY
+            )
+            followAnchor(
+                noteID: noteID,
+                noteLayout: noteLayout,
+                kind: .measureLeading,
+                x: ScoreCanvasFollowHeuristics.measureLeadingX(for: noteLayout, in: layout),
+                y: noteLayout.noteheadFrame.minY
+            )
+        }
+    }
+
+    private func followAnchor(
+        noteID: NoteID,
+        noteLayout: NoteLayout,
+        kind: ScoreCanvasScrollAnchor.Kind,
+        x: CGFloat,
+        y: CGFloat
+    ) -> some View {
+        Color.clear
+            .frame(
+                width: max(1, noteLayout.noteheadFrame.width * scale),
+                height: max(1, noteLayout.noteheadFrame.height * scale)
+            )
+            .position(
+                x: scrollContentPadding + x * scale + max(1, noteLayout.noteheadFrame.width * scale) / 2,
+                y: scrollContentPadding + y * scale + max(1, noteLayout.noteheadFrame.height * scale) / 2
+            )
+            .id(ScoreCanvasScrollAnchor(noteID: noteID, kind: kind))
+            .allowsHitTesting(false)
     }
 
     private var currentFollowNoteID: NoteID? {
         guard followsCurrentNote else {
             return nil
+        }
+        if let followNoteIDs,
+           let follow = followNoteIDs.sorted(by: { $0.rawValue < $1.rawValue }).first {
+            return follow
         }
         if let attack = currentNoteIDs.sorted(by: { $0.rawValue < $1.rawValue }).first {
             return attack
@@ -294,6 +482,19 @@ public struct ScoreCanvasView: View {
 
     private func effectiveViewportSize(_ geometrySize: CGSize) -> CGSize {
         viewportSize == .zero ? geometrySize : viewportSize
+    }
+
+    private func scheduleScrollToCurrentNote(
+        with proxy: ScrollViewProxy,
+        viewportSize: CGSize,
+        force: Bool = false
+    ) {
+        pendingScrollFollowTask?.cancel()
+        pendingScrollFollowTask = Task { @MainActor in
+            await Task.yield()
+            guard !Task.isCancelled else { return }
+            scrollToCurrentNote(with: proxy, viewportSize: viewportSize, force: force)
+        }
     }
 
     private func scrollToCurrentNote(with proxy: ScrollViewProxy, viewportSize: CGSize, force: Bool = false) {
@@ -314,30 +515,43 @@ public struct ScoreCanvasView: View {
             noteCenter: noteLayout.noteheadCenter,
             lastFollowCenter: lastScrollFollowCenter
         )
+        let currentFrame = ScoreCanvasFollowHeuristics.frame(
+            for: noteLayout,
+            scale: scale,
+            padding: scrollContentPadding
+        )
         if !force,
-           let measuredFrame = measuredNoteFrames[noteID],
            ScoreCanvasFollowHeuristics.isFrameVisible(
-               measuredFrame,
+               currentFrame,
                viewportSize: viewportSize,
                margin: scrollFollowMargin
            ),
            !movedBeyondLastFollow {
             return
         }
-        if let measuredFrame = measuredNoteFrames[noteID] {
-            let measuredAnchor = ScoreCanvasFollowHeuristics.scrollAnchor(
-                for: measuredFrame,
-                viewportSize: viewportSize,
-                margin: scrollFollowMargin
-            )
-            scrollAnchor = measuredAnchor == .center && movedBeyondLastFollow ? scrollAnchor : measuredAnchor
-        }
+        let measuredAnchor = ScoreCanvasFollowHeuristics.scrollAnchor(
+            for: currentFrame,
+            viewportSize: viewportSize,
+            margin: scrollFollowMargin
+        )
+        scrollAnchor = measuredAnchor == .center && movedBeyondLastFollow ? scrollAnchor : measuredAnchor
 
         lastScrollFollowCenter = noteLayout.noteheadCenter
         lastScrollFollowScale = scale
-        let targetAnchor = ScoreCanvasScrollAnchor(noteID: noteID, kind: .measureLeading)
         let measureLeadingAnchor = UnitPoint(x: 0, y: scrollAnchor.y)
-        let animation: Animation? = force ? .easeInOut(duration: 0.16) : .linear(duration: 0.10)
+        let animation: Animation? = force ? .easeInOut(duration: 0.16) : nil
+        if let measureID = noteLayout.measureID {
+            let targetAnchor = ScoreCanvasMeasureScrollAnchor(measureID: measureID)
+            if let animation {
+                withAnimation(animation) {
+                    proxy.scrollTo(targetAnchor, anchor: measureLeadingAnchor)
+                }
+            } else {
+                proxy.scrollTo(targetAnchor, anchor: measureLeadingAnchor)
+            }
+            return
+        }
+        let targetAnchor = ScoreCanvasScrollAnchor(noteID: noteID, kind: .measureLeading)
         if let animation {
             withAnimation(animation) {
                 proxy.scrollTo(targetAnchor, anchor: measureLeadingAnchor)
@@ -358,15 +572,257 @@ private struct ScoreCanvasScrollAnchor: Hashable {
     let kind: Kind
 }
 
+private struct ScoreCanvasMeasureScrollAnchor: Hashable {
+    let measureID: MeasureID
+}
+
 private enum ScoreCanvasScrollCoordinateSpace {
     static let name = "DoReMiRendererKit.ScoreCanvasView.scroll"
 }
 
-private struct ScoreCanvasNoteFramePreferenceKey: PreferenceKey {
-    static let defaultValue: [NoteID: CGRect] = [:]
+private struct ScoreStaticCanvasLayer: View, Equatable {
+    let layout: ScoreLayout
+    let score: ScoreDocument
+    let style: ScoreStyle
+    let selection: ScoreSelection?
+    let scale: CGFloat
+    let padding: CGFloat
+    let contentSize: CGSize
+    let renderKey: String
 
-    static func reduce(value: inout [NoteID: CGRect], nextValue: () -> [NoteID: CGRect]) {
-        value.merge(nextValue(), uniquingKeysWith: { _, new in new })
+    nonisolated static func == (lhs: ScoreStaticCanvasLayer, rhs: ScoreStaticCanvasLayer) -> Bool {
+        lhs.renderKey == rhs.renderKey
+            && lhs.scale == rhs.scale
+            && lhs.padding == rhs.padding
+            && lhs.contentSize == rhs.contentSize
+    }
+
+    var body: some View {
+#if canImport(UIKit)
+        if Self.usesPlatformStaticCanvas {
+            ScoreStaticCanvasRepresentable(
+                layout: layout,
+                score: score,
+                style: style,
+                selection: selection,
+                scale: scale,
+                padding: padding,
+                contentSize: contentSize,
+                renderKey: renderKey
+            )
+        } else {
+            swiftUICanvasLayer
+        }
+#else
+        swiftUICanvasLayer
+#endif
+    }
+
+    private var swiftUICanvasLayer: some View {
+        Canvas { context, _ in
+            context.translateBy(x: padding, y: padding)
+            context.scaleBy(x: scale, y: scale)
+            var drawingContext = SwiftUICanvasScoreDrawingContext(context: context)
+            ScorePainter().draw(
+                layout: layout,
+                score: score,
+                style: style,
+                selection: selection,
+                currentNoteIDs: [],
+                continuationNoteIDs: [],
+                into: &drawingContext
+            )
+            context = drawingContext.context
+        }
+        .frame(width: contentSize.width, height: contentSize.height)
+        .accessibilityHidden(true)
+    }
+
+    private static var usesPlatformStaticCanvas: Bool {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil
+    }
+}
+
+#if canImport(UIKit)
+private struct ScoreStaticCanvasRepresentable: UIViewRepresentable {
+    let layout: ScoreLayout
+    let score: ScoreDocument
+    let style: ScoreStyle
+    let selection: ScoreSelection?
+    let scale: CGFloat
+    let padding: CGFloat
+    let contentSize: CGSize
+    let renderKey: String
+
+    func makeUIView(context: Context) -> ScoreStaticCanvasUIView {
+        let view = ScoreStaticCanvasUIView()
+        view.isOpaque = false
+        view.backgroundColor = .clear
+        view.isAccessibilityElement = false
+        view.accessibilityElementsHidden = true
+        view.update(
+            layout: layout,
+            score: score,
+            style: style,
+            selection: selection,
+            scale: scale,
+            padding: padding,
+            contentSize: contentSize,
+            renderKey: renderKey
+        )
+        return view
+    }
+
+    func updateUIView(_ uiView: ScoreStaticCanvasUIView, context: Context) {
+        uiView.update(
+            layout: layout,
+            score: score,
+            style: style,
+            selection: selection,
+            scale: scale,
+            padding: padding,
+            contentSize: contentSize,
+            renderKey: renderKey
+        )
+    }
+}
+
+private final class ScoreStaticCanvasUIView: UIView {
+    private var layout = ScoreLayout()
+    private var score = ScoreDocument(parts: [])
+    private var style = ScoreStyle()
+    private var selection: ScoreSelection?
+    private var scoreScale: CGFloat = 1
+    private var padding: CGFloat = 0
+    private var contentSize: CGSize = .zero
+    private var renderKey = ""
+
+    func update(
+        layout: ScoreLayout,
+        score: ScoreDocument,
+        style: ScoreStyle,
+        selection: ScoreSelection?,
+        scale: CGFloat,
+        padding: CGFloat,
+        contentSize: CGSize,
+        renderKey: String
+    ) {
+        let needsRedraw = self.renderKey != renderKey
+            || self.scoreScale != scale
+            || self.padding != padding
+            || self.contentSize != contentSize
+        self.layout = layout
+        self.score = score
+        self.style = style
+        self.selection = selection
+        self.scoreScale = scale
+        self.padding = padding
+        self.contentSize = contentSize
+        self.renderKey = renderKey
+        if needsRedraw {
+            setNeedsDisplay()
+        }
+    }
+
+    override func draw(_ rect: CGRect) {
+        guard let cgContext = UIGraphicsGetCurrentContext() else {
+            return
+        }
+        cgContext.clip(to: rect)
+        let safeScale = max(scoreScale, ScoreViewportTransform.minimumScale)
+        let visibleRect = CGRect(
+            x: (rect.minX - padding) / safeScale,
+            y: (rect.minY - padding) / safeScale,
+            width: rect.width / safeScale,
+            height: rect.height / safeScale
+        )
+        cgContext.translateBy(x: padding, y: padding)
+        cgContext.scaleBy(x: safeScale, y: safeScale)
+        var drawingContext = CoreGraphicsScoreDrawingContext(cgContext)
+        ScorePainter(visibleRect: visibleRect).draw(
+            layout: layout,
+            score: score,
+            style: style,
+            selection: selection,
+            currentNoteIDs: [],
+            continuationNoteIDs: [],
+            into: &drawingContext
+        )
+    }
+}
+#endif
+
+private struct ScoreCanvasHighlightPainter: Sendable {
+    func draw<Context: ScoreDrawingContext>(
+        layout: ScoreLayout,
+        style: ScoreStyle,
+        currentNoteIDs: Set<NoteID>,
+        continuationNoteIDs: Set<NoteID>,
+        into context: inout Context
+    ) {
+        drawContinuationNoteHighlights(
+            layout: layout,
+            noteIDs: continuationNoteIDs.subtracting(currentNoteIDs),
+            style: style,
+            into: &context
+        )
+        drawCurrentNoteBars(layout: layout, noteIDs: currentNoteIDs, into: &context)
+    }
+
+    private func drawCurrentNoteBars<Context: ScoreDrawingContext>(
+        layout: ScoreLayout,
+        noteIDs: Set<NoteID>,
+        into context: inout Context
+    ) {
+        let color = ScoreColor(red: 0.08, green: 0.72, blue: 1, alpha: 0.78)
+        var drawnBarKeys: Set<String> = []
+        for noteID in noteIDs {
+            guard let noteLayout = layout.noteLayout(for: noteID) else {
+                continue
+            }
+            let staffFrame = noteLayout.staffID.flatMap { staffID in
+                layout.staves
+                    .filter { $0.staffID == staffID }
+                    .min {
+                        abs($0.middleLineY - noteLayout.noteheadCenter.y) < abs($1.middleLineY - noteLayout.noteheadCenter.y)
+                    }?
+                    .frame
+            }
+            let referenceFrame = staffFrame ?? noteLayout.noteheadFrame
+            let width = max(3, noteLayout.noteheadFrame.width * 0.16)
+            let x = noteLayout.noteheadFrame.minX - noteLayout.noteheadFrame.width * 0.05
+            let y = referenceFrame.minY - width
+            let height = referenceFrame.height + width * 2
+            let barKey = [
+                noteLayout.staffID?.rawValue ?? "staff",
+                String(Int(x.rounded())),
+                String(Int(y.rounded())),
+                String(Int(height.rounded())),
+            ].joined(separator: ".")
+            guard drawnBarKeys.insert(barKey).inserted else {
+                continue
+            }
+            context.fill(CGRect(x: x, y: y, width: width, height: height), color: color)
+        }
+    }
+
+    private func drawContinuationNoteHighlights<Context: ScoreDrawingContext>(
+        layout: ScoreLayout,
+        noteIDs: Set<NoteID>,
+        style: ScoreStyle,
+        into context: inout Context
+    ) {
+        let base = style.highlightStyle.color
+        let fill = ScoreColor(red: base.red, green: base.green, blue: base.blue, alpha: min(base.alpha, 0.14))
+        let stroke = ScoreColor(red: base.red, green: base.green, blue: base.blue, alpha: min(max(base.alpha, 0.28), 0.42))
+        for noteID in noteIDs {
+            guard let noteLayout = layout.noteLayout(for: noteID) else {
+                continue
+            }
+            let frame = noteLayout.noteheadFrame.insetBy(dx: -6, dy: -6)
+            context.fillEllipse(in: frame, color: fill)
+            context.strokeEllipse(in: frame, color: stroke, lineWidth: 1.5)
+        }
     }
 }
 
@@ -390,6 +846,16 @@ struct ScoreCanvasFollowHeuristics {
             return noteLayout.noteheadFrame.minX
         }
         return measure.frame.minX
+    }
+
+    static func frame(for noteLayout: NoteLayout, scale: CGFloat, padding: CGFloat) -> CGRect {
+        let effectiveScale = max(scale, ScoreViewportTransform.minimumScale)
+        return CGRect(
+            x: padding + noteLayout.noteheadFrame.minX * effectiveScale,
+            y: padding + noteLayout.noteheadFrame.minY * effectiveScale,
+            width: max(1, noteLayout.noteheadFrame.width * effectiveScale),
+            height: max(1, noteLayout.noteheadFrame.height * effectiveScale)
+        )
     }
 
     static func isFrameVisible(_ frame: CGRect, viewportSize: CGSize, margin: CGFloat) -> Bool {

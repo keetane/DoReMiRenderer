@@ -233,7 +233,7 @@ struct KeyboardPitchMapperTests {
         let noteIDs = Set(try #require(loaded.playbackEvents.first?.noteIDs))
         let display = PracticeNoteNameFormatter.display(layout: loaded.layout, noteIDs: noteIDs)
 
-        #expect(display.summary.contains("Chord:"))
+        #expect(!display.summary.contains("Chord:"))
         #expect(display.englishName.contains("C4"))
         #expect(display.englishName.contains("E4"))
     }

@@ -18,12 +18,13 @@ enum PaletteSettingsKeys {
     static let metronomeEnabled = "doremi.palette.metronomeEnabled"
     static let metronomeCompoundMode = "doremi.palette.metronomeCompoundMode"
     static let metronomeClickSoundStyle = "doremi.palette.metronomeClickSoundStyle"
+    static let onboardingCompleted = "doremi.palette.onboardingCompleted"
 }
 
 struct AppRootView: View {
     @StateObject private var session = PaletteScoreSession()
     @AppStorage(PaletteSettingsKeys.noteColorVisible) private var noteColorVisible = true
-    @AppStorage(PaletteSettingsKeys.staffColorVisible) private var staffColorVisible = true
+    @AppStorage(PaletteSettingsKeys.staffColorVisible) private var staffColorVisible = false
     @AppStorage(PaletteSettingsKeys.keyboardVisible) private var keyboardVisible = true
     @AppStorage(PaletteSettingsKeys.keyboardColorVisible) private var keyboardColorVisible = false
     @AppStorage(PaletteSettingsKeys.keyboardColorPositionTop) private var keyboardColorPositionTop = true
@@ -39,6 +40,7 @@ struct AppRootView: View {
     @AppStorage(PaletteSettingsKeys.metronomeEnabled) private var metronomeEnabled = false
     @AppStorage(PaletteSettingsKeys.metronomeCompoundMode) private var metronomeCompoundModeRawValue = PaletteMetronomeCompoundMode.largeBeat.rawValue
     @AppStorage(PaletteSettingsKeys.metronomeClickSoundStyle) private var metronomeClickSoundStyleRawValue = PaletteMetronomeClickSoundStyle.classic.rawValue
+    @AppStorage(PaletteSettingsKeys.onboardingCompleted) private var onboardingCompleted = false
 
     var body: some View {
         ScorePracticeView(
@@ -59,7 +61,8 @@ struct AppRootView: View {
             metronomeEnabled: $metronomeEnabled,
             metronomeCompoundModeRawValue: $metronomeCompoundModeRawValue,
             metronomeClickSoundStyleRawValue: $metronomeClickSoundStyleRawValue,
-            pitchClassColorEnabledRawValue: $pitchClassColorEnabledRawValue
+            pitchClassColorEnabledRawValue: $pitchClassColorEnabledRawValue,
+            onboardingCompleted: $onboardingCompleted
         )
         .task {
             if !displayTransposeEnabled {
@@ -71,6 +74,31 @@ struct AppRootView: View {
             session.setMetronomeCompoundMode(PaletteMetronomeCompoundMode.fromRawValue(metronomeCompoundModeRawValue))
             session.setMetronomeClickSoundStyle(PaletteMetronomeClickSoundStyle.fromRawValue(metronomeClickSoundStyleRawValue))
             session.loadBundledSampleIfNeeded()
+#if DEBUG
+            await runDebugAutoplayIfRequested()
+#endif
         }
     }
+
+#if DEBUG
+    @MainActor
+    private func runDebugAutoplayIfRequested() async {
+        let environment = ProcessInfo.processInfo.environment
+        guard environment["DOREMI_AUTOPLAY_PLAYBACK"] == "1" else {
+            return
+        }
+        if let requestedSample = environment["DOREMI_AUTOPLAY_SAMPLE_RESOURCE"],
+           let sample = SampleScoreCatalog.default.samples.first(where: {
+               $0.resourceName == requestedSample || $0.displayName == requestedSample
+           }) {
+            session.loadSample(sample)
+        }
+        let delay = Double(environment["DOREMI_AUTOPLAY_DELAY_SECONDS"] ?? "") ?? 1.0
+        let nanoseconds = UInt64(max(0, delay) * 1_000_000_000)
+        if nanoseconds > 0 {
+            try? await Task.sleep(nanoseconds: nanoseconds)
+        }
+        session.play()
+    }
+#endif
 }

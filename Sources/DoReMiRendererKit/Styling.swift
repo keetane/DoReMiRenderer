@@ -344,7 +344,7 @@ public struct ScoreColorResolver: Sendable {
             }
             return palette.color(for: pitch)
         case .rule(let rule):
-            guard let note = score.note(for: element.noteID) else {
+            guard let note = element.noteID.flatMap({ layout.scoreNote(for: $0) }) ?? score.note(for: element.noteID) else {
                 return style.defaultInkColor
             }
             return rule.color(for: note, layout: element.noteID.flatMap { layout.noteLayout(for: $0) }, context: context)
@@ -398,7 +398,8 @@ public struct ScoreColorResolver: Sendable {
                 resolvedNoteColor(for: $0, score: score, layout: layout, style: style, context: context)
             } ?? style.defaultInkColor
         case .rule(let rule):
-            return rule.color(for: element.ledgerLine ?? LedgerLineLayout(id: element.id), note: score.note(for: element.noteID), context: context)
+            let note = element.noteID.flatMap { layout.scoreNote(for: $0) } ?? score.note(for: element.noteID)
+            return rule.color(for: element.ledgerLine ?? LedgerLineLayout(id: element.id), note: note, context: context)
         }
     }
 
@@ -420,7 +421,8 @@ public struct ScoreColorResolver: Sendable {
             }
             return style.defaultInkColor
         case .rule(let rule):
-            return rule.color(for: element, note: score.note(for: element.noteID), context: context)
+            let note = element.noteID.flatMap { layout.scoreNote(for: $0) } ?? score.note(for: element.noteID)
+            return rule.color(for: element, note: note, context: context)
         }
     }
 
@@ -538,14 +540,29 @@ public let defaultEducationalPalette = ScaleColorPalette(
 )
 
 public func staffLinePitchClass(clefKind: ClefKind, lineIndex: Int) -> PitchClass {
+    staffPitchClass(clefKind: clefKind, lineStepFromMiddle: (clampedStaffLineIndex(lineIndex) - 2) * 2)
+}
+
+public func staffPitchClass(clefKind: ClefKind, lineStepFromMiddle: Int) -> PitchClass {
+    let naturalPitchClasses: [PitchClass] = [.c, .d, .e, .f, .g, .a, .b]
+    let middleLineIndex: Int
     switch clefKind {
     case .bass:
-        return [.g, .b, .d, .f, .a][clampedStaffLineIndex(lineIndex)]
+        middleLineIndex = 1 // D
     case .treble, .alto, .tenor, .unknown:
-        return [.e, .g, .b, .d, .f][clampedStaffLineIndex(lineIndex)]
+        middleLineIndex = 6 // B
     }
+    let index = (middleLineIndex + lineStepFromMiddle).modulo(naturalPitchClasses.count)
+    return naturalPitchClasses[index]
 }
 
 private func clampedStaffLineIndex(_ lineIndex: Int) -> Int {
     min(max(lineIndex, 0), 4)
+}
+
+private extension Int {
+    func modulo(_ divisor: Int) -> Int {
+        let remainder = self % divisor
+        return remainder >= 0 ? remainder : remainder + divisor
+    }
 }

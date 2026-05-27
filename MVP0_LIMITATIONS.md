@@ -42,6 +42,15 @@ This document records the known limitations of DoReMiRendererKit after Phase 0 t
   time signature -> notes`. The spacing is collision-safe for the current MVP,
   including display-transposed key signatures, but full publishing-quality
   prefix spacing remains out of scope.
+- Measure widths are normalized in `ScoreLayoutEngine` with an absolute
+  minimum width, a normal-measure minimum width, and a 75% guarded minimum for
+  first-measure pickup candidates and trailing incomplete final measures. This
+  keeps weak-start / anacrusis first measures and short final bars from
+  collapsing when they contain only one or two beats. The MVP does not treat
+  middle short measures as pickups, applies justification only to non-final
+  wrapped systems, gives compact short-note groups readable minimum visual gaps
+  near their rhythmic onset, and still does not attempt publishing-quality
+  proportional spacing.
 - When note colors are enabled, note accidentals use the same pitch color as
   the associated displayed note. Key-signature accidentals also use pitch-class
   color in the current MVP; disabling note colors returns accidentals to the
@@ -89,9 +98,25 @@ This document records the known limitations of DoReMiRendererKit after Phase 0 t
 
 - Basic zoom and scroll coordinate transforms are implemented for
   `ScoreCanvasView`.
+- DoReMi Palette supports app-side pinch zoom with a persisted continuous
+  `0.8x...3.0x` scale. The scale affects only the view transform; it does not
+  mutate `ScoreDocument`, `ScoreLayout`, `NoteID`, or playback events.
 - Basic current-note scroll follow is implemented for playback stepping,
   Practice Mode stepping, playback cursor updates, and tap selection by using
   `ScoreLayout.noteByID` and note anchors derived from layout coordinates.
+- DoReMi Palette displays the current score measure and total measure count
+  between Previous and Next and can jump to a user-entered measure number from
+  that inline field. The jump target
+  is the first matching event in the expanded playback sequence, falling
+  forward to the next event for empty measures. If a repeated or jumped-to
+  measure appears multiple times in playback, measure jump targets the first
+  occurrence on the score. Repeat-pass-specific jump, page jump, bookmarks,
+  rehearsal marks, and measure-range selection remain future work.
+- DoReMi Palette includes an app-side first-use guide with SwiftUI coach marks
+  anchored to key controls. Anchor collection is best-effort; if a view is not
+  currently measurable, the guide card falls back to a centered position. Video
+  tutorials, analytics, remote help content, and multi-language guide content
+  are not implemented.
 - Scroll follow avoids recentering every nearby note; it scrolls when the next
   current note leaves the measured viewport margin. It uses edge anchors to
   avoid forcing every follow request back to the center. Advanced user-scroll
@@ -103,8 +128,9 @@ This document records the known limitations of DoReMiRendererKit after Phase 0 t
   high/low notes, stems, flags, rests, clefs, and ledger lines are not clipped
   in normal MVP samples. Collision-aware engraving and complex multi-system
   bounds remain future work.
-- Pinch zoom, inertial scroll tuning, horizontal page navigation, and advanced
-  automatic viewport management are not implemented.
+- Pinch-center preservation is MVP-level. Inertial scroll tuning, horizontal
+  page navigation, and advanced automatic viewport management are not
+  implemented.
 - Complex selection state management is not implemented.
 - Multiple selection, drag gestures, and annotation workflows are not implemented.
 - `ScoreCanvasView.onTap` is the primary MVP0 interaction API.
@@ -122,15 +148,24 @@ This document records the known limitations of DoReMiRendererKit after Phase 0 t
 - Generated tones use a minimum audible duration for short pitched events while
   keeping event scheduling duration unchanged. Real audio timing still needs
   user-side listening QA on Simulator or device.
+- Large-score playback has been hardened for TestFlight with separated static
+  score drawing and cursor overlays, visible-rect culling, SMuFL/CoreText text
+  caching, throttled current-note UI updates, viewport-margin-based
+  current-note follow, measure-level follow anchors, and cached generated audio
+  buffers. This is still an MVP performance path rather than sample-accurate
+  audio scheduling; unusually large or complex imported scores may need further
+  virtualization/profiling and real-device listening confirmation.
 - Metronome MVP is app-side and uses generated click tones synchronized to the
   current playback BPM. It starts with Play when enabled and stops on Pause,
   Stop, Reset, and playback end. When enabled during playback, it waits for the
-  next beat boundary rather than treating the toggle moment as beat 1. Parsed
-  MusicXML time signatures drive the beat cycle, and the Advanced MVP adds
-  6/8, 9/8, and 12/8 large-beat/subdivision modes, strong/medium/weak accent
-  patterns, tap tempo, and generated click sound styles. Standalone practice
-  metronome, custom imported click samples, user-edited arbitrary accent
-  patterns, and sample-accurate scheduling remain future work.
+  next planned beat boundary rather than treating the toggle moment as beat 1.
+  Parsed MusicXML time signatures drive a measure-based click plan generated
+  from the expanded playback sequence, so each 3/4 and 4/4 measure occurrence
+  starts with a strong beat 0. The Advanced MVP adds 6/8, 9/8, and 12/8
+  large-beat/subdivision modes, strong/medium/weak accent patterns, tap tempo,
+  and generated click sound styles. Standalone practice metronome, custom
+  imported click samples, user-edited arbitrary accent patterns, and
+  sample-accurate scheduling remain future work.
 - Mixed visual events can contain tied continuations and new attack pitches; the
   app plays the `midiPitches` attack list and does not sound continuation-only
   events.
@@ -200,10 +235,11 @@ Areas that remain intentionally incomplete in the current MVP are:
 - advanced notation, SMuFL glyph rendering, and publishing-quality engraving
 
 Phase 17A physical iPad QA has been completed by user-side confirmation. Phase
-17B restores the default launch score to the normal learning-oriented
-`DoReMi Palette Sample`, keeps all QA fixtures available from Library, and
-records privacy, license, release-build, archive, and TestFlight checklist
-status before App Store Connect upload.
+17B keeps the TestFlight-facing Library to three bundled learning MXL samples,
+keeps historical QA fixtures out of the user-facing Library, and records
+privacy, license, release-build, archive, and TestFlight checklist status
+before App Store Connect upload. Historical notation/repeat/transpose QA
+coverage should remain in development fixtures and automated tests.
 
 Phase 13 adds import fixtures, app import-path tests, keyboard/settings/
 diagnostics regression tests, and minimum iPhone manual checks. Real user
@@ -281,6 +317,16 @@ with a small minimum audible duration for very short pitched events. Rests and
 tie continuations still do not trigger new audio.
 Full legato, staccato, accent, slur-aware articulation, and high-quality human
 performance interpretation remain unsupported.
+
+## Playback Timing Limits
+
+DoReMi Palette now uses monotonic absolute scheduling and prewarms generated
+audio buffers before playback, which reduces drift and first-use audio spikes in
+the iPad Simulator timing pass. This is still not DAW-grade or sample-accurate
+audio scheduling. `SimpleToneAudioEngine` schedules generated buffers for
+immediate playback through AVAudioPlayerNode, and Simulator timing is not a
+substitute for real iPad listening. Very large imported scores may still need
+future audio scheduling and rendering optimization.
 
 ## Tie Continuation Display Limits
 

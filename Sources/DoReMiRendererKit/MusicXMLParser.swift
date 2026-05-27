@@ -537,7 +537,8 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
         currentMeasureTempoEvents.append(TempoEvent(
             bpm: bpm,
             onset: MusicalTime(ticks: currentOnset, ticksPerQuarterNote: divisions),
-            source: .sound
+            source: .sound,
+            measureID: MeasureID(partIndex: partIndex, measureNumber: currentMeasureNumber)
         ))
     }
 

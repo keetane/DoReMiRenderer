@@ -26,6 +26,9 @@ final class PaletteScoreSession: ObservableObject {
     private let libraryFileResolver: LibraryFileResolving
     private let playbackRuntime: PalettePlaybackRuntime
     private var libraryCollection: LibraryCollection
+    private var pendingPlaybackCursorIndex: Int?
+    private var playbackCursorUpdateTask: Task<Void, Never>?
+    private static let playbackCursorUpdateIntervalNanoseconds: UInt64 = 180_000_000
 
     init(
         loader: PaletteScoreLoader = PaletteScoreLoader(),
@@ -58,6 +61,35 @@ final class PaletteScoreSession: ObservableObject {
 
     var currentPlaybackEvent: PlaybackEvent? {
         practiceSession.isEnabled ? practiceSession.currentEvent : playbackCursor.currentEvent
+    }
+
+    var totalMeasureCount: Int {
+        loadedScore?.score.parts.first?.measures.count ?? 0
+    }
+
+    var currentMeasureNumber: Int? {
+        guard totalMeasureCount > 0 else {
+            return nil
+        }
+        if let measureID = currentPlaybackEvent?.measureID,
+           let number = measureNumber(for: measureID) {
+            return number
+        }
+        for noteID in currentNoteIDs {
+            if let measureID = loadedScore?.layout.noteLayout(for: noteID)?.measureID,
+               let number = measureNumber(for: measureID) {
+                return number
+            }
+        }
+        return min(max(playbackCursor.index + 1, 1), totalMeasureCount)
+    }
+
+    var measureProgressText: String? {
+        guard totalMeasureCount > 0 else {
+            return nil
+        }
+        let current = currentMeasureNumber ?? 1
+        return "\(current) / \(totalMeasureCount)"
     }
 
     var currentHighlightState: CurrentNoteHighlightState {
@@ -270,6 +302,30 @@ final class PaletteScoreSession: ObservableObject {
         lastHitSummary = practiceSession.stepSummary
     }
 
+    @discardableResult
+    func jumpToMeasure(_ measureNumber: Int) -> MeasureJumpResult {
+        guard totalMeasureCount > 0 else {
+            return .failure("小節情報がありません")
+        }
+        guard (1...totalMeasureCount).contains(measureNumber) else {
+            return .failure("1〜\(totalMeasureCount) の小節番号を入力してください")
+        }
+        guard let targetIndex = targetEventIndex(forMeasureNumber: measureNumber) else {
+            return .failure("\(measureNumber) 小節目に移動できる音符がありません")
+        }
+
+        if playbackState == .playing {
+            pause()
+        }
+        if practiceSession.isEnabled {
+            practiceSession.setIndex(targetIndex)
+        }
+        playbackCursor.setIndex(targetIndex)
+        playbackRuntime.move(to: targetIndex)
+        lastHitSummary = "\(measureNumber) 小節目へ移動しました"
+        return .success
+    }
+
     func openLibraryItem(_ item: LibraryItem, bundle: Bundle = .main, currentZoomScale: Double? = nil) {
         switch item.sourceType {
         case .sample:
@@ -351,12 +407,15 @@ final class PaletteScoreSession: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         do {
-            let loaded = try loader.load(data: data, sourceName: sourceName)
-            let displayed = try relayoutIfNeeded(loaded)
+            let displayed = try loader.load(
+                data: data,
+                sourceName: sourceName,
+                displayTransposeSemitones: activeDisplayTransposeSemitones
+            )
             loadedScore = displayed
             diagnostics = displayed.diagnostics
             errorMessage = nil
-            resetPlaybackEvents(loaded.playbackEvents, metadata: loaded.playbackMetadata)
+            resetPlaybackEvents(displayed.playbackEvents, metadata: displayed.playbackMetadata)
             lastHitSummary = "\(sourceName) を読み込みました"
         } catch {
             fail(error)
@@ -375,12 +434,15 @@ final class PaletteScoreSession: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         do {
-            let loaded = try loader.load(data: data, sourceName: sourceName)
-            let displayed = try relayoutIfNeeded(loaded)
+            let displayed = try loader.load(
+                data: data,
+                sourceName: sourceName,
+                displayTransposeSemitones: activeDisplayTransposeSemitones
+            )
             loadedScore = displayed
             diagnostics = displayed.diagnostics
             errorMessage = nil
-            resetPlaybackEvents(loaded.playbackEvents, metadata: loaded.playbackMetadata)
+            resetPlaybackEvents(displayed.playbackEvents, metadata: displayed.playbackMetadata)
             lastHitSummary = "\(sourceName) を読み込みました"
             recordImportedLibraryItem(
                 loaded: displayed,
@@ -430,6 +492,26 @@ final class PaletteScoreSession: ObservableObject {
         audioErrorMessage = nil
     }
 
+    private func targetEventIndex(forMeasureNumber measureNumber: Int) -> Int? {
+        guard let measures = loadedScore?.score.parts.first?.measures,
+              measures.indices.contains(measureNumber - 1) else {
+            return nil
+        }
+        let targetMeasureID = measures[measureNumber - 1].id
+        if let exact = playbackCursor.events.firstIndex(where: { $0.measureID == targetMeasureID }) {
+            return exact
+        }
+        let laterMeasureIDs = measures.dropFirst(measureNumber).map(\.id)
+        return playbackCursor.events.firstIndex { laterMeasureIDs.contains($0.measureID) }
+    }
+
+    private func measureNumber(for measureID: MeasureID) -> Int? {
+        guard let measures = loadedScore?.score.parts.first?.measures else {
+            return nil
+        }
+        return measures.firstIndex { $0.id == measureID }.map { $0 + 1 }
+    }
+
     private func relayoutForDisplayTransposeIfNeeded(force: Bool = false) {
         guard let loadedScore else {
             return
@@ -447,24 +529,62 @@ final class PaletteScoreSession: ObservableObject {
     }
 
     private func relayoutIfNeeded(_ loaded: PaletteLoadedScore) throws -> PaletteLoadedScore {
-        let semitones = displayTransposeEnabled ? transposeSemitones : 0
-        return try loader.relayout(loaded, displayTransposeSemitones: semitones)
+        try loader.relayout(loaded, displayTransposeSemitones: activeDisplayTransposeSemitones)
+    }
+
+    private var activeDisplayTransposeSemitones: Int {
+        displayTransposeEnabled ? transposeSemitones : 0
     }
 
     private func bindPlaybackRuntime() {
         playbackRuntime.onStateChange = { [weak self] state in
             self?.playbackState = state
+            if state != .playing {
+                self?.flushPendingPlaybackCursorIndex()
+            }
         }
         playbackRuntime.onEventIndexChange = { [weak self] index in
             guard let self else {
                 return
             }
-            playbackCursor.setIndex(index)
-            lastHitSummary = playbackCursor.stepSummary
+            if self.playbackRuntime.state == .playing {
+                self.schedulePlaybackCursorUpdate(index)
+            } else {
+                self.pendingPlaybackCursorIndex = nil
+                self.applyPlaybackCursorIndex(index)
+            }
         }
         playbackRuntime.onAudioError = { [weak self] error in
             self?.audioErrorMessage = "音声を開始できませんでした: \(error.localizedDescription)"
         }
+    }
+
+    private func schedulePlaybackCursorUpdate(_ index: Int) {
+        pendingPlaybackCursorIndex = index
+        guard playbackCursorUpdateTask == nil else {
+            return
+        }
+        playbackCursorUpdateTask = Task { @MainActor [weak self] in
+            while let self, let index = self.pendingPlaybackCursorIndex {
+                self.pendingPlaybackCursorIndex = nil
+                self.applyPlaybackCursorIndex(index)
+                try? await Task.sleep(nanoseconds: Self.playbackCursorUpdateIntervalNanoseconds)
+            }
+            self?.playbackCursorUpdateTask = nil
+        }
+    }
+
+    private func flushPendingPlaybackCursorIndex() {
+        guard let index = pendingPlaybackCursorIndex else {
+            return
+        }
+        pendingPlaybackCursorIndex = nil
+        applyPlaybackCursorIndex(index)
+    }
+
+    private func applyPlaybackCursorIndex(_ index: Int) {
+        playbackCursor.setIndex(index)
+        lastHitSummary = playbackCursor.stepSummary
     }
 
     private func makeBookmarkData(for url: URL) -> Data? {
@@ -485,4 +605,9 @@ final class PaletteScoreSession: ObservableObject {
             errorMessage = error.localizedDescription
         }
     }
+}
+
+enum MeasureJumpResult: Equatable {
+    case success
+    case failure(String)
 }

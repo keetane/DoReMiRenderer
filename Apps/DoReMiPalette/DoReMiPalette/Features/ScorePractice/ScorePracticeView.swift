@@ -3,6 +3,23 @@ import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
+enum PaletteZoomScale {
+    static let minimum = 0.8
+    static let maximum = 3.0
+    static let `default` = 1.0
+
+    static func clamped(_ scale: Double) -> Double {
+        guard scale.isFinite else {
+            return Self.default
+        }
+        return min(max(scale, Self.minimum), Self.maximum)
+    }
+
+    static func percentText(_ scale: Double) -> String {
+        "\(Int((clamped(scale) * 100).rounded()))%"
+    }
+}
+
 struct ScorePracticeView: View {
     @ObservedObject var session: PaletteScoreSession
     @Binding var noteColorVisible: Bool
@@ -22,6 +39,7 @@ struct ScorePracticeView: View {
     @Binding var metronomeCompoundModeRawValue: String
     @Binding var metronomeClickSoundStyleRawValue: String
     @Binding var pitchClassColorEnabledRawValue: String
+    @Binding var onboardingCompleted: Bool
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var showsDiagnostics = false
@@ -29,7 +47,12 @@ struct ScorePracticeView: View {
     @State private var showsLibrary = false
     @State private var showsSettings = false
     @State private var showsPaletteEditor = false
+    @State private var measureJumpInput = ""
+    @State private var measureJumpError: String?
     @State private var printJob: PalettePrintJob?
+    @State private var onboardingState = OnboardingGuideState.inactive
+    @GestureState private var pinchMagnification = 1.0
+    @FocusState private var measureJumpFocused: Bool
 
     var body: some View {
         NavigationStack {
@@ -44,10 +67,12 @@ struct ScorePracticeView: View {
                     Button("印刷", systemImage: "printer") { preparePrint() }
                         .disabled(session.loadedScore == nil)
                     Button("パレット", systemImage: "paintpalette") { showsPaletteEditor = true }
+                        .onboardingAnchor(.paletteButton)
                     Button("ライブラリ", systemImage: "books.vertical") { showsLibrary = true }
                     Button("読み込み", systemImage: "folder") { showsImporter = true }
                     Button("診断", systemImage: diagnosticsIcon) { showsDiagnostics = true }
                     Button("設定", systemImage: "gearshape") { showsSettings = true }
+                        .onboardingAnchor(.settingsButton)
                 }
             }
             .fileImporter(
@@ -57,7 +82,13 @@ struct ScorePracticeView: View {
                 onCompletion: handleImport
             )
             .sheet(isPresented: $showsDiagnostics) { DiagnosticsPanel(diagnostics: session.diagnostics) }
-            .sheet(isPresented: $showsLibrary) { LibraryPanel(session: session, currentZoomScale: zoomScale) }
+            .sheet(isPresented: $showsLibrary) {
+                LibraryPanel(
+                    session: session,
+                    currentZoomScale: PaletteZoomScale.default,
+                    onWillOpenItem: resetZoomForScoreLoad
+                )
+            }
             .overlay(alignment: .bottom) {
                 paletteEditorDrawer
             }
@@ -81,13 +112,45 @@ struct ScorePracticeView: View {
                     metronomeCompoundModeRawValue: $metronomeCompoundModeRawValue,
                     metronomeClickSoundStyleRawValue: $metronomeClickSoundStyleRawValue,
                     writtenKeyPitchClass: session.currentKeyDisplay?.writtenPitchClass,
-                    onTapTempo: { session.registerTapTempo() }
+                    guideState: $onboardingState,
+                    onTapTempo: { session.registerTapTempo() },
+                    onRestartGuide: { restartOnboardingGuide() },
+                    onCompleteGuide: { completeOnboardingGuide() }
                 )
+            }
+            .overlayPreferenceValue(OnboardingAnchorPreferenceKey.self) { anchors in
+                GeometryReader { proxy in
+                    if onboardingState.isActive,
+                       onboardingState.currentStep != .settingsDisplayOptions {
+                        let anchorFrame = resolvedOnboardingAnchorFrame(
+                            anchors: anchors,
+                            proxy: proxy,
+                            step: onboardingState.currentStep
+                        )
+                        OnboardingGuideOverlay(
+                            step: onboardingState.currentStep,
+                            anchorFrame: anchorFrame,
+                            containerSize: proxy.size,
+                            onBack: moveOnboardingBack,
+                            onNext: moveOnboardingNext,
+                            onSkip: completeOnboardingGuide
+                        )
+                        .zIndex(50)
+                    }
+                }
             }
             .onAppear {
                 displayTransposeEnabled = true
+                zoomScale = PaletteZoomScale.clamped(zoomScale)
                 syncTransposeSetting()
                 applyPaletteEditorLaunchArgumentsIfNeeded()
+                startInitialOnboardingIfNeeded()
+            }
+            .onChange(of: zoomScale) { _, newValue in
+                let clamped = PaletteZoomScale.clamped(newValue)
+                if abs(clamped - newValue) > 0.0001 {
+                    zoomScale = clamped
+                }
             }
             .onChange(of: transposeSemitones) { _, _ in
                 syncTransposeSetting()
@@ -99,10 +162,10 @@ struct ScorePracticeView: View {
                 session.setDisplayTransposeEnabled(true)
             }
             .onChange(of: scoreLayoutModeRawValue) { _, newValue in
-                session.setScoreLayoutMode(PaletteScoreLayoutMode.fromRawValue(newValue))
+                session.setScoreLayoutMode(preferredScoreLayoutMode(for: PaletteScoreLayoutMode.fromRawValue(newValue)))
             }
             .onChange(of: session.loadedScore?.sourceName) { _, _ in
-                session.setScoreLayoutMode(selectedScoreLayoutMode)
+                session.setScoreLayoutMode(preferredScoreLayoutMode(for: selectedScoreLayoutMode))
             }
             .onChange(of: metronomeEnabled) { _, newValue in
                 session.setMetronomeEnabled(newValue)
@@ -113,36 +176,123 @@ struct ScorePracticeView: View {
             .onChange(of: metronomeClickSoundStyleRawValue) { _, newValue in
                 session.setMetronomeClickSoundStyle(PaletteMetronomeClickSoundStyle.fromRawValue(newValue))
             }
+            .onChange(of: onboardingState.currentStep) { _, newStep in
+                syncOnboardingPresentation(for: newStep)
+            }
         }
+    }
+
+    private func resolvedOnboardingAnchorFrame(
+        anchors: [OnboardingGuideAnchorID: Anchor<CGRect>],
+        proxy: GeometryProxy,
+        step: OnboardingGuideStep
+    ) -> CGRect? {
+        let resolved = anchors[step.anchorID].map { proxy[$0] }
+        if step == .settingsButton || step == .paletteButton {
+            return validToolbarOnboardingAnchor(resolved, in: proxy.size) ?? toolbarButtonFallbackFrame(for: step, in: proxy.size)
+        }
+        if step == .measureJump {
+            if let valid = validOnboardingAnchor(resolved, in: proxy.size) {
+                return valid
+            }
+            let navigationFrame = anchors[.previousNextControls].map { proxy[$0] }
+            return measureDisplayFallbackFrame(from: validOnboardingAnchor(navigationFrame, in: proxy.size), in: proxy.size)
+        }
+        return validOnboardingAnchor(resolved, in: proxy.size)
+    }
+
+    private func validOnboardingAnchor(_ frame: CGRect?, in size: CGSize) -> CGRect? {
+        guard let frame,
+              frame.width.isFinite,
+              frame.height.isFinite,
+              frame.width > 2,
+              frame.height > 2,
+              frame.minX >= -8,
+              frame.minY >= -8,
+              frame.maxX <= size.width + 8,
+              frame.maxY <= size.height + 8
+        else {
+            return nil
+        }
+        return frame
+    }
+
+    private func validToolbarOnboardingAnchor(_ frame: CGRect?, in size: CGSize) -> CGRect? {
+        guard let frame,
+              frame.width.isFinite,
+              frame.height.isFinite,
+              frame.width > 2,
+              frame.height > 2,
+              frame.minX >= -8,
+              frame.minY >= -96,
+              frame.maxX <= size.width + 8,
+              frame.maxY <= size.height + 8
+        else {
+            return nil
+        }
+        return frame
+    }
+
+    private func toolbarButtonFallbackFrame(for step: OnboardingGuideStep, in size: CGSize) -> CGRect {
+        let side: CGFloat = 44
+        let trailingIndex: CGFloat = step == .settingsButton ? 0 : 4
+        return CGRect(
+            x: max(8, size.width - side - 8 - trailingIndex * side),
+            y: -54,
+            width: side,
+            height: side
+        )
+    }
+
+    private func measureDisplayFallbackFrame(from navigationFrame: CGRect?, in size: CGSize) -> CGRect? {
+        guard let navigationFrame else { return nil }
+        let width: CGFloat = isCompact ? 86 : 98
+        let height: CGFloat = 36
+        let centerX = min(max(navigationFrame.midX, width / 2 + 8), size.width - width / 2 - 8)
+        return CGRect(
+            x: centerX - width / 2,
+            y: navigationFrame.midY - height / 2,
+            width: width,
+            height: height
+        )
     }
 
     @ViewBuilder
     private var paletteEditorDrawer: some View {
         if showsPaletteEditor {
-            ZStack(alignment: .bottom) {
-                Color.black.opacity(0.18)
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        showsPaletteEditor = false
-                    }
-                PaletteEditorView(
-                    colorSchemeRawValue: $colorSchemeRawValue,
-                    pitchClassColorEnabledRawValue: $pitchClassColorEnabledRawValue,
-                    noteColorVisible: $noteColorVisible,
-                    staffColorVisible: $staffColorVisible,
-                    selectedKeyPitchClass: transposeKeyBinding,
-                    keyboardColorPositionTop: keyboardColorPositionTop,
-                    scaleTonicPitchClass: selectedMainKeyPitchClass,
-                    onDone: { showsPaletteEditor = false }
+            GeometryReader { proxy in
+                let containerSize = proxy.size
+                let isLandscape = containerSize.width > containerSize.height
+                let targetDrawerRatio = isLandscape ? 0.70 : 0.56
+                let drawerHeight = min(
+                    max(containerSize.height * targetDrawerRatio, 430),
+                    max(containerSize.height - proxy.safeAreaInsets.top - 12, 320)
                 )
-                .frame(maxWidth: .infinity)
-                .frame(height: max(UIScreen.main.bounds.height * 0.54, 430))
-                .background(Color(.systemBackground))
-                .clipShape(UnevenRoundedRectangle(topLeadingRadius: 18, topTrailingRadius: 18))
-                .shadow(color: Color.black.opacity(0.18), radius: 18, x: 0, y: -6)
+                ZStack(alignment: .bottom) {
+                    Color.black.opacity(0.18)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            showsPaletteEditor = false
+                        }
+                    PaletteEditorView(
+                        colorSchemeRawValue: $colorSchemeRawValue,
+                        pitchClassColorEnabledRawValue: $pitchClassColorEnabledRawValue,
+                        noteColorVisible: $noteColorVisible,
+                        staffColorVisible: $staffColorVisible,
+                        selectedKeyPitchClass: transposeKeyBinding,
+                        keyboardColorPositionTop: keyboardColorPositionTop,
+                        scaleTonicPitchClass: selectedMainKeyPitchClass,
+                        onDone: { showsPaletteEditor = false }
+                    )
+                    .frame(maxWidth: .infinity)
+                    .frame(height: drawerHeight)
+                    .background(Color(.systemBackground))
+                    .clipShape(UnevenRoundedRectangle(topLeadingRadius: 18, topTrailingRadius: 18))
+                    .shadow(color: Color.black.opacity(0.18), radius: 18, x: 0, y: -6)
+                }
+                .frame(width: containerSize.width, height: containerSize.height, alignment: .bottom)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .ignoresSafeArea(edges: .bottom)
+            .allowsHitTesting(true)
             .transition(.move(edge: .bottom).combined(with: .opacity))
             .zIndex(10)
         }
@@ -150,18 +300,8 @@ struct ScorePracticeView: View {
 
     private var controlBar: some View {
         VStack(alignment: .leading, spacing: 10) {
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 12) {
-                    playbackControls
-                    Spacer(minLength: 16)
-                    displayToggles
-                }
-                VStack(alignment: .leading, spacing: 8) {
-                    playbackControls
-                    displayToggles
-                }
-            }
-            playbackOptionsRow
+            playbackControls
+            displayToggles
         }
         .toggleStyle(.switch)
         .padding(.horizontal, isCompact ? 14 : 24)
@@ -170,6 +310,30 @@ struct ScorePracticeView: View {
 
     private var playbackControls: some View {
         HStack(spacing: isCompact ? 8 : 12) {
+            playStopControlGroup
+
+            Button("Reset", systemImage: "backward.end.fill") { session.resetPlayback() }
+                .disabled(session.playbackCursor.events.isEmpty || session.playbackCursor.index == 0)
+
+            navigationControlGroup
+
+            Button(isCompact ? "Reload" : "Sample Reload", systemImage: "arrow.clockwise") {
+                reloadSampleResettingZoom()
+            }
+            Button("ライブラリ", systemImage: "books.vertical") { showsLibrary = true }
+        }
+        .buttonStyle(.borderless)
+        .onAppear {
+            syncMeasureJumpInput()
+        }
+        .onChange(of: session.currentMeasureNumber) { _, _ in
+            guard !measureJumpFocused else { return }
+            syncMeasureJumpInput()
+        }
+    }
+
+    private var playStopControlGroup: some View {
+        HStack(spacing: isCompact ? 8 : 12) {
             Button(session.playbackState == .playing ? "Pause" : "Play", systemImage: session.playbackState == .playing ? "pause.fill" : "play.fill") {
                 if session.playbackState == .playing { session.pause() } else { session.play() }
             }
@@ -177,37 +341,64 @@ struct ScorePracticeView: View {
 
             Button("Stop", systemImage: "stop.fill") { session.stop() }
                 .disabled(session.playbackCursor.events.isEmpty || session.playbackState == .stopped)
+        }
+        .onboardingAnchor(.playStopControls)
+    }
 
-            Button("Reset", systemImage: "backward.end.fill") { session.resetPlayback() }
-                .disabled(session.playbackCursor.events.isEmpty || session.playbackCursor.index == 0)
-
+    private var navigationControlGroup: some View {
+        HStack(spacing: isCompact ? 8 : 12) {
             Button("Previous", systemImage: "chevron.left") { session.movePlaybackStep(by: -1) }
                 .disabled(session.playbackCursor.events.isEmpty || session.playbackCursor.index == 0)
 
+            measureJumpInlineControl
+
             Button("Next", systemImage: "chevron.right") { session.movePlaybackStep(by: 1) }
                 .disabled(session.playbackCursor.events.isEmpty || session.playbackCursor.index >= session.playbackCursor.events.count - 1)
-
-            Button(isCompact ? "Reload" : "Sample Reload", systemImage: "arrow.clockwise") { session.reloadSample() }
-            Button("ライブラリ", systemImage: "books.vertical") { showsLibrary = true }
         }
-        .buttonStyle(.borderless)
+        .onboardingAnchor(.previousNextControls)
     }
 
-    private var playbackOptionsRow: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 10) {
-                playbackDisplayControls
-                Spacer(minLength: 16)
-                currentNoteDisplay
-            }
-            VStack(alignment: .leading, spacing: 8) {
-                playbackDisplayControls
-                HStack {
-                    Spacer(minLength: 0)
-                    currentNoteDisplay
+    private var measureJumpInlineControl: some View {
+        VStack(alignment: .center, spacing: 2) {
+            HStack(spacing: 4) {
+                HStack(spacing: 4) {
+                    TextField("小節", text: $measureJumpInput)
+                        .keyboardType(.numberPad)
+                        .multilineTextAlignment(.center)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.caption.monospacedDigit())
+                        .frame(width: isCompact ? 44 : 52)
+                        .focused($measureJumpFocused)
+                        .onSubmit(submitMeasureJump)
+                        .disabled(session.totalMeasureCount == 0)
+
+                    Text("/ \(max(session.totalMeasureCount, 0))")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
                 }
+                .padding(2)
+                .contentShape(Rectangle())
+
+                Button("移動") {
+                    submitMeasureJump()
+                }
+                .font(.caption)
+                .disabled(session.totalMeasureCount == 0)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("小節ジャンプ")
+
+            if let measureJumpError {
+                Text(measureJumpError)
+                    .font(.caption2)
+                    .foregroundStyle(.red)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
             }
         }
+        .padding(.vertical, 1)
+        .contentShape(Rectangle())
+        .onboardingAnchor(.measureDisplay)
     }
 
     @ViewBuilder
@@ -216,14 +407,11 @@ struct ScorePracticeView: View {
             if currentNoteDisplayVisible, let loaded = session.loadedScore {
                 currentNoteText(loaded: loaded)
             } else if currentNoteDisplayVisible {
-                Text("現在の音: なし")
+                Text("なし")
                     .font(.callout)
                     .foregroundStyle(.secondary)
-            } else if let keyDisplay = session.currentKeyDisplay {
-                Text(keyDisplay.summary)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .multilineTextAlignment(.trailing)
             }
         }
     }
@@ -236,61 +424,62 @@ struct ScorePracticeView: View {
                 transposeSemitones: session.transposeSemitones,
                 displayTransposeEnabled: session.displayTransposeEnabled
             )
-            let highlight = session.currentHighlightState
             VStack(alignment: .trailing, spacing: 2) {
                 if session.transposeSemitones == 0 || session.displayTransposeEnabled {
-                    Text("現在の音: \(display.summary)")
+                    Text(display.summary)
                         .font(.callout.weight(.semibold))
                         .foregroundStyle(.primary)
                         .lineLimit(1)
                         .truncationMode(.middle)
                 } else {
-                    Text("表示: \(display.englishName) / \(display.solfegeName)")
+                    Text("\(display.englishName) / \(display.solfegeName)")
                         .font(.callout.weight(.semibold))
                         .foregroundStyle(.primary)
                         .lineLimit(1)
                         .truncationMode(.middle)
-                    Text("再生: \(display.soundingEnglishName ?? display.englishName) / \(display.soundingSolfegeName ?? display.solfegeName) (\(PaletteTranspose.formatted(session.transposeSemitones)))")
+                    Text("\(display.soundingEnglishName ?? display.englishName) / \(display.soundingSolfegeName ?? display.solfegeName) (\(PaletteTranspose.formatted(session.transposeSemitones)))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .truncationMode(.middle)
                 }
-                if session.displayTransposeEnabled && session.transposeSemitones != 0,
-                   let keyDisplay = session.currentKeyDisplay,
-                   let displayKey = keyDisplay.displayKey {
-                    Text("表示キー: \(displayKey)")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-                if let keyDisplay = session.currentKeyDisplay {
-                    Text(keyDisplay.summary)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                }
-                if !highlight.continuationNoteIDs.isEmpty {
-                    Text("濃い色: 鳴る音 / 薄い色: タイで続く音")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
             }
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .multilineTextAlignment(.trailing)
         }
     }
 
     private var displayToggles: some View {
-        HStack(spacing: 12) {
-            displayToggle("Keyboard", isOn: $keyboardVisible)
-            displayToggle("メトロノーム", isOn: $metronomeEnabled)
-            Button("Tap", systemImage: "metronome") {
-                session.registerTapTempo()
+        HStack(alignment: .center, spacing: 12) {
+            HStack(alignment: .center, spacing: 12) {
+                displayToggle("Keyboard", isOn: $keyboardVisible)
+                displayToggle("メトロノーム", isOn: $metronomeEnabled)
+                tempoPicker
+                tapTempoButton
             }
-            .buttonStyle(.borderless)
-            .disabled(session.playbackCursor.events.isEmpty)
+            .fixedSize(horizontal: true, vertical: false)
+
+            Spacer(minLength: 12)
+
+            HStack(alignment: .center, spacing: 12) {
+                transposeKeyPicker
+                currentNoteDisplay
+                    .frame(minWidth: 120, alignment: .trailing)
+                    .onboardingAnchor(.currentNoteDisplay)
+            }
+            .frame(maxWidth: .infinity, alignment: .trailing)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var tapTempoButton: some View {
+        Button("Tap", systemImage: "metronome") {
+            session.registerTapTempo()
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.regular)
+        .frame(height: 36)
+        .disabled(session.playbackCursor.events.isEmpty)
     }
 
     private func displayToggle(_ title: String, isOn: Binding<Bool>) -> some View {
@@ -301,22 +490,13 @@ struct ScorePracticeView: View {
             Toggle(title, isOn: isOn)
                 .labelsHidden()
         }
+        .frame(height: 36)
         .accessibilityElement(children: .combine)
-    }
-
-    private var layoutModePicker: some View {
-        Picker("譜面レイアウト", selection: scoreLayoutModeBinding) {
-            ForEach(PaletteScoreLayoutMode.allCases) { mode in
-                Text(mode.displayName).tag(mode)
-            }
-        }
-        .pickerStyle(.segmented)
-        .frame(maxWidth: isCompact ? 180 : 220)
     }
 
     private var tempoPicker: some View {
         HStack(spacing: 4) {
-            Picker("Tempo", selection: playbackTempoPickerBinding) {
+            Picker("BPM", selection: playbackTempoPickerBinding) {
                 ForEach(30...240, id: \.self) { bpm in
                     Text("\(bpm)").tag(bpm)
                 }
@@ -338,25 +518,6 @@ struct ScorePracticeView: View {
         )
     }
 
-    private var playbackDisplayControls: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 12) {
-                tempoPicker
-                layoutModePicker
-                zoomScalePicker
-                transposeKeyPicker
-            }
-            VStack(alignment: .leading, spacing: 8) {
-                tempoPicker
-                HStack(spacing: 10) {
-                    layoutModePicker
-                    zoomScalePicker
-                    transposeKeyPicker
-                }
-            }
-        }
-    }
-
     private var transposeKeyPicker: some View {
         HStack(spacing: 6) {
             Text("キー")
@@ -368,6 +529,8 @@ struct ScorePracticeView: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("移調キー \(PaletteTranspose.keyName(forPitchClass: transposeKeyBinding.wrappedValue))")
+        .onboardingAnchor(.keyTransposeDisplay)
+        .frame(height: 36)
     }
 
     private var transposeKeyBinding: Binding<Int> {
@@ -391,23 +554,15 @@ struct ScorePracticeView: View {
         )
     }
 
-    private var zoomPicker: some View {
-        HStack(spacing: 10) {
-            layoutModePicker
-            zoomScalePicker
-        }
-    }
-
-    private var zoomScalePicker: some View {
-        Group {
-            Picker("Zoom", selection: $zoomScale) {
-                Text("1.0x").tag(1.0)
-                Text("1.5x").tag(1.5)
-                Text("2.0x").tag(2.0)
-            }
-            .pickerStyle(.segmented)
-            .frame(maxWidth: isCompact ? 220 : 260)
-        }
+    private var scoreStaticRenderKey: String {
+        [
+            "noteColor:\(noteColorVisible)",
+            "staffColor:\(staffColorVisible)",
+            "palette:\(selectedColorScheme.rawValue)",
+            "pitchClasses:\(pitchClassColorEnabledRawValue)",
+            "key:\(selectedMainKeyPitchClass)",
+            "measureNumbers:\(measureNumbersVisible)",
+        ].joined(separator: "|")
     }
 
     @ViewBuilder
@@ -417,24 +572,30 @@ struct ScorePracticeView: View {
             let pitchColorState = PalettePitchClassColorState(encodedValue: pitchClassColorEnabledRawValue)
             VStack(spacing: 0) {
                 scoreTitleBar(loaded)
-                ScoreCanvasView(
-                    layout: loaded.layout,
-                    score: loaded.score,
-                    style: PaletteStyleFactory.makeStyle(
-                        noteColorVisible: noteColorVisible,
-                        staffColorVisible: staffColorVisible,
-                        paletteKind: selectedColorScheme,
-                        pitchClassColorState: pitchColorState,
-                        scaleTonicPitchClass: selectedMainKeyPitchClass,
-                        measureNumbersVisible: measureNumbersVisible
-                    ),
-                    currentNoteIDs: highlight.attackNoteIDs,
-                    continuationNoteIDs: highlight.continuationNoteIDs,
-                    scale: CGFloat(zoomScale),
-                    scrollAxes: [.horizontal, .vertical],
-                    followsCurrentNote: currentNoteDisplayVisible,
-                    onTap: session.handleTap
-                )
+                ZStack(alignment: .topLeading) {
+                    ScoreCanvasView(
+                        layout: loaded.layout,
+                        score: loaded.score,
+                        style: PaletteStyleFactory.makeStyle(
+                            noteColorVisible: noteColorVisible,
+                            staffColorVisible: staffColorVisible,
+                            paletteKind: selectedColorScheme,
+                            pitchClassColorState: pitchColorState,
+                            scaleTonicPitchClass: selectedMainKeyPitchClass,
+                            measureNumbersVisible: measureNumbersVisible
+                        ),
+                        currentNoteIDs: highlight.attackNoteIDs,
+                        continuationNoteIDs: highlight.continuationNoteIDs,
+                        followNoteIDs: session.currentNoteIDs,
+                        scale: CGFloat(effectiveZoomScale),
+                        scrollAxes: [.horizontal, .vertical],
+                        followsCurrentNote: currentNoteDisplayVisible,
+                        staticRenderKey: scoreStaticRenderKey,
+                        onTap: session.handleTap
+                    )
+                    firstBeatOnboardingAnchor(for: loaded)
+                }
+                .simultaneousGesture(pinchZoomGesture)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color(.systemBackground))
 
@@ -455,6 +616,7 @@ struct ScorePracticeView: View {
                         .padding(.horizontal, isCompact ? 10 : 16)
                         .padding(.vertical, isCompact ? 6 : 10)
                         .background(Color(.secondarySystemBackground))
+                        .onboardingAnchor(.keyboardArea)
                 }
             }
         } else if session.isLoading {
@@ -467,6 +629,58 @@ struct ScorePracticeView: View {
                 description: Text(session.errorMessage ?? "Sample Reload または 読み込み を試してください。")
             )
         }
+    }
+
+    @ViewBuilder
+    private func firstBeatOnboardingAnchor(for loaded: PaletteLoadedScore) -> some View {
+        if let frame = firstBeatAnchorFrame(for: loaded) {
+            Color.clear
+                .frame(width: max(frame.width, 28), height: max(frame.height, 28))
+                .position(x: frame.midX, y: frame.midY)
+                .onboardingAnchor(.firstBeatNote)
+                .allowsHitTesting(false)
+        }
+    }
+
+    private func firstBeatAnchorFrame(for loaded: PaletteLoadedScore) -> CGRect? {
+        let layout = loaded.layout
+        let firstPart = loaded.score.parts.first
+        let firstMeasure = firstPart?.measures.first
+        let firstMeasureID = firstMeasure?.id
+        let firstNoteID = firstMeasure?.notes
+            .filter { !$0.isGrace }
+            .sorted {
+                if $0.onset != $1.onset {
+                    return $0.onset < $1.onset
+                }
+                return $0.chordOrdinal < $1.chordOrdinal
+            }
+            .first?
+            .id
+
+        let noteLayout: NoteLayout?
+        if let firstNoteID {
+            noteLayout = layout.noteLayout(for: firstNoteID)
+        } else if let firstMeasureID {
+            noteLayout = layout.noteByID.values
+                .filter { $0.measureID == firstMeasureID }
+                .sorted { $0.noteheadFrame.minX < $1.noteheadFrame.minX }
+                .first
+        } else {
+            noteLayout = layout.noteByID.values
+                .sorted { $0.noteheadFrame.minX < $1.noteheadFrame.minX }
+                .first
+        }
+        guard let noteLayout else { return nil }
+
+        let scale = CGFloat(effectiveZoomScale)
+        let padding = max(CGFloat(48), CGFloat(64)) * max(scale, ScoreViewportTransform.minimumScale)
+        return CGRect(
+            x: padding + noteLayout.noteheadFrame.minX * scale,
+            y: padding + noteLayout.noteheadFrame.minY * scale,
+            width: max(1, noteLayout.noteheadFrame.width * scale),
+            height: max(1, noteLayout.noteheadFrame.height * scale)
+        )
     }
 
     private func scoreTitleBar(_ loaded: PaletteLoadedScore) -> some View {
@@ -485,6 +699,39 @@ struct ScorePracticeView: View {
         .background(Color(.secondarySystemBackground))
     }
 
+    private func submitMeasureJump() {
+        guard let number = Int(measureJumpInput.trimmingCharacters(in: .whitespacesAndNewlines)) else {
+            measureJumpError = "小節番号を整数で入力してください"
+            return
+        }
+        switch session.jumpToMeasure(number) {
+        case .success:
+            measureJumpError = nil
+            measureJumpFocused = false
+            syncMeasureJumpInput()
+        case .failure(let message):
+            measureJumpError = message
+        }
+    }
+
+    private func syncMeasureJumpInput() {
+        measureJumpInput = session.currentMeasureNumber.map(String.init) ?? ""
+    }
+
+    private var effectiveZoomScale: Double {
+        PaletteZoomScale.clamped(zoomScale * pinchMagnification)
+    }
+
+    private var pinchZoomGesture: some Gesture {
+        MagnificationGesture()
+            .updating($pinchMagnification) { value, state, _ in
+                state = value
+            }
+            .onEnded { value in
+                zoomScale = PaletteZoomScale.clamped(zoomScale * value)
+            }
+    }
+
     private var diagnosticsIcon: String {
         session.diagnostics.isEmpty ? "checkmark.seal" : "exclamationmark.triangle"
     }
@@ -493,9 +740,84 @@ struct ScorePracticeView: View {
         switch result {
         case .success(let urls):
             guard let url = urls.first else { return }
-            session.loadImportedFile(url: url, currentZoomScale: zoomScale)
+            resetZoomForScoreLoad()
+            session.loadImportedFile(url: url, currentZoomScale: PaletteZoomScale.default)
         case .failure(let error):
             session.setImportError(error)
+        }
+    }
+
+    private func reloadSampleResettingZoom() {
+        resetZoomForScoreLoad()
+        session.reloadSample()
+    }
+
+    private func resetZoomForScoreLoad() {
+        zoomScale = PaletteZoomScale.default
+    }
+
+    private func startInitialOnboardingIfNeeded() {
+        guard !onboardingCompleted, !onboardingState.isActive else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+            guard !onboardingCompleted, !onboardingState.isActive else { return }
+            onboardingState.start()
+            syncOnboardingPresentation(for: onboardingState.currentStep)
+        }
+    }
+
+    private func restartOnboardingGuide() {
+        onboardingCompleted = false
+        onboardingState.start()
+        syncOnboardingPresentation(for: onboardingState.currentStep)
+    }
+
+    private func completeOnboardingGuide() {
+        onboardingCompleted = true
+        onboardingState.skipOrComplete()
+        showsSettings = false
+    }
+
+    private func moveOnboardingNext() {
+        let finished = onboardingState.moveNext()
+        if finished {
+            completeOnboardingGuide()
+        } else {
+            syncOnboardingPresentation(for: onboardingState.currentStep)
+        }
+    }
+
+    private func moveOnboardingBack() {
+        onboardingState.moveBack()
+        syncOnboardingPresentation(for: onboardingState.currentStep)
+    }
+
+    private func syncOnboardingPresentation(for step: OnboardingGuideStep) {
+        guard onboardingState.isActive else { return }
+        switch step {
+        case .settingsDisplayOptions:
+            showsSettings = true
+        case .currentNoteAndKeyboard:
+            showsSettings = false
+            showsPaletteEditor = false
+            if !keyboardVisible {
+                keyboardVisible = true
+            }
+        case .paletteButton:
+            showsSettings = false
+            showsPaletteEditor = false
+        case .colorPatternButton, .pitchClassEButton, .paletteKeyButton:
+            showsSettings = false
+            showsPaletteEditor = true
+        case .playPracticePrompt:
+            showsSettings = false
+            showsPaletteEditor = false
+        default:
+            if showsSettings {
+                showsSettings = false
+            }
+            if showsPaletteEditor {
+                showsPaletteEditor = false
+            }
         }
     }
 
@@ -535,14 +857,14 @@ struct ScorePracticeView: View {
         PaletteScoreLayoutMode.fromRawValue(scoreLayoutModeRawValue)
     }
 
-    private var scoreLayoutModeBinding: Binding<PaletteScoreLayoutMode> {
-        Binding(
-            get: { selectedScoreLayoutMode },
-            set: { mode in
-                scoreLayoutModeRawValue = mode.rawValue
-                session.setScoreLayoutMode(mode)
-            }
-        )
+    private func preferredScoreLayoutMode(for selectedMode: PaletteScoreLayoutMode) -> PaletteScoreLayoutMode {
+        guard selectedMode == .horizontal,
+              let loadedScore = session.loadedScore,
+              loadedScore.performancePreferredLayoutMode == .a4
+        else {
+            return selectedMode
+        }
+        return .a4
     }
 
     private var isCompact: Bool {
@@ -733,6 +1055,8 @@ private struct PaletteEditorView: View {
     let onDone: () -> Void
     @State private var previewScore: PaletteLoadedScore?
     @State private var previewError: String?
+    private let scorePreviewHeight: CGFloat = 210
+    private let keyboardPreviewHeight: CGFloat = 132
 
     private var selectedColorScheme: PaletteColorScheme {
         PaletteColorScheme.fromRawValue(colorSchemeRawValue)
@@ -759,8 +1083,7 @@ private struct PaletteEditorView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     controls
                     pitchClassButtons
-                    scorePreview
-                    keyboardPreview
+                    alignedPreviews
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
@@ -786,6 +1109,7 @@ private struct PaletteEditorView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(pitchColorState.isStaffLineOnly ? .blue : .gray)
                 .accessibilityLabel(pitchColorState.isStaffLineOnly ? "ラインモード" : "全音モード")
+                .onboardingAnchor(.colorPatternButton)
                 Button("全ON") {
                     pitchClassColorEnabledRawValue = PalettePitchClassColorState.allOn.encodedValue
                 }
@@ -802,6 +1126,7 @@ private struct PaletteEditorView: View {
                     PaletteKeyDrumPicker(selection: $selectedKeyPitchClass)
                 }
                 .accessibilityLabel("カラーパレットのキー \(PaletteTranspose.keyName(forPitchClass: selectedKeyPitchClass))")
+                .onboardingAnchor(.paletteKeyButton)
                 Spacer(minLength: 0)
                 Label("MVPでは12 pitch class単位", systemImage: "info.circle")
                     .font(.caption)
@@ -846,50 +1171,50 @@ private struct PaletteEditorView: View {
         .disabled(isMIDISpecificMode)
         .opacity(isMIDISpecificMode ? 0.45 : (isEnabled ? 1 : 0.62))
         .accessibilityLabel("\(PalettePitchClassColorState.label(for: pitchClass)) \(isEnabled ? "ON" : "OFF")")
+        .onboardingAnchor(.pitchClassEButton, when: pitchClass == 4)
     }
 
     @ViewBuilder
-    private var keyboardPreview: some View {
+    private var alignedPreviews: some View {
         VStack(alignment: .leading, spacing: 8) {
             if let previewScore {
-                KeyboardView(
-                    layout: previewScore.layout,
-                    currentNoteIDs: [],
-                    range: 36...84,
-                    palette: selectedColorScheme.palette,
-                    pitchClassColorState: pitchColorState,
-                    colorIdleKeys: true,
-                    colorPositionTop: keyboardColorPositionTop,
-                    scaleTonicPitchClass: scaleTonicPitchClass
-                )
-                .frame(height: 120)
-                .padding(.vertical, 6)
+                GeometryReader { proxy in
+                    let previewWidth = max(proxy.size.width, 1)
+                    VStack(alignment: .leading, spacing: 10) {
+                        PaletteScorePreviewView(
+                            palette: selectedColorScheme.palette,
+                            pitchClassColorState: pitchColorState,
+                            noteColorVisible: noteColorVisible,
+                            staffColorVisible: staffColorVisible,
+                            scaleTonicPitchClass: scaleTonicPitchClass
+                        )
+                        .frame(width: previewWidth, height: scorePreviewHeight)
+                        .accessibilityIdentifier("palette-score-preview-c2-c6")
+
+                        KeyboardView(
+                            layout: previewScore.layout,
+                            currentNoteIDs: [],
+                            range: 36...84,
+                            palette: selectedColorScheme.palette,
+                            pitchClassColorState: pitchColorState,
+                            colorIdleKeys: true,
+                            colorPositionTop: keyboardColorPositionTop,
+                            scaleTonicPitchClass: scaleTonicPitchClass
+                        )
+                        .frame(width: previewWidth, height: keyboardPreviewHeight)
+                    }
+                    .frame(width: previewWidth)
+                    .padding(.vertical, 8)
+                }
+                .frame(height: scorePreviewHeight + keyboardPreviewHeight + 28)
+                .background(Color(.secondarySystemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
             } else if let previewError {
                 Text(previewError)
                     .foregroundStyle(.secondary)
             } else {
                 ProgressView()
             }
-        }
-    }
-
-    @ViewBuilder
-    private var scorePreview: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ScrollView(.horizontal) {
-                PaletteScorePreviewView(
-                    palette: selectedColorScheme.palette,
-                    pitchClassColorState: pitchColorState,
-                    noteColorVisible: noteColorVisible,
-                    staffColorVisible: staffColorVisible,
-                    scaleTonicPitchClass: scaleTonicPitchClass
-                )
-                .frame(width: 980, height: 210)
-                .accessibilityIdentifier("palette-score-preview-c2-c6")
-            }
-            .frame(height: 220)
-            .background(Color(.secondarySystemBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
         }
     }
 
