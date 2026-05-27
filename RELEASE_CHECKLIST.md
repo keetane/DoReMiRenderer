@@ -16,8 +16,8 @@
   fixtures and automated tests.
 - Display name: `DoReMi Palette`.
 - Bundle identifier: `com.doremipalette.app`.
-- Version: `0.1.0`.
-- Build number: `1`.
+- Version: `0.1.1`.
+- Build number: `2`.
 - Signing: automatic signing with Apple Development identity and the configured
   development team.
 - App icon: `Assets.xcassets/AppIcon.appiconset`.
@@ -102,17 +102,21 @@ Phase 17B verification result:
     `/tmp/DoReMiPaletteQA/critical-regression/`.
   - Follow-up metronome-meter evidence is saved under
     `/tmp/DoReMiPaletteQA/metronome-meter-fix/`.
+- 2026-05-28 TestFlight upload:
+  - Archive export/upload succeeded for `com.doremipalette.app`.
+  - Uploaded build: `0.1.1 (2)`.
+  - iPad archive `UISupportedInterfaceOrientations~ipad` includes all four
+    iPad multitasking orientations, including
+    `UIInterfaceOrientationPortraitUpsideDown`.
+  - Archive app bundle contains only `Ode_to_Joy_Easy_variation.mxl` and
+    `Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl`.
 - Phase 17B screenshot folder: `/tmp/DoReMiPaletteQA/phase-17b/`.
 
-Known release warning:
+## Manual Before TestFlight Testing
 
-- Xcode validation warns that all interface orientations must be supported
-  unless the app requires full screen. This does not block the local Release
-  build or Archive, but should be reviewed before external TestFlight or App
-  Store submission.
-
-## Manual Before Upload
-
+- Wait for App Store Connect processing to finish.
+- Add the processed build to internal TestFlight testing.
+- Confirm export compliance / encryption answers in App Store Connect.
 - Confirm the app launches on a physical iPad.
 - Confirm generated-tone audio on device speakers or the selected output route.
 - Confirm import of `.musicxml`, `.xml`, and `.mxl` from Files.
