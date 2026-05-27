@@ -108,9 +108,8 @@ struct PlaybackSequenceBuilder: Sendable {
         let allEntries = orderedEntries(score: score, options: options)
         let grouped = Dictionary(grouping: allEntries) { entry in
             PlaybackGroupKey(
-                partIndex: entry.partIndex,
                 measureIndex: entry.measureIndex,
-                measureID: entry.measure.id,
+                measureID: canonicalMeasureID(for: entry.measure.id),
                 onset: entry.note.onset
             )
         }
@@ -136,17 +135,15 @@ struct PlaybackSequenceBuilder: Sendable {
             return records.map(\.event)
         }
 
-        let recordsByPartAndMeasure = Dictionary(grouping: records) { record in
-            PartMeasureKey(partIndex: record.key.partIndex, measureIndex: record.key.measureIndex)
+        let recordsByMeasure = Dictionary(grouping: records) { record in
+            record.key.measureIndex
         }
 
         var expanded: [PlaybackEvent] = []
-        for (partIndex, part) in score.parts.enumerated() {
-            let measureOrder = RepeatExpansionPlanner.expandedMeasureOrder(for: part.measures)
-            for measureIndex in measureOrder {
-                let key = PartMeasureKey(partIndex: partIndex, measureIndex: measureIndex)
-                expanded.append(contentsOf: recordsByPartAndMeasure[key, default: []].map(\.event))
-            }
+        let primaryMeasures = score.parts.first?.measures ?? []
+        let measureOrder = RepeatExpansionPlanner.expandedMeasureOrder(for: primaryMeasures)
+        for measureIndex in measureOrder {
+            expanded.append(contentsOf: recordsByMeasure[measureIndex, default: []].map(\.event))
         }
         return expanded
     }
@@ -251,7 +248,8 @@ struct PlaybackSequenceBuilder: Sendable {
         var duration = note.duration
         for continuationEntry in orderedEntries.suffix(from: orderedEntries.index(after: startIndex)) {
             let continuation = continuationEntry.note
-            guard continuation.pitch == pitch,
+            guard continuationEntry.partIndex == entry.partIndex,
+                  continuation.pitch == pitch,
                   continuation.staffID == note.staffID,
                   continuation.voiceID == note.voiceID,
                   isTieStopOnly(continuation)
@@ -262,6 +260,14 @@ struct PlaybackSequenceBuilder: Sendable {
             break
         }
         return duration
+    }
+
+    private func canonicalMeasureID(for measureID: MeasureID) -> MeasureID {
+        let pieces = measureID.rawValue.split(separator: ".", maxSplits: 1).map(String.init)
+        guard pieces.count == 2 else {
+            return measureID
+        }
+        return MeasureID(partIndex: 0, measureNumber: pieces[1])
     }
 }
 
@@ -842,21 +848,12 @@ private struct PlaybackEntry: Comparable {
     }
 }
 
-private struct PartMeasureKey: Hashable {
-    let partIndex: Int
-    let measureIndex: Int
-}
-
 private struct PlaybackGroupKey: Hashable, Comparable {
-    let partIndex: Int
     let measureIndex: Int
     let measureID: MeasureID
     let onset: MusicalTime
 
     static func < (lhs: PlaybackGroupKey, rhs: PlaybackGroupKey) -> Bool {
-        if lhs.partIndex != rhs.partIndex {
-            return lhs.partIndex < rhs.partIndex
-        }
         if lhs.measureIndex != rhs.measureIndex {
             return lhs.measureIndex < rhs.measureIndex
         }

@@ -547,11 +547,13 @@ public struct TempoEvent: Hashable, Codable, Sendable {
     public let bpm: Double
     public let onset: MusicalTime
     public let source: TempoSource
+    public let measureID: MeasureID?
 
-    public init(bpm: Double, onset: MusicalTime, source: TempoSource) {
+    public init(bpm: Double, onset: MusicalTime, source: TempoSource, measureID: MeasureID? = nil) {
         self.bpm = bpm
         self.onset = onset
         self.source = source
+        self.measureID = measureID
     }
 }
 

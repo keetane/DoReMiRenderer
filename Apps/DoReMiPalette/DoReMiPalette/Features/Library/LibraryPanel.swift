@@ -3,6 +3,7 @@ import SwiftUI
 struct LibraryPanel: View {
     @ObservedObject var session: PaletteScoreSession
     let currentZoomScale: Double
+    var onWillOpenItem: () -> Void = {}
 
     @Environment(\.dismiss) private var dismiss
 
@@ -15,6 +16,7 @@ struct LibraryPanel: View {
                             item: item,
                             actionTitle: "開く",
                             onOpen: {
+                                onWillOpenItem()
                                 session.openLibraryItem(item, currentZoomScale: currentZoomScale)
                                 dismiss()
                             },
@@ -37,6 +39,7 @@ struct LibraryPanel: View {
                                 item: item,
                                 actionTitle: "再読み込み",
                                 onOpen: {
+                                    onWillOpenItem()
                                     session.openLibraryItem(item, currentZoomScale: currentZoomScale)
                                     if session.errorMessage == nil {
                                         dismiss()

@@ -94,6 +94,13 @@ struct ScoreLayoutEngine: Sendable {
         var measures: [MeasureLayout] = []
         var elements: [ElementLayout] = []
         var noteByID: [NoteID: NoteLayout] = [:]
+        let scoreNoteByID = Dictionary(
+            score.parts
+                .flatMap(\.measures)
+                .flatMap(\.notes)
+                .map { ($0.id, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
         var staffLines: [StaffLineLayout] = []
         var ledgerLines: [LedgerLineLayout] = []
         var annotationMaxY: CGFloat = 0
@@ -143,8 +150,35 @@ struct ScoreLayoutEngine: Sendable {
         }
         diagnostics.append(contentsOf: complexVoiceDiagnostics(in: flatMeasures.map(\.measure)))
 
-        for item in flatMeasures {
-            let measureWidth = width(for: item.measure, options: options, metrics: metrics)
+        let measurePlans = flatMeasures.map { item in
+            let displayedKeySignature = displayKeySignature(for: item.measure.keySignature, options: options)
+            let measureCount = score.parts[item.partIndex].measures.count
+            let measureWidth = width(
+                for: item.measure,
+                measureIndex: item.measureIndex,
+                measureCount: measureCount,
+                displayedKeySignature: displayedKeySignature,
+                options: options,
+                metrics: metrics
+            )
+            return MeasureLayoutPlan(
+                partIndex: item.partIndex,
+                measureIndex: item.measureIndex,
+                measure: item.measure,
+                displayedKeySignature: displayedKeySignature,
+                width: measureWidth
+            )
+        }
+        let justifiedWidths = justifiedMeasureWidths(
+            measurePlans.map(\.width),
+            shouldWrapSystems: shouldWrapSystems,
+            contentWidth: contentWidth,
+            measureSpacing: options.measureSpacing
+        )
+
+        for (planIndex, item) in measurePlans.enumerated() {
+            let displayedKeySignature = item.displayedKeySignature
+            let measureWidth = justifiedWidths.indices.contains(planIndex) ? justifiedWidths[planIndex] : item.width
             if shouldWrapSystems,
                measureX > metrics.leftMargin,
                measureX + measureWidth > metrics.leftMargin + contentWidth {
@@ -200,7 +234,6 @@ struct ScoreLayoutEngine: Sendable {
             for staffID in staffIDs {
                 let clef = clef(for: staffID, in: item.measure)
                 let middleY = metrics.staffMiddleY(systemTop: systemTop, staffIndex: staffIndexByID[staffID] ?? 0)
-                let displayedKeySignature = displayKeySignature(for: item.measure.keySignature, options: options)
                 elements.append(contentsOf: prefixElements(
                     measure: item.measure,
                     staffID: staffID,
@@ -237,17 +270,21 @@ struct ScoreLayoutEngine: Sendable {
                 measureX: measureX,
                 measureWidth: measureWidth,
                 metrics: metrics,
-                displayedKeySignature: displayKeySignature(for: item.measure.keySignature, options: options)
+                displayedKeySignature: displayedKeySignature
             )
             let chordStemDirections = chordStemDirections(for: item.measure)
             let beamGroups = beamGroups(for: item.measure)
+            let beamStemDirections = beamStemDirections(
+                for: item.measure,
+                groups: beamGroups,
+                options: options
+            )
             let beamedNoteIDs = Set(beamGroups.flatMap(\.noteIDs))
             for note in item.measure.notes {
                 let clef = clef(for: note.staffID, in: item.measure)
                 let staffIndex = staffIndexByID[note.staffID] ?? 0
                 let middleY = metrics.staffMiddleY(systemTop: systemTop, staffIndex: staffIndex)
                 let displayedPitch = displayPitch(for: note.pitch, options: options)
-                let displayedKeySignature = displayKeySignature(for: item.measure.keySignature, options: options)
                 let position = displayedPitch.map { staffPosition(pitch: $0, clef: clef) }
                 let noteCenterX = wholeRestCenterX(
                     for: note,
@@ -315,7 +352,9 @@ struct ScoreLayoutEngine: Sendable {
 
                 if note.noteValueKind.drawsStem {
                     let stemElementID = ScoreElementID(rawValue: "\(note.id.rawValue).stem")
-                    let stemDirection = chordStemDirections[ChordStemKey(note)] ?? stemDirection(for: position)
+                    let stemDirection = beamStemDirections[note.id]
+                        ?? chordStemDirections[ChordStemKey(note)]
+                        ?? stemDirection(for: position)
                     let stemFrame = stemFrame(
                         direction: stemDirection,
                         noteFrame: noteFrame,
@@ -571,7 +610,10 @@ struct ScoreLayoutEngine: Sendable {
                 padding: renderBoundsPadding
             )
         }
-        let elementByID = Dictionary(uniqueKeysWithValues: elements.map { ($0.id, $0) })
+        let elementByID = Dictionary(
+            elements.map { ($0.id, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
         let contentHeight = max(
             systems.map(\.frame.maxY).max().map { $0 + metrics.bottomMargin } ?? 0,
             annotationMaxY + metrics.bottomMargin,
@@ -593,6 +635,7 @@ struct ScoreLayoutEngine: Sendable {
             staffLines: staffLines,
             ledgerLines: ledgerLines,
             noteByID: noteByID,
+            scoreNoteByID: scoreNoteByID,
             elementByID: elementByID
         )
         return ScoreLayoutResult(layout: layout, diagnostics: diagnostics)
@@ -716,6 +759,38 @@ struct ScoreLayoutEngine: Sendable {
             }
             let averageSteps = Double(steps.reduce(0, +)) / Double(steps.count)
             directions[key] = averageSteps < 0 ? .up : .down
+        }
+
+        return directions
+    }
+
+    private func beamStemDirections(
+        for measure: Measure,
+        groups: [BeamGroup],
+        options: LayoutOptions
+    ) -> [NoteID: StemDirection] {
+        let notesByID = Dictionary(uniqueKeysWithValues: measure.notes.map { ($0.id, $0) })
+        var directions: [NoteID: StemDirection] = [:]
+
+        for group in groups {
+            let steps = group.noteIDs.compactMap { noteID -> Int? in
+                guard let note = notesByID[noteID],
+                      let pitch = displayPitch(for: note.pitch, options: options)
+                else {
+                    return nil
+                }
+                let position = staffPosition(pitch: pitch, clef: clef(for: note.staffID, in: measure))
+                return position.stepsFromMiddleLine
+            }
+            guard !steps.isEmpty else {
+                continue
+            }
+
+            let averageSteps = Double(steps.reduce(0, +)) / Double(steps.count)
+            let direction: StemDirection = averageSteps < 0 ? .up : .down
+            for noteID in group.noteIDs {
+                directions[noteID] = direction
+            }
         }
 
         return directions
@@ -1271,6 +1346,7 @@ public struct ScoreLayout: Sendable {
     public let staffLines: [StaffLineLayout]
     public let ledgerLines: [LedgerLineLayout]
     public let noteByID: [NoteID: NoteLayout]
+    public let scoreNoteByID: [NoteID: ScoreNote]
     public let elementByID: [ScoreElementID: ElementLayout]
 
     init(
@@ -1282,6 +1358,7 @@ public struct ScoreLayout: Sendable {
         staffLines: [StaffLineLayout] = [],
         ledgerLines: [LedgerLineLayout] = [],
         noteByID: [NoteID: NoteLayout] = [:],
+        scoreNoteByID: [NoteID: ScoreNote] = [:],
         elementByID: [ScoreElementID: ElementLayout] = [:]
     ) {
         self.canvasSize = canvasSize
@@ -1292,11 +1369,16 @@ public struct ScoreLayout: Sendable {
         self.staffLines = staffLines
         self.ledgerLines = ledgerLines
         self.noteByID = noteByID
+        self.scoreNoteByID = scoreNoteByID
         self.elementByID = elementByID
     }
 
     public func noteLayout(for id: NoteID) -> NoteLayout? {
         noteByID[id]
+    }
+
+    public func scoreNote(for id: NoteID) -> ScoreNote? {
+        scoreNoteByID[id]
     }
 
     public func elementLayout(for id: ScoreElementID) -> ElementLayout? {
@@ -1930,6 +2012,9 @@ private struct LayoutMetrics {
     let noteheadSize: CGSize
     let noteInset: CGFloat
     let minimumMeasureWidth: CGFloat
+    let absoluteMinimumMeasureWidth: CGFloat
+    let normalMeasureMinimumWidth: CGFloat
+    let pickupMeasureMinRatio: CGFloat
     let staffLineHitHalfWidth: CGFloat
     let ledgerLineWidth: CGFloat
     let staffSpace: CGFloat
@@ -1944,6 +2029,9 @@ private struct LayoutMetrics {
         noteheadSize = CGSize(width: options.staffSpace * 1.95, height: options.staffSpace * 1.55)
         noteInset = options.staffSpace * 3
         minimumMeasureWidth = options.staffSpace * 12
+        absoluteMinimumMeasureWidth = max(options.staffSpace * 18, 180)
+        normalMeasureMinimumWidth = max(options.staffSpace * 22, 220)
+        pickupMeasureMinRatio = 0.75
         staffLineHitHalfWidth = max(1, options.staffSpace * 0.08)
         ledgerLineWidth = options.staffSpace * 2.1
         staffSpace = options.staffSpace
@@ -1976,10 +2064,154 @@ private func clef(for staffID: StaffID, in measure: Measure) -> Clef {
     return staffID.rawValue == "2" ? Clef(kind: .bass) : Clef(kind: .treble)
 }
 
-private func width(for measure: Measure, options: LayoutOptions, metrics: LayoutMetrics) -> CGFloat {
+private struct MeasureLayoutPlan {
+    let partIndex: Int
+    let measureIndex: Int
+    let measure: Measure
+    let displayedKeySignature: KeySignature?
+    let width: CGFloat
+}
+
+private func width(
+    for measure: Measure,
+    measureIndex: Int,
+    measureCount: Int,
+    displayedKeySignature: KeySignature?,
+    options: LayoutOptions,
+    metrics: LayoutMetrics
+) -> CGFloat {
     let spacingUnits = spacingUnitCount(for: measure)
-    let onsetWidth = CGFloat(max(spacingUnits, 1)) * options.staffSpace * 5
-    return max(metrics.minimumMeasureWidth, onsetWidth + metrics.noteInset * 2)
+    let rhythmicSpacingWidth = CGFloat(max(spacingUnits, 1)) * options.staffSpace * 4.5 + metrics.noteInset * 2
+    let prefixRequiredWidth = prefixRequiredWidth(
+        for: measure,
+        displayedKeySignature: displayedKeySignature,
+        metrics: metrics
+    )
+    let minimumWidth = minimumMeasureWidth(
+        for: measure,
+        measureIndex: measureIndex,
+        measureCount: measureCount,
+        metrics: metrics
+    )
+    return max(
+        metrics.minimumMeasureWidth,
+        rhythmicSpacingWidth,
+        prefixRequiredWidth,
+        minimumWidth
+    )
+}
+
+private func minimumMeasureWidth(
+    for measure: Measure,
+    measureIndex: Int,
+    measureCount: Int,
+    metrics: LayoutMetrics
+) -> CGFloat {
+    if isPickupMeasure(measure, measureIndex: measureIndex, measureCount: measureCount)
+        || isTrailingIncompleteMeasure(measure, measureIndex: measureIndex, measureCount: measureCount) {
+        return max(
+            metrics.absoluteMinimumMeasureWidth,
+            metrics.normalMeasureMinimumWidth * metrics.pickupMeasureMinRatio
+        )
+    }
+    return max(metrics.absoluteMinimumMeasureWidth, metrics.normalMeasureMinimumWidth)
+}
+
+private func justifiedMeasureWidths(
+    _ baseWidths: [CGFloat],
+    shouldWrapSystems: Bool,
+    contentWidth: CGFloat,
+    measureSpacing: CGFloat
+) -> [CGFloat] {
+    guard shouldWrapSystems, !baseWidths.isEmpty else {
+        return baseWidths
+    }
+
+    var systems: [[Int]] = []
+    var current: [Int] = []
+    var occupied: CGFloat = 0
+    for (index, width) in baseWidths.enumerated() {
+        let candidate = current.isEmpty ? width : occupied + measureSpacing + width
+        if !current.isEmpty, candidate > contentWidth {
+            systems.append(current)
+            current = [index]
+            occupied = width
+        } else {
+            current.append(index)
+            occupied = candidate
+        }
+    }
+    if !current.isEmpty {
+        systems.append(current)
+    }
+
+    var widths = baseWidths
+    for (systemIndex, indices) in systems.enumerated() where systemIndex < systems.count - 1 && indices.count > 1 {
+        let occupiedWidth = indices.reduce(CGFloat(0)) { $0 + baseWidths[$1] }
+            + CGFloat(max(indices.count - 1, 0)) * measureSpacing
+        let extra = contentWidth - occupiedWidth
+        guard extra > 0 else { continue }
+        let perMeasureExtra = extra / CGFloat(indices.count)
+        for index in indices {
+            widths[index] += perMeasureExtra
+        }
+    }
+    return widths
+}
+
+private func prefixRequiredWidth(
+    for measure: Measure,
+    displayedKeySignature: KeySignature?,
+    metrics: LayoutMetrics
+) -> CGFloat {
+    let prefixWidth = keySignaturePrefixWidth(for: displayedKeySignature, metrics: metrics)
+    let timeWidth = timeSignaturePrefixWidth(for: measure, metrics: metrics)
+    let clefWidth = clefPrefixWidth(for: measure, metrics: metrics)
+    let repeatWidth = forwardRepeatPrefixWidth(for: measure, metrics: metrics)
+    return metrics.noteInset * 2
+        + prefixWidth
+        + timeWidth
+        + clefWidth
+        + repeatWidth
+        + metrics.noteheadSize.width * 2
+}
+
+private func isPickupMeasure(_ measure: Measure, measureIndex: Int, measureCount: Int) -> Bool {
+    guard measureIndex == 0 else {
+        return false
+    }
+    return isIncompleteMeasure(measure)
+}
+
+private func isTrailingIncompleteMeasure(_ measure: Measure, measureIndex: Int, measureCount: Int) -> Bool {
+    guard measureCount > 1, measureIndex == measureCount - 1 else {
+        return false
+    }
+    return isIncompleteMeasure(measure)
+}
+
+private func isIncompleteMeasure(_ measure: Measure) -> Bool {
+    let actualDuration = actualMeasureDuration(for: measure)
+    guard actualDuration > 0 else {
+        return false
+    }
+    let fullDuration = fullMeasureDuration(for: measure)
+    return fullDuration > 0 && actualDuration < fullDuration * 0.75
+}
+
+private func actualMeasureDuration(for measure: Measure) -> CGFloat {
+    measure.notes
+        .filter { $0.duration.ticks > 0 }
+        .map { musicalTimeValue($0.onset + $0.duration) }
+        .max() ?? 0
+}
+
+private func fullMeasureDuration(for measure: Measure) -> CGFloat {
+    let timeSignature = measure.timeSignature ?? TimeSignature(beats: 4, beatType: 4)
+    guard timeSignature.beats > 0, timeSignature.beatType > 0 else {
+        return 4
+    }
+    return CGFloat(timeSignature.beats) * (4 / CGFloat(timeSignature.beatType))
 }
 
 private func spacingUnitCount(for measure: Measure) -> Int {
@@ -2030,7 +2262,16 @@ private func xCoordinatesByOnset(
         return [onsets[0]: startX]
     }
 
-    let usableWidth = max(0, measureWidth - metrics.noteInset * 2 - prefixWidth - timeWidth - clefWidth - repeatWidth)
+    let availableWidth = max(0, measureWidth - metrics.noteInset * 2 - prefixWidth - timeWidth - clefWidth - repeatWidth)
+    if measureContainsCompactShortNotes(measure) {
+        return compactShortNoteXCoordinates(
+            onsets: onsets,
+            startX: startX,
+            availableWidth: availableWidth,
+            metrics: metrics
+        )
+    }
+    let usableWidth = availableWidth
     let measureStart = onsets.first ?? onsets[0]
     let measureEnd = measure.notes
         .map { $0.onset + $0.duration }
@@ -2049,6 +2290,49 @@ private func xCoordinatesByOnset(
         let offset = musicalTimeValue(onset - measureStart) / measureDurationValue
         return (onset, startX + usableWidth * offset)
     })
+}
+
+private func measureContainsCompactShortNotes(_ measure: Measure) -> Bool {
+    measure.notes.contains { $0.pitch != nil && $0.noteValueKind.flagCount > 1 }
+}
+
+private func compactShortNoteXCoordinates(
+    onsets: [MusicalTime],
+    startX: CGFloat,
+    availableWidth: CGFloat,
+    metrics: LayoutMetrics
+) -> [MusicalTime: CGFloat] {
+    guard onsets.count > 1 else {
+        return onsets.first.map { [$0: startX] } ?? [:]
+    }
+
+    let minimumReadableGap = metrics.staffSpace * 2.6
+    let rhythmicGapScale = metrics.staffSpace * 8
+    var gaps: [CGFloat] = []
+    for index in 0..<(onsets.count - 1) {
+        let rhythmicGap = musicalTimeValue(onsets[index + 1] - onsets[index]) * rhythmicGapScale
+        gaps.append(max(minimumReadableGap, rhythmicGap))
+    }
+
+    let naturalWidth = gaps.reduce(0, +)
+    guard naturalWidth > 0 else {
+        let stepWidth = availableWidth / CGFloat(onsets.count - 1)
+        return Dictionary(uniqueKeysWithValues: onsets.enumerated().map { index, onset in
+            (onset, startX + CGFloat(index) * stepWidth)
+        })
+    }
+
+    let scale = naturalWidth > availableWidth && availableWidth > 0 ? availableWidth / naturalWidth : 1
+    let scaledGaps = gaps.map { $0 * scale }
+    let usedWidth = scaledGaps.reduce(0, +)
+    let leadingOffset = min(max(0, availableWidth - usedWidth) * 0.05, metrics.staffSpace * 0.5)
+    var x = startX + leadingOffset
+    var coordinates: [MusicalTime: CGFloat] = [onsets[0]: x]
+    for (index, gap) in scaledGaps.enumerated() {
+        x += gap
+        coordinates[onsets[index + 1]] = x
+    }
+    return coordinates
 }
 
 private func musicalTimeValue(_ time: MusicalTime) -> CGFloat {
@@ -2099,9 +2383,9 @@ private func prefixElements(
     if measure.clef != nil || measure.clefsByStaff[staffID] != nil {
         let clefYOffset: CGFloat = switch clef.kind {
         case .treble:
-            metrics.staffSpace * 0.8
+            metrics.staffSpace * 0.8 - 15
         case .bass:
-            -metrics.staffSpace * 1.2
+            -metrics.staffSpace * 1.2 + 12
         case .alto, .tenor, .unknown:
             0
         }
@@ -2537,7 +2821,7 @@ private func ledgerLinesForNote(
             noteID: note.id,
             measureID: measure.id,
             staffID: note.staffID,
-            pitchClassHint: pitch.pitchClass,
+            pitchClassHint: staffPitchClass(clefKind: clef.kind, lineStepFromMiddle: lineStep),
             lineStepFromMiddle: lineStep,
             start: start,
             end: end,

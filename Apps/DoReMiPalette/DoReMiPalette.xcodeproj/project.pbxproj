@@ -15,7 +15,6 @@
 		2B0000010000000000000006 /* Features/ScorePractice/PaletteStyleFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001016 /* Features/ScorePractice/PaletteStyleFactory.swift */; };
 		2B0000010000000000000007 /* Features/ScorePractice/ScorePracticeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001017 /* Features/ScorePractice/ScorePracticeView.swift */; };
 		2B0000010000000000000008 /* Features/ScorePractice/PaletteSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001018 /* Features/ScorePractice/PaletteSettingsView.swift */; };
-		2B00000100000000000000B1 /* Features/ScorePractice/PaletteTranspose.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001034 /* Features/ScorePractice/PaletteTranspose.swift */; };
 		2B0000010000000000000009 /* Features/Diagnostics/DiagnosticsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001019 /* Features/Diagnostics/DiagnosticsPanel.swift */; };
 		2B000001000000000000000A /* Features/Keyboard/KeyboardPitchMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000101A /* Features/Keyboard/KeyboardPitchMapper.swift */; };
 		2B000001000000000000000B /* Features/Keyboard/KeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000101B /* Features/Keyboard/KeyboardView.swift */; };
@@ -30,12 +29,11 @@
 		2B0000010000000000000015 /* Features/Playback/Audio/PaletteAudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001025 /* Features/Playback/Audio/PaletteAudioEngine.swift */; };
 		2B0000010000000000000016 /* Features/Playback/Audio/SimpleToneAudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001026 /* Features/Playback/Audio/SimpleToneAudioEngine.swift */; };
 		2B0000010000000000000017 /* PalettePlaybackRuntimeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001027 /* PalettePlaybackRuntimeTests.swift */; };
-		2B00000100000000000000C2 /* Resources/Samples/Canon_in_D.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001042 /* Resources/Samples/Canon_in_D.mxl */; };
-		2B00000100000000000000C3 /* Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001043 /* Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl */; };
-		2B00000100000000000000C4 /* Resources/Samples/Happy_Birthday_To_You_Piano.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001044 /* Resources/Samples/Happy_Birthday_To_You_Piano.mxl */; };
-		2B00000100000000000000C5 /* Resources/Samples/Ode_to_Joy_Easy_variation.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001045 /* Resources/Samples/Ode_to_Joy_Easy_variation.mxl */; };
-		2B00000100000000000000C6 /* Resources/Samples/The_Entertainer_-_Scott_Joplin_-_1902.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001046 /* Resources/Samples/The_Entertainer_-_Scott_Joplin_-_1902.mxl */; };
+		2B00000100000000000000B1 /* Features/ScorePractice/PaletteTranspose.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001034 /* Features/ScorePractice/PaletteTranspose.swift */; };
 		2B00000100000000000000F0 /* DoReMiRendererKit in Frameworks */ = {isa = PBXBuildFile; productRef = 2B0000010000000000000041 /* DoReMiRendererKit */; };
+		2B00000100000000000000F1 /* Features/ScorePractice/OnboardingGuide.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001046 /* Features/ScorePractice/OnboardingGuide.swift */; };
+		2B00000100000000000000C5 /* Resources/Samples/Ode_to_Joy_Easy_variation.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001045 /* Resources/Samples/Ode_to_Joy_Easy_variation.mxl */; };
+		2B00000100000000000000C3 /* Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001043 /* Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -58,7 +56,6 @@
 		2B0000010000000000001016 /* Features/ScorePractice/PaletteStyleFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/ScorePractice/PaletteStyleFactory.swift; sourceTree = "<group>"; };
 		2B0000010000000000001017 /* Features/ScorePractice/ScorePracticeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/ScorePractice/ScorePracticeView.swift; sourceTree = "<group>"; };
 		2B0000010000000000001018 /* Features/ScorePractice/PaletteSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/ScorePractice/PaletteSettingsView.swift; sourceTree = "<group>"; };
-		2B0000010000000000001034 /* Features/ScorePractice/PaletteTranspose.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/ScorePractice/PaletteTranspose.swift; sourceTree = "<group>"; };
 		2B0000010000000000001019 /* Features/Diagnostics/DiagnosticsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Diagnostics/DiagnosticsPanel.swift; sourceTree = "<group>"; };
 		2B000001000000000000101A /* Features/Keyboard/KeyboardPitchMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Keyboard/KeyboardPitchMapper.swift; sourceTree = "<group>"; };
 		2B000001000000000000101B /* Features/Keyboard/KeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Keyboard/KeyboardView.swift; sourceTree = "<group>"; };
@@ -73,11 +70,10 @@
 		2B0000010000000000001025 /* Features/Playback/Audio/PaletteAudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Playback/Audio/PaletteAudioEngine.swift; sourceTree = "<group>"; };
 		2B0000010000000000001026 /* Features/Playback/Audio/SimpleToneAudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Playback/Audio/SimpleToneAudioEngine.swift; sourceTree = "<group>"; };
 		2B0000010000000000001027 /* PalettePlaybackRuntimeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PalettePlaybackRuntimeTests.swift; sourceTree = "<group>"; };
-		2B0000010000000000001042 /* Resources/Samples/Canon_in_D.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = Resources/Samples/Canon_in_D.mxl; sourceTree = "<group>"; };
-		2B0000010000000000001043 /* Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl; sourceTree = "<group>"; };
-		2B0000010000000000001044 /* Resources/Samples/Happy_Birthday_To_You_Piano.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = Resources/Samples/Happy_Birthday_To_You_Piano.mxl; sourceTree = "<group>"; };
-		2B0000010000000000001045 /* Resources/Samples/Ode_to_Joy_Easy_variation.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = Resources/Samples/Ode_to_Joy_Easy_variation.mxl; sourceTree = "<group>"; };
-		2B0000010000000000001046 /* Resources/Samples/The_Entertainer_-_Scott_Joplin_-_1902.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = Resources/Samples/The_Entertainer_-_Scott_Joplin_-_1902.mxl; sourceTree = "<group>"; };
+		2B0000010000000000001034 /* Features/ScorePractice/PaletteTranspose.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/ScorePractice/PaletteTranspose.swift; sourceTree = "<group>"; };
+		2B0000010000000000001046 /* Features/ScorePractice/OnboardingGuide.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/ScorePractice/OnboardingGuide.swift; sourceTree = "<group>"; };
+		2B0000010000000000001045 /* Resources/Samples/Ode_to_Joy_Easy_variation.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Ode_to_Joy_Easy_variation.mxl"; sourceTree = "<group>"; };
+		2B0000010000000000001043 /* Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -120,6 +116,7 @@
 				2B0000010000000000001016 /* Features/ScorePractice/PaletteStyleFactory.swift */,
 				2B0000010000000000001017 /* Features/ScorePractice/ScorePracticeView.swift */,
 				2B0000010000000000001018 /* Features/ScorePractice/PaletteSettingsView.swift */,
+				2B0000010000000000001046 /* Features/ScorePractice/OnboardingGuide.swift */,
 				2B0000010000000000001034 /* Features/ScorePractice/PaletteTranspose.swift */,
 				2B0000010000000000001019 /* Features/Diagnostics/DiagnosticsPanel.swift */,
 				2B000001000000000000101A /* Features/Keyboard/KeyboardPitchMapper.swift */,
@@ -131,11 +128,8 @@
 				2B0000010000000000001025 /* Features/Playback/Audio/PaletteAudioEngine.swift */,
 				2B0000010000000000001026 /* Features/Playback/Audio/SimpleToneAudioEngine.swift */,
 				2B0000010000000000001022 /* Assets.xcassets */,
-				2B0000010000000000001042 /* Resources/Samples/Canon_in_D.mxl */,
-				2B0000010000000000001043 /* Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl */,
-				2B0000010000000000001044 /* Resources/Samples/Happy_Birthday_To_You_Piano.mxl */,
 				2B0000010000000000001045 /* Resources/Samples/Ode_to_Joy_Easy_variation.mxl */,
-				2B0000010000000000001046 /* Resources/Samples/The_Entertainer_-_Scott_Joplin_-_1902.mxl */,
+				2B0000010000000000001043 /* Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl */,
 			);
 			path = DoReMiPalette;
 			sourceTree = "<group>";
@@ -251,11 +245,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				2B0000010000000000000012 /* Assets.xcassets in Resources */,
-				2B00000100000000000000C2 /* Resources/Samples/Canon_in_D.mxl in Resources */,
-				2B00000100000000000000C3 /* Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl in Resources */,
-				2B00000100000000000000C4 /* Resources/Samples/Happy_Birthday_To_You_Piano.mxl in Resources */,
 				2B00000100000000000000C5 /* Resources/Samples/Ode_to_Joy_Easy_variation.mxl in Resources */,
-				2B00000100000000000000C6 /* Resources/Samples/The_Entertainer_-_Scott_Joplin_-_1902.mxl in Resources */,
+				2B00000100000000000000C3 /* Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -281,6 +272,7 @@
 				2B0000010000000000000006 /* Features/ScorePractice/PaletteStyleFactory.swift in Sources */,
 				2B0000010000000000000007 /* Features/ScorePractice/ScorePracticeView.swift in Sources */,
 				2B0000010000000000000008 /* Features/ScorePractice/PaletteSettingsView.swift in Sources */,
+				2B00000100000000000000F1 /* Features/ScorePractice/OnboardingGuide.swift in Sources */,
 				2B00000100000000000000B1 /* Features/ScorePractice/PaletteTranspose.swift in Sources */,
 				2B0000010000000000000009 /* Features/Diagnostics/DiagnosticsPanel.swift in Sources */,
 				2B000001000000000000000A /* Features/Keyboard/KeyboardPitchMapper.swift in Sources */,
@@ -352,9 +344,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGNING_ALLOWED = YES;
 				CODE_SIGNING_REQUIRED = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5ZTY6QA87P;
@@ -363,8 +355,9 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				"INFOPLIST_KEY_UISupportedInterfaceOrientations~ipad" = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -376,6 +369,7 @@
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -386,9 +380,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGNING_ALLOWED = YES;
 				CODE_SIGNING_REQUIRED = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5ZTY6QA87P;
@@ -397,8 +391,9 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				"INFOPLIST_KEY_UISupportedInterfaceOrientations~ipad" = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -410,6 +405,7 @@
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";

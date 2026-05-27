@@ -18,7 +18,10 @@ struct PaletteSettingsView: View {
     @Binding var metronomeCompoundModeRawValue: String
     @Binding var metronomeClickSoundStyleRawValue: String
     var writtenKeyPitchClass: Int? = nil
+    @Binding var guideState: OnboardingGuideState
     var onTapTempo: () -> Void = {}
+    var onRestartGuide: () -> Void = {}
+    var onCompleteGuide: () -> Void = {}
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -34,6 +37,7 @@ struct PaletteSettingsView: View {
                     Toggle("次の音を表示", isOn: $nextNoteDisplayVisible)
                     Toggle("小節数を表示", isOn: $measureNumbersVisible)
                 }
+                .onboardingAnchor(.settingsDisplayOptions)
                 Section("再生") {
                     Toggle("メトロノーム", isOn: $metronomeEnabled)
                     Picker("複合拍子", selection: $metronomeCompoundModeRawValue) {
@@ -63,12 +67,24 @@ struct PaletteSettingsView: View {
                     .pickerStyle(.segmented)
                 }
                 Section("拡大率") {
-                    Picker("拡大率", selection: $zoomScale) {
-                        Text("1.0x").tag(1.0)
-                        Text("1.5x").tag(1.5)
-                        Text("2.0x").tag(2.0)
+                    HStack {
+                        Text("現在")
+                        Spacer()
+                        Text(PaletteZoomScale.percentText(zoomScale))
+                            .font(.body.monospacedDigit().weight(.semibold))
+                            .foregroundStyle(.secondary)
                     }
-                    .pickerStyle(.segmented)
+                    Slider(
+                        value: zoomScaleBinding,
+                        in: PaletteZoomScale.minimum...PaletteZoomScale.maximum,
+                        step: 0.05
+                    )
+                    Button("拡大率をリセット") {
+                        zoomScale = PaletteZoomScale.default
+                    }
+                    Text("譜面はピンチ操作で拡大縮小できます。設定値は保存され、次回起動時に復元されます。")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
                 Section("移調") {
                     Picker("移調キー", selection: transposeKeyBinding) {
@@ -80,12 +96,40 @@ struct PaletteSettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                Section("ガイド") {
+                    Button("使い方ガイドを再表示") {
+                        onRestartGuide()
+                    }
+                    Text("初回ガイドは完了またはスキップ後に自動表示されません。このボタンでいつでも再表示できます。")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             .navigationTitle("表示設定")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("完了") {
                         dismiss()
+                    }
+                }
+            }
+            .overlayPreferenceValue(OnboardingAnchorPreferenceKey.self) { anchors in
+                GeometryReader { proxy in
+                    if guideState.isActive,
+                       guideState.currentStep == .settingsDisplayOptions {
+                        let anchorFrame = anchors[guideState.currentStep.anchorID].map { proxy[$0] }
+                        OnboardingGuideOverlay(
+                            step: guideState.currentStep,
+                            anchorFrame: anchorFrame,
+                            containerSize: proxy.size,
+                            onBack: { guideState.moveBack() },
+                            onNext: { _ = guideState.moveNext() },
+                            onSkip: {
+                                onCompleteGuide()
+                                dismiss()
+                            }
+                        )
+                        .zIndex(50)
                     }
                 }
             }
@@ -107,6 +151,13 @@ struct PaletteSettingsView: View {
                     toTargetPitchClass: targetPitchClass
                 )
             }
+        )
+    }
+
+    private var zoomScaleBinding: Binding<Double> {
+        Binding(
+            get: { PaletteZoomScale.clamped(zoomScale) },
+            set: { zoomScale = PaletteZoomScale.clamped($0) }
         )
     }
 }

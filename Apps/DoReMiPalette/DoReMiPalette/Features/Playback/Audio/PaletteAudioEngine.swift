@@ -7,6 +7,7 @@ protocol PaletteAudioEngine: AnyObject {
     func start() throws
     func stop()
     func silence()
+    func prepare(midiPitches: [Int], duration: TimeInterval, velocity: Double)
     func play(midiPitches: [Int], duration: TimeInterval, velocity: Double)
     func play(event: PlaybackEvent, tempoBPM: Double, velocity: Double)
 }
@@ -27,6 +28,8 @@ final class SilentPaletteAudioEngine: PaletteAudioEngine {
     func silence() {
         silenceCount += 1
     }
+
+    func prepare(midiPitches: [Int], duration: TimeInterval, velocity: Double) {}
 
     func play(midiPitches: [Int], duration: TimeInterval, velocity: Double) {
         playedEvents.append(midiPitches)

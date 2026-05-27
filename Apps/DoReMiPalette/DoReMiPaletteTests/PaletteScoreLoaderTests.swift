@@ -105,6 +105,77 @@ struct PaletteScoreLoaderTests {
         )
     }
 
+    @Test func ledgerLineColorFollowsStaffColorVisibility() throws {
+        let loaded = try PaletteScoreLoader().load(
+            data: PalettePreviewScore.musicXMLData,
+            sourceName: "palette-preview-c2-c6.musicxml"
+        )
+        let ledgerLine = try #require(loaded.layout.elements.first { $0.kind == .ledgerLine })
+
+        let noteColorOnlyStyle = PaletteStyleFactory.makeStyle(
+            noteColorVisible: true,
+            staffColorVisible: false
+        )
+        let noteColorOnlyResolved = noteColorOnlyStyle.colorResolver.resolvedStyle(
+            for: ledgerLine,
+            score: loaded.score,
+            layout: loaded.layout,
+            style: noteColorOnlyStyle,
+            selection: nil
+        )
+
+        #expect(noteColorOnlyResolved.strokeColor == .black)
+
+        let staffColorStyle = PaletteStyleFactory.makeStyle(
+            noteColorVisible: true,
+            staffColorVisible: true
+        )
+        let staffColorResolved = staffColorStyle.colorResolver.resolvedStyle(
+            for: ledgerLine,
+            score: loaded.score,
+            layout: loaded.layout,
+            style: staffColorStyle,
+            selection: nil
+        )
+
+        #expect(staffColorResolved.strokeColor != .black)
+    }
+
+    @Test func multipleLedgerLinesUseTheirOwnStaffPitchColors() throws {
+        let loaded = try PaletteScoreLoader().load(
+            data: PalettePreviewScore.musicXMLData,
+            sourceName: "palette-preview-c2-c6.musicxml"
+        )
+        let c6Note = try #require(loaded.layout.scoreNoteByID.first {
+            $0.value.pitch?.step == .c && $0.value.pitch?.octave == 6
+        })
+        let ledgerElements = loaded.layout.ledgerLines
+            .filter { $0.noteID == c6Note.key }
+            .sorted { $0.lineStepFromMiddle < $1.lineStepFromMiddle }
+            .compactMap { loaded.layout.elementLayout(for: $0.id) }
+        let style = PaletteStyleFactory.makeStyle(
+            noteColorVisible: true,
+            staffColorVisible: true
+        )
+
+        #expect(ledgerElements.compactMap(\.pitchClassHint) == [.a, .c])
+
+        let colors = ledgerElements.map {
+            style.colorResolver.resolvedStyle(
+                for: $0,
+                score: loaded.score,
+                layout: loaded.layout,
+                style: style,
+                selection: nil
+            ).strokeColor
+        }
+
+        #expect(colors == [
+            defaultEducationalPalette.color(for: PitchClass.a),
+            defaultEducationalPalette.color(for: PitchClass.c),
+        ])
+    }
+
     @Test func scoreLoaderCreatesHorizontalAndA4LayoutsForTheSameScore() throws {
         let loaded = try PaletteScoreLoader().load(data: Self.validMusicXML, sourceName: "unit.musicxml")
 
@@ -192,6 +263,14 @@ struct PaletteScoreLoaderTests {
         #expect(result.nearestNoteID == firstNoteID)
     }
 
+    @Test func zoomScaleClampsPersistsAndFormatsContinuousValues() {
+        #expect(PaletteZoomScale.clamped(0.1) == PaletteZoomScale.minimum)
+        #expect(PaletteZoomScale.clamped(4.2) == PaletteZoomScale.maximum)
+        #expect(PaletteZoomScale.clamped(.nan) == PaletteZoomScale.default)
+        #expect(PaletteZoomScale.clamped(1.35) == 1.35)
+        #expect(PaletteZoomScale.percentText(1.25) == "125%")
+    }
+
     @Test func settingsKeysStoreAndRestoreValues() throws {
         let suiteName = "PaletteSettingsTests.\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suiteName))
@@ -218,6 +297,72 @@ struct PaletteScoreLoaderTests {
         #expect(defaults.bool(forKey: PaletteSettingsKeys.metronomeEnabled) == true)
         #expect(defaults.string(forKey: PaletteSettingsKeys.metronomeCompoundMode) == PaletteMetronomeCompoundMode.subdivision.rawValue)
         #expect(defaults.string(forKey: PaletteSettingsKeys.metronomeClickSoundStyle) == PaletteMetronomeClickSoundStyle.wood.rawValue)
+    }
+
+    @Test func onboardingGuideStepOrderAndNavigationAreStable() {
+        #expect(OnboardingGuideStep.allCases == [
+            .settingsButton,
+            .settingsDisplayOptions,
+            .currentNoteAndKeyboard,
+            .measureJump,
+            .nextPrevious,
+            .playStop,
+            .keyAndTranspose,
+            .paletteButton,
+            .colorPatternButton,
+            .pitchClassEButton,
+            .paletteKeyButton,
+            .playPracticePrompt
+        ])
+        #expect(OnboardingGuideStep.settingsButton.next == .settingsDisplayOptions)
+        #expect(OnboardingGuideStep.keyAndTranspose.next == .paletteButton)
+        #expect(OnboardingGuideStep.keyAndTranspose.previous == .playStop)
+        #expect(OnboardingGuideStep.playPracticePrompt.next == nil)
+        #expect(OnboardingGuideStep.playPracticePrompt.previous == .paletteKeyButton)
+        #expect(OnboardingGuideStep.settingsDisplayOptions.anchorID == .settingsDisplayOptions)
+        #expect(OnboardingGuideStep.currentNoteAndKeyboard.anchorID == .firstBeatNote)
+        #expect(OnboardingGuideStep.measureJump.anchorID == .measureDisplay)
+        #expect(OnboardingGuideStep.paletteButton.anchorID == .paletteButton)
+        #expect(OnboardingGuideStep.colorPatternButton.anchorID == .colorPatternButton)
+        #expect(OnboardingGuideStep.pitchClassEButton.anchorID == .pitchClassEButton)
+        #expect(OnboardingGuideStep.paletteKeyButton.anchorID == .paletteKeyButton)
+        #expect(OnboardingGuideStep.playPracticePrompt.anchorID == .playStopControls)
+    }
+
+    @Test func onboardingGuideStateStartsSkipsCompletesAndBoundsSteps() {
+        var state = OnboardingGuideState.inactive
+
+        state.start()
+        #expect(state.isActive)
+        #expect(state.currentStep == .settingsButton)
+
+        #expect(state.moveNext() == false)
+        #expect(state.currentStep == .settingsDisplayOptions)
+        state.moveBack()
+        #expect(state.currentStep == .settingsButton)
+        state.moveBack()
+        #expect(state.currentStep == .settingsButton)
+
+        for _ in 0..<OnboardingGuideStep.allCases.count {
+            _ = state.moveNext()
+        }
+        #expect(!state.isActive)
+
+        state.start()
+        state.skipOrComplete()
+        #expect(!state.isActive)
+    }
+
+    @Test func onboardingCompletedSettingPersistsInDefaults() throws {
+        let suiteName = "PaletteOnboardingSettingsTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        #expect(defaults.bool(forKey: PaletteSettingsKeys.onboardingCompleted) == false)
+
+        defaults.set(true, forKey: PaletteSettingsKeys.onboardingCompleted)
+
+        #expect(defaults.bool(forKey: PaletteSettingsKeys.onboardingCompleted) == true)
     }
 
     @Test func diagnosticsPresentationSummarizesWarningsAndErrorsInJapanese() {
@@ -319,8 +464,8 @@ struct PaletteScoreLoaderTests {
 
         #expect(sampleItem.sourceType == .sample)
         #expect(importedItem.sourceType == .imported)
-        #expect(sampleItem.displayName == "Canon in D")
-        #expect(sample.sourceIdentifier == "sample:Canon_in_D.mxl")
+        #expect(sampleItem.displayName == "Ode to Joy Easy Variation")
+        #expect(sample.sourceIdentifier == "sample:Ode_to_Joy_Easy_variation.mxl")
     }
 
     @Test func libraryCollectionSortsAndUpdatesDuplicateImports() throws {
@@ -605,24 +750,24 @@ struct PaletteScoreLoaderTests {
 
         session.openLibraryItem(sampleItem, bundle: .main)
 
-        #expect(session.loadedScore?.sourceName == "Canon_in_D.mxl")
+        #expect(session.loadedScore?.sourceName == "Ode_to_Joy_Easy_variation.mxl")
         #expect(session.errorMessage == nil)
     }
 
     @Test func sampleCatalogContainsOnlyBundledMXLFilesFromSampleDirectory() throws {
         let catalog = SampleScoreCatalog.default
-        let expected: [(String, String, String)] = [
-            ("Canon_in_D", "mxl", "Canon in D"),
-            ("Fur_Elise_-_Beethoven_-_for_beginner_piano", "mxl", "Fur Elise - Beginner Piano"),
-            ("Happy_Birthday_To_You_Piano", "mxl", "Happy Birthday To You Piano"),
-            ("Ode_to_Joy_Easy_variation", "mxl", "Ode to Joy Easy Variation"),
-            ("The_Entertainer_-_Scott_Joplin_-_1902", "mxl", "The Entertainer"),
-        ]
+        let bundledSampleNames = Set([
+            "Ode_to_Joy_Easy_variation",
+            "Fur_Elise_-_Beethoven_-_for_beginner_piano",
+        ])
 
-        #expect(catalog.samples.count == expected.count)
-        #expect(catalog.samples.map(\.resourceName) == expected.map(\.0))
+        #expect(catalog.samples.count == 2)
+        #expect(catalog.samples.map(\.resourceName) == [
+            "Ode_to_Joy_Easy_variation",
+            "Fur_Elise_-_Beethoven_-_for_beginner_piano",
+        ])
         #expect(catalog.samples.allSatisfy { $0.fileExtension == "mxl" })
-        #expect(catalog.samples.map(\.displayName) == expected.map(\.2))
+        #expect(bundledSampleNames.isSubset(of: Set(catalog.samples.map(\.resourceName))))
     }
 
     @Test func bundledMXLReplacementSamplesLoadFromBundle() throws {
@@ -765,6 +910,70 @@ struct PaletteScoreLoaderTests {
         try session.load(data: Self.validMusicXML, sourceName: "reloaded.musicxml")
         #expect(!session.isPracticeModeEnabled)
         #expect(session.playbackCursor.index == 0)
+    }
+
+    @Test @MainActor func measureProgressUsesCurrentPlaybackEventMeasure() throws {
+        let session = PaletteScoreSession()
+        try session.load(data: Self.threeMeasureMusicXML, sourceName: "measures.musicxml")
+
+        #expect(session.totalMeasureCount == 3)
+        #expect(session.currentMeasureNumber == 1)
+        #expect(session.measureProgressText == "1 / 3")
+
+        session.movePlaybackStep(by: 2)
+
+        #expect(session.currentMeasureNumber == 2)
+        #expect(session.measureProgressText == "2 / 3")
+    }
+
+    @Test @MainActor func measureJumpMovesToRequestedMeasureAndKeepsPracticeInSync() throws {
+        let session = PaletteScoreSession()
+        try session.load(data: Self.threeMeasureMusicXML, sourceName: "jump.musicxml")
+
+        #expect(session.jumpToMeasure(3) == .success)
+        #expect(session.currentMeasureNumber == 3)
+        #expect(session.playbackCursor.currentEvent?.measureID.rawValue == "0.3")
+
+        session.setPracticeModeEnabled(true)
+        #expect(session.jumpToMeasure(1) == .success)
+        #expect(session.isPracticeModeEnabled)
+        #expect(session.currentMeasureNumber == 1)
+        #expect(session.currentPlaybackEvent?.measureID.rawValue == "0.1")
+    }
+
+    @Test @MainActor func measureJumpRejectsInvalidInputAndFallsForwardFromEmptyMeasure() throws {
+        let session = PaletteScoreSession()
+        try session.load(data: Self.emptyMiddleMeasureMusicXML, sourceName: "empty-measure.musicxml")
+
+        #expect(session.jumpToMeasure(0) == .failure("1〜3 の小節番号を入力してください"))
+        #expect(session.jumpToMeasure(4) == .failure("1〜3 の小節番号を入力してください"))
+        #expect(session.jumpToMeasure(2) == .success)
+        #expect(session.currentMeasureNumber == 3)
+    }
+
+    @Test @MainActor func measureJumpDuringPlaybackPausesAndSilencesAudio() throws {
+        let audio = ScoreSessionMockAudioEngine()
+        let runtime = PalettePlaybackRuntime(audioEngine: audio)
+        let session = PaletteScoreSession(playbackRuntime: runtime)
+        try session.load(data: Self.threeMeasureMusicXML, sourceName: "playing-jump.musicxml")
+
+        session.play()
+        #expect(session.playbackState == .playing)
+
+        #expect(session.jumpToMeasure(2) == .success)
+        #expect(session.playbackState == .paused)
+        #expect(runtime.currentEvent?.measureID.rawValue == "0.2")
+        #expect(audio.silenceCount > 0)
+    }
+
+    @Test @MainActor func measureJumpForRepeatedMeasureUsesFirstExpandedOccurrence() throws {
+        let session = PaletteScoreSession()
+        try session.load(data: Self.simpleRepeatMusicXML, sourceName: "repeat-jump.musicxml")
+        let firstMeasure2Index = try #require(session.playbackCursor.events.firstIndex { $0.measureID.rawValue == "0.2" })
+
+        #expect(session.jumpToMeasure(2) == .success)
+        #expect(session.playbackCursor.index == firstMeasure2Index)
+        #expect(session.currentMeasureNumber == 2)
     }
 
     @Test func paletteSelectionDoesNotChangeLayoutOrPlaybackIdentity() throws {
@@ -920,6 +1129,78 @@ struct PaletteScoreLoaderTests {
     </score-partwise>
     """.utf8)
 
+    static let threeMeasureMusicXML = Data("""
+    <?xml version="1.0" encoding="UTF-8"?>
+    <score-partwise version="4.0">
+      <part-list><score-part id="P1"><part-name>Measures</part-name></score-part></part-list>
+      <part id="P1">
+        <measure number="1">
+          <attributes>
+            <divisions>1</divisions>
+            <time><beats>4</beats><beat-type>4</beat-type></time>
+            <clef><sign>G</sign><line>2</line></clef>
+          </attributes>
+          <note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+          <note><pitch><step>D</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+        </measure>
+        <measure number="2">
+          <note><pitch><step>E</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+        </measure>
+        <measure number="3">
+          <note><pitch><step>F</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+        </measure>
+      </part>
+    </score-partwise>
+    """.utf8)
+
+    static let emptyMiddleMeasureMusicXML = Data("""
+    <?xml version="1.0" encoding="UTF-8"?>
+    <score-partwise version="4.0">
+      <part-list><score-part id="P1"><part-name>Empty measure</part-name></score-part></part-list>
+      <part id="P1">
+        <measure number="1">
+          <attributes>
+            <divisions>1</divisions>
+            <time><beats>4</beats><beat-type>4</beat-type></time>
+            <clef><sign>G</sign><line>2</line></clef>
+          </attributes>
+          <note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+        </measure>
+        <measure number="2">
+          <forward><duration>4</duration></forward>
+        </measure>
+        <measure number="3">
+          <note><pitch><step>G</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+        </measure>
+      </part>
+    </score-partwise>
+    """.utf8)
+
+    static let simpleRepeatMusicXML = Data("""
+    <?xml version="1.0" encoding="UTF-8"?>
+    <score-partwise version="4.0">
+      <part-list><score-part id="P1"><part-name>Repeat jump</part-name></score-part></part-list>
+      <part id="P1">
+        <measure number="1">
+          <attributes>
+            <divisions>1</divisions>
+            <time><beats>4</beats><beat-type>4</beat-type></time>
+            <clef><sign>G</sign><line>2</line></clef>
+          </attributes>
+          <note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+        </measure>
+        <measure number="2">
+          <barline location="left"><repeat direction="forward"/></barline>
+          <note><pitch><step>D</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+        </measure>
+        <measure number="3">
+          <note><pitch><step>E</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
+          <barline location="right"><repeat direction="backward"/></barline>
+        </measure>
+      </part>
+    </score-partwise>
+    """.utf8)
+
     private static func fixtureData(_ fileName: String) throws -> Data {
         let testFile = URL(fileURLWithPath: #filePath)
         let projectRoot = testFile
@@ -981,6 +1262,8 @@ struct PaletteScoreLoaderTests {
         func silence() {
             silenceCount += 1
         }
+
+        func prepare(midiPitches: [Int], duration: TimeInterval, velocity: Double) {}
 
         func play(midiPitches: [Int], duration: TimeInterval, velocity: Double) {
             playedPitches.append(midiPitches)

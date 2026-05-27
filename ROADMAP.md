@@ -93,7 +93,8 @@ Phase 14 front half:
 - Persist recent imported-file metadata in local JSON.
 - Update the library entry when a duplicate file is imported.
 - Record diagnostic summaries, last selected note ID, and zoom scale where
-  available.
+  available. The current app zoom scale is a persisted continuous value driven
+  primarily by pinch zoom.
 - Leave full recent-files UI, complete security-scoped bookmark restore, and
   missing-file UI to the Phase 14 back half.
 
@@ -227,6 +228,10 @@ Focus:
   continuation-highlight visibility
 - layout bounds so high/low notes, stems, flags, ledger lines, rests, clefs,
   and repeats are not clipped
+- measure-width normalization so short pickup/anacrusis measures and sparse
+  bars remain readable without app-side coordinate compensation, including
+  guarded final incomplete bars, non-final system justification, and rhythmic
+  anchor placement for compact beamed short-note groups
 - current-note scroll follow for playback, step, practice, and tap selection
 - generated-tone reliability for rests, tie continuations, mixed events,
   chords, repeated pitches, tempo changes, and short values
@@ -267,10 +272,13 @@ Current Phase 17A status:
 - Physical iPad install / launch and manual MVP checks have been completed by
   user-side QA.
 - Phase 17B TestFlight readiness is now the active release-preparation gate.
-- Phase 17B restores the default launch sample to `DoReMi Palette Sample`,
-  leaves all notation/repeat/transpose QA samples available from Library,
-  confirms release signing/build settings, and records privacy, license, known
-  limitation, and beta-review notes before any App Store Connect upload.
+- Phase 17B keeps the TestFlight-facing Library to two bundled learning MXL
+  samples, excludes `Happy Birthday To You Piano` after the pre-TestFlight
+  rights review, keeps historical notation/repeat/transpose QA coverage in
+  development fixtures and automated tests instead of user-facing Library
+  entries, confirms release signing/build settings, and records privacy,
+  license, known limitation, and beta-review notes before any App Store Connect
+  upload.
 
 Focus:
 
@@ -475,8 +483,9 @@ Phase S9: Advanced Repeat Visuals / Jump Marker Hardening MVP - complete
 - Render first/second ending brackets and ending numbers from layout elements.
 - Keep S8 repeat-ending playback expansion unchanged while making the visual
   ending brackets visible in the app and snapshots.
-- Add an S9 repeat visuals sample for Library/default QA and diagnostic-only
-  jump-marker checks.
+- Add an S9 repeat visuals sample for focused development QA and
+  diagnostic-only jump-marker checks. It is historical fixture coverage, not a
+  current TestFlight Library entry.
 - Continue to leave third endings, nested repeats, complex jumps, and
   system-crossing ending brackets as documented limitations; S10 handles the
   limited jump-only D.S./Coda playback paths.
@@ -550,12 +559,50 @@ Metronome MVP - complete
   AVFoundation or scheduling responsibility to DoReMiRendererKit.
 - Start clicks with Play when enabled, stop them on Pause / Stop / Reset /
   playback end, and follow the current playback BPM.
+- Use an app-side measure-based click plan derived from the expanded playback
+  sequence so 3/4 and 4/4 beat 0 strong clicks stay anchored to each score
+  measure occurrence, including repeat/jump playback and mid-playback enable.
 - Metronome Advanced MVP adds compound-meter large-beat/subdivision modes for
   `6/8`, `9/8`, and `12/8`, strong/medium/weak accent patterns, Tap Tempo, and
   generated click sound styles.
 - Keep Practice Mode as manual stepping; standalone practice metronome,
   arbitrary accent editing, imported click sounds, and sample-accurate
   scheduling remain future hardening.
+
+Playback Timing Hardening - complete
+
+- Keep generated audio scheduling in DoReMi Palette and outside
+  DoReMiRendererKit.
+- Use monotonic absolute event scheduling so delayed UI work does not accumulate
+  into tempo drift.
+- Prewarm generated-tone buffers before playback so first-use synthesis does not
+  land on a note onset.
+- Maintain current-note, highlight, and scroll updates as UI followers rather
+  than blockers for audio timing.
+- Leave sample-accurate scheduling and hardware-level latency tuning as future
+  hardening after real-device listening.
+
+Measure Display / Measure Jump MVP - complete
+
+- Show `current / total` measure status between Previous and Next.
+- Derive total measures from the loaded `ScoreDocument` and the current measure
+  from the active `PlaybackEvent` or selected note's existing `MeasureID`.
+- Add a validated inline field for moving to a user-entered measure number.
+- Jump targets use the first matching event in the expanded playback sequence,
+  falling forward for empty measures. Repeat-pass-specific jump, page jump,
+  bookmarks, rehearsal marks, and measure-range selection remain future work.
+- Jumping during playback pauses and silences audio/metronome state before
+  moving the cursor; Practice Mode keeps the same target event index.
+
+First-Use Guide MVP - complete
+
+- Show a persisted first-use coach-mark flow after the bundled sample loads.
+- Anchor guide cards to Settings, display options, current-note/keyboard,
+  measure jump, Previous/Next, Play/Stop, and key/transpose controls.
+- Provide Back / Next / Skip / Done controls and a Settings action to replay the
+  guide.
+- Keep onboarding state in DoReMi Palette AppStorage; DoReMiRendererKit,
+  renderer layout, playback runtime, and score data stay unaware of the guide.
 
 The `notation_coverage_grand_staff.musicxml` and `rhythm_values_sample.musicxml`
 samples are the primary before/after QA fixtures for this track. Snapshot

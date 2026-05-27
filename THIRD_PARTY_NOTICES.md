@@ -42,6 +42,30 @@ layout, hit testing, color resolution, and playback sequencing itself. The font
 must not be sold by itself, and the reserved font name requirements must be
 followed if a derived font is ever created.
 
+## musetrainer/library MusicXML Samples
+
+- Project: musetrainer/library
+- Repository: https://github.com/musetrainer/library
+- Purpose: source repository for the current TestFlight-facing bundled learning
+  MXL samples and one excluded development fixture.
+- Upstream statement: the repository README and GitHub About describe it as
+  "Public domain MusicXML files."
+- License-file audit on 2026-05-21: no repository-root `LICENSE`, `COPYING`, or
+  `NOTICE` file was found.
+- Bundled files:
+  - `Ode_to_Joy_Easy_variation.mxl`
+  - `Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl`
+- Excluded development fixture:
+  - `Happy_Birthday_To_You_Piano.mxl` is not shipped in the TestFlight app
+    bundle because its embedded metadata has a named arranger and no rights
+    grant.
+
+These are score assets, not code dependencies. `ASSET_LICENSES.md` records the
+per-file source URLs, embedded MusicXML metadata, and TestFlight risk
+classification. Public-domain status of the underlying compositions does not by
+itself prove that the MusicXML transcription, arrangement, fingering, or export
+data can be redistributed; recheck these files before App Store release.
+
 ## External Score Rendering SDKs
 
 No code, sample code, type definitions, API names, headers, binaries, or internal

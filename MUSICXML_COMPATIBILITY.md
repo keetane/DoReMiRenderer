@@ -252,6 +252,13 @@ iPad while still using `ScoreLayout` frames and IDs. The current renderer pass
   enlarges common noteheads, shortens stems, uses direction-specific flag glyphs
   near stem ends, keeps note accidentals close to noteheads, balances rest sizes, and spaces
 clef/key/time prefixes to keep the Notation Coverage Sample inspectable.
+ScoreLayoutEngine now normalizes measure widths for sparse and pickup
+measures: normal measures keep a readable minimum, first-measure pickup
+candidates and trailing incomplete final bars keep a 75% normal-width minimum,
+and prefix width remains part of the layout budget. Non-final wrapped systems
+use MVP justification; final systems are intentionally not fully justified.
+This is an MVP spacing guard, not full publishing-quality MusicXML system
+layout.
 Dynamics and articulations remain diagnostic-only unless they are represented by
 existing text annotations.
 Partial and unsupported symbols must remain explicit in

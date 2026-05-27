@@ -45,6 +45,14 @@ struct PaletteLoadedScore {
         a4Layout
     }
 
+    var performancePreferredLayoutMode: PaletteScoreLayoutMode {
+        let measureCount = score.parts.map(\.measures.count).max() ?? 0
+        if horizontalLayout.canvasSize.width > 16_000 || measureCount > 64 {
+            return .a4
+        }
+        return layoutMode
+    }
+
     var displayName: String {
         if let title = score.title?.trimmingCharacters(in: .whitespacesAndNewlines),
            !title.isEmpty {
@@ -79,10 +87,10 @@ struct PaletteScoreLoader {
         configuration: RendererConfiguration(unsupportedFeaturePolicy: .ignoreWithWarning)
     )
 
-    func load(data: Data, sourceName: String) throws -> PaletteLoadedScore {
+    func load(data: Data, sourceName: String, displayTransposeSemitones: Int = 0) throws -> PaletteLoadedScore {
         let input = try scoreInput(for: sourceName, data: data)
         let parseResult = try renderer.parseWithDiagnostics(input: input)
-        let layouts = try makeLayouts(score: parseResult.score, displayTransposeSemitones: 0)
+        let layouts = try makeLayouts(score: parseResult.score, displayTransposeSemitones: displayTransposeSemitones)
         let playbackEvents = renderer.makePlaybackSequence(
             score: parseResult.score,
             options: PlaybackOptions(includeRests: true)
@@ -94,7 +102,10 @@ struct PaletteScoreLoader {
             score: parseResult.score,
             horizontalLayout: layouts.horizontal.layout,
             a4Layout: layouts.a4.layout,
-            layoutMode: .horizontal,
+            layoutMode: Self.initialLayoutMode(
+                score: parseResult.score,
+                horizontalLayout: layouts.horizontal.layout
+            ),
             diagnostics: baseDiagnostics + layouts.horizontal.diagnostics + layouts.a4.diagnostics,
             baseDiagnostics: baseDiagnostics,
             playbackEvents: playbackEvents,
@@ -146,6 +157,14 @@ struct PaletteScoreLoader {
             )
         )
         return (horizontalLayoutResult, a4LayoutResult)
+    }
+
+    private static func initialLayoutMode(score: ScoreDocument, horizontalLayout: ScoreLayout) -> PaletteScoreLayoutMode {
+        let measureCount = score.parts.map(\.measures.count).max() ?? 0
+        if horizontalLayout.canvasSize.width > 16_000 || measureCount > 64 {
+            return .a4
+        }
+        return .horizontal
     }
 
     func scoreInput(for fileName: String, data: Data) throws -> ScoreInput {

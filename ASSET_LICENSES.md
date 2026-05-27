@@ -34,21 +34,96 @@
 
 `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/`
 
-- `Canon_in_D.mxl`
 - `Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl`
-- `Happy_Birthday_To_You_Piano.mxl`
 - `Ode_to_Joy_Easy_variation.mxl`
-- `The_Entertainer_-_Scott_Joplin_-_1902.mxl`
 
-- Origin: User-provided sample replacement set copied from
-  `/Users/keetane/Documents/apps/DoReMiRenderer/sample`.
-- Contains copyrighted third party music: the set includes well-known public
-  domain melodies and arrangements, but the arrangement/export rights should be
-  rechecked before external distribution.
-- Permitted project use: bundled app testing, demo, screenshot, and internal
-  TestFlight preparation use subject to the user's rights in the provided files.
-- Redistribution outside this repository: requires confirmation that each
-  arrangement and MusicXML/MXL export may be redistributed.
+- Origin: copied from the local `sample/` replacement set. The local XML copies
+  in `sample/github/` match the XML payloads embedded in the bundled MXL files.
+- Upstream repository: musetrainer/library,
+  https://github.com/musetrainer/library.
+- Upstream repository statement: the README and GitHub About describe the
+  repository as "Public domain MusicXML files."
+- Upstream license-file audit on 2026-05-21: the repository root listed
+  `.vscode/`, `README.md`, `index.html`, `poetry.lock`, `pyproject.toml`,
+  `scores/`, and `scripts/`; no `LICENSE`, `COPYING`, or `NOTICE` file was
+  present. Direct raw checks for `LICENSE`, `COPYING`, and `NOTICE` returned
+  404.
+- Rights scope: public-domain status of the underlying composition is separate
+  from the MusicXML transcription, arrangement, fingering, and export data. The
+  bundled files should be treated as third-party score assets and rechecked
+  before App Store release or broader redistribution.
+
+### Happy Birthday To You Piano
+
+- TestFlight bundle status: excluded from the DoReMi Palette app bundle and
+  user-facing Library as of the 2026-05-21 pre-TestFlight sample rights review.
+- Former bundled file: `Happy_Birthday_To_You_Piano.mxl`
+- Local source XML: `sample/github/Happy_Birthday_To_You_Piano.xml`
+- Local development copy: `sample/Happy_Birthday_To_You_Piano.mxl`
+- Upstream file URL:
+  https://github.com/musetrainer/library/blob/master/scores/Happy_Birthday_To_You_Piano.mxl
+- Upstream raw URL:
+  https://raw.githubusercontent.com/musetrainer/library/master/scores/Happy_Birthday_To_You_Piano.mxl
+- Metadata audit on 2026-05-21:
+  - `work-title`: `Happy Birthday To You`
+  - `creator`: `Arranged by Manjuprasad`
+  - `rights`: not present
+  - `software`: `MuseScore 2.3.2`
+  - `encoding-date`: `2018-10-24`
+  - `source`: `http://musescore.com/user/27657013/scores/5282628`
+- Composition status: the song is widely reported as public domain after the
+  2016 U.S. settlement, but jurisdiction and score-data rights remain separate.
+- TestFlight classification: excluded / development fixture only. The upstream
+  repository claims public-domain MusicXML status, but this file has a named
+  arranger and no embedded rights grant, so the conservative pre-TestFlight
+  decision is not to ship it in the app bundle. Reconsider only if the
+  arrangement and MuseScore export redistribution rights are confirmed.
+
+### Ode to Joy Easy Variation
+
+- Bundled file: `Ode_to_Joy_Easy_variation.mxl`
+- Local source XML: `sample/github/Ode_to_Joy_Easy_variation.xml`
+- Upstream file URL:
+  https://github.com/musetrainer/library/blob/master/scores/Ode_to_Joy_Easy_variation.mxl
+- Upstream raw URL:
+  https://raw.githubusercontent.com/musetrainer/library/master/scores/Ode_to_Joy_Easy_variation.mxl
+- Metadata audit on 2026-05-21:
+  - `work-title`: not present
+  - `movement-title`: not present
+  - `creator`: not present
+  - `rights`: not present
+  - `software`: `MuseScore 2.3.2`
+  - `encoding-date`: `2020-12-22`
+  - `source`: not present
+- Composition status: Beethoven's underlying composition is public domain, but
+  this easy-variation MusicXML/export data still lacks an embedded rights grant.
+- TestFlight classification: acceptable with caution for internal TestFlight,
+  based on the upstream public-domain repository statement. Recheck before App
+  Store release.
+
+### Fur Elise - Beginner Piano
+
+- Bundled file: `Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl`
+- Local source XML:
+  `sample/github/Fur_Elise_-_Beethoven_-_for_beginner_piano.xml`
+- Upstream file URL:
+  https://github.com/musetrainer/library/blob/master/scores/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl
+- Upstream raw URL:
+  https://raw.githubusercontent.com/musetrainer/library/master/scores/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl
+- Metadata audit on 2026-05-21:
+  - `work-title`: not present
+  - `movement-title`: not present
+  - `creator`: not present
+  - `rights`: not present
+  - `software`: `MuseScore 3.6.1`
+  - `encoding-date`: `2021-02-23`
+  - `source`: `https://musescore.com/classicman/scores/33816`
+- Composition status: Beethoven's underlying composition is public domain, but
+  the beginner arrangement and MusicXML/export data still lack an embedded
+  rights grant.
+- TestFlight classification: acceptable with caution for internal TestFlight,
+  based on the upstream public-domain repository statement. Recheck the
+  arrangement/source-score redistribution rights before App Store release.
 
 ## DoReMi Palette Import QA Fixtures
 

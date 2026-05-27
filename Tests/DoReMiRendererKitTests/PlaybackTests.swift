@@ -96,6 +96,72 @@ import Testing
     #expect(events[0].midiPitchDurations[36] == MusicalTime(ticks: 32, ticksPerQuarterNote: 4))
 }
 
+@Test func playbackMergesMultiplePartsByMeasureAndOnset() {
+    let score = multiPartPlaybackScore(
+        part1Notes: [
+            playbackNote(id: "p1-m1-a", pitch: Pitch(step: .c, octave: 4), onsetTicks: 0),
+            playbackNote(id: "p1-m1-b", pitch: Pitch(step: .d, octave: 4), onsetTicks: 4),
+        ],
+        part2Notes: [
+            playbackNote(id: "p2-m1-a", pitch: Pitch(step: .e, octave: 3), onsetTicks: 0),
+            playbackNote(id: "p2-m1-b", pitch: Pitch(step: .f, octave: 3), onsetTicks: 4),
+        ]
+    )
+
+    let events = PlaybackSequenceBuilder().build(score: score)
+
+    #expect(events.count == 2)
+    #expect(events[0].measureID == MeasureID(partIndex: 0, measureNumber: "1"))
+    #expect(events[0].noteIDs == [NoteID(rawValue: "p1-m1-a"), NoteID(rawValue: "p2-m1-a")])
+    #expect(events[0].midiPitches == [60, 52])
+    #expect(events[1].noteIDs == [NoteID(rawValue: "p1-m1-b"), NoteID(rawValue: "p2-m1-b")])
+    #expect(events[1].midiPitches == [62, 53])
+}
+
+@Test func playbackOrdersInterleavedMultiplePartOnsetsByMusicalTime() {
+    let score = multiPartPlaybackScore(
+        part1Notes: [
+            playbackNote(id: "p1-first", pitch: Pitch(step: .c, octave: 4), onsetTicks: 0),
+            playbackNote(id: "p1-third", pitch: Pitch(step: .g, octave: 4), onsetTicks: 8),
+        ],
+        part2Notes: [
+            playbackNote(id: "p2-second", pitch: Pitch(step: .e, octave: 3), onsetTicks: 4),
+        ]
+    )
+
+    let events = PlaybackSequenceBuilder().build(score: score)
+
+    #expect(events.map(\.noteIDs) == [
+        [NoteID(rawValue: "p1-first")],
+        [NoteID(rawValue: "p2-second")],
+        [NoteID(rawValue: "p1-third")],
+    ])
+    #expect(events.map(\.onset) == [
+        MusicalTime(ticks: 0, ticksPerQuarterNote: 4),
+        MusicalTime(ticks: 4, ticksPerQuarterNote: 4),
+        MusicalTime(ticks: 8, ticksPerQuarterNote: 4),
+    ])
+}
+
+@Test func playbackTieDurationDoesNotCrossPartBoundaries() {
+    let score = multiPartPlaybackScore(
+        part1Notes: [
+            playbackNote(id: "p1-tie-start", pitch: Pitch(step: .c, octave: 4), onsetTicks: 0, ties: [.start]),
+        ],
+        part2Notes: [
+            playbackNote(id: "p2-tie-stop", pitch: Pitch(step: .c, octave: 4), onsetTicks: 4, ties: [.stop]),
+        ]
+    )
+
+    let events = PlaybackSequenceBuilder().build(score: score)
+
+    #expect(events.count == 2)
+    #expect(events[0].noteIDs == [NoteID(rawValue: "p1-tie-start")])
+    #expect(events[0].midiPitchDurations[60] == MusicalTime(ticks: 4, ticksPerQuarterNote: 4))
+    #expect(events[1].noteIDs == [NoteID(rawValue: "p2-tie-stop")])
+    #expect(events[1].isTiedContinuation)
+}
+
 @Test func playbackMarksTieStopOnlyAsContinuation() {
     let score = playbackScore(notes: [
         playbackNote(id: "tie-start", pitch: Pitch(step: .f, octave: 4), onsetTicks: 0, ties: [.start]),
@@ -451,6 +517,27 @@ private func playbackScore(notes: [ScoreNote]) -> ScoreDocument {
                 number: "1",
                 notes: notes,
                 clef: Clef(kind: .treble)
+            ),
+        ]),
+    ])
+}
+
+private func multiPartPlaybackScore(part1Notes: [ScoreNote], part2Notes: [ScoreNote]) -> ScoreDocument {
+    ScoreDocument(parts: [
+        ScorePart(id: "p1", measures: [
+            Measure(
+                id: MeasureID(partIndex: 0, measureNumber: "1"),
+                number: "1",
+                notes: part1Notes,
+                clef: Clef(kind: .treble)
+            ),
+        ]),
+        ScorePart(id: "p2", measures: [
+            Measure(
+                id: MeasureID(partIndex: 1, measureNumber: "1"),
+                number: "1",
+                notes: part2Notes,
+                clef: Clef(kind: .bass)
             ),
         ]),
     ])

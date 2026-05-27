@@ -4,5 +4,8 @@
 .build/
 .swiftpm/
 DerivedData/
+*.xcuserstate
+*.xcuserdata/
+xcuserdata/
 LocalSamples/
 LocalSamples/**

@@ -90,12 +90,12 @@ struct PaletteKeyDisplay: Equatable {
 
     var summary: String {
         if let displayKey, displayTransposeEnabled {
-            return "Written key: \(writtenKey) / Display key: \(displayKey)"
+            return "\(writtenKey) / \(displayKey)"
         }
         guard let soundingKey else {
-            return "Key: \(writtenKey)"
+            return writtenKey
         }
-        return "Written key: \(writtenKey) / Sounding key: \(soundingKey)"
+        return "\(writtenKey) / \(soundingKey)"
     }
 
     static func make(

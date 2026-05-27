@@ -2,20 +2,42 @@
 
 ## Internal Testing Scope
 
-- Open the default `Canon in D` sample.
+- Open the default `Ode to Joy Easy Variation` sample.
 - Open the bundled MXL samples from Library:
-  - Canon in D
-  - Fur Elise - Beginner Piano
-  - Happy Birthday To You Piano
   - Ode to Joy Easy Variation
-  - The Entertainer
+  - Fur Elise - Beginner Piano
+- Confirm `Happy Birthday To You Piano` is not present in the bundled Library
+  or app bundle; it remains only as a development fixture pending rights
+  confirmation.
+- Confirm no historical S6/S7/S8/S9/S10/T2 QA samples appear in the
+  TestFlight-facing Library.
+- Confirm the first-use guide can be completed or skipped and replayed from
+  Settings.
 - Verify Playback: Play, Pause, Stop, Reset, tempo picker, repeat/jump order,
   tied continuation behavior, and no stuck notes.
+- Verify large-score playback performance on at least two heavier samples.
+  The 2026-05-26 final pass spot-checked Canon in D, Mozart Piano Sonata No. 16,
+  and Fur Elise with CPU readings saved under
+  `/tmp/DoReMiPaletteQA/performance-final/`.
+- Verify playback timing/jitter on heavy samples. The 2026-05-27 iPad Simulator
+  timing pass saved Canon, Mozart, Fur Elise, The Entertainer, and Twinkle logs
+  under `/tmp/DoReMiPaletteQA/playback-timing/`; all measured p95 jitter values
+  were below 50 ms. Real iPad listening is still required before final sign-off.
+- Verify the critical regression pass: score symbols draw upright, current-note
+  follow moves the score during playback, and metronome clicks follow parsed
+  meter. Evidence is saved under
+  `/tmp/DoReMiPaletteQA/critical-regression/`.
+- Verify the metronome meter-sync follow-up: 3/4 and 4/4 click plans put strong
+  beat 0 at every measure head, 6/8 large-beat/subdivision plans use the
+  expected offsets, and mid-playback ON starts from the next planned click.
+  Evidence is saved under `/tmp/DoReMiPaletteQA/metronome-meter-fix/`.
 - Verify Practice Mode stepping, current-note marker, next-note marker, and
   keyboard highlight.
 - Verify transpose key picker and display-transposed score.
 - Verify palette drawer, seven-note color controls, line/all mode, keyboard
   color setting, and persistence.
+- Verify measure display and inline measure jump between Previous and Next.
+- Verify pinch zoom and that opening/reloading a score resets zoom to 100%.
 - Verify MusicXML / MXL import, invalid-file diagnostics, Library / Recent
   reload, and missing-file handling.
 
@@ -27,6 +49,8 @@
 - Full transposing-instrument concert pitch handling is diagnostic-only.
 - Palette editing is note-class based; arbitrary RGB/HEX editing is not
   available.
+- First-use guide anchors are best-effort SwiftUI coach marks; if an anchor
+  cannot be measured, the guide falls back rather than blocking use.
 - No account, cloud sync, iCloud library, MIDI input, microphone scoring, or
   background audio.
 

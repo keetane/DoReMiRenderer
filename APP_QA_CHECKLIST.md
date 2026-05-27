@@ -27,7 +27,7 @@ or TestFlight preparation.
 - [x] Bundled sample score appears.
 - [x] Note color and staff color are visible.
 - [x] `Previous` / `Next` controls are reachable.
-- [x] Zoom controls are visible.
+- [x] Score supports pinch zoom.
 - [x] Keyboard can be shown with score still visible.
 - [x] Keyboard current-note highlight is visible.
 - [x] Diagnostics sheet opens without breaking score display.
@@ -46,7 +46,7 @@ or TestFlight preparation.
 - [x] Keyboard control remains reachable.
 - [x] Keyboard ON/OFF visual state was rechecked.
 - [x] Diagnostics sheet opens.
-- [x] Score is visible at `1.0x`.
+- [x] Score is visible at default zoom.
 
 ## Import Checks
 
@@ -76,6 +76,27 @@ or TestFlight preparation.
   notes` while keeping clef/key/time collisions fixed.
 - [x] Display-transposed key signatures use the same collision-safe standard
   prefix spacing.
+- [x] SDK measure-width normalization keeps first-measure pickup/anacrusis
+  bars readable instead of collapsing to a single onset.
+- [x] Final incomplete measures keep the same guarded minimum width instead of
+  collapsing at the end of a score.
+- [x] Non-final wrapped systems distribute leftover width without stretching
+  compact beamed short-note groups across the full bar.
+- [x] Compact short-note and beamed groups are no longer flush-left inside
+  normalized measures; their internal spacing remains compact.
+- [x] Fur Elise-style sixteenth passages keep readable visual gaps while staying
+  close to their rhythmic onset rather than floating in the measure center.
+- [x] Normal measures keep a readable minimum width, and clef/key/time/repeat
+  prefixes remain inside the measure width budget.
+- [ ] Manual iPad QA: open a pickup/anacrusis score and confirm the first
+  measure is not extremely narrow.
+- [ ] Manual iPad QA: open a score with a trailing incomplete final measure and
+  confirm the final bar remains readable without over-justifying the final
+  system.
+- [ ] Manual iPad QA: confirm beamed short-note measures remain compact without
+  sitting too far left or leaving only right-side whitespace.
+- [ ] Manual iPad QA: open Fur Elise - Beginner Piano and confirm the opening
+  sixteenth-note flow is readable.
 - [x] Note accidental colors match the associated displayed note color when
   Note Color is ON.
 - [x] Note accidentals use default ink when Note Color is OFF.
@@ -101,7 +122,27 @@ or TestFlight preparation.
 - [x] Settings keys store and restore values in isolated defaults tests.
 - [x] Note/staff color changes do not change layout or playback identity.
 - [x] Zoom scale does not change the layout coordinate hit-test model.
+- [x] Pinch zoom uses a continuous `0.8x...3.0x` scale and Settings exposes
+  Reset Zoom.
+- [x] First-use guide completion uses `AppStorage`.
+- [x] Settings includes a replay action for the first-use guide.
 - [ ] Full relaunch persistence manual check on physical app lifecycle.
+
+## First-Use Guide Checks
+
+- [x] App tests cover guide step order, next/back bounds, skip/complete state,
+  and persisted completion key.
+- [ ] Manual iPad QA: fresh install shows the guide after sample load.
+- [ ] Manual iPad QA: Settings button guide highlights the toolbar Settings
+  button.
+- [ ] Manual iPad QA: display settings guide opens the Settings sheet.
+- [ ] Manual iPad QA: current-note/keyboard guide returns to the main score and
+  anchors near the current-note or keyboard area.
+- [ ] Manual iPad QA: measure jump, Previous/Next, Play/Stop, and key/transpose
+  guide steps anchor to the expected controls.
+- [ ] Manual iPad QA: Back / Next / Skip / Done work and completed guides do not
+  replay automatically.
+- [ ] Manual iPad QA: Settings `使い方ガイドを再表示` restarts the guide.
 
 ## Palette Editor Checks
 
@@ -132,6 +173,9 @@ or TestFlight preparation.
   the next beat boundary instead of treating the toggle moment as beat 1.
 - [x] Mock runtime tests confirm a 3/4 MusicXML sample clicks
   strong-weak-weak before the next strong beat.
+- [x] Mock runtime tests confirm the metronome click plan anchors beat 0 as a
+  strong click for every 3/4 and 4/4 measure occurrence, including a
+  mid-measure enable case and a pickup-measure regression.
 - [x] Mock runtime tests confirm `6/8` defaults to two large beats and can
   switch to six subdivision clicks.
 - [x] Mock runtime tests confirm `9/8` and `12/8` large-beat patterns.
@@ -148,6 +192,72 @@ or TestFlight preparation.
   audibly distinct on Simulator or iPad hardware.
 - [ ] User-side listening QA: confirm clicks remain comfortable with score
   playback audio enabled.
+
+## Measure Navigation Checks
+
+- [x] App tests confirm total measure count is derived from the loaded score.
+- [x] App tests confirm the current measure display follows the current
+  playback event.
+- [x] App tests confirm valid measure jumps update the playback cursor and
+  current note state.
+- [x] App tests confirm invalid measure numbers are rejected.
+- [x] App tests confirm empty measures fall forward to the next available event.
+- [x] App tests confirm repeated measures jump to the first expanded playback
+  occurrence.
+- [x] App tests confirm jumping during playback pauses and silences audio.
+- [ ] Manual iPad QA: transport row shows current measure / total measures
+  between Previous and Next.
+- [ ] Manual iPad QA: inline measure input accepts a target measure.
+- [ ] Manual iPad QA: valid input scrolls the score to the requested measure.
+- [ ] Manual iPad QA: invalid input shows an error and does not move.
+- [ ] Manual iPad QA: Practice Mode and repeat samples update the measure
+  display correctly.
+
+## Pinch Zoom Checks
+
+- [x] App tests cover zoom clamping and continuous percent formatting.
+- [x] SDK transform tests cover scaled view/layout coordinate conversion.
+- [x] SDK scroll-follow tests cover scaled target offsets.
+- [ ] Manual iPad QA: pinch in and confirm the score enlarges without losing
+  tap selection.
+- [ ] Manual iPad QA: pinch out and confirm the score shrinks without clipping
+  the current note follow path.
+- [ ] Manual iPad QA: Previous / Next and Practice stepping still keep the
+  current note visible after pinch zoom.
+- [ ] Manual iPad QA: Settings Reset Zoom returns the score to `1.0x`.
+- [ ] Manual iPad QA: Sample Reload, opening a different Library sample, and
+  importing a file reset the visible score zoom to `1.0x`.
+- [ ] Manual iPad QA: the main screen no longer shows the horizontal/A4 layout
+  switcher or zoom percentage; those controls remain in Settings.
+
+## Playback Performance Checks
+
+- [x] `ScoreCanvasView` keeps static score rendering separate from playback
+  cursor/highlight updates.
+- [x] Runtime score rendering uses visible-rect culling and cached CoreText /
+  SMuFL text lines.
+- [x] Highlight updates use lightweight overlay shapes instead of forcing full
+  score redraws.
+- [x] Large A4/performance-layout playback avoids all-note geometry work and
+  repeated recentering, but still follows when the current note leaves the
+  viewport margin.
+- [x] Current-note text updates are throttled during playback so audio
+  scheduling is not blocked by every UI label update.
+- [x] `SimpleToneAudioEngine` caches generated note buffers.
+- [x] Full DoReMi Palette App tests passed after the performance hardening
+  pass.
+- [x] Heavy sample simulator spot checks were recorded for Canon in D, Mozart
+  Piano Sonata No. 16, and Fur Elise under
+  `/tmp/DoReMiPaletteQA/performance-final/`.
+- [x] Critical regression simulator spot checks confirmed upright SMuFL glyphs,
+  restored current-note follow, and metronome meter sync evidence under
+  `/tmp/DoReMiPaletteQA/critical-regression/`.
+- [x] Metronome meter sync critical fix records click-plan evidence under
+  `/tmp/DoReMiPaletteQA/metronome-meter-fix/`: 3/4 and 4/4 measures start on
+  strong beat 0, 6/8 large-beat/subdivision plans use the expected offsets, and
+  mid-playback ON uses the next planned click instead of restarting the cycle.
+- [ ] User-side listening QA: confirm on a physical iPad that heavy samples do
+  not audibly drift or stutter with the selected audio route.
 
 Palette editor screenshot targets:
 
@@ -599,8 +709,8 @@ renderer path and must remain layout-driven.
 
 ## Phase S7 Repeat Playback QA
 
-- [ ] `S7 Repeat Playback Sample` is visible in Library.
-- [ ] `S7 Repeat Playback Sample` can be opened from Library during Phase S7 regression QA.
+- [ ] `S7 Repeat Playback Sample` is covered by development fixtures/tests.
+- [ ] `S7 Repeat Playback Sample` is not expected in the TestFlight-facing Library.
 - [ ] Repeat start and repeat end barlines are visible.
 - [ ] Playback order is Measure 1, Measure 2, Measure 3, Measure 2, Measure 3,
   Measure 4.
@@ -616,8 +726,8 @@ renderer path and must remain layout-driven.
 
 ## Phase S8 Repeat Endings QA
 
-- [ ] `S8 Repeat Endings Sample` is visible in Library.
-- [ ] App launch opens `S8 Repeat Endings Sample` during Phase S8 QA.
+- [ ] `S8 Repeat Endings Sample` is covered by development fixtures/tests.
+- [ ] App launch does not use `S8 Repeat Endings Sample` for TestFlight readiness.
 - [ ] Repeat start and repeat end barlines are visible.
 - [ ] First/second ending playback order is Measure 1, Measure 2, Measure 3,
   Measure 4, Measure 2, Measure 3, Measure 5, Measure 6.
@@ -633,10 +743,10 @@ renderer path and must remain layout-driven.
 
 ## Phase S9 Repeat Visuals QA
 
-- [ ] `S9 Repeat Visuals Sample` is visible in Library.
-- [ ] App launch opens `S9 Repeat Visuals Sample` only when Phase S9 QA is the
-  active focus. Phase 17B returns the default launch score to `DoReMi Palette
-  Sample`.
+- [ ] `S9 Repeat Visuals Sample` is covered by development fixtures/tests.
+- [ ] `S9 Repeat Visuals Sample` is not expected in the TestFlight-facing Library.
+- [ ] App launch does not use `S9 Repeat Visuals Sample` for TestFlight
+  readiness; Phase 17B uses `Ode to Joy Easy Variation`.
 - [ ] First ending and second ending numbers are visible above the staff.
 - [ ] Ending bracket lines and hooks are visible and do not replace repeat
   start/end barlines.
@@ -648,10 +758,10 @@ renderer path and must remain layout-driven.
 
 ## Phase S10 Complete Repeat Symbols QA
 
-- [ ] `S10 D.C. al Fine Sample`, `S10 D.S. al Fine Sample`,
-  `S10 D.C. al Coda Sample`, `S10 D.S. al Coda Sample`, and
-  `S10 Repeat Diagnostics Sample` are visible in Library.
-- [ ] `S10 All Repeat Symbols Sample` is visible in Library and shows repeat
+- [ ] S10 D.C./D.S./Coda and diagnostics cases are covered by development
+  fixtures/tests.
+- [ ] `S10 All Repeat Symbols Sample` is not expected in the TestFlight-facing
+  Library; when restored in a development fixture set it should show repeat
   start/end, first/second endings, Segno, To Coda, Fine, D.C., D.C. al Fine,
   D.C. al Coda, D.S., D.S. al Fine, Coda, and D.S. al Coda for visual QA.
 - [ ] D.C. al Fine playback order is 1, 2, 3, 4, 1, 2, 3.
@@ -665,17 +775,23 @@ renderer path and must remain layout-driven.
   misplaying.
 - [ ] Practice Mode, Previous / Next, score highlight, keyboard highlight, and
   scroll follow use the expanded S10 playback order.
-- [ ] Non-repeat samples and the S7/S8/S9 repeat samples still load and play.
+- [ ] Non-repeat bundled samples load and play; historical S7/S8/S9 repeat QA
+  coverage is maintained through development fixtures/tests rather than the
+  TestFlight Library.
 
 ## Phase 17B TestFlight Readiness QA
 
-- [ ] App launch opens `Canon in D` as the bundled MXL default.
-- [ ] The Library shows the five bundled MXL samples copied from `sample/`.
-- [ ] `12 Variations of Twinkle Twinkle Little Star` is not listed in the
-  bundled sample catalog because its repeat-expanded playback is too long for
-  the default sample set.
+- [ ] App launch opens `Ode to Joy Easy Variation` as the bundled MXL default.
+- [ ] The Library shows only the two TestFlight bundled MXL samples kept from
+  `sample/`: `Ode to Joy Easy Variation` and `Fur Elise - Beginner Piano`.
+- [ ] `Happy Birthday To You Piano` is not listed in the bundled sample catalog
+  or app bundle after the pre-TestFlight rights review. `12 Variations of
+  Twinkle Twinkle Little Star`, `Canon in D`, and `The Entertainer` are also not
+  listed.
 - [ ] Prior S6/S7/S8/S9/S10/T2 QA samples are no longer expected in the bundled
-  app sample catalog after the sample replacement.
+  app sample catalog after the sample replacement; keep that coverage in
+  development fixtures and automated tests rather than user-facing Library
+  entries.
 - [ ] Release build succeeds for `generic/platform=iOS`.
 - [ ] Archive succeeds, or any failure is classified as signing / provisioning
   requiring user-side Apple Developer action.
@@ -720,8 +836,9 @@ renderer path and must remain layout-driven.
   diagnostics.
 - [x] App tests cover display transpose relayout preserving playback event
   identity.
-- [x] `T2 Transpose Key Sample`, `T2 Transpose Accidentals Sample`, and
-  `T2 MusicXML Transpose Sample` are visible in Library.
+- [x] T2 display-transpose behavior is covered by SDK/app tests and
+  development fixtures. The historical T2 sample files are not part of the
+  TestFlight-facing Library.
 - [ ] Simulator manual check: key picker (`C`, `C#`, `D`, ...) moves score
   notes, key signature, playback, and keyboard highlights together.
 - [ ] Simulator manual check: score display transpose is enabled by default and
@@ -776,3 +893,22 @@ Runtime QA to complete after install/launch:
 If `devicectl` reports a CoreDeviceService timeout, use Xcode's device window
 and Product > Run path, then record the manual result here before treating
 Phase 17A as complete.
+
+## Playback Timing Hardening QA
+
+- [x] Debug timing logs can be collected with `DOREMI_PLAYBACK_TIMING_LOG=1`
+  and the autoplay launch environment.
+- [x] Canon in D timing log saved:
+  `/tmp/DoReMiPaletteQA/playback-timing/01_canon_timing.txt`.
+- [x] Mozart Piano Sonata No. 16 timing log saved:
+  `/tmp/DoReMiPaletteQA/playback-timing/02_mozart_timing.txt`.
+- [x] Fur Elise - Beginner Piano timing log saved:
+  `/tmp/DoReMiPaletteQA/playback-timing/03_fur_elise_timing.txt`.
+- [x] The Entertainer timing log saved:
+  `/tmp/DoReMiPaletteQA/playback-timing/04_entertainer_timing.txt`.
+- [x] Twinkle Twinkle Little Star timing log saved:
+  `/tmp/DoReMiPaletteQA/playback-timing/05_twinkle_timing.txt`.
+- [x] Timing summary saved:
+  `/tmp/DoReMiPaletteQA/playback-timing/05_summary.txt`.
+- [ ] Real iPad listening check: confirm that the generated audio feels stable
+  after the Simulator timing pass.

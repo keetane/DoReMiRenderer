@@ -22,6 +22,13 @@ The Phase 13+ app-execution roadmap is tracked in [ROADMAP.md](ROADMAP.md), and 
 - Prefix notation uses the standard order `clef -> key signature -> time
   signature`, with expanded SDK layout spacing so clefs, display-transposed key
   signatures, time signatures, and the first note/rest do not collide.
+- Measure widths are normalized by `ScoreLayoutEngine`: normal measures keep a
+  readable minimum width, first-measure pickup/anacrusis bars keep a 75%
+  normal-width minimum, trailing incomplete final bars get the same guarded
+  minimum, and prefix width is included before note placement. Non-final wrapped
+  systems receive MVP width justification while final systems stay deliberately
+  under-justified to avoid over-stretching, and compact beamed short-note
+  groups keep readable gaps near their rhythmic onset.
 - When note colors are enabled, note accidentals match the associated displayed
   note pitch color. Key-signature accidentals use pitch-class color in the
   current MVP.
@@ -33,6 +40,20 @@ The Phase 13+ app-execution roadmap is tracked in [ROADMAP.md](ROADMAP.md), and 
   playback BPM, emits generated strong/medium/weak clicks, supports simple
   compound-meter large-beat/subdivision modes, Tap Tempo, and generated click
   sound styles, and starts/stops with the transport controls.
+- DoReMi Palette shows current measure / total measures between Previous and
+  Next. The inline measure field accepts a target measure number; valid jumps
+  move to the first matching playback event for that score measure, update
+  current-note and keyboard highlights, and use the existing score scroll
+  follow path.
+- DoReMi Palette supports app-side pinch zoom for the score view with a
+  persisted continuous scale from `0.8x` to `3.0x`; the score layout coordinate
+  model, hit testing, and scroll follow remain driven by `ScoreLayout`. Opening
+  or reloading a score resets the visible zoom to `1.0x`, and layout/zoom
+  controls live in Settings rather than the main transport row.
+- DoReMi Palette shows a first-use guide with coach marks for Settings,
+  display options, current-note/keyboard feedback, measure jump, Previous/Next,
+  Play/Stop, and key/transpose controls. Completion is stored locally, and the
+  guide can be replayed from Settings.
 - Run iOS Simulator snapshot tests for basic rendering regression coverage.
 - Read basic lyrics, fingering, key signatures, tempo metadata, and repeat
   metadata with explicit diagnostics for unsupported advanced notation.
@@ -41,6 +62,10 @@ The Phase 13+ app-execution roadmap is tracked in [ROADMAP.md](ROADMAP.md), and 
 - DoReMi Palette includes a Palette Editor MVP with 12 pitch-class ON/OFF
   controls, a C2-C6 keyboard preview, and a generated C2-C6 score preview.
   Arbitrary RGB editing and octave-specific color enablement are future work.
+- For TestFlight readiness, the user-facing bundled Library is intentionally a
+  two-song learning set. Historical notation/repeat/transpose QA samples and
+  the excluded Happy Birthday rights-review fixture are not bundled as Library
+  entries; they are maintained as development/test coverage instead.
 
 ## Not Supported
 
@@ -53,7 +78,7 @@ The Phase 13+ app-execution roadmap is tracked in [ROADMAP.md](ROADMAP.md), and 
 - Complex multi-voice collision avoidance
 - SDK-owned audio playback, MIDI, score-display transposition, key-signature
   redraw, and MusicXML `<transpose>` / transposing-instrument support
-- Pinch zoom, advanced automatic scroll follow, and horizontal page navigation
+- Advanced automatic scroll follow, horizontal page navigation
 - Complex selection state, multiple selection, drag, annotations
 
 See [MVP0_LIMITATIONS.md](MVP0_LIMITATIONS.md) for the complete list.
@@ -328,9 +353,8 @@ safe simple beam groups, mixed eighth/sixteenth secondary beam checks, and basic
 triplet brackets while keeping SMuFL glyphs for notation shapes. Phase S7 adds
 simple repeat playback expansion, Phase S8 adds first/second ending playback
 expansion, and Phase S9 adds visible ending brackets. For Phase 17B TestFlight
-readiness, the app can ship bundled MXL samples. The current bundled sample set
-is the five user-provided `.mxl` files copied from `sample/`; earlier QA
-MusicXML fixtures are no longer part of the app sample catalog.
+readiness, the app ships a two-song bundled MXL Library copied from `sample/`;
+earlier QA MusicXML fixtures are no longer part of the app sample catalog.
 
 DoReMi Palette also includes a Print MVP and a score layout switcher. The app
 can display either the existing horizontal one-row score (`横一段`) or an A4-width
@@ -379,18 +403,17 @@ The previous bundled QA MusicXML samples were removed from the app bundle when
 the sample set was replaced with user-provided `.mxl` files from `sample/`.
 The Library now exposes these bundled MXL samples:
 
-- `Canon in D`
 - `Fur Elise - Beginner Piano`
-- `Happy Birthday To You Piano`
 - `Ode to Joy Easy Variation`
-- `The Entertainer`
 
-`Canon in D` is the default launch score. `12 Variations of Twinkle Twinkle
-Little Star` was removed from the bundled sample list because its dense repeat
-structure makes the repeat-expanded playback too long for a default learning
-sample. The app transpose control is a key
-picker (`C`, `C#`, `D`, ...) rather than a semitone +/- control; playback,
-keyboard highlights, and the rendered score use the selected key together.
+`Ode to Joy Easy Variation` is the default launch score. `Happy Birthday To You
+Piano` was removed from the TestFlight bundle after the pre-TestFlight rights
+review because its metadata names an arranger and has no embedded rights grant.
+`12 Variations of Twinkle Twinkle Little Star`, `Canon in D`, and `The
+Entertainer` were also removed from the bundled sample list. The app transpose
+control is a key picker (`C`, `C#`, `D`, ...) rather than a semitone +/-
+control; playback, keyboard highlights, and the rendered score use the selected
+key together.
 
 ### Palette Editor MVP
 

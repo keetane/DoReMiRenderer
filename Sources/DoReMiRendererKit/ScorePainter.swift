@@ -29,11 +29,13 @@ extension ScoreDrawingContext {
 
 struct ScorePainter: Sendable {
     private let smuflFontName: String?
+    private let visibleRect: CGRect?
     private let smuflSizePolicy = SMuFLGlyphSizePolicy()
     private let repeatTextFontName = "Georgia-Italic"
 
-    init(smuflFontName: String? = SMuFLFont.registeredFontName()) {
+    init(smuflFontName: String? = SMuFLFont.registeredFontName(), visibleRect: CGRect? = nil) {
         self.smuflFontName = smuflFontName
+        self.visibleRect = visibleRect
     }
 
     func draw<Context: ScoreDrawingContext>(
@@ -73,7 +75,7 @@ struct ScorePainter: Sendable {
             return
         }
         let fontSize: CGFloat = 11
-        for measure in layout.measures where shouldDrawMeasureNumber(measure) {
+        for measure in layout.measures where shouldDrawMeasureNumber(measure) && isVisible(measure.frame) {
             let bottomStaffFrame = bottomStaffFrame(for: measure, in: layout) ?? measure.frame
             let point = CGPoint(
                 x: measure.frame.minX + fontSize * 0.45,
@@ -119,12 +121,12 @@ struct ScorePainter: Sendable {
         selection: ScoreSelection,
         into context: inout Context
     ) {
-        for element in layout.elements where element.kind == .clef
+        for element in layout.elements where isVisible(element.frame) && (element.kind == .clef
             || element.kind == .timeSignature
             || element.kind == .barline
             || element.kind == .repeatEnding
             || element.kind == .measureRepeat
-            || element.kind == .playbackJumpMarker {
+            || element.kind == .playbackJumpMarker) {
             let resolved = style.colorResolver.resolvedStyle(
                 for: element,
                 score: score,
@@ -317,7 +319,7 @@ struct ScorePainter: Sendable {
         selection: ScoreSelection,
         into context: inout Context
     ) {
-        for element in layout.elements where element.kind == .staffLine {
+        for element in layout.elements where element.kind == .staffLine && isVisible(element.frame) {
             guard let staffLine = element.staffLine else {
                 continue
             }
@@ -344,7 +346,7 @@ struct ScorePainter: Sendable {
         selection: ScoreSelection,
         into context: inout Context
     ) {
-        for element in layout.elements where element.kind == .ledgerLine {
+        for element in layout.elements where element.kind == .ledgerLine && isVisible(element.frame) {
             guard let ledgerLine = element.ledgerLine else {
                 continue
             }
@@ -448,7 +450,7 @@ struct ScorePainter: Sendable {
             [.dot],
         ]
         for kinds in drawingOrder {
-            for element in layout.elements where kinds.contains(element.kind) {
+            for element in layout.elements where kinds.contains(element.kind) && isVisible(element.frame) {
                 drawNoteOrRestElement(
                     element,
                     layout: layout,
@@ -501,7 +503,7 @@ struct ScorePainter: Sendable {
         selection: ScoreSelection,
         into context: inout Context
     ) {
-        for element in layout.elements where element.kind == .tie || element.kind == .slur {
+        for element in layout.elements where isVisible(element.frame) && (element.kind == .tie || element.kind == .slur) {
             guard let curve = element.curve else {
                 continue
             }
@@ -519,7 +521,7 @@ struct ScorePainter: Sendable {
         selection: ScoreSelection,
         into context: inout Context
     ) {
-        for element in layout.elements where element.kind == .tuplet {
+        for element in layout.elements where element.kind == .tuplet && isVisible(element.frame) {
             guard let tuplet = element.tuplet else {
                 continue
             }
@@ -705,7 +707,7 @@ struct ScorePainter: Sendable {
         selection: ScoreSelection,
         into context: inout Context
     ) {
-        for element in layout.elements where element.kind == .accidental {
+        for element in layout.elements where element.kind == .accidental && isVisible(element.frame) {
             guard let accidental = element.accidental else {
                 continue
             }
@@ -733,7 +735,7 @@ struct ScorePainter: Sendable {
         selection: ScoreSelection,
         into context: inout Context
     ) {
-        for element in layout.elements where element.kind == .keySignature {
+        for element in layout.elements where element.kind == .keySignature && isVisible(element.frame) {
             guard let accidental = element.accidental else {
                 continue
             }
@@ -761,7 +763,7 @@ struct ScorePainter: Sendable {
         selection: ScoreSelection,
         into context: inout Context
     ) {
-        for element in layout.elements where element.kind == .lyric || element.kind == .fingering {
+        for element in layout.elements where isVisible(element.frame) && (element.kind == .lyric || element.kind == .fingering) {
             guard let annotation = element.annotation else {
                 continue
             }
@@ -831,6 +833,13 @@ struct ScorePainter: Sendable {
         context.drawText("\(timeSignature.beats)\n\(timeSignature.beatType)", at: CGPoint(x: element.frame.midX, y: element.frame.midY), color: color, size: size)
     }
 
+    private func isVisible(_ frame: CGRect, padding: CGFloat = 72) -> Bool {
+        guard let visibleRect else {
+            return true
+        }
+        return frame.intersects(visibleRect.insetBy(dx: -padding, dy: -padding))
+    }
+
     private func smuflDigits(_ value: Int) -> String {
         String(value).compactMap { character -> String? in
             guard let digit = character.wholeNumberValue else {
@@ -872,14 +881,14 @@ struct ScorePainter: Sendable {
     ) -> CGPoint {
         let stemEndY = drawsDown ? element.frame.maxY : element.frame.minY
         let stemX = drawsDown ? element.frame.maxX : element.frame.minX
-        let horizontalOffset = noteLayout.noteheadFrame.width * 0.15
-        let leftAdjustment = noteLayout.noteheadFrame.width * 0.05
-        let upStemRightAdjustment = drawsDown ? 0 : noteLayout.noteheadFrame.width * 0.1
-        let downStemRightAdjustment = drawsDown ? noteLayout.noteheadFrame.width * 0.4 : 0
-        let verticalOffset = noteLayout.noteheadFrame.height * 0.03
+        // ScoreDrawingContext draws SMuFL glyphs centered on this point. The small x
+        // offset places the visual leading edge of the flag on the stem instead of
+        // placing the glyph center on the stem, which makes the flag look detached.
+        let visualStemEdgeOffset = noteLayout.noteheadFrame.width * 0.2
+        let verticalAdjustment: CGFloat = drawsDown ? -15 : 15
         return CGPoint(
-            x: stemX + (drawsDown ? -horizontalOffset : horizontalOffset) - leftAdjustment + upStemRightAdjustment + downStemRightAdjustment,
-            y: stemEndY + (drawsDown ? -verticalOffset : verticalOffset)
+            x: stemX + visualStemEdgeOffset,
+            y: stemEndY + verticalAdjustment
         )
     }
 
@@ -918,6 +927,7 @@ private extension NoteValueKind {
 
 final class CoreGraphicsScoreDrawingContext: ScoreDrawingContext {
     private let context: CGContext
+    private var textLineCache: [TextLineCacheKey: CachedTextLine] = [:]
 
     init(_ context: CGContext) {
         self.context = context
@@ -968,29 +978,86 @@ final class CoreGraphicsScoreDrawingContext: ScoreDrawingContext {
     }
 
     func drawText(_ text: String, at point: CGPoint, color: ScoreColor, size: CGFloat, fontName: String?, mirroredHorizontally: Bool, mirroredVertically: Bool) {
-        let attributes: [NSAttributedString.Key: Any] = [
-            .foregroundColor: color.cgColor,
-            .font: CTFontCreateWithName((fontName ?? "Helvetica") as CFString, size, nil),
-        ]
-        let attributed = NSAttributedString(string: text, attributes: attributes)
-        let line = CTLineCreateWithAttributedString(attributed)
-        let bounds = CTLineGetBoundsWithOptions(line, [.useGlyphPathBounds])
-        let centeredPosition = CGPoint(
-            x: point.x - bounds.midX,
-            y: point.y - bounds.midY
-        )
+        let key = TextLineCacheKey(text: text, color: color, size: size, fontName: fontName)
+        let cached = cachedTextLine(for: key)
+        let line = cached.line
+        let bounds = cached.bounds
         context.saveGState()
-        if mirroredHorizontally || mirroredVertically {
-            context.translateBy(x: point.x, y: point.y)
-            context.scaleBy(x: mirroredHorizontally ? -1 : 1, y: mirroredVertically ? -1 : 1)
-            context.textPosition = CGPoint(x: -bounds.midX, y: -bounds.midY)
-            CTLineDraw(line, context)
-            context.restoreGState()
-            return
-        }
-        context.textPosition = centeredPosition
+        context.textMatrix = .identity
+        let textScale = Self.coreTextDrawingScale(
+            context: context,
+            mirroredHorizontally: mirroredHorizontally,
+            mirroredVertically: mirroredVertically
+        )
+        context.translateBy(x: point.x, y: point.y)
+        context.scaleBy(x: textScale.x, y: textScale.y)
+        context.textPosition = CGPoint(x: -bounds.midX, y: -bounds.midY)
         CTLineDraw(line, context)
         context.restoreGState()
+    }
+
+    static func coreTextDrawingScale(
+        context: CGContext,
+        mirroredHorizontally: Bool,
+        mirroredVertically: Bool
+    ) -> CGPoint {
+        let contextYScale: CGFloat = context.ctm.d < 0 ? -1 : 1
+        return CGPoint(
+            x: mirroredHorizontally ? -1 : 1,
+            y: contextYScale * (mirroredVertically ? -1 : 1)
+        )
+    }
+
+    private func cachedTextLine(for key: TextLineCacheKey) -> CachedTextLine {
+        if let cached = textLineCache[key] {
+            return cached
+        }
+        let attributes: [NSAttributedString.Key: Any] = [
+            .foregroundColor: key.color.cgColor,
+            .font: CTFontCreateWithName((key.fontName ?? "Helvetica") as CFString, key.size, nil),
+        ]
+        let attributed = NSAttributedString(string: key.text, attributes: attributes)
+        let line = CTLineCreateWithAttributedString(attributed)
+        let cached = CachedTextLine(
+            line: line,
+            bounds: CTLineGetBoundsWithOptions(line, [.useGlyphPathBounds])
+        )
+        textLineCache[key] = cached
+        return cached
+    }
+
+    private struct TextLineCacheKey: Hashable {
+        let text: String
+        let red: Int
+        let green: Int
+        let blue: Int
+        let alpha: Int
+        let size: CGFloat
+        let fontName: String?
+
+        init(text: String, color: ScoreColor, size: CGFloat, fontName: String?) {
+            self.text = text
+            self.red = Int((color.red * 255).rounded())
+            self.green = Int((color.green * 255).rounded())
+            self.blue = Int((color.blue * 255).rounded())
+            self.alpha = Int((color.alpha * 255).rounded())
+            self.size = (size * 10).rounded() / 10
+            self.fontName = fontName
+        }
+
+        var color: ScoreColor {
+            ScoreColor(
+                red: Double(red) / 255,
+                green: Double(green) / 255,
+                blue: Double(blue) / 255,
+                alpha: Double(alpha) / 255
+            )
+        }
+    }
+
+    private struct CachedTextLine {
+        let line: CTLine
+        let bounds: CGRect
     }
 }
 

@@ -105,33 +105,15 @@ struct SampleScoreCatalog: Hashable {
 
     static let `default` = SampleScoreCatalog(samples: [
         SampleScoreItem(
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000102")!,
-            displayName: "Canon in D",
-            resourceName: "Canon_in_D",
-            fileExtension: "mxl"
-        ),
-        SampleScoreItem(
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000103")!,
-            displayName: "Fur Elise - Beginner Piano",
-            resourceName: "Fur_Elise_-_Beethoven_-_for_beginner_piano",
-            fileExtension: "mxl"
-        ),
-        SampleScoreItem(
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000104")!,
-            displayName: "Happy Birthday To You Piano",
-            resourceName: "Happy_Birthday_To_You_Piano",
-            fileExtension: "mxl"
-        ),
-        SampleScoreItem(
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000105")!,
+            id: UUID(uuidString: "30E5CC5D-0508-588C-89F7-83EB65B1ECB1")!,
             displayName: "Ode to Joy Easy Variation",
             resourceName: "Ode_to_Joy_Easy_variation",
             fileExtension: "mxl"
         ),
         SampleScoreItem(
-            id: UUID(uuidString: "00000000-0000-0000-0000-000000000106")!,
-            displayName: "The Entertainer",
-            resourceName: "The_Entertainer_-_Scott_Joplin_-_1902",
+            id: UUID(uuidString: "38D8E4E4-F798-5EAD-9075-77AEBF0D2A89")!,
+            displayName: "Fur Elise - Beginner Piano",
+            resourceName: "Fur_Elise_-_Beethoven_-_for_beginner_piano",
             fileExtension: "mxl"
         )
     ])

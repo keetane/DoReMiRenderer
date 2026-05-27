@@ -11,9 +11,10 @@ DoReMi Palette is currently designed as an on-device practice app.
 - Recent-file metadata and security-scoped bookmarks are stored locally on the
   device.
 - File contents are not stored in `UserDefaults` or sent to external services.
+- First-use guide completion, palette preferences, transpose, metronome, zoom,
+  keyboard, and display settings are stored locally as app settings.
 - TestFlight / Apple crash diagnostics may be available through Apple's normal
   beta distribution tooling if the tester opts in.
 
 App Store Connect privacy answers still require final user/account-owner review
 before upload.
-
