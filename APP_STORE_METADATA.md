@@ -2,9 +2,10 @@
 
 Updated: 2026-05-28
 
-## TestFlight Build
+## App Store Release Candidate
 
-- Uploaded build: `0.1.1 (2)`
+- Release candidate build: `1.0 (3)`
+- Previous internal TestFlight build: `0.1.1 (2)`
 - Bundle identifier: `com.doremipalette.app`
 - Bundled Library samples:
   - Ode to Joy Easy Variation
@@ -57,3 +58,5 @@ Character count: 56
 - Promotional text is under Apple's 170-character limit.
 - Keywords are under Apple's 100-character limit for the Japanese locale.
 - Description intentionally states MVP limitations to avoid overclaiming full engraving or full MusicXML compatibility.
+- App Store Connect already has an iOS App `1.0` release train; the app target
+  is aligned to `MARKETING_VERSION = 1.0` for the formal release candidate.

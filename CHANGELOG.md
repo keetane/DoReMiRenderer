@@ -181,6 +181,10 @@ APIs may change before `1.0`.
   suppressing per-note scroll follow in large playback layouts, caching
   generated audio buffers, and tolerating duplicate structural `ScoreElementID`
   values in layout lookup maps.
+- Prepared the formal App Store release candidate by aligning the app target to
+  version `1.0` with build number `3`, keeping the internal TestFlight
+  `0.1.1 (2)` build history separate, and updating release metadata/checklists
+  for App Store submission.
 - Kept Core Graphics fallback rendering for font lookup or registration failure.
 - Dynamics remain diagnostic-only unless represented by existing text
   annotations; system-crossing curves, advanced beams, complex tuplets, and

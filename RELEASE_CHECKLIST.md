@@ -16,8 +16,8 @@
   fixtures and automated tests.
 - Display name: `DoReMi Palette`.
 - Bundle identifier: `com.doremipalette.app`.
-- Version: `0.1.1`.
-- Build number: `2`.
+- Version: `1.0`.
+- Build number: `3`.
 - Signing: automatic signing with Apple Development identity and the configured
   development team.
 - App icon: `Assets.xcassets/AppIcon.appiconset`.
@@ -110,13 +110,43 @@ Phase 17B verification result:
     `UIInterfaceOrientationPortraitUpsideDown`.
   - Archive app bundle contains only `Ode_to_Joy_Easy_variation.mxl` and
     `Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl`.
+- 2026-05-28 App Store release preparation:
+  - App target aligned to App Store Connect iOS App version `1.0`.
+  - Release candidate build number set to `3`, leaving internal TestFlight
+    build `0.1.1 (2)` intact.
+  - `APP_STORE_METADATA.md` contains the Japanese promotional text,
+    description, and keywords draft for the `1.0` release train.
+  - `swift test`: passed, 192 tests.
+  - DoReMi Palette full App tests on iPad Pro 13-inch (M5), OS 26.4.1:
+    passed.
+  - License check: passed.
+  - DocC build: passed, archive written to
+    `/tmp/DoReMiRendererKit.doccarchive`.
+  - Local sample diagnostics: passed and regenerated
+    `MUSICXML_COMPATIBILITY_REPORT.md`.
+  - Release generic iOS build: passed.
+  - Archive: passed at `/tmp/DoReMiPalette.xcarchive`.
+  - Archive metadata: bundle identifier `com.doremipalette.app`, version
+    `1.0`, build `3`; iPad orientations include portrait, upside-down
+    portrait, landscape left, and landscape right.
+  - Archive app bundle contains only `Ode_to_Joy_Easy_variation.mxl` and
+    `Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl`.
+  - DoReMiRendererExample snapshot baseline update was approved after reviewing
+    the small visual differences across the existing 12 baselines
+    (`0.0139...0.0239` vs tolerance `0.01`).
+  - DoReMiRendererExample snapshot tests: passed after updating the approved
+    baselines.
 - Phase 17B screenshot folder: `/tmp/DoReMiPaletteQA/phase-17b/`.
 
-## Manual Before TestFlight Testing
+## Manual Before App Store Submission
 
-- Wait for App Store Connect processing to finish.
-- Add the processed build to internal TestFlight testing.
+- Upload or select release candidate build `1.0 (3)` in App Store Connect.
 - Confirm export compliance / encryption answers in App Store Connect.
+- Confirm App Privacy answers: no account, no analytics, no tracking, no
+  server upload of imported files.
+- Confirm App Store screenshots are attached for required iPhone/iPad sizes.
+- Confirm age rating, category, support URL, marketing URL, copyright, and
+  contact details with the account owner.
 - Confirm the app launches on a physical iPad.
 - Confirm generated-tone audio on device speakers or the selected output route.
 - Confirm import of `.musicxml`, `.xml`, and `.mxl` from Files.
