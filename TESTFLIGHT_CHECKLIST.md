@@ -5,6 +5,7 @@
 - TestFlight upload candidate: `0.1.1 (2)`.
 - Wait for App Store Connect processing, then attach the build to internal
   testing and complete export compliance prompts.
+- Formal App Store release candidate is tracked separately as `1.0 (3)`.
 
 - Open the default `Ode to Joy Easy Variation` sample.
 - Open the bundled MXL samples from Library:

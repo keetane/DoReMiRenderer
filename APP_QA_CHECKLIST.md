@@ -24,6 +24,9 @@ or TestFlight preparation.
 ## iPad Checks
 
 - [x] App launches on iPad Pro 13-inch (M5) Simulator.
+- [x] App installs and launches on the connected physical `iPad Pro 2nd`.
+- [x] User completed physical-device confirmation after internal TestFlight
+  distribution.
 - [x] Bundled sample score appears.
 - [x] Note color and staff color are visible.
 - [x] `Previous` / `Next` controls are reachable.
