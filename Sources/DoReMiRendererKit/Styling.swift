@@ -286,7 +286,8 @@ public struct ScoreColorResolver: Sendable {
            currentNoteIDs.contains(noteID),
            element.kind != .accidental,
            element.kind != .stem,
-           element.kind != .flag {
+           element.kind != .flag,
+           element.kind != .articulation {
             return ResolvedVisualStyle(
                 fillColor: style.highlightStyle.color,
                 strokeColor: style.highlightStyle.color,

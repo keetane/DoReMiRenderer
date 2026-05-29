@@ -754,19 +754,21 @@ struct PaletteScoreLoaderTests {
         #expect(session.errorMessage == nil)
     }
 
-    @Test func sampleCatalogContainsOnlyBundledMXLFilesFromSampleDirectory() throws {
+    @Test func sampleCatalogContainsBundledLearningAndExpressionSamples() throws {
         let catalog = SampleScoreCatalog.default
         let bundledSampleNames = Set([
             "Ode_to_Joy_Easy_variation",
             "Fur_Elise_-_Beethoven_-_for_beginner_piano",
+            "articulation_dynamics_coverage_sample",
         ])
 
-        #expect(catalog.samples.count == 2)
+        #expect(catalog.samples.count == 3)
         #expect(catalog.samples.map(\.resourceName) == [
             "Ode_to_Joy_Easy_variation",
             "Fur_Elise_-_Beethoven_-_for_beginner_piano",
+            "articulation_dynamics_coverage_sample",
         ])
-        #expect(catalog.samples.allSatisfy { $0.fileExtension == "mxl" })
+        #expect(catalog.samples.map(\.fileExtension) == ["mxl", "mxl", "musicxml"])
         #expect(bundledSampleNames.isSubset(of: Set(catalog.samples.map(\.resourceName))))
     }
 

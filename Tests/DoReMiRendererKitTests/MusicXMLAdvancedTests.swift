@@ -11,6 +11,70 @@ import Testing
     #expect(note.fingerings == [FingeringAnnotation(text: "1")])
 }
 
+@Test func parserReadsArticulationsDynamicsAndWedges() throws {
+    let result = try MusicXMLParser().parse(data: Data(expressionCoverageXML.utf8))
+    let measure = try #require(result.score.parts.first?.measures.first)
+    let notes = measure.notes
+
+    #expect(notes[0].articulations.contains(.staccato))
+    #expect(notes[1].articulations.contains(.accent))
+    #expect(notes[2].articulations.contains(.tenuto))
+    #expect(notes[3].articulations.contains(.fermata))
+    #expect(measure.directions.contains {
+        if case .dynamic(.p) = $0.kind { return true }
+        return false
+    })
+    #expect(measure.directions.contains {
+        if case .dynamic(.f) = $0.kind { return true }
+        return false
+    })
+    #expect(measure.directions.contains {
+        if case .wedge(.crescendo) = $0.kind { return true }
+        return false
+    })
+    #expect(measure.directions.contains {
+        if case .wedge(.stop) = $0.kind { return true }
+        return false
+    })
+    #expect(!result.diagnostics.contains { $0.code == "unsupported.articulations" || $0.code == "unsupported.dynamics" })
+}
+
+@Test func layoutCreatesArticulationDynamicsAndHairpinElements() throws {
+    let result = try MusicXMLParser().parse(data: Data(expressionCoverageXML.utf8))
+    let layout = try ScoreLayoutEngine().layout(score: result.score)
+
+    #expect(layout.elements.contains { $0.kind == .articulation && $0.articulation?.kind == .staccato })
+    #expect(layout.elements.contains { $0.kind == .articulation && $0.articulation?.kind == .accent })
+    #expect(layout.elements.contains { $0.kind == .articulation && $0.articulation?.kind == .tenuto })
+    #expect(layout.elements.contains { $0.kind == .articulation && $0.articulation?.kind == .fermata })
+    #expect(layout.elements.contains { $0.kind == .dynamic && $0.dynamic?.mark == .p })
+    #expect(layout.elements.contains { $0.kind == .dynamic && $0.dynamic?.mark == .f })
+    #expect(layout.elements.contains { $0.kind == .hairpin && $0.hairpin?.kind == .crescendo })
+    #expect(layout.elements.filter { $0.kind == .articulation || $0.kind == .dynamic || $0.kind == .hairpin }.allSatisfy { $0.frame != .zero })
+
+    let notes = result.score.parts.first?.measures.first?.notes ?? []
+    for kind in [ScoreArticulationKind.staccato, .tenuto, .fermata] {
+        let note = try #require(notes.first { $0.articulations.contains(kind) })
+        let noteLayout = try #require(layout.noteByID[note.id])
+        let articulation = try #require(layout.elements.first { $0.noteID == note.id && $0.articulation?.kind == kind }?.articulation)
+        #expect(abs(articulation.point.y - noteLayout.noteheadCenter.y) < noteLayout.noteheadFrame.height * 1.75)
+    }
+
+    let dynamic = try #require(layout.elements.first { $0.kind == .dynamic }?.frame)
+    let hairpin = try #require(layout.elements.first { $0.kind == .hairpin }?.frame)
+    #expect(abs(dynamic.midY - hairpin.midY) >= 8)
+}
+
+@Test func layoutCreatesCrossMeasureHairpinOnSameSystem() throws {
+    let result = try MusicXMLParser().parse(data: Data(crossMeasureHairpinXML.utf8))
+    let layout = try ScoreLayoutEngine().layout(score: result.score, options: LayoutOptions(pageWidth: 1200))
+
+    let hairpin = try #require(layout.elements.first { $0.kind == .hairpin && $0.hairpin?.kind == .crescendo })
+    let secondMeasure = try #require(layout.measures.first { $0.measureID.rawValue == "0.2" })
+    #expect(hairpin.frame.minX < secondMeasure.frame.minX)
+    #expect(hairpin.frame.maxX > secondMeasure.frame.minX)
+}
+
 @Test func layoutCreatesLyricAndFingeringElements() throws {
     let result = try MusicXMLParser().parse(data: Data(lyricsFingeringXML.utf8))
     let note = try #require(result.score.parts.first?.measures.first?.notes.first)
@@ -315,6 +379,56 @@ private let measureRepeatXML = """
     </attributes>
     <note><rest/><duration>16</duration><voice>1</voice><type>whole</type><staff>1</staff></note>
   </measure></part>
+</score-partwise>
+"""
+
+private let expressionCoverageXML = """
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Expression</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes>
+        <divisions>4</divisions>
+        <time><beats>4</beats><beat-type>4</beat-type></time>
+        <clef><sign>G</sign><line>2</line></clef>
+      </attributes>
+      <direction placement="below"><direction-type><dynamics><p/></dynamics></direction-type><staff>1</staff></direction>
+      <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff><notations><articulations><staccato/></articulations></notations></note>
+      <direction placement="below"><direction-type><wedge type="crescendo"/></direction-type><staff>1</staff></direction>
+      <note><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff><notations><articulations><accent/></articulations></notations></note>
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff><notations><articulations><tenuto/></articulations></notations></note>
+      <direction placement="below"><direction-type><wedge type="stop"/></direction-type><staff>1</staff></direction>
+      <direction placement="below"><direction-type><dynamics><f/></dynamics></direction-type><staff>1</staff></direction>
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff><notations><fermata/></notations></note>
+    </measure>
+  </part>
+</score-partwise>
+"""
+
+private let crossMeasureHairpinXML = """
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Cross Measure Hairpin</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes>
+        <divisions>4</divisions>
+        <time><beats>4</beats><beat-type>4</beat-type></time>
+        <clef><sign>G</sign><line>2</line></clef>
+      </attributes>
+      <direction placement="below"><direction-type><wedge type="crescendo"/></direction-type><staff>1</staff></direction>
+      <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+      <note><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+    </measure>
+    <measure number="2">
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+      <direction placement="below"><direction-type><wedge type="stop"/></direction-type><staff>1</staff></direction>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+    </measure>
+  </part>
 </score-partwise>
 """
 

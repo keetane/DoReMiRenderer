@@ -13,7 +13,8 @@ final class SimpleToneAudioEngine: PaletteAudioEngine {
     private let sampleRate: Double = 44_100
     private let polyphonyLimit = 16
     private let maxCachedBuffers = 512
-    private static let maxGeneratedBufferDuration: TimeInterval = 0.22
+    private static let maxGeneratedBufferDuration: TimeInterval = 8.0
+    private static let maxCachedBufferDuration: TimeInterval = 1.25
     private var isConfigured = false
     private var playerPool: [AVAudioPlayerNode] = []
     private var nextPlayerIndex = 0
@@ -60,6 +61,9 @@ final class SimpleToneAudioEngine: PaletteAudioEngine {
 
     func prepare(midiPitches: [Int], duration: TimeInterval, velocity: Double) {
         guard !midiPitches.isEmpty, duration.isFinite, duration > 0 else {
+            return
+        }
+        guard Self.synthesizedBufferDuration(for: duration) <= Self.maxCachedBufferDuration else {
             return
         }
         do {
@@ -138,7 +142,8 @@ final class SimpleToneAudioEngine: PaletteAudioEngine {
             frameCount: frameCount,
             velocityBucket: Int((min(max(velocity, 0), 1) * 100).rounded())
         )
-        if let cached = bufferCache[cacheKey] {
+        let shouldCache = synthesizedDuration <= Self.maxCachedBufferDuration
+        if shouldCache, let cached = bufferCache[cacheKey] {
             return cached
         }
         guard let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1),
@@ -162,7 +167,9 @@ final class SimpleToneAudioEngine: PaletteAudioEngine {
             let fade = envelope(frame: frame, frameCount: Int(frameCount))
             samples[frame] = Float(sample) * amplitude * fade
         }
-        cache(buffer, for: cacheKey)
+        if shouldCache {
+            cache(buffer, for: cacheKey)
+        }
         return buffer
     }
 
@@ -209,10 +216,8 @@ final class SimpleToneAudioEngine: PaletteAudioEngine {
             return 0.06
         case ..<0.13:
             return 0.10
-        case ..<0.19:
-            return 0.16
         default:
-            return maxGeneratedBufferDuration
+            return clamped
         }
     }
 }

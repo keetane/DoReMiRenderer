@@ -115,6 +115,12 @@ struct SampleScoreCatalog: Hashable {
             displayName: "Fur Elise - Beginner Piano",
             resourceName: "Fur_Elise_-_Beethoven_-_for_beginner_piano",
             fileExtension: "mxl"
+        ),
+        SampleScoreItem(
+            id: UUID(uuidString: "2B94F79A-4B82-4DF5-9CC5-8FC69B675C90")!,
+            displayName: "Articulation & Dynamics Coverage Sample",
+            resourceName: "articulation_dynamics_coverage_sample",
+            fileExtension: "musicxml"
         )
     ])
 

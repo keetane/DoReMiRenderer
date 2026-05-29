@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="4.0">
+  <work><work-title>Articulation &amp; Dynamics Coverage Sample</work-title></work>
+  <part-list>
+    <score-part id="P1"><part-name>Piano</part-name></score-part>
+  </part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes>
+        <divisions>4</divisions>
+        <key><fifths>0</fifths></key>
+        <time><beats>4</beats><beat-type>4</beat-type></time>
+        <clef><sign>G</sign><line>2</line></clef>
+      </attributes>
+      <direction placement="below"><direction-type><dynamics><mp/></dynamics></direction-type><staff>1</staff></direction>
+      <note>
+        <pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+      <note>
+        <pitch><step>D</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+        <notations><articulations><staccato/></articulations></notations>
+      </note>
+      <note>
+        <pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+        <notations><articulations><tenuto/></articulations></notations>
+      </note>
+      <note>
+        <pitch><step>F</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+        <notations><articulations><accent/></articulations></notations>
+      </note>
+    </measure>
+    <measure number="2">
+      <direction placement="below"><direction-type><dynamics><p/></dynamics></direction-type><staff>1</staff></direction>
+      <direction placement="below"><direction-type><wedge type="crescendo"/></direction-type><staff>1</staff></direction>
+      <note>
+        <pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+      <note>
+        <pitch><step>A</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+        <notations><articulations><staccato/></articulations></notations>
+      </note>
+      <note>
+        <pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+        <notations><articulations><strong-accent/></articulations></notations>
+      </note>
+      <direction placement="below"><direction-type><wedge type="stop"/></direction-type><staff>1</staff></direction>
+      <direction placement="below"><direction-type><dynamics><f/></dynamics></direction-type><staff>1</staff></direction>
+      <note>
+        <pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+        <notations><fermata/></notations>
+      </note>
+    </measure>
+    <measure number="3">
+      <direction placement="below"><direction-type><dynamics><mf/></dynamics></direction-type><staff>1</staff></direction>
+      <direction placement="below"><direction-type><wedge type="diminuendo"/></direction-type><staff>1</staff></direction>
+      <note>
+        <pitch><step>C</step><octave>5</octave></pitch><duration>2</duration><voice>1</voice><type>eighth</type><staff>1</staff>
+        <notations><articulations><staccato/></articulations></notations>
+      </note>
+      <note>
+        <pitch><step>B</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice><type>eighth</type><staff>1</staff>
+        <notations><articulations><staccato/></articulations></notations>
+      </note>
+      <note>
+        <pitch><step>A</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+        <notations><articulations><tenuto/></articulations></notations>
+      </note>
+      <note>
+        <pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+      <direction placement="below"><direction-type><wedge type="stop"/></direction-type><staff>1</staff></direction>
+      <note>
+        <pitch><step>F</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+    </measure>
+    <measure number="4">
+      <direction placement="below"><direction-type><dynamics><ff/></dynamics></direction-type><staff>1</staff></direction>
+      <note>
+        <pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+        <notations><articulations><accent/></articulations></notations>
+      </note>
+      <note>
+        <chord/>
+        <pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+      <note><rest/><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+      <note>
+        <pitch><step>D</step><octave>4</octave></pitch><duration>8</duration><voice>1</voice><type>half</type><staff>1</staff>
+        <notations><fermata/></notations>
+      </note>
+    </measure>
+    <measure number="5">
+      <note>
+        <pitch><step>C</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice><type>eighth</type><staff>1</staff>
+        <notations><fermata/></notations>
+      </note>
+      <note>
+        <pitch><step>A</step><octave>5</octave></pitch><duration>2</duration><voice>1</voice><type>eighth</type><staff>1</staff>
+        <notations><fermata/></notations>
+      </note>
+      <note><rest/><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff><notations><fermata/></notations></note>
+      <note>
+        <pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+        <notations><articulations><staccato/></articulations><fermata/></notations>
+      </note>
+      <note>
+        <pitch><step>F</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+    </measure>
+    <measure number="6">
+      <direction placement="below"><direction-type><dynamics><p/></dynamics></direction-type><staff>1</staff></direction>
+      <direction placement="below"><direction-type><wedge type="crescendo"/></direction-type><staff>1</staff></direction>
+      <note>
+        <pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+      <note>
+        <pitch><step>A</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+      <note>
+        <pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+      <note>
+        <pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+    </measure>
+    <measure number="7">
+      <note>
+        <pitch><step>D</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+      <direction placement="below"><direction-type><wedge type="stop"/></direction-type><staff>1</staff></direction>
+      <direction placement="below"><direction-type><dynamics><f/></dynamics></direction-type><staff>1</staff></direction>
+      <note>
+        <pitch><step>E</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+      <note>
+        <pitch><step>F</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+      <note>
+        <pitch><step>G</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+      </note>
+    </measure>
+  </part>
+</score-partwise>

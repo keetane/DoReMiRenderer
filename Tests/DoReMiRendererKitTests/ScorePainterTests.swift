@@ -98,6 +98,94 @@ import Testing
     #expect(secondNumberPoint.y > bottomStaffMaxY)
 }
 
+@Test func scorePainterDrawsArticulationsDynamicsAndHairpins() throws {
+    let staffID = StaffID(rawValue: "1")
+    let measure = Measure(
+        id: MeasureID(partIndex: 0, measureNumber: "1"),
+        number: "1",
+        notes: [
+            ScoreNote(
+                id: NoteID(rawValue: "n0"),
+                pitch: Pitch(step: .c, octave: 4),
+                onset: MusicalTime(ticks: 0, ticksPerQuarterNote: 4),
+                duration: MusicalTime(ticks: 4, ticksPerQuarterNote: 4),
+                voiceID: VoiceID(rawValue: "1"),
+                staffID: staffID,
+                articulations: [.staccato]
+            ),
+            ScoreNote(
+                id: NoteID(rawValue: "n1"),
+                pitch: Pitch(step: .d, octave: 4),
+                onset: MusicalTime(ticks: 4, ticksPerQuarterNote: 4),
+                duration: MusicalTime(ticks: 4, ticksPerQuarterNote: 4),
+                voiceID: VoiceID(rawValue: "1"),
+                staffID: staffID,
+                articulations: [.accent]
+            ),
+        ],
+        clef: Clef(kind: .treble),
+        directions: [
+            ScoreDirection(kind: .dynamic(.mf), onset: MusicalTime(ticks: 0, ticksPerQuarterNote: 4), staffID: staffID, placement: .below),
+            ScoreDirection(kind: .wedge(.crescendo), onset: MusicalTime(ticks: 0, ticksPerQuarterNote: 4), staffID: staffID, placement: .below),
+            ScoreDirection(kind: .wedge(.stop), onset: MusicalTime(ticks: 4, ticksPerQuarterNote: 4), staffID: staffID, placement: .below),
+        ]
+    )
+    let score = ScoreDocument(parts: [ScorePart(id: "p1", measures: [measure])])
+    let layout = try ScoreLayoutEngine().layout(score: score)
+    var context = RecordingDrawingContext()
+
+    ScorePainter(smuflFontName: nil).draw(layout: layout, score: score, style: ScoreStyle(), into: &context)
+
+    #expect(context.commands.contains { $0.kind == .fillEllipse })
+    #expect(context.commands.contains { $0.kind == .drawText && $0.text == ">" })
+    #expect(context.commands.contains { $0.kind == .drawText && $0.text == "mf" })
+    #expect(context.commands.filter { $0.kind == .strokeLine }.count > layout.staffLines.count)
+}
+
+@Test func scorePainterUsesAboveAndBelowFermataGlyphsForFlaggedNotes() throws {
+    let staffID = StaffID(rawValue: "1")
+    let measure = Measure(
+        id: MeasureID(partIndex: 0, measureNumber: "1"),
+        number: "1",
+        notes: [
+            ScoreNote(
+                id: NoteID(rawValue: "up-stem-fermata"),
+                pitch: Pitch(step: .c, octave: 4),
+                onset: MusicalTime(ticks: 0, ticksPerQuarterNote: 4),
+                duration: MusicalTime(ticks: 2, ticksPerQuarterNote: 4),
+                noteValueKind: .eighth,
+                voiceID: VoiceID(rawValue: "1"),
+                staffID: staffID,
+                articulations: [.fermata]
+            ),
+            ScoreNote(
+                id: NoteID(rawValue: "down-stem-fermata"),
+                pitch: Pitch(step: .a, octave: 5),
+                onset: MusicalTime(ticks: 2, ticksPerQuarterNote: 4),
+                duration: MusicalTime(ticks: 2, ticksPerQuarterNote: 4),
+                noteValueKind: .eighth,
+                voiceID: VoiceID(rawValue: "1"),
+                staffID: staffID,
+                articulations: [.fermata]
+            ),
+        ],
+        clef: Clef(kind: .treble)
+    )
+    let score = ScoreDocument(parts: [ScorePart(id: "p1", measures: [measure])])
+    let layout = try ScoreLayoutEngine().layout(score: score)
+    var context = RecordingDrawingContext()
+
+    ScorePainter(smuflFontName: "Bravura").draw(layout: layout, score: score, style: ScoreStyle(), into: &context)
+
+    let upStemFermata = try #require(layout.elements.first { $0.noteID == NoteID(rawValue: "up-stem-fermata") && $0.articulation?.kind == .fermata }?.articulation)
+    let downStemFermata = try #require(layout.elements.first { $0.noteID == NoteID(rawValue: "down-stem-fermata") && $0.articulation?.kind == .fermata }?.articulation)
+    #expect(upStemFermata.placement == .below)
+    #expect(downStemFermata.placement == .above)
+    #expect(context.commands.contains { $0.kind == .drawText && $0.text == "\u{1D111}" && $0.point == upStemFermata.point })
+    #expect(context.commands.contains { $0.kind == .drawText && $0.text == "\u{1D110}" && $0.point == downStemFermata.point })
+    #expect(!context.commands.contains { $0.kind == .drawText && $0.text == "\u{1D110}" && $0.point == upStemFermata.point })
+}
+
 @Test func scorePainterUsesResolvedNoteAndStaffColors() throws {
     let score = renderingScore()
     let layout = try ScoreLayoutEngine().layout(score: score)

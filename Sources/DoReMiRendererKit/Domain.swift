@@ -282,6 +282,7 @@ public struct Measure: Hashable, Codable, Sendable {
     public let keySignature: KeySignature?
     public let timeSignature: TimeSignature?
     public let tempoEvents: [TempoEvent]
+    public let directions: [ScoreDirection]
     public let repeatBarlines: [RepeatBarline]
     public let repeatEndings: [RepeatEnding]
     public let measureRepeat: MeasureRepeat?
@@ -297,6 +298,7 @@ public struct Measure: Hashable, Codable, Sendable {
         keySignature: KeySignature? = nil,
         timeSignature: TimeSignature? = nil,
         tempoEvents: [TempoEvent] = [],
+        directions: [ScoreDirection] = [],
         repeatBarlines: [RepeatBarline] = [],
         repeatEndings: [RepeatEnding] = [],
         measureRepeat: MeasureRepeat? = nil,
@@ -311,6 +313,7 @@ public struct Measure: Hashable, Codable, Sendable {
         self.keySignature = keySignature
         self.timeSignature = timeSignature
         self.tempoEvents = tempoEvents
+        self.directions = directions
         self.repeatBarlines = repeatBarlines
         self.repeatEndings = repeatEndings
         self.measureRepeat = measureRepeat
@@ -390,6 +393,74 @@ public enum MusicXMLTupletKind: String, Hashable, Codable, Sendable {
     case stop
 }
 
+public enum ScoreArticulationKind: String, Hashable, Codable, Sendable {
+    case staccato
+    case accent
+    case tenuto
+    case marcato
+    case fermata
+}
+
+public enum ScoreDirectionPlacement: String, Hashable, Codable, Sendable {
+    case above
+    case below
+    case unspecified
+}
+
+public enum DynamicMark: String, Hashable, Codable, Sendable {
+    case ppp
+    case pp
+    case p
+    case mp
+    case mf
+    case f
+    case ff
+    case fff
+
+    public var velocityScale: Double {
+        switch self {
+        case .ppp: 0.30
+        case .pp: 0.42
+        case .p: 0.55
+        case .mp: 0.72
+        case .mf: 0.92
+        case .f: 1.12
+        case .ff: 1.28
+        case .fff: 1.42
+        }
+    }
+}
+
+public enum ScoreWedgeKind: String, Hashable, Codable, Sendable {
+    case crescendo
+    case diminuendo
+    case stop
+}
+
+public enum ScoreDirectionKind: Hashable, Codable, Sendable {
+    case dynamic(DynamicMark)
+    case wedge(ScoreWedgeKind)
+}
+
+public struct ScoreDirection: Hashable, Codable, Sendable {
+    public let kind: ScoreDirectionKind
+    public let onset: MusicalTime
+    public let staffID: StaffID?
+    public let placement: ScoreDirectionPlacement
+
+    public init(
+        kind: ScoreDirectionKind,
+        onset: MusicalTime,
+        staffID: StaffID? = nil,
+        placement: ScoreDirectionPlacement = .unspecified
+    ) {
+        self.kind = kind
+        self.onset = onset
+        self.staffID = staffID
+        self.placement = placement
+    }
+}
+
 public struct TupletInfo: Hashable, Codable, Sendable {
     public let kind: MusicXMLTupletKind?
     public let actualNotes: Int?
@@ -462,6 +533,7 @@ public struct ScoreNote: Hashable, Codable, Sendable {
     public let accidental: String?
     public let ties: [MusicXMLTieKind]
     public let slurs: [MusicXMLSlurKind]
+    public let articulations: [ScoreArticulationKind]
     public let lyrics: [LyricAnnotation]
     public let fingerings: [FingeringAnnotation]
     public let isGrace: Bool
@@ -483,6 +555,7 @@ public struct ScoreNote: Hashable, Codable, Sendable {
         accidental: String? = nil,
         ties: [MusicXMLTieKind] = [],
         slurs: [MusicXMLSlurKind] = [],
+        articulations: [ScoreArticulationKind] = [],
         lyrics: [LyricAnnotation] = [],
         fingerings: [FingeringAnnotation] = [],
         isGrace: Bool = false,
@@ -503,6 +576,7 @@ public struct ScoreNote: Hashable, Codable, Sendable {
         self.accidental = accidental
         self.ties = ties
         self.slurs = slurs
+        self.articulations = articulations
         self.lyrics = lyrics
         self.fingerings = fingerings
         self.isGrace = isGrace
@@ -628,6 +702,9 @@ public enum ScoreElementKind: Hashable, Codable, Sendable {
     case barline
     case lyric
     case fingering
+    case articulation
+    case dynamic
+    case hairpin
     case tie
     case slur
     case tuplet

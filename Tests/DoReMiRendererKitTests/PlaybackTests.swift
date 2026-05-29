@@ -37,6 +37,132 @@ import Testing
     #expect(events[1].noteIDs == [NoteID(rawValue: "next")])
 }
 
+@Test func playbackExpressionReflectsArticulationsDynamicsAndHairpin() {
+    let staffID = StaffID(rawValue: "1")
+    let measure = Measure(
+        id: MeasureID(partIndex: 0, measureNumber: "1"),
+        number: "1",
+        notes: [
+            playbackNote(id: "staccato", pitch: Pitch(step: .c, octave: 4), onsetTicks: 0, articulations: [.staccato]),
+            playbackNote(id: "accent", pitch: Pitch(step: .d, octave: 4), onsetTicks: 4, articulations: [.accent]),
+            playbackNote(id: "tenuto", pitch: Pitch(step: .e, octave: 4), onsetTicks: 8, articulations: [.tenuto]),
+        ],
+        clef: Clef(kind: .treble),
+        directions: [
+            ScoreDirection(kind: .dynamic(.p), onset: MusicalTime(ticks: 0, ticksPerQuarterNote: 4), staffID: staffID, placement: .below),
+            ScoreDirection(kind: .wedge(.crescendo), onset: MusicalTime(ticks: 0, ticksPerQuarterNote: 4), staffID: staffID, placement: .below),
+            ScoreDirection(kind: .wedge(.stop), onset: MusicalTime(ticks: 8, ticksPerQuarterNote: 4), staffID: staffID, placement: .below),
+        ]
+    )
+    let score = ScoreDocument(parts: [ScorePart(id: "p1", measures: [measure])])
+
+    let events = PlaybackSequenceBuilder().build(score: score)
+
+    #expect(events.count == 3)
+    #expect(events[0].expression.gateScale < 0.45)
+    #expect(events[0].expression.dynamicMark == .p)
+    #expect(events[1].expression.velocityScale > events[0].expression.velocityScale)
+    #expect(events[2].expression.gateScale > events[0].expression.gateScale)
+    #expect(events[2].expression.gateScale > 1.0)
+    #expect(events[2].expression.articulationKinds.contains(.tenuto))
+}
+
+@Test func playbackExpressionReflectsCrossMeasureHairpin() {
+    let staffID = StaffID(rawValue: "1")
+    let firstMeasure = Measure(
+        id: MeasureID(partIndex: 0, measureNumber: "1"),
+        number: "1",
+        notes: [
+            playbackNote(id: "start", pitch: Pitch(step: .c, octave: 4), onsetTicks: 0),
+            playbackNote(id: "end-first", pitch: Pitch(step: .d, octave: 4), onsetTicks: 4),
+        ],
+        clef: Clef(kind: .treble),
+        directions: [
+            ScoreDirection(kind: .wedge(.crescendo), onset: MusicalTime(ticks: 0, ticksPerQuarterNote: 4), staffID: staffID, placement: .below),
+        ]
+    )
+    let secondMeasure = Measure(
+        id: MeasureID(partIndex: 0, measureNumber: "2"),
+        number: "2",
+        notes: [
+            playbackNote(id: "mid-second", pitch: Pitch(step: .e, octave: 4), onsetTicks: 4),
+        ],
+        clef: Clef(kind: .treble),
+        directions: [
+            ScoreDirection(kind: .wedge(.stop), onset: MusicalTime(ticks: 8, ticksPerQuarterNote: 4), staffID: staffID, placement: .below),
+        ]
+    )
+    let score = ScoreDocument(parts: [ScorePart(id: "p1", measures: [firstMeasure, secondMeasure])])
+
+    let events = PlaybackSequenceBuilder().build(score: score)
+    let start = events.first { $0.noteIDs == [NoteID(rawValue: "start")] }
+    let midSecond = events.first { $0.noteIDs == [NoteID(rawValue: "mid-second")] }
+
+    #expect(start?.expression.velocityScale ?? 0 < 0.8)
+    #expect(midSecond?.expression.velocityScale ?? 0 > 1.0)
+}
+
+@Test func playbackExpressionAddsFermataDurationExtension() {
+    let measure = Measure(
+        id: MeasureID(partIndex: 0, measureNumber: "1"),
+        number: "1",
+        notes: [
+            playbackNote(id: "normal", pitch: Pitch(step: .c, octave: 4), onsetTicks: 0),
+            playbackNote(id: "fermata", pitch: Pitch(step: .d, octave: 4), onsetTicks: 4, articulations: [.fermata]),
+        ],
+        clef: Clef(kind: .treble)
+    )
+    let score = ScoreDocument(parts: [ScorePart(id: "p1", measures: [measure])])
+
+    let events = PlaybackSequenceBuilder().build(score: score)
+    let normal = events[0]
+    let fermata = events[1]
+
+    #expect(normal.expression.durationScale == 1.0)
+    #expect(normal.expression.maxDurationExtraSeconds == 0)
+    #expect(fermata.expression.articulationKinds.contains(.fermata))
+    #expect(fermata.expression.durationScale == 1.5)
+    #expect(fermata.expression.maxDurationExtraSeconds == 1.0)
+}
+
+@Test func playbackExpressionAddsFermataDurationExtensionForIncludedRest() {
+    let measure = Measure(
+        id: MeasureID(partIndex: 0, measureNumber: "1"),
+        number: "1",
+        notes: [
+            playbackNote(id: "rest-fermata", pitch: nil, onsetTicks: 0, articulations: [.fermata]),
+        ],
+        clef: Clef(kind: .treble)
+    )
+    let score = ScoreDocument(parts: [ScorePart(id: "p1", measures: [measure])])
+
+    let events = PlaybackSequenceBuilder().build(score: score, options: PlaybackOptions(includeRests: true))
+
+    #expect(events.count == 1)
+    #expect(events[0].midiPitches.isEmpty)
+    #expect(events[0].expression.articulationKinds.contains(.fermata))
+    #expect(events[0].expression.durationScale == 1.5)
+}
+
+@Test func playbackExpressionIsPreservedThroughRepeatExpansion() {
+    let measure = Measure(
+        id: MeasureID(partIndex: 0, measureNumber: "1"),
+        number: "1",
+        notes: [
+            playbackNote(id: "n0", pitch: Pitch(step: .c, octave: 4), onsetTicks: 0, articulations: [.accent]),
+        ],
+        clef: Clef(kind: .treble),
+        repeatBarlines: [RepeatBarline(direction: .backward)]
+    )
+    let score = ScoreDocument(parts: [ScorePart(id: "p1", measures: [measure])])
+
+    let events = PlaybackSequenceBuilder().build(score: score)
+
+    #expect(events.count == 2)
+    #expect(events.allSatisfy { $0.expression.articulationKinds.contains(.accent) })
+    #expect(events.allSatisfy { $0.expression.velocityScale > 1.0 })
+}
+
 @Test func playbackExcludesRestsByDefault() {
     let score = playbackScore(notes: [
         playbackNote(id: "note", pitch: Pitch(step: .c, octave: 4), onsetTicks: 0),
@@ -62,6 +188,24 @@ import Testing
     ])
     #expect(events[1].midiPitches.isEmpty)
     #expect(events[1].staffIDs == [StaffID(rawValue: "1")])
+}
+
+@Test func playbackPreservesDottedNoteAndRestDurations() {
+    let score = playbackScore(notes: [
+        playbackNote(id: "dotted-quarter", pitch: Pitch(step: .c, octave: 4), onsetTicks: 0, durationTicks: 6),
+        playbackNote(id: "dotted-half-rest", pitch: nil, onsetTicks: 6, durationTicks: 12),
+        playbackNote(id: "after-rest", pitch: Pitch(step: .d, octave: 4), onsetTicks: 18, durationTicks: 4),
+    ])
+
+    let events = PlaybackSequenceBuilder().build(score: score, options: PlaybackOptions(includeRests: true))
+
+    #expect(events.count == 3)
+    #expect(events[0].noteIDs == [NoteID(rawValue: "dotted-quarter")])
+    #expect(events[0].nominalDuration == MusicalTime(ticks: 6, ticksPerQuarterNote: 4))
+    #expect(events[1].noteIDs == [NoteID(rawValue: "dotted-half-rest")])
+    #expect(events[1].midiPitches.isEmpty)
+    #expect(events[1].nominalDuration == MusicalTime(ticks: 12, ticksPerQuarterNote: 4))
+    #expect(events[2].onset == MusicalTime(ticks: 18, ticksPerQuarterNote: 4))
 }
 
 @Test func playbackMixedRestAndAttackUsesAttackDuration() {
@@ -578,7 +722,8 @@ private func playbackNote(
     durationTicks: Int = 4,
     isChordTone: Bool = false,
     chordOrdinal: Int = 0,
-    ties: [MusicXMLTieKind] = []
+    ties: [MusicXMLTieKind] = [],
+    articulations: [ScoreArticulationKind] = []
 ) -> ScoreNote {
     ScoreNote(
         id: NoteID(rawValue: id),
@@ -589,6 +734,7 @@ private func playbackNote(
         staffID: StaffID(rawValue: "1"),
         isChordTone: isChordTone,
         chordOrdinal: chordOrdinal,
-        ties: ties
+        ties: ties,
+        articulations: articulations
     )
 }

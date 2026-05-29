@@ -73,7 +73,7 @@ public extension ScoreLayout {
 
         return matchedElements.first { element in
             switch element.kind {
-            case .notehead, .accidental, .stem, .flag, .beam, .dot, .lyric, .fingering, .tie, .slur, .tuplet:
+            case .notehead, .accidental, .stem, .flag, .beam, .dot, .lyric, .fingering, .articulation, .tie, .slur, .tuplet:
                 return element.noteID != nil
             default:
                 return false
@@ -94,7 +94,7 @@ private func hitTestPriority(_ kind: ScoreElementKind) -> Int {
         return 4
     case .flag, .beam:
         return 5
-    case .tie, .slur, .tuplet:
+    case .tie, .slur, .tuplet, .articulation:
         return 6
     case .dot:
         return 7
@@ -104,7 +104,7 @@ private func hitTestPriority(_ kind: ScoreElementKind) -> Int {
         return 9
     case .staffLine:
         return 10
-    case .barline, .repeatEnding, .measureRepeat, .playbackJumpMarker:
+    case .barline, .repeatEnding, .measureRepeat, .playbackJumpMarker, .dynamic, .hairpin:
         return 11
     case .ledgerLine, .clef, .timeSignature, .keySignature:
         return 12
