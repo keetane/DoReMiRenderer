@@ -138,6 +138,22 @@
 - Redistribution outside this repository: governed by the repository `LICENSE`
   unless a separate written permission is provided.
 
+## DoReMi Palette Expression MVP Sample
+
+`Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/articulation_dynamics_coverage_sample.musicxml`
+
+- Origin: Original short MusicXML fixture created in this repository for the
+  Articulation / Dynamics MVP.
+- Contains copyrighted third party music: No.
+- Includes: staccato, accent, tenuto, strong-accent, upward/downward flagged
+  fermata, fermata rest, dynamic marks, same-measure and cross-measure
+  crescendo / decrescendo, and basic collision-lane coverage for visual and
+  playback QA.
+- Permitted project use: commercial, test, demo, screenshot, app build, and
+  documentation use within DoReMiRendererKit and DoReMiPalette.
+- Redistribution outside this repository: governed by the repository `LICENSE`
+  unless a separate written permission is provided.
+
 ## DoReMi Palette App Icon
 
 `Apps/DoReMiPalette/DoReMiPalette/Resources/DoReMi_icon.png`

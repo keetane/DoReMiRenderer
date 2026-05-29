@@ -803,13 +803,48 @@ Suggested screenshots:
 Phase 17B is a release-readiness gate, not a feature phase. After the bundled
 sample replacement, the app launch default is
 `Ode to Joy Easy Variation`, and the TestFlight-facing sample Library contains
-only `Ode to Joy Easy Variation` and `Fur Elise - Beginner Piano`.
+`Ode to Joy Easy Variation`, `Fur Elise - Beginner Piano`, and the self-authored
+`Articulation & Dynamics Coverage Sample`.
 `Happy Birthday To You Piano` is kept out of the app bundle after the
 pre-TestFlight rights review because its MusicXML metadata names an arranger and
 has no embedded rights grant. `12 Variations of Twinkle Twinkle Little Star`,
 `Canon in D`, and `The Entertainer` are also kept out of the bundled sample
 catalog. Release configuration, privacy, license, and archive status must be
 recorded before any TestFlight upload.
+
+## Articulation / Dynamics MVP
+
+Expression support flows through the SDK pipeline: MusicXML parser -> domain
+model -> layout elements -> painter and playback events. The renderer does not
+parse MusicXML directly, and the app does not regenerate `NoteID` or
+`PlaybackEvent` identity for expression marks.
+
+Supported MVP coverage:
+
+- Articulations: staccato, accent, tenuto, marcato / strong-accent, and fermata.
+- Dynamics: `ppp` through `fff` marks as staff text.
+- Hairpins: same-measure and cross-measure crescendo / decrescendo wedges
+  within a system; system breaks are split into MVP continuation segments.
+- Playback expression: staccato shortens note gate, tenuto uses a slightly
+  longer bounded gate, accent / marcato increase velocity, fermata extends
+  event duration with a bounded clamp, and dynamics / hairpins apply coarse but
+  audible velocity changes.
+- Layout tuning keeps staccato, tenuto, and fermata marks closer to the owning
+  note while preserving accent, dynamic text, and hairpin placement. Above and
+  below fermata glyphs are selected by layout placement so upward-stem flagged
+  notes do not render with a reversed fermata. Dynamic text and hairpins use a
+  minimum vertical lane separation to avoid obvious contact.
+
+The self-authored
+`Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/articulation_dynamics_coverage_sample.musicxml`
+fixture is available from the Library for manual QA. Save iPad Simulator
+evidence under `/tmp/DoReMiPaletteQA/expression-mvp/`.
+
+Known MVP limits: fermata timing is a bounded note/rest extension and does not
+reshape the metronome click plan; hairpin interpolation remains coarse, and
+collision avoidance is lane-based rather than publishing-quality. Humanized
+performance is present only as an internal experimental default-off runtime
+flag; ornaments remain future work.
 
 Run:
 

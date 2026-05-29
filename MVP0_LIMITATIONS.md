@@ -71,9 +71,12 @@ This document records the known limitations of DoReMiRendererKit after Phase 0 t
   highlighting, and render same-system MVP curves. Complex tie chains and
   system-crossing tie engraving remain limited.
 - Basic same-system slurs and basic 3:2 triplet brackets render at MVP quality.
-  Dynamic text engraving, first/second endings, ornaments, grace-note
-  rendering, advanced beam grouping, nested tuplets, and transposition-aware
-  display remain diagnostic-only or unsupported.
+  Articulation / Dynamics MVP now renders staccato, accent, tenuto,
+  marcato/strong-accent, fermata, dynamic text, and same-system hairpins with
+  MVP continuation splitting at system breaks. Advanced dynamic carry-forward,
+  ornaments, grace-note rendering, advanced beam grouping, nested tuplets, and
+  publishing-quality expression collision avoidance remain diagnostic-only or
+  unsupported.
 - Complex multi-voice collision avoidance is not implemented; Phase 11F emits
   layout diagnostics for basic collision cases.
 - A4-width system wrapping is available for display and the Print MVP, but full
@@ -310,13 +313,21 @@ Practice Mode MVP is available, but it is intentionally small:
 
 ## Note Gate / Articulation Limits
 
-`noteGateRatio` shortens generated tone playback only. It does not change score
-notation duration, layout, hit testing, `PlaybackEvent`, or `NoteID` identity.
-The current implementation is a fixed MVP articulation gap for generated tones,
-with a small minimum audible duration for very short pitched events. Rests and
-tie continuations still do not trigger new audio.
-Full legato, staccato, accent, slur-aware articulation, and high-quality human
-performance interpretation remain unsupported.
+`noteGateRatio` changes generated tone playback only. It does not change score
+notation duration, layout, hit testing, `PlaybackEvent`, current-note cursor
+timing, metronome timing, or `NoteID` identity. The current default is full
+generated-tone length; articulation-specific `PlaybackEvent.expression` metadata
+then applies MVP gate / velocity differences.
+
+Staccato is audibly shorter than a normal note, tenuto uses a slightly longer
+bounded gate, accent and marcato increase velocity, and dynamic marks / hairpins
+apply coarse generated-tone velocity changes. Fermata is parsed, rendered with
+above/below glyph selection, and extends note/rest playback duration with a
+bounded clamp; the metronome remains tempo/click-plan based during that
+extension. Articulation marks and hairpins have only MVP lane-based collision
+spacing. Full legato, slur-aware articulation, nuanced human performance UI,
+advanced dynamic carry-forward, and exact classical interpretation remain
+future work.
 
 ## Playback Timing Limits
 

@@ -40,6 +40,14 @@ The Phase 13+ app-execution roadmap is tracked in [ROADMAP.md](ROADMAP.md), and 
   playback BPM, emits generated strong/medium/weak clicks, supports simple
   compound-meter large-beat/subdivision modes, Tap Tempo, and generated click
   sound styles, and starts/stops with the transport controls.
+- Parse, lay out, and render Articulation / Dynamics MVP symbols: staccato,
+  accent, tenuto, marcato/strong-accent, fermata, `p`/`mp`/`mf`/`f`/`ff` style
+  dynamics, and same-system crescendo/decrescendo hairpins. DoReMi Palette
+  uses the resulting playback expression metadata for generated-tone gate and
+  velocity changes, plus bounded fermata duration extension, without changing
+  layout identity. The MVP keeps articulation marks close to the owning note,
+  selects the correct above/below fermata glyph, and gives dynamic text /
+  hairpins basic vertical separation.
 - DoReMi Palette shows current measure / total measures between Previous and
   Next. The inline measure field accepts a target measure number; valid jumps
   move to the first matching playback event for that score measure, update
@@ -76,6 +84,8 @@ The Phase 13+ app-execution roadmap is tracked in [ROADMAP.md](ROADMAP.md), and 
 - Encrypted or unusual MXL archive layouts
 - Publishing-quality engraving
 - Complex multi-voice collision avoidance
+- Humanized expression playback UI, advanced dynamic carry-forward, publishing-
+  quality collision avoidance, and exact classical performance interpretation
 - SDK-owned audio playback, MIDI, score-display transposition, key-signature
   redraw, and MusicXML `<transpose>` / transposing-instrument support
 - Advanced automatic scroll follow, horizontal page navigation

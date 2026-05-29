@@ -5,7 +5,9 @@
 - Default launch sample: `Ode to Joy Easy Variation`
   (`Ode_to_Joy_Easy_variation.mxl`).
 - Bundled sample Library: two musetrainer/library-derived `.mxl` files copied
-  from `sample/`: `Ode to Joy Easy Variation` and `Fur Elise - Beginner Piano`.
+  from `sample/` plus one self-authored QA sample:
+  `Ode to Joy Easy Variation`, `Fur Elise - Beginner Piano`, and
+  `Articulation & Dynamics Coverage Sample`.
   `Happy Birthday To You Piano` is excluded from the TestFlight app bundle after
   the 2026-05-21 rights review because its MusicXML metadata names an arranger
   and has no embedded rights grant. `12 Variations of Twinkle Twinkle Little
@@ -22,6 +24,12 @@
   development team.
 - App icon: `Assets.xcassets/AppIcon.appiconset`.
 - Launch screen: generated iOS launch screen setting in the app target.
+- Articulation / Dynamics release check: use the self-authored coverage sample
+  to confirm close staccato / tenuto / fermata placement, basic dynamic /
+  hairpin separation, correct upward/downward fermata orientation, bounded
+  fermata playback extension, cross-measure hairpins, longer normal generated
+  tones, and clearer staccato / tenuto / dynamics / hairpin playback
+  differences without timing regressions.
 
 ## Required Commands
 
