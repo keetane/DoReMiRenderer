@@ -24,6 +24,20 @@ struct KeyboardPitchMapperTests {
         #expect(KeyboardPitchMapper.midiNumber(for: Pitch(step: .b, octave: 4)) == 71)
     }
 
+    @Test func keyboardLineNumbersUseC4AsZeroAndIncreaseByStaffLineDistance() {
+        #expect(KeyboardLineNumber.number(for: 60) == 0) // C4
+        #expect(KeyboardLineNumber.number(for: 64) == 1) // E4
+        #expect(KeyboardLineNumber.number(for: 57) == 1) // A3
+        #expect(KeyboardLineNumber.number(for: 67) == 2) // G4
+        #expect(KeyboardLineNumber.number(for: 53) == 2) // F3
+        #expect(KeyboardLineNumber.number(for: 71) == 3) // B4
+        #expect(KeyboardLineNumber.number(for: 50) == 3) // D3
+        #expect(KeyboardLineNumber.number(for: 72) == nil) // C5 space
+        #expect(KeyboardLineNumber.number(for: 48) == nil) // C3 space
+        #expect(KeyboardLineNumber.number(for: 62) == nil) // D4 is a space note
+        #expect(KeyboardLineNumber.number(for: 61) == nil) // C#4 is not a white-key staff line
+    }
+
     @Test func classifiesBlackKeys() {
         #expect(!KeyboardPitchMapper.isBlackKey(midi: 60))
         #expect(KeyboardPitchMapper.isBlackKey(midi: 61))
