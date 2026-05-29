@@ -37,7 +37,7 @@ struct AppRootView: View {
     @AppStorage(PaletteSettingsKeys.measureNumbersVisible) private var measureNumbersVisible = true
     @AppStorage(PaletteSettingsKeys.zoomScale) private var zoomScale = 1.0
     @AppStorage(PaletteSettingsKeys.colorScheme) private var colorSchemeRawValue = PaletteColorScheme.educational.rawValue
-    @AppStorage(PaletteSettingsKeys.scoreLayoutMode) private var scoreLayoutModeRawValue = PaletteScoreLayoutMode.horizontal.rawValue
+    @AppStorage(PaletteSettingsKeys.scoreLayoutMode) private var scoreLayoutModeRawValue = PaletteScoreLayoutMode.a4.rawValue
     @AppStorage(PaletteSettingsKeys.transposeSemitones) private var transposeSemitones = 0
     @AppStorage(PaletteSettingsKeys.displayTransposeEnabled) private var displayTransposeEnabled = true
     @AppStorage(PaletteSettingsKeys.pitchClassColorEnabled) private var pitchClassColorEnabledRawValue = PalettePitchClassColorState.defaultEncodedValue
