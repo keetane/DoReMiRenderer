@@ -27,7 +27,7 @@ struct AppRootView: View {
     @AppStorage(PaletteSettingsKeys.noteColorVisible) private var noteColorVisible = true
     @AppStorage(PaletteSettingsKeys.staffColorVisible) private var staffColorVisible = false
     @AppStorage(PaletteSettingsKeys.keyboardVisible) private var keyboardVisible = true
-    @AppStorage(PaletteSettingsKeys.keyboardColorVisible) private var keyboardColorVisible = false
+    @AppStorage(PaletteSettingsKeys.keyboardColorVisible) private var keyboardColorVisible = true
     @AppStorage(PaletteSettingsKeys.keyboardColorPositionTop) private var keyboardColorPositionTop = true
     @AppStorage(PaletteSettingsKeys.keyboardLineNumberVisible) private var keyboardLineNumberVisible = false
     @AppStorage(PaletteSettingsKeys.currentNoteDisplayVisible) private var currentNoteDisplayVisible = true
