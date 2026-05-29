@@ -78,7 +78,7 @@ enum PaletteScoreLayoutMode: String, CaseIterable, Identifiable {
     }
 
     static func fromRawValue(_ rawValue: String) -> PaletteScoreLayoutMode {
-        PaletteScoreLayoutMode(rawValue: rawValue) ?? .horizontal
+        PaletteScoreLayoutMode(rawValue: rawValue) ?? .a4
     }
 }
 
@@ -138,7 +138,7 @@ struct PaletteScoreLoader {
                 pageWidth: 980,
                 staffSpace: 16,
                 systemSpacing: 96,
-                measureSpacing: 36,
+                measureSpacing: 0,
                 displayMode: .horizontal,
                 displayTransposeSemitones: displayTransposeSemitones
             )
@@ -150,7 +150,7 @@ struct PaletteScoreLoader {
                 pageHeight: 842,
                 staffSpace: 12,
                 systemSpacing: 72,
-                measureSpacing: 24,
+                measureSpacing: 0,
                 displayMode: .print,
                 showPageMargins: true,
                 displayTransposeSemitones: displayTransposeSemitones
