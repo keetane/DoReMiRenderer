@@ -11,6 +11,7 @@ struct KeyboardView: View {
     var pitchClassColorState: PalettePitchClassColorState = .allOn
     var colorIdleKeys = false
     var colorPositionTop = true
+    var showsLineNumbers = false
     var scaleTonicPitchClass: Int?
 
     private var whiteKeys: [Int] {
@@ -64,6 +65,8 @@ struct KeyboardView: View {
                             isPitchColorEnabled: isPitchColorEnabled(for: midi),
                             colorIdleKey: colorIdleKeys,
                             colorPositionTop: colorPositionTop,
+                            showsPitchLabel: !showsLineNumbers,
+                            lineNumber: showsLineNumbers ? KeyboardLineNumber.number(for: midi) : nil,
                             colorBandHeight: colorBandHeight
                         )
                         .frame(width: whiteWidth)
@@ -80,6 +83,7 @@ struct KeyboardView: View {
                         isPitchColorEnabled: isPitchColorEnabled(for: key.midi),
                         colorIdleKey: colorIdleKeys,
                         colorPositionTop: colorPositionTop,
+                        lineNumber: showsLineNumbers ? KeyboardLineNumber.number(for: key.midi) : nil,
                         colorBandHeight: colorBandHeight
                     )
                     .frame(width: whiteWidth * 0.62, height: proxy.size.height * 0.62)
@@ -150,6 +154,33 @@ struct KeyboardView: View {
         return pitchClassColorState.isEnabled(pitchClass: PalettePitchClassColorState.chromaticPitchClass(for: midi))
     }
 
+}
+
+enum KeyboardLineNumber {
+    static func number(for midi: Int) -> Int? {
+        guard !KeyboardPitchMapper.isBlackKey(midi: midi) else {
+            return nil
+        }
+        let octave = midi / 12 - 1
+        let pitchClass = PalettePitchClassColorState.normalizedPitchClass(midi)
+        let degree: Int
+        switch pitchClass {
+        case 0: degree = 0
+        case 2: degree = 1
+        case 4: degree = 2
+        case 5: degree = 3
+        case 7: degree = 4
+        case 9: degree = 5
+        case 11: degree = 6
+        default: return nil
+        }
+        let c4DiatonicIndex = 4 * 7
+        let diatonicDistance = octave * 7 + degree - c4DiatonicIndex
+        guard diatonicDistance.isMultiple(of: 2) else {
+            return nil
+        }
+        return abs(diatonicDistance / 2)
+    }
 }
 
 enum KeyboardScaleColor {
@@ -234,6 +265,8 @@ private struct WhiteKey: View {
     let isPitchColorEnabled: Bool
     let colorIdleKey: Bool
     let colorPositionTop: Bool
+    let showsPitchLabel: Bool
+    let lineNumber: Int?
     let colorBandHeight: CGFloat
 
     var body: some View {
@@ -268,13 +301,21 @@ private struct WhiteKey: View {
                     .padding(.top, 8)
                     .accessibilityHidden(true)
             }
-            if midi % 12 == 0 {
+            if showsPitchLabel && midi % 12 == 0 {
                 Text(KeyboardPitchMapper.label(for: midi))
                     .font(.caption2)
                     .foregroundStyle(highlightKind == .attack ? .white : .secondary)
                     .padding(.top, 6)
                     .padding(.leading, 5)
                     .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            if let lineNumber {
+                Text("\(lineNumber)")
+                    .font(.caption2.monospacedDigit().weight(.bold))
+                    .foregroundStyle(lineNumberTextColor)
+                    .padding(.top, 5)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .accessibilityHidden(true)
             }
             if showsNextNote {
                 Circle()
@@ -331,6 +372,17 @@ private struct WhiteKey: View {
         }
     }
 
+    private var lineNumberTextColor: Color {
+        switch highlightKind {
+        case .attack:
+            return colorIdleKey ? .white : .primary
+        case .continuation:
+            return .primary.opacity(0.72)
+        case .none:
+            return .secondary
+        }
+    }
+
     private func guideText(_ text: String, size: CGFloat) -> some View {
         Text(text)
             .font(.system(size: size, weight: .bold, design: .rounded))
@@ -348,6 +400,7 @@ private struct BlackKey: View {
     let isPitchColorEnabled: Bool
     let colorIdleKey: Bool
     let colorPositionTop: Bool
+    let lineNumber: Int?
     let colorBandHeight: CGFloat
 
     var body: some View {
@@ -380,6 +433,14 @@ private struct BlackKey: View {
                     .overlay(Circle().stroke(Color.white.opacity(0.45), lineWidth: 1))
                     .frame(width: 10, height: 10)
                     .padding(.top, 8)
+                    .frame(maxHeight: .infinity, alignment: .top)
+                    .accessibilityHidden(true)
+            }
+            if let lineNumber {
+                Text("\(lineNumber)")
+                    .font(.caption2.monospacedDigit().weight(.bold))
+                    .foregroundStyle(Color.white.opacity(0.85))
+                    .padding(.top, 4)
                     .frame(maxHeight: .infinity, alignment: .top)
                     .accessibilityHidden(true)
             }

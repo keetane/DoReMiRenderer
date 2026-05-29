@@ -27,6 +27,7 @@ struct ScorePracticeView: View {
     @Binding var keyboardVisible: Bool
     @Binding var keyboardColorVisible: Bool
     @Binding var keyboardColorPositionTop: Bool
+    @Binding var keyboardLineNumberVisible: Bool
     @Binding var currentNoteDisplayVisible: Bool
     @Binding var nextNoteDisplayVisible: Bool
     @Binding var measureNumbersVisible: Bool
@@ -100,6 +101,7 @@ struct ScorePracticeView: View {
                     keyboardVisible: $keyboardVisible,
                     keyboardColorVisible: $keyboardColorVisible,
                     keyboardColorPositionTop: $keyboardColorPositionTop,
+                    keyboardLineNumberVisible: $keyboardLineNumberVisible,
                     currentNoteDisplayVisible: $currentNoteDisplayVisible,
                     nextNoteDisplayVisible: $nextNoteDisplayVisible,
                     measureNumbersVisible: $measureNumbersVisible,
@@ -281,6 +283,7 @@ struct ScorePracticeView: View {
                         staffColorVisible: $staffColorVisible,
                         selectedKeyPitchClass: transposeKeyBinding,
                         keyboardColorPositionTop: keyboardColorPositionTop,
+                        keyboardLineNumberVisible: keyboardLineNumberVisible,
                         scaleTonicPitchClass: selectedMainKeyPitchClass,
                         onDone: { showsPaletteEditor = false }
                     )
@@ -611,6 +614,7 @@ struct ScorePracticeView: View {
                         pitchClassColorState: pitchColorState,
                         colorIdleKeys: keyboardColorVisible,
                         colorPositionTop: keyboardColorPositionTop,
+                        showsLineNumbers: keyboardLineNumberVisible,
                         scaleTonicPitchClass: selectedMainKeyPitchClass
                     )
                         .frame(height: isCompact ? 96 : 132)
@@ -1052,6 +1056,7 @@ private struct PaletteEditorView: View {
     @Binding var staffColorVisible: Bool
     @Binding var selectedKeyPitchClass: Int
     let keyboardColorPositionTop: Bool
+    let keyboardLineNumberVisible: Bool
     let scaleTonicPitchClass: Int?
     let onDone: () -> Void
     @State private var previewScore: PaletteLoadedScore?
@@ -1200,6 +1205,7 @@ private struct PaletteEditorView: View {
                             pitchClassColorState: pitchColorState,
                             colorIdleKeys: true,
                             colorPositionTop: keyboardColorPositionTop,
+                            showsLineNumbers: keyboardLineNumberVisible,
                             scaleTonicPitchClass: scaleTonicPitchClass
                         )
                         .frame(width: previewWidth, height: keyboardPreviewHeight)
