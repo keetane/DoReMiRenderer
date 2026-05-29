@@ -323,6 +323,19 @@ import Testing
     #expect(ScoreCanvasFollowHeuristics.measureLeadingX(for: noteLayout, in: layout) == 280)
 }
 
+@Test func scoreCanvasFollowHeuristicsUsesSystemTopForTopAlignedMeasureAnchor() {
+    let noteID = NoteID(rawValue: "measure.top")
+    let layout = scrollLayout(
+        noteID: noteID,
+        noteheadFrame: CGRect(x: 340, y: 900, width: 20, height: 16),
+        measureFrame: CGRect(x: 280, y: 820, width: 180, height: 160),
+        systemFrame: CGRect(x: 240, y: 760, width: 520, height: 260)
+    )
+    let measure = layout.measures[0]
+
+    #expect(ScoreCanvasFollowHeuristics.measureTopY(for: measure, in: layout) == 760)
+}
+
 @Test func scoreCanvasFollowHeuristicsFallsBackToNoteXWithoutMeasureLayout() {
     let noteID = NoteID(rawValue: "orphan.note")
     let layout = scrollLayout(
@@ -333,6 +346,34 @@ import Testing
     let noteLayout = layout.noteByID[noteID]!
 
     #expect(ScoreCanvasFollowHeuristics.measureLeadingX(for: noteLayout, in: layout) == 340)
+}
+
+@Test func scoreCanvasFollowHeuristicsTopAlignedPlacementKeepsFollowNearViewportTop() {
+    let measuredAnchor = UnitPoint(x: 0.5, y: 1)
+    let movementAnchor = UnitPoint(x: 0.5, y: 0.68)
+
+    let resolved = ScoreCanvasFollowHeuristics.resolvedScrollAnchor(
+        measuredAnchor: measuredAnchor,
+        movementAnchor: movementAnchor,
+        movedBeyondLastFollow: true,
+        placement: .topAligned
+    )
+
+    #expect(resolved == UnitPoint(x: 0.5, y: 0.12))
+}
+
+@Test func scoreCanvasFollowHeuristicsCenterPlacementKeepsExistingMeasuredAnchor() {
+    let measuredAnchor = UnitPoint(x: 0.5, y: 1)
+    let movementAnchor = UnitPoint(x: 0.5, y: 0.68)
+
+    let resolved = ScoreCanvasFollowHeuristics.resolvedScrollAnchor(
+        measuredAnchor: measuredAnchor,
+        movementAnchor: movementAnchor,
+        movedBeyondLastFollow: true,
+        placement: .center
+    )
+
+    #expect(resolved == measuredAnchor)
 }
 
 @Test func scoreCanvasScrollableContentSizeKeepsPositiveScrollExtentWithInset() {
@@ -373,7 +414,8 @@ import Testing
 private func scrollLayout(
     noteID: NoteID,
     noteheadFrame: CGRect = CGRect(x: 100, y: 900, width: 20, height: 16),
-    measureFrame: CGRect? = CGRect(x: 80, y: 80, width: 200, height: 160)
+    measureFrame: CGRect? = CGRect(x: 80, y: 80, width: 200, height: 160),
+    systemFrame: CGRect? = nil
 ) -> ScoreLayout {
     let measureID = MeasureID(partIndex: 0, measureNumber: "1")
     let noteLayout = NoteLayout(
@@ -395,6 +437,7 @@ private func scrollLayout(
     )
     return ScoreLayout(
         canvasSize: CGSize(width: 1_000, height: 2_000),
+        systems: systemFrame.map { [SystemLayout(index: 0, frame: $0)] } ?? [],
         measures: measureFrame.map {
             [MeasureLayout(measureID: measureID, systemIndex: 0, frame: $0)]
         } ?? [],

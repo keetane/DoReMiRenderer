@@ -590,6 +590,7 @@ struct ScorePracticeView: View {
                         scale: CGFloat(effectiveZoomScale),
                         scrollAxes: [.horizontal, .vertical],
                         followsCurrentNote: currentNoteDisplayVisible,
+                        followPlacement: loaded.layoutMode == .a4 ? .topAligned : .center,
                         staticRenderKey: scoreStaticRenderKey,
                         onTap: session.handleTap
                     )
