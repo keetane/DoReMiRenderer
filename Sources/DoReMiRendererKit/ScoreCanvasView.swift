@@ -3,6 +3,11 @@ import SwiftUI
 import UIKit
 #endif
 
+public enum ScoreCanvasFollowPlacement: Sendable, Hashable {
+    case center
+    case topAligned
+}
+
 public struct ScoreCanvasView: View {
     public let layout: ScoreLayout
     public let score: ScoreDocument
@@ -17,6 +22,7 @@ public struct ScoreCanvasView: View {
     public let scrollAxes: Axis.Set
     public let followsCurrentNote: Bool
     public let scrollFollowMargin: CGFloat
+    public let followPlacement: ScoreCanvasFollowPlacement
     public let staticRenderKey: String?
     public let onTap: ((HitTestResult) -> Void)?
 
@@ -38,6 +44,7 @@ public struct ScoreCanvasView: View {
         scrollAxes: Axis.Set = [],
         followsCurrentNote: Bool = false,
         scrollFollowMargin: CGFloat = 48,
+        followPlacement: ScoreCanvasFollowPlacement = .center,
         staticRenderKey: String? = nil,
         onTap: ((HitTestResult) -> Void)? = nil
     ) {
@@ -55,6 +62,7 @@ public struct ScoreCanvasView: View {
             scrollAxes: scrollAxes,
             followsCurrentNote: followsCurrentNote,
             scrollFollowMargin: scrollFollowMargin,
+            followPlacement: followPlacement,
             staticRenderKey: staticRenderKey,
             onTap: onTap
         )
@@ -74,6 +82,7 @@ public struct ScoreCanvasView: View {
         scrollAxes: Axis.Set = [],
         followsCurrentNote: Bool = false,
         scrollFollowMargin: CGFloat = 48,
+        followPlacement: ScoreCanvasFollowPlacement = .center,
         staticRenderKey: String? = nil,
         onTap: ((HitTestResult) -> Void)? = nil
     ) {
@@ -90,6 +99,7 @@ public struct ScoreCanvasView: View {
         self.scrollAxes = scrollAxes
         self.followsCurrentNote = followsCurrentNote
         self.scrollFollowMargin = max(0, scrollFollowMargin)
+        self.followPlacement = followPlacement
         self.staticRenderKey = staticRenderKey
         self.onTap = onTap
     }
@@ -414,10 +424,14 @@ public struct ScoreCanvasView: View {
         let layoutY: CGFloat
         if let firstNoteInMeasure {
             layoutX = ScoreCanvasFollowHeuristics.measureLeadingX(for: firstNoteInMeasure, in: layout)
-            layoutY = firstNoteInMeasure.noteheadFrame.minY
+            layoutY = followPlacement == .topAligned
+                ? ScoreCanvasFollowHeuristics.measureTopY(for: measure, in: layout)
+                : firstNoteInMeasure.noteheadFrame.minY
         } else {
             layoutX = measure.frame.minX
-            layoutY = measure.frame.minY
+            layoutY = followPlacement == .topAligned
+                ? ScoreCanvasFollowHeuristics.measureTopY(for: measure, in: layout)
+                : measure.frame.minY
         }
         return CGPoint(
             x: scrollContentPadding + layoutX * scale,
@@ -534,7 +548,12 @@ public struct ScoreCanvasView: View {
             viewportSize: viewportSize,
             margin: scrollFollowMargin
         )
-        scrollAnchor = measuredAnchor == .center && movedBeyondLastFollow ? scrollAnchor : measuredAnchor
+        scrollAnchor = ScoreCanvasFollowHeuristics.resolvedScrollAnchor(
+            measuredAnchor: measuredAnchor,
+            movementAnchor: scrollAnchor,
+            movedBeyondLastFollow: movedBeyondLastFollow,
+            placement: followPlacement
+        )
 
         lastScrollFollowCenter = noteLayout.noteheadCenter
         lastScrollFollowScale = scale
@@ -848,6 +867,10 @@ struct ScoreCanvasFollowHeuristics {
         return measure.frame.minX
     }
 
+    static func measureTopY(for measure: MeasureLayout, in layout: ScoreLayout) -> CGFloat {
+        layout.systems.first(where: { $0.index == measure.systemIndex })?.frame.minY ?? measure.frame.minY
+    }
+
     static func frame(for noteLayout: NoteLayout, scale: CGFloat, padding: CGFloat) -> CGRect {
         let effectiveScale = max(scale, ScoreViewportTransform.minimumScale)
         return CGRect(
@@ -894,6 +917,21 @@ struct ScoreCanvasFollowHeuristics {
         }
 
         return UnitPoint(x: x, y: y)
+    }
+
+    static func resolvedScrollAnchor(
+        measuredAnchor: UnitPoint,
+        movementAnchor: UnitPoint,
+        movedBeyondLastFollow: Bool,
+        placement: ScoreCanvasFollowPlacement
+    ) -> UnitPoint {
+        let resolvedAnchor = measuredAnchor == .center && movedBeyondLastFollow ? movementAnchor : measuredAnchor
+        switch placement {
+        case .center:
+            return resolvedAnchor
+        case .topAligned:
+            return UnitPoint(x: resolvedAnchor.x, y: 0.12)
+        }
     }
 
     static func hasMovedBeyondFollowDistance(
