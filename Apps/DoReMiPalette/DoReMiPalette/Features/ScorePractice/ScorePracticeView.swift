@@ -164,10 +164,10 @@ struct ScorePracticeView: View {
                 session.setDisplayTransposeEnabled(true)
             }
             .onChange(of: scoreLayoutModeRawValue) { _, newValue in
-                session.setScoreLayoutMode(preferredScoreLayoutMode(for: PaletteScoreLayoutMode.fromRawValue(newValue)))
+                session.setScoreLayoutMode(PaletteScoreLayoutMode.fromRawValue(newValue))
             }
             .onChange(of: session.loadedScore?.sourceName) { _, _ in
-                session.setScoreLayoutMode(preferredScoreLayoutMode(for: selectedScoreLayoutMode))
+                session.setScoreLayoutMode(selectedScoreLayoutMode)
             }
             .onChange(of: metronomeEnabled) { _, newValue in
                 session.setMetronomeEnabled(newValue)
@@ -860,16 +860,6 @@ struct ScorePracticeView: View {
 
     private var selectedScoreLayoutMode: PaletteScoreLayoutMode {
         PaletteScoreLayoutMode.fromRawValue(scoreLayoutModeRawValue)
-    }
-
-    private func preferredScoreLayoutMode(for selectedMode: PaletteScoreLayoutMode) -> PaletteScoreLayoutMode {
-        guard selectedMode == .horizontal,
-              let loadedScore = session.loadedScore,
-              loadedScore.performancePreferredLayoutMode == .a4
-        else {
-            return selectedMode
-        }
-        return .a4
     }
 
     private var isCompact: Bool {

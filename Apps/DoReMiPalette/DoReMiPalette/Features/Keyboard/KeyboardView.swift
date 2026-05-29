@@ -313,8 +313,12 @@ private struct WhiteKey: View {
                 Text("\(lineNumber)")
                     .font(.caption2.monospacedDigit().weight(.bold))
                     .foregroundStyle(lineNumberTextColor)
-                    .padding(.top, 5)
-                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(colorPositionTop ? .bottom : .top, 5)
+                    .frame(
+                        maxWidth: .infinity,
+                        maxHeight: .infinity,
+                        alignment: colorPositionTop ? .bottom : .top
+                    )
                     .accessibilityHidden(true)
             }
             if showsNextNote {
@@ -440,8 +444,8 @@ private struct BlackKey: View {
                 Text("\(lineNumber)")
                     .font(.caption2.monospacedDigit().weight(.bold))
                     .foregroundStyle(Color.white.opacity(0.85))
-                    .padding(.top, 4)
-                    .frame(maxHeight: .infinity, alignment: .top)
+                    .padding(colorPositionTop ? .bottom : .top, 4)
+                    .frame(maxHeight: .infinity, alignment: colorPositionTop ? .bottom : .top)
                     .accessibilityHidden(true)
             }
             if showsNextNote {
