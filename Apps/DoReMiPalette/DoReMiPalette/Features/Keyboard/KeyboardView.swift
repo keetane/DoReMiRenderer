@@ -377,13 +377,16 @@ private struct WhiteKey: View {
     }
 
     private var lineNumberTextColor: Color {
+        guard isPitchColorEnabled else {
+            return .secondary.opacity(0.42)
+        }
         switch highlightKind {
         case .attack:
             return colorIdleKey ? .white : .primary
         case .continuation:
-            return .primary.opacity(0.72)
+            return color.opacity(0.72)
         case .none:
-            return .secondary
+            return color
         }
     }
 

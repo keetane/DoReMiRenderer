@@ -28,6 +28,7 @@ struct ScorePracticeView: View {
     @Binding var keyboardColorVisible: Bool
     @Binding var keyboardColorPositionTop: Bool
     @Binding var keyboardLineNumberVisible: Bool
+    @Binding var topToolbarVisible: Bool
     @Binding var currentNoteDisplayVisible: Bool
     @Binding var nextNoteDisplayVisible: Bool
     @Binding var measureNumbersVisible: Bool
@@ -54,13 +55,12 @@ struct ScorePracticeView: View {
     @State private var onboardingState = OnboardingGuideState.inactive
     @GestureState private var pinchMagnification = 1.0
     @FocusState private var measureJumpFocused: Bool
+    private var playbackControlHeight: CGFloat { isCompact ? 26 : 28 }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                controlBar
-                Divider()
-                content
+                arrangedContent
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -102,6 +102,7 @@ struct ScorePracticeView: View {
                     keyboardColorVisible: $keyboardColorVisible,
                     keyboardColorPositionTop: $keyboardColorPositionTop,
                     keyboardLineNumberVisible: $keyboardLineNumberVisible,
+                    topToolbarVisible: $topToolbarVisible,
                     currentNoteDisplayVisible: $currentNoteDisplayVisible,
                     nextNoteDisplayVisible: $nextNoteDisplayVisible,
                     measureNumbersVisible: $measureNumbersVisible,
@@ -301,10 +302,28 @@ struct ScorePracticeView: View {
         }
     }
 
+    @ViewBuilder
+    private var arrangedContent: some View {
+        if topToolbarVisible {
+            controlBar
+            Divider()
+            content
+        } else {
+            content
+            Divider()
+            controlBar
+        }
+    }
+
     private var controlBar: some View {
         VStack(alignment: .leading, spacing: 10) {
-            playbackControls
-            displayToggles
+            if topToolbarVisible {
+                playbackControls
+                displayToggles
+            } else {
+                displayToggles
+                playbackControls
+            }
         }
         .toggleStyle(.switch)
         .padding(.horizontal, isCompact ? 14 : 24)
@@ -312,20 +331,28 @@ struct ScorePracticeView: View {
     }
 
     private var playbackControls: some View {
-        HStack(spacing: isCompact ? 8 : 12) {
-            playStopControlGroup
-
-            Button("Reset", systemImage: "backward.end.fill") { session.resetPlayback() }
+        HStack(alignment: .center, spacing: isCompact ? 10 : 14) {
+            playbackCommandButton("Reset", systemImage: "backward.end.fill") {
+                session.resetPlayback()
+            }
                 .disabled(session.playbackCursor.events.isEmpty || session.playbackCursor.index == 0)
 
-            navigationControlGroup
-
-            Button(isCompact ? "Reload" : "Sample Reload", systemImage: "arrow.clockwise") {
-                reloadSampleResettingZoom()
+            playbackCommandButton("Previous", systemImage: "chevron.left") {
+                session.movePlaybackStep(by: -1)
             }
-            Button("ライブラリ", systemImage: "books.vertical") { showsLibrary = true }
+                .disabled(session.playbackCursor.events.isEmpty || session.playbackCursor.index == 0)
+
+            playStopControlGroup
+
+            measureJumpInlineControl
+
+            playbackCommandButton("Next", systemImage: "chevron.right") {
+                session.movePlaybackStep(by: 1)
+            }
+                .disabled(session.playbackCursor.events.isEmpty || session.playbackCursor.index >= session.playbackCursor.events.count - 1)
         }
-        .buttonStyle(.borderless)
+        .frame(maxWidth: .infinity, alignment: .center)
+        .onboardingAnchor(.previousNextControls)
         .onAppear {
             syncMeasureJumpInput()
         }
@@ -337,28 +364,51 @@ struct ScorePracticeView: View {
 
     private var playStopControlGroup: some View {
         HStack(spacing: isCompact ? 8 : 12) {
-            Button(session.playbackState == .playing ? "Pause" : "Play", systemImage: session.playbackState == .playing ? "pause.fill" : "play.fill") {
+            playbackCommandButton(
+                session.playbackState == .playing ? "Pause" : "Play",
+                systemImage: session.playbackState == .playing ? "pause.fill" : "play.fill",
+                prominent: true
+            ) {
                 if session.playbackState == .playing { session.pause() } else { session.play() }
             }
             .disabled(session.playbackCursor.events.isEmpty)
 
-            Button("Stop", systemImage: "stop.fill") { session.stop() }
+            playbackCommandButton("Stop", systemImage: "stop.fill") {
+                session.stop()
+            }
                 .disabled(session.playbackCursor.events.isEmpty || session.playbackState == .stopped)
         }
         .onboardingAnchor(.playStopControls)
     }
 
-    private var navigationControlGroup: some View {
-        HStack(spacing: isCompact ? 8 : 12) {
-            Button("Previous", systemImage: "chevron.left") { session.movePlaybackStep(by: -1) }
-                .disabled(session.playbackCursor.events.isEmpty || session.playbackCursor.index == 0)
+    @ViewBuilder
+    private func playbackCommandButton(
+        _ title: LocalizedStringKey,
+        systemImage: String,
+        prominent: Bool = false,
+        action: @escaping () -> Void
+    ) -> some View {
+        let label = Label(title, systemImage: systemImage)
+            .font((isCompact ? Font.caption : Font.callout).weight(.semibold))
+            .labelStyle(.titleAndIcon)
+            .lineLimit(1)
+            .padding(.horizontal, isCompact ? 6 : 9)
+            .frame(height: playbackControlHeight)
+            .contentShape(RoundedRectangle(cornerRadius: 12))
 
-            measureJumpInlineControl
-
-            Button("Next", systemImage: "chevron.right") { session.movePlaybackStep(by: 1) }
-                .disabled(session.playbackCursor.events.isEmpty || session.playbackCursor.index >= session.playbackCursor.events.count - 1)
+        if prominent {
+            Button(action: action) {
+                label
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+        } else {
+            Button(action: action) {
+                label
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
         }
-        .onboardingAnchor(.previousNextControls)
     }
 
     private var measureJumpInlineControl: some View {
@@ -371,6 +421,7 @@ struct ScorePracticeView: View {
                         .textFieldStyle(.roundedBorder)
                         .font(.caption.monospacedDigit())
                         .frame(width: isCompact ? 44 : 52)
+                        .frame(height: playbackControlHeight)
                         .focused($measureJumpFocused)
                         .onSubmit(submitMeasureJump)
                         .disabled(session.totalMeasureCount == 0)
@@ -382,10 +433,9 @@ struct ScorePracticeView: View {
                 .padding(2)
                 .contentShape(Rectangle())
 
-                Button("移動") {
+                playbackCommandButton("Jump", systemImage: "arrow.right.to.line") {
                     submitMeasureJump()
                 }
-                .font(.caption)
                 .disabled(session.totalMeasureCount == 0)
             }
             .accessibilityElement(children: .combine)
@@ -455,7 +505,7 @@ struct ScorePracticeView: View {
     private var displayToggles: some View {
         HStack(alignment: .center, spacing: 12) {
             HStack(alignment: .center, spacing: 12) {
-                displayToggle("Keyboard", isOn: $keyboardVisible)
+                displayToggle("鍵盤", isOn: $keyboardVisible)
                 displayToggle("メトロノーム", isOn: $metronomeEnabled)
                 tempoPicker
                 tapTempoButton
