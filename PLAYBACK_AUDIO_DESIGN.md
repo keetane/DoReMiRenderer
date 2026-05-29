@@ -178,6 +178,31 @@ such as `C4 -> C4`, therefore receive a small audible separation instead of
 joining into a longer note. Rests and tie continuations still do not trigger a
 new tone.
 
+## Playback Expression MVP
+
+Articulation and dynamics remain SDK-domain data and app-side audio behavior:
+
+- `PlaybackEvent.expression` carries articulation kinds, a gate scale, a
+  velocity scale, the active dynamic mark, and bounded fermata duration
+  extension metadata.
+- Normal articulation expression changes generated tone length and velocity.
+  Fermata is the only MVP expression that extends event scheduling duration;
+  it is clamped to avoid tempo drift and does not reshape the metronome click
+  plan. `NoteID` and `ScoreLayout` identity remain stable.
+- Normal notes keep the app's full-length `noteGateRatio` behavior and the
+  generated-tone buffer now allows a longer audible sustain window. Staccato
+  scales the sound window to less than half of the note duration; tenuto can
+  extend slightly beyond the normal gate within a bounded safety margin; accent
+  and marcato increase generated-tone velocity.
+- Dynamic marks map to coarse generated-tone velocity levels (`p`, `mp`, `mf`,
+  `f`, `ff`, etc.). Crescendo and decrescendo wedges apply a coarse linear
+  velocity interpolation in the MVP. The velocity range is intentionally broad
+  enough for user testing to distinguish dynamics with the generated-tone
+  engine.
+- Velocity is passed to the app audio engine and participates in the existing
+  bounded audio-buffer cache. No audio asset or SDK AVFoundation dependency is
+  added.
+
 ## Attack And Tie Continuation Display
 
 `PlaybackEvent.noteIDs` and `PlaybackEvent.midiPitches` have separate roles:

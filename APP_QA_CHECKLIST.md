@@ -785,8 +785,10 @@ renderer path and must remain layout-driven.
 ## Phase 17B TestFlight Readiness QA
 
 - [ ] App launch opens `Ode to Joy Easy Variation` as the bundled MXL default.
-- [ ] The Library shows only the two TestFlight bundled MXL samples kept from
-  `sample/`: `Ode to Joy Easy Variation` and `Fur Elise - Beginner Piano`.
+- [ ] The Library shows the two retained musetrainer-derived learning samples
+  plus the self-authored expression QA sample:
+  `Ode to Joy Easy Variation`, `Fur Elise - Beginner Piano`, and
+  `Articulation & Dynamics Coverage Sample`.
 - [ ] `Happy Birthday To You Piano` is not listed in the bundled sample catalog
   or app bundle after the pre-TestFlight rights review. `12 Variations of
   Twinkle Twinkle Little Star`, `Canon in D`, and `The Entertainer` are also not
@@ -809,6 +811,30 @@ renderer path and must remain layout-driven.
 - [ ] `swift run DoReMiRendererDiagnostics LocalSamples` completes.
 - [ ] iPad Simulator launches and captures Phase 17B screenshots under
   `/tmp/DoReMiPaletteQA/phase-17b/`.
+
+## Articulation / Dynamics MVP QA
+
+- [x] Parser tests cover staccato, accent, tenuto, fermata, dynamic marks, and
+  crescendo / decrescendo wedges.
+- [x] Layout and painter tests cover articulation marks, dynamic text, and
+  hairpin elements without changing `NoteID` / `PlaybackEvent` identity.
+- [x] Playback tests confirm normal notes remain full enough to distinguish
+  staccato, tenuto uses a longer gate, fermata extends note/rest duration with
+  a bounded clamp, accents increase velocity, and dynamics / hairpins affect
+  velocity.
+- [x] Layout tests confirm staccato, tenuto, and fermata marks remain close to
+  their owning notes, upward/downward flagged fermatas use the correct glyph,
+  cross-measure hairpins layout within a system, and dynamic text / hairpin
+  lanes keep a minimum vertical separation.
+- [ ] Manual iPad QA: open `Articulation & Dynamics Coverage Sample` and
+  confirm staccato dots, accents, tenuto lines, fermatas, p/mp/mf/f/ff marks,
+  and hairpins are visible and upright.
+- [ ] Manual iPad QA: play the expression sample and confirm normal notes are
+  not too short, staccato is clearly shorter, accents are stronger, and
+  dynamics / hairpins are audible at an MVP level. Final perceived volume and
+  articulation balance still requires real-device listening.
+- [ ] Expression hardening evidence should also be saved under
+  `/tmp/DoReMiPaletteQA/expression-hardening/`.
 
 ## Piano Transpose MVP QA
 

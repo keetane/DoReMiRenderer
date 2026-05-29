@@ -185,10 +185,27 @@ APIs may change before `1.0`.
   version `1.0` with build number `3`, keeping the internal TestFlight
   `0.1.1 (2)` build history separate, and updating release metadata/checklists
   for App Store submission.
+- Added Articulation / Dynamics MVP support. MusicXML staccato, accent, tenuto,
+  strong-accent/marcato, fermata, dynamic marks, and crescendo/decrescendo
+  wedges are parsed into domain data, laid out as score elements, and rendered
+  from `ScoreLayout` coordinates. Playback events now carry expression metadata
+  so DoReMi Palette can make staccato notes shorter, tenuto notes fuller, accent
+  / marcato notes louder, and dynamics / same-measure hairpins affect generated
+  tone velocity without changing event timing, `NoteID`, or `PlaybackEvent`
+  identity.
+- Tuned the Articulation / Dynamics MVP after user review: staccato dots,
+  tenuto lines, and fermatas sit closer to their notes, dynamic text and
+  hairpins keep a small vertical separation, normal generated tones sustain
+  longer, and dynamics / hairpin velocity changes are more pronounced.
+- Hardened expression handling: below-staff fermatas now use the proper
+  inverted fermata glyph for upward-stem flagged notes, fermata events extend
+  generated playback duration with a bounded scheduler-safe clamp, and
+  cross-measure hairpins can span within a system or split at system breaks.
+- Added the self-authored `Articulation & Dynamics Coverage Sample` for
+  display and playback QA, with licensing recorded in `ASSET_LICENSES.md`.
 - Kept Core Graphics fallback rendering for font lookup or registration failure.
-- Dynamics remain diagnostic-only unless represented by existing text
-  annotations; system-crossing curves, advanced beams, complex tuplets, and
-  collision-aware engraving remain future work.
+- Advanced dynamic carry-forward, ornaments, advanced beams, complex tuplets,
+  and publishing-quality collision-aware engraving remain future work.
 
 ### Phase 17A real iPad QA start
 

@@ -272,13 +272,13 @@ Current Phase 17A status:
 - Physical iPad install / launch and manual MVP checks have been completed by
   user-side QA.
 - Phase 17B TestFlight readiness is now the active release-preparation gate.
-- Phase 17B keeps the TestFlight-facing Library to two bundled learning MXL
-  samples, excludes `Happy Birthday To You Piano` after the pre-TestFlight
-  rights review, keeps historical notation/repeat/transpose QA coverage in
-  development fixtures and automated tests instead of user-facing Library
-  entries, confirms release signing/build settings, and records privacy,
-  license, known limitation, and beta-review notes before any App Store Connect
-  upload.
+- Phase 17B keeps the TestFlight-facing Library focused on the two bundled
+  learning MXL samples plus the self-authored Articulation / Dynamics coverage
+  sample, excludes `Happy Birthday To You Piano` after the pre-TestFlight rights
+  review, keeps historical notation/repeat/transpose QA coverage in development
+  fixtures and automated tests instead of user-facing Library entries, confirms
+  release signing/build settings, and records privacy, license, known
+  limitation, and beta-review notes before any App Store Connect upload.
 
 Focus:
 
@@ -608,3 +608,19 @@ The `notation_coverage_grand_staff.musicxml` and `rhythm_values_sample.musicxml`
 samples are the primary before/after QA fixtures for this track. Snapshot
 baseline updates are expected during implementation phases, but only after
 reviewing diffs as intentional symbol-quality improvements.
+
+Articulation / Dynamics MVP - complete
+
+- Parse and lay out staccato, accent, tenuto, marcato / strong-accent,
+  fermata, dynamic marks, and same-system crescendo / decrescendo hairpins.
+- Render expression marks from `ScoreLayout` elements; the renderer still does
+  not inspect MusicXML directly.
+- Carry coarse playback expression on `PlaybackEvent.expression` so staccato,
+  tenuto, accent, fermata, dynamics, and hairpins affect generated-tone
+  gate/velocity/duration without changing event identity.
+- Tune MVP expression spacing and playback balance: staccato, tenuto, and
+  fermata sit closer to notes; dynamics / hairpins keep basic vertical
+  separation; normal notes sustain longer and expression velocity changes are
+  clearer for user testing.
+- Keep humanized performance UI, advanced dynamic carry-forward, ornaments, and
+  publishing-quality collision avoidance as future work.

@@ -177,7 +177,14 @@ The self-authored `notation_coverage_grand_staff.musicxml` sample is the public
 QA fixture for broad symbol coverage. It includes supported MVP symbols such as
 clefs, time and key signatures, accidentals, rest values, dotted notes, chords,
 ledger lines, and repeat barlines, plus limited or diagnostic symbols such as
-dynamics. The self-authored
+dynamics. Articulation / Dynamics MVP coverage is tracked with the
+self-authored `articulation_dynamics_coverage_sample.musicxml`, which exercises
+staccato, accent, tenuto, fermata, dynamic marks, and simple hairpins without
+using third-party score content. The tuned MVP keeps staccato, tenuto, and
+fermata close to the owning note, selects above/below fermata glyphs by
+placement, gives dynamic text / hairpins basic vertical separation, and draws
+cross-measure hairpins within a system with MVP split continuation at system
+breaks. The self-authored
 `s6_notation_refinement_grand_staff.musicxml` sample is the focused Phase S6
 fixture for tie/slur curves, simple beams, mixed eighth/sixteenth beams,
 triplet brackets, and collision review. The self-authored

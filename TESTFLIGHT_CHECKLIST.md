@@ -8,9 +8,10 @@
 - Formal App Store release candidate is tracked separately as `1.0 (3)`.
 
 - Open the default `Ode to Joy Easy Variation` sample.
-- Open the bundled MXL samples from Library:
+- Open the bundled samples from Library:
   - Ode to Joy Easy Variation
   - Fur Elise - Beginner Piano
+  - Articulation & Dynamics Coverage Sample
 - Confirm `Happy Birthday To You Piano` is not present in the bundled Library
   or app bundle; it remains only as a development fixture pending rights
   confirmation.
@@ -36,6 +37,14 @@
   beat 0 at every measure head, 6/8 large-beat/subdivision plans use the
   expected offsets, and mid-playback ON starts from the next planned click.
   Evidence is saved under `/tmp/DoReMiPaletteQA/metronome-meter-fix/`.
+- Verify Articulation / Dynamics MVP: the self-authored coverage sample shows
+  staccato, accent, tenuto, fermata, dynamic marks, and crescendo/decrescendo
+  hairpins; staccato, tenuto, and fermata marks sit close to their owning
+  notes; upward/downward flagged fermatas face correctly; dynamic text and
+  hairpins do not visibly collide; playback makes staccato shorter than normal
+  notes, tenuto longer, applies bounded fermata extension, and applies audible
+  velocity changes for accents, dynamics, and hairpins. User-side listening
+  remains required for final musical judgment.
 - Verify Practice Mode stepping, current-note marker, next-note marker, and
   keyboard highlight.
 - Verify transpose key picker and display-transposed score.

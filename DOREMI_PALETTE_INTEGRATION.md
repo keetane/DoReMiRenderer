@@ -386,8 +386,10 @@ layout, rendering, hit testing, diagnostics, and playback-event generation.
 Physical iPad install / launch and MVP interaction checks have now been
 confirmed by user-side QA. Phase 17B TestFlight readiness is a release
 configuration, legal/privacy, checklist, and archive-preparation pass. The
-TestFlight-facing bundled Library is intentionally limited to two learning MXL
-samples: `Ode to Joy Easy Variation` and `Fur Elise - Beginner Piano`.
+TestFlight-facing bundled Library contains two learning MXL samples plus a
+self-authored expression QA sample: `Ode to Joy Easy Variation`,
+`Fur Elise - Beginner Piano`, and
+`Articulation & Dynamics Coverage Sample`.
 `Happy Birthday To You Piano` is excluded after the pre-TestFlight rights review
 because its MusicXML metadata names an arranger and has no embedded rights
 grant. Historical S6/S7/S8/S9/S10/T2 QA samples are not restored to the
@@ -403,6 +405,27 @@ Current-note follow uses SDK-provided layout identity and lightweight
 measure-level anchors; DoReMi Palette does not recompute score coordinates.
 The UIKit static-canvas path compensates SMuFL/CoreText glyph orientation inside
 the renderer drawing helper without changing layout or app hit-test ownership.
+
+## Articulation / Dynamics Boundary
+
+Articulation and dynamics remain SDK-owned notation data. DoReMiRendererKit
+parses MusicXML articulations, dynamics, fermatas, and wedges into the domain
+model, creates `ScoreLayout` elements, renders them through `ScorePainter`, and
+attaches coarse `PlaybackExpression` metadata to `PlaybackEvent`.
+
+DoReMi Palette consumes only that read model. It does not reparse MusicXML,
+recalculate expression coordinates, or infer marks from source text. The app
+runtime applies `PlaybackEvent.expression` to generated-tone gate and velocity,
+while metronome timing, repeat expansion, transpose, practice, palette, measure
+jump, pinch zoom, and current-note follow continue to use the existing playback
+and layout identities.
+
+The tuned MVP keeps staccato, tenuto, and fermata marks closer to the owning
+note, selects above/below fermata glyphs by placement, keeps dynamic text and
+hairpins in separate vertical lanes, and uses stronger app-side gate /
+velocity differences plus bounded fermata duration extension so user testing
+can distinguish normal, staccato, tenuto, fermata, dynamic, and hairpin
+playback without changing layout identity.
 
 ## Phase S10 Repeat / Jump Boundary
 
