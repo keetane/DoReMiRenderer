@@ -63,6 +63,7 @@ struct ScorePainter: Sendable {
         drawTuplets(layout: layout, score: score, style: style, selection: effectiveSelection, into: &context)
         drawAccidentals(layout: layout, score: score, style: style, selection: effectiveSelection, into: &context)
         drawTextAnnotations(layout: layout, score: score, style: style, selection: effectiveSelection, into: &context)
+        drawExpressionMarks(layout: layout, score: score, style: style, selection: effectiveSelection, into: &context)
         drawMeasureNumbers(layout: layout, style: style, into: &context)
     }
 
@@ -780,6 +781,82 @@ struct ScorePainter: Sendable {
                 color: resolved.fillColor ?? resolved.strokeColor ?? style.glyphStyle.color,
                 size: element.kind == .fingering ? max(8, annotation.frame.height * 0.8) : max(9, annotation.frame.height * 0.75)
             )
+        }
+    }
+
+    private func drawExpressionMarks<Context: ScoreDrawingContext>(
+        layout: ScoreLayout,
+        score: ScoreDocument,
+        style: ScoreStyle,
+        selection: ScoreSelection,
+        into context: inout Context
+    ) {
+        for element in layout.elements where isVisible(element.frame) && (element.kind == .articulation || element.kind == .dynamic || element.kind == .hairpin) {
+            let resolved = style.colorResolver.resolvedStyle(
+                for: element,
+                score: score,
+                layout: layout,
+                style: style,
+                selection: selection
+            )
+            let color = resolved.fillColor ?? resolved.strokeColor ?? style.defaultInkColor
+            switch element.kind {
+            case .articulation:
+                guard let articulation = element.articulation else { continue }
+                drawArticulation(articulation, color: color, into: &context)
+            case .dynamic:
+                guard let dynamic = element.dynamic else { continue }
+                let size = max(15, dynamic.frame.height * 0.95)
+                context.drawText(
+                    dynamic.mark.rawValue,
+                    at: dynamic.origin,
+                    color: color,
+                    size: size,
+                    fontName: "Georgia-Italic"
+                )
+            case .hairpin:
+                guard let hairpin = element.hairpin else { continue }
+                context.strokeLine(from: hairpin.start, to: hairpin.upperEnd, color: color, lineWidth: max(1.4, hairpin.frame.height * 0.12))
+                context.strokeLine(from: hairpin.start, to: hairpin.lowerEnd, color: color, lineWidth: max(1.4, hairpin.frame.height * 0.12))
+            default:
+                break
+            }
+        }
+    }
+
+    private func drawArticulation<Context: ScoreDrawingContext>(
+        _ articulation: ArticulationLayout,
+        color: ScoreColor,
+        into context: inout Context
+    ) {
+        let size = min(articulation.frame.width, articulation.frame.height)
+        switch articulation.kind {
+        case .staccato:
+            let dotSize = max(4, size * 0.38)
+            context.fillEllipse(
+                in: CGRect(
+                    x: articulation.point.x - dotSize / 2,
+                    y: articulation.point.y - dotSize / 2,
+                    width: dotSize,
+                    height: dotSize
+                ),
+                color: color
+            )
+        case .tenuto:
+            let halfWidth = max(6, size * 0.45)
+            context.strokeLine(
+                from: CGPoint(x: articulation.point.x - halfWidth, y: articulation.point.y),
+                to: CGPoint(x: articulation.point.x + halfWidth, y: articulation.point.y),
+                color: color,
+                lineWidth: max(1.5, size * 0.13)
+            )
+        case .accent:
+            context.drawText(">", at: articulation.point, color: color, size: max(15, size), fontName: "Georgia-Italic")
+        case .marcato:
+            context.drawText("^", at: articulation.point, color: color, size: max(15, size), fontName: "Georgia-Italic")
+        case .fermata:
+            let glyph = articulation.placement == .below ? "\u{1D111}" : "\u{1D110}"
+            context.drawText(glyph, at: articulation.point, color: color, size: max(18, size * 1.05), fontName: smuflFontName)
         }
     }
 

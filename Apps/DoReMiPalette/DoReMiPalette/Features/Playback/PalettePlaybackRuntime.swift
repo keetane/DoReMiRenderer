@@ -88,6 +88,7 @@ final class PalettePlaybackRuntime {
     private(set) var metronomeEnabled: Bool
     private(set) var metronomeCompoundMode: PaletteMetronomeCompoundMode
     private(set) var metronomeClickSoundStyle: PaletteMetronomeClickSoundStyle
+    private(set) var humanizeEnabled: Bool
 
     private let audioEngine: PaletteAudioEngine
     private var playbackTask: Task<Void, Never>?
@@ -147,6 +148,7 @@ final class PalettePlaybackRuntime {
         metronomeEnabled: Bool = false,
         metronomeCompoundMode: PaletteMetronomeCompoundMode = .largeBeat,
         metronomeClickSoundStyle: PaletteMetronomeClickSoundStyle = .classic,
+        humanizeEnabled: Bool = false,
         audioEngine: PaletteAudioEngine = SimpleToneAudioEngine()
     ) {
         self.events = events
@@ -156,6 +158,7 @@ final class PalettePlaybackRuntime {
         self.metronomeEnabled = metronomeEnabled
         self.metronomeCompoundMode = metronomeCompoundMode
         self.metronomeClickSoundStyle = metronomeClickSoundStyle
+        self.humanizeEnabled = humanizeEnabled
         self.audioEngine = audioEngine
     }
 
@@ -483,7 +486,7 @@ final class PalettePlaybackRuntime {
         guard seconds.isFinite, seconds > 0 else {
             return 0.05
         }
-        return min(max(0.05, seconds), 8)
+        return expressionExtendedDuration(min(max(0.05, seconds), 8), for: event)
     }
 
     func soundDurationSeconds(for event: PlaybackEvent) -> TimeInterval {
@@ -498,8 +501,10 @@ final class PalettePlaybackRuntime {
         let eventDuration = eventDurationSeconds(for: event)
         let pitchDuration = durationSeconds(for: duration, event: event)
         let extendsBeyondEvent = duration > event.nominalDuration
-        let soundWindow = extendsBeyondEvent ? pitchDuration : min(eventDuration, pitchDuration)
-        let gatedDuration = extendsBeyondEvent ? soundWindow : soundWindow * noteGateRatio
+        let baseSoundWindow = extendsBeyondEvent ? pitchDuration : min(eventDuration, pitchDuration)
+        let soundWindow = extendsBeyondEvent ? baseSoundWindow : expressionExtendedDuration(baseSoundWindow, for: event)
+        let expressionGate = event.expression.gateScale
+        let gatedDuration = extendsBeyondEvent ? soundWindow : soundWindow * noteGateRatio * expressionGate
         guard eventDuration.isFinite,
               pitchDuration.isFinite,
               soundWindow.isFinite,
@@ -512,7 +517,22 @@ final class PalettePlaybackRuntime {
             return 0
         }
         let minimumDuration = min(soundWindow, Self.minimumAudibleDuration)
-        return min(soundWindow, max(minimumDuration, gatedDuration))
+        let maximumDuration: TimeInterval
+        if !extendsBeyondEvent, expressionGate > 1 {
+            maximumDuration = min(max(soundWindow, gatedDuration), soundWindow + 0.08)
+        } else {
+            maximumDuration = soundWindow
+        }
+        return min(maximumDuration, max(minimumDuration, gatedDuration))
+    }
+
+    private func expressionExtendedDuration(_ duration: TimeInterval, for event: PlaybackEvent) -> TimeInterval {
+        let scale = event.expression.durationScale
+        guard scale > 1, duration.isFinite, duration > 0 else {
+            return duration
+        }
+        let extra = min(duration * (scale - 1), event.expression.maxDurationExtraSeconds)
+        return min(max(duration, duration + extra), 9)
     }
 
     func schedulingIntervalSeconds(from index: Int) -> TimeInterval {
@@ -522,8 +542,9 @@ final class PalettePlaybackRuntime {
         guard let nextEvent = events[safe: index + 1],
               nextEvent.measureID == event.measureID
         else {
-            return remainingMeasureDurationSeconds(from: event)
+            let seconds = remainingMeasureDurationSeconds(from: event)
                 ?? eventDurationSeconds(for: event)
+            return min(max(0.01, expressionExtendedDuration(seconds, for: event)), 8)
         }
 
         guard event.onset < nextEvent.onset else {
@@ -534,7 +555,7 @@ final class PalettePlaybackRuntime {
         guard let seconds = durationSecondsForScheduling(delta, event: event) else {
             return eventDurationSeconds(for: event)
         }
-        return min(max(0.01, seconds), 8)
+        return min(max(0.01, expressionExtendedDuration(seconds, for: event)), 8)
     }
 
     func triggerAudioForCurrentEvent() {
@@ -623,7 +644,7 @@ final class PalettePlaybackRuntime {
                 item.duration
             }
             for (duration, pitches) in groupedPitches where duration > 0 {
-                audioEngine.play(midiPitches: pitches.map(\.pitch), duration: duration, velocity: 0.8)
+                audioEngine.play(midiPitches: pitches.map(\.pitch), duration: duration, velocity: playbackVelocity(for: event))
             }
         } catch {
             onAudioError?(error)
@@ -655,10 +676,14 @@ final class PalettePlaybackRuntime {
                 audioEngine.prepare(
                     midiPitches: pitches.map(\.pitch),
                     duration: duration,
-                    velocity: 0.8
+                    velocity: playbackVelocity(for: event)
                 )
             }
         }
+    }
+
+    private func playbackVelocity(for event: PlaybackEvent) -> Double {
+        min(1.0, max(0.08, 0.8 * event.expression.velocityScale))
     }
 
     private func restartMetronomeIfNeeded(resetBeat: Bool) {

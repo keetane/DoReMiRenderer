@@ -70,6 +70,7 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
     private var currentKeySignature: KeySignature?
     private var currentTimeSignature: TimeSignature?
     private var currentMeasureTempoEvents: [TempoEvent] = []
+    private var currentMeasureDirections: [ScoreDirection] = []
     private var currentMeasureRepeatBarlines: [RepeatBarline] = []
     private var currentMeasureRepeatEndings: [RepeatEnding] = []
     private var currentMeasureRepeat: MeasureRepeat?
@@ -79,6 +80,7 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
 
     private var noteBuilder: NoteBuilder?
     private var lyricBuilder: LyricBuilder?
+    private var directionBuilder: DirectionBuilder?
     private var pendingClefNumber: String?
     private var pendingClefSign: String?
     private var pendingBarlineLocation: String?
@@ -133,6 +135,7 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             currentKeySignature = nil
             currentTimeSignature = nil
             currentMeasureTempoEvents = []
+            currentMeasureDirections = []
             currentMeasureRepeatBarlines = []
             currentMeasureRepeatEndings = []
             currentMeasureRepeat = nil
@@ -141,6 +144,11 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             transposeBuilder = nil
         case "note":
             noteBuilder = NoteBuilder()
+        case "direction":
+            directionBuilder = DirectionBuilder(
+                onset: MusicalTime(ticks: currentOnset, ticksPerQuarterNote: divisions),
+                placement: ScoreDirectionPlacement(rawValue: attributeDict["placement"] ?? "") ?? .unspecified
+            )
         case "lyric":
             lyricBuilder = LyricBuilder()
         case "chord":
@@ -194,6 +202,34 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             noteBuilder?.hasTupletNotation = true
             if let type = attributeDict["type"], let tupletKind = MusicXMLTupletKind(rawValue: type) {
                 noteBuilder?.tupletKind = tupletKind
+            }
+        case "staccato":
+            noteBuilder?.articulations.append(.staccato)
+        case "accent":
+            noteBuilder?.articulations.append(.accent)
+        case "tenuto":
+            noteBuilder?.articulations.append(.tenuto)
+        case "strong-accent":
+            noteBuilder?.articulations.append(.marcato)
+        case "detached-legato":
+            recordDiagnostic(
+                severity: .warning,
+                code: "unsupported.detachedLegato",
+                elementName: elementName,
+                message: "MusicXML detached-legato is recognized but not rendered or applied to playback in the Articulation MVP."
+            )
+        case "fermata":
+            noteBuilder?.articulations.append(.fermata)
+        case "wedge":
+            if let type = attributeDict["type"], let kind = ScoreWedgeKind(rawValue: type) {
+                directionBuilder?.kinds.append(.wedge(kind))
+            } else {
+                recordDiagnostic(
+                    severity: .warning,
+                    code: "unsupported.wedgeType",
+                    elementName: elementName,
+                    message: "MusicXML wedge type \(attributeDict["type"] ?? "missing") is not supported by the dynamics MVP."
+                )
             }
         case "ornaments":
             recordDiagnostic(
@@ -264,6 +300,7 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
                 keySignature: currentKeySignature,
                 timeSignature: currentTimeSignature,
                 tempoEvents: currentMeasureTempoEvents,
+                directions: currentMeasureDirections,
                 repeatBarlines: currentMeasureRepeatBarlines,
                 repeatEndings: currentMeasureRepeatEndings,
                 measureRepeat: currentMeasureRepeat,
@@ -322,7 +359,11 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
         case "voice":
             noteBuilder?.voiceID = VoiceID(rawValue: text.isEmpty ? "1" : text)
         case "staff":
-            noteBuilder?.staffID = StaffID(rawValue: text.isEmpty ? "1" : text)
+            if parentElement == "direction" {
+                directionBuilder?.staffID = StaffID(rawValue: text.isEmpty ? "1" : text)
+            } else {
+                noteBuilder?.staffID = StaffID(rawValue: text.isEmpty ? "1" : text)
+            }
         case "accidental":
             noteBuilder?.accidental = text
         case "type":
@@ -337,6 +378,10 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             }
         case "words":
             recordPlaybackJumpMarker(text)
+        case "p", "pp", "ppp", "mp", "mf", "f", "ff", "fff":
+            if parentElement == "dynamics", let mark = DynamicMark(rawValue: elementName) {
+                directionBuilder?.kinds.append(.dynamic(mark))
+            }
         case "lyric":
             if let lyricBuilder, !lyricBuilder.text.isEmpty {
                 noteBuilder?.lyrics.append(LyricAnnotation(text: lyricBuilder.text, syllabic: lyricBuilder.syllabic))
@@ -351,6 +396,18 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
         case "transpose":
             currentMusicXMLTranspose = transposeBuilder?.make()
             transposeBuilder = nil
+        case "direction":
+            if let directionBuilder {
+                for kind in directionBuilder.kinds {
+                    currentMeasureDirections.append(ScoreDirection(
+                        kind: kind,
+                        onset: directionBuilder.onset,
+                        staffID: directionBuilder.staffID,
+                        placement: directionBuilder.placement
+                    ))
+                }
+            }
+            directionBuilder = nil
         case "measure-repeat":
             let count = Int(text) ?? 1
             if count != 1 {
@@ -455,6 +512,7 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             accidental: builder.accidental,
             ties: builder.ties,
             slurs: builder.slurs,
+            articulations: builder.articulations,
             lyrics: builder.lyrics,
             fingerings: builder.fingerings,
             isGrace: builder.isGrace,
@@ -661,6 +719,7 @@ private struct NoteBuilder {
     var accidental: String?
     var ties: [MusicXMLTieKind] = []
     var slurs: [MusicXMLSlurKind] = []
+    var articulations: [ScoreArticulationKind] = []
     var lyrics: [LyricAnnotation] = []
     var fingerings: [FingeringAnnotation] = []
     var isGrace = false
@@ -681,6 +740,13 @@ private struct NoteBuilder {
 private struct LyricBuilder {
     var syllabic: LyricSyllabic = .unknown
     var text = ""
+}
+
+private struct DirectionBuilder {
+    var onset: MusicalTime
+    var placement: ScoreDirectionPlacement
+    var staffID: StaffID?
+    var kinds: [ScoreDirectionKind] = []
 }
 
 private struct MusicXMLTransposeBuilder {
@@ -743,6 +809,13 @@ private let recognizedMusicXMLElements: Set<String> = [
     "syllabic",
     "text",
     "notations",
+    "articulations",
+    "staccato",
+    "accent",
+    "tenuto",
+    "strong-accent",
+    "detached-legato",
+    "fermata",
     "technical",
     "fingering",
     "direction",
@@ -769,6 +842,14 @@ private let recognizedMusicXMLElements: Set<String> = [
     "part-symbol",
     "wedge",
     "dynamics",
+    "ppp",
+    "pp",
+    "p",
+    "mp",
+    "mf",
+    "f",
+    "ff",
+    "fff",
     "words",
     "transpose",
     "diatonic",

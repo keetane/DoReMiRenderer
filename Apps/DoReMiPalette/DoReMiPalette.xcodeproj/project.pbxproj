@@ -34,6 +34,7 @@
 		2B00000100000000000000F1 /* Features/ScorePractice/OnboardingGuide.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001046 /* Features/ScorePractice/OnboardingGuide.swift */; };
 		2B00000100000000000000C5 /* Resources/Samples/Ode_to_Joy_Easy_variation.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001045 /* Resources/Samples/Ode_to_Joy_Easy_variation.mxl */; };
 		2B00000100000000000000C3 /* Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001043 /* Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl */; };
+		2B00000100000000000000C6 /* Resources/Samples/articulation_dynamics_coverage_sample.musicxml in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001047 /* Resources/Samples/articulation_dynamics_coverage_sample.musicxml */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -74,6 +75,7 @@
 		2B0000010000000000001046 /* Features/ScorePractice/OnboardingGuide.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/ScorePractice/OnboardingGuide.swift; sourceTree = "<group>"; };
 		2B0000010000000000001045 /* Resources/Samples/Ode_to_Joy_Easy_variation.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Ode_to_Joy_Easy_variation.mxl"; sourceTree = "<group>"; };
 		2B0000010000000000001043 /* Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl"; sourceTree = "<group>"; };
+		2B0000010000000000001047 /* Resources/Samples/articulation_dynamics_coverage_sample.musicxml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = "Resources/Samples/articulation_dynamics_coverage_sample.musicxml"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -130,6 +132,7 @@
 				2B0000010000000000001022 /* Assets.xcassets */,
 				2B0000010000000000001045 /* Resources/Samples/Ode_to_Joy_Easy_variation.mxl */,
 				2B0000010000000000001043 /* Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl */,
+				2B0000010000000000001047 /* Resources/Samples/articulation_dynamics_coverage_sample.musicxml */,
 			);
 			path = DoReMiPalette;
 			sourceTree = "<group>";
@@ -247,6 +250,7 @@
 				2B0000010000000000000012 /* Assets.xcassets in Resources */,
 				2B00000100000000000000C5 /* Resources/Samples/Ode_to_Joy_Easy_variation.mxl in Resources */,
 				2B00000100000000000000C3 /* Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl in Resources */,
+				2B00000100000000000000C6 /* Resources/Samples/articulation_dynamics_coverage_sample.musicxml in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

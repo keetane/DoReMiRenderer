@@ -104,6 +104,7 @@ struct ScoreLayoutEngine: Sendable {
         var staffLines: [StaffLineLayout] = []
         var ledgerLines: [LedgerLineLayout] = []
         var annotationMaxY: CGFloat = 0
+        var pendingWedges: [PendingWedgeLayout] = []
 
         let staffIDs = orderedStaffIDs(in: score)
         let staffIndexByID = Dictionary(uniqueKeysWithValues: staffIDs.enumerated().map { ($0.element, $0.offset) })
@@ -182,6 +183,16 @@ struct ScoreLayoutEngine: Sendable {
             if shouldWrapSystems,
                measureX > metrics.leftMargin,
                measureX + measureWidth > metrics.leftMargin + contentWidth {
+                elements.append(contentsOf: flushPendingWedges(
+                    &pendingWedges,
+                    endX: metrics.leftMargin + contentWidth - metrics.staffSpace * 0.9,
+                    systemIndex: currentSystemIndex,
+                    staffIDs: staffIDs,
+                    staffIndexByID: staffIndexByID,
+                    systemTop: systemTop,
+                    metrics: metrics,
+                    restartX: metrics.leftMargin + metrics.staffSpace * 0.9
+                ))
                 currentSystemIndex += 1
                 systemTop += systemHeight + options.systemSpacing
                 measureX = metrics.leftMargin
@@ -494,6 +505,33 @@ struct ScoreLayoutEngine: Sendable {
                     )
                 }
 
+                for (articulationIndex, articulation) in note.articulations.enumerated() {
+                    let layout = articulationLayout(
+                        kind: articulation,
+                        index: articulationIndex,
+                        noteLayout: noteLayout,
+                        stemDirection: beamStemDirections[note.id]
+                            ?? chordStemDirections[ChordStemKey(note)]
+                            ?? stemDirection(for: position),
+                        metrics: metrics
+                    )
+                    elements.append(ElementLayout(
+                        id: ScoreElementID(rawValue: "\(note.id.rawValue).articulation.\(articulation.rawValue).\(articulationIndex)"),
+                        kind: .articulation,
+                        noteID: note.id,
+                        measureID: item.measure.id,
+                        staffID: note.staffID,
+                        voiceID: note.voiceID,
+                        clef: clef,
+                        keySignature: displayedKeySignature,
+                        timeSignature: item.measure.timeSignature,
+                        pitchClassHint: pitch.pitchClass,
+                        frame: layout.frame,
+                        noteLayout: noteLayout,
+                        articulation: layout
+                    ))
+                }
+
                 let noteLedgerLines = ledgerLinesForNote(
                     note,
                     pitch: pitch,
@@ -542,6 +580,18 @@ struct ScoreLayoutEngine: Sendable {
                 elements: elements,
                 metrics: metrics
             ))
+            elements.append(contentsOf: directionElements(
+                measure: item.measure,
+                staffIDs: staffIDs,
+                staffIndexByID: staffIndexByID,
+                onsetX: onsetX,
+                measureX: measureX,
+                measureWidth: measureWidth,
+                systemTop: systemTop,
+                systemIndex: currentSystemIndex,
+                metrics: metrics,
+                pendingWedges: &pendingWedges
+            ))
 
             elements.append(contentsOf: barlineElements(
                 measure: item.measure,
@@ -580,6 +630,16 @@ struct ScoreLayoutEngine: Sendable {
 
             measureX += measureWidth + options.measureSpacing
         }
+        elements.append(contentsOf: flushPendingWedges(
+            &pendingWedges,
+            endX: max(metrics.leftMargin, measureX - options.measureSpacing - metrics.staffSpace * 0.9),
+            systemIndex: currentSystemIndex,
+            staffIDs: staffIDs,
+            staffIndexByID: staffIndexByID,
+            systemTop: systemTop,
+            metrics: metrics,
+            restartX: nil
+        ))
 
         let renderBoundsPadding: CGFloat = 0
         var renderBounds = drawingBounds(
@@ -1071,6 +1131,259 @@ struct ScoreLayoutEngine: Sendable {
         ))
     }
 
+    private func articulationLayout(
+        kind: ScoreArticulationKind,
+        index: Int,
+        noteLayout: NoteLayout,
+        stemDirection: StemDirection,
+        metrics: LayoutMetrics
+    ) -> ArticulationLayout {
+        let side: CGFloat = stemDirection == .up ? 1 : -1
+        let size = articulationSize(kind: kind, metrics: metrics)
+        let yAnchor = side > 0 ? noteLayout.noteheadFrame.maxY : noteLayout.noteheadFrame.minY
+        var distance = metrics.staffSpace * (1.05 + CGFloat(index) * 0.72) + size * 0.25
+        switch kind {
+        case .staccato, .tenuto, .fermata:
+            let minimumDistance = metrics.staffSpace * 0.35 + size * 0.10
+            distance = max(minimumDistance, distance - 10)
+        case .accent, .marcato:
+            break
+        }
+        let y = yAnchor + side * distance
+        let point = CGPoint(x: noteLayout.noteheadCenter.x, y: y)
+        let placement: ScoreDirectionPlacement = side > 0 ? .below : .above
+        let frame = CGRect(
+            x: point.x - size * 0.55,
+            y: point.y - size * 0.55,
+            width: size * 1.1,
+            height: size * 1.1
+        )
+        return ArticulationLayout(kind: kind, placement: placement, point: point, frame: frame)
+    }
+
+    private func articulationSize(kind: ScoreArticulationKind, metrics: LayoutMetrics) -> CGFloat {
+        switch kind {
+        case .fermata:
+            max(18, metrics.staffSpace * 1.65)
+        case .accent, .marcato:
+            max(14, metrics.staffSpace * 1.35)
+        case .tenuto:
+            max(12, metrics.staffSpace * 1.15)
+        case .staccato:
+            max(8, metrics.staffSpace * 0.82)
+        }
+    }
+
+    private func directionElements(
+        measure: Measure,
+        staffIDs: [StaffID],
+        staffIndexByID: [StaffID: Int],
+        onsetX: [MusicalTime: CGFloat],
+        measureX: CGFloat,
+        measureWidth: CGFloat,
+        systemTop: CGFloat,
+        systemIndex: Int,
+        metrics: LayoutMetrics,
+        pendingWedges: inout [PendingWedgeLayout]
+    ) -> [ElementLayout] {
+        var result: [ElementLayout] = []
+        let sorted = measure.directions.sorted { lhs, rhs in
+            if lhs.onset != rhs.onset { return lhs.onset < rhs.onset }
+            return directionSortOrder(lhs.kind) < directionSortOrder(rhs.kind)
+        }
+
+        for (index, direction) in sorted.enumerated() {
+            let staffID = direction.staffID ?? staffIDs.first ?? StaffID(rawValue: "1")
+            let x = onsetX[direction.onset] ?? measureX + metrics.noteInset
+            let y = directionY(direction: direction, staffID: staffID, staffIndexByID: staffIndexByID, systemTop: systemTop, metrics: metrics)
+            switch direction.kind {
+            case .dynamic(let mark):
+                let fontSize = max(15, metrics.staffSpace * 1.65)
+                let text = mark.rawValue
+                let width = max(metrics.staffSpace * 1.8, CGFloat(text.count) * fontSize * 0.62)
+                let height = fontSize * 1.2
+                let frame = CGRect(x: x - width * 0.5, y: y - height * 0.5, width: width, height: height)
+                let layout = DynamicLayout(mark: mark, origin: CGPoint(x: frame.minX, y: y), frame: frame)
+                result.append(ElementLayout(
+                    id: ScoreElementID(rawValue: "\(measure.id.rawValue).dynamic.\(index).\(mark.rawValue)"),
+                    kind: .dynamic,
+                    measureID: measure.id,
+                    staffID: staffID,
+                    frame: frame,
+                    dynamic: layout
+                ))
+            case .wedge(let kind):
+                switch kind {
+                case .crescendo, .diminuendo:
+                    pendingWedges.append(PendingWedgeLayout(
+                        direction: direction,
+                        startX: x,
+                        sourceMeasureID: measure.id,
+                        systemIndex: systemIndex
+                    ))
+                case .stop:
+                    let matchingIndex = pendingWedges.lastIndex { pending in
+                        let pendingStaffID = pending.direction.staffID ?? staffID
+                        return pendingStaffID == staffID
+                    }
+                    if let matchingIndex {
+                        let pending = pendingWedges.remove(at: matchingIndex)
+                        let startX = pending.startX
+                        let endX = max(x, startX + metrics.staffSpace * 3.0)
+                        let pendingKind: ScoreWedgeKind
+                        if case .wedge(let kind) = pending.direction.kind {
+                            pendingKind = kind
+                        } else {
+                            pendingKind = .crescendo
+                        }
+                        let hairpin = hairpinLayout(
+                            kind: pendingKind,
+                            startX: startX,
+                            endX: endX,
+                            direction: pending.direction,
+                            staffID: pending.direction.staffID ?? staffID,
+                            staffIndexByID: staffIndexByID,
+                            systemTop: systemTop,
+                            metrics: metrics
+                        )
+                        result.append(ElementLayout(
+                            id: ScoreElementID(rawValue: "\(measure.id.rawValue).hairpin.\(index).\(pendingKind.rawValue)"),
+                            kind: .hairpin,
+                            measureID: measure.id,
+                            staffID: pending.direction.staffID ?? staffID,
+                            frame: hairpin.frame,
+                            hairpin: hairpin
+                        ))
+                    }
+                }
+            }
+        }
+        return result
+    }
+
+    private func flushPendingWedges(
+        _ pendingWedges: inout [PendingWedgeLayout],
+        endX: CGFloat,
+        systemIndex: Int,
+        staffIDs: [StaffID],
+        staffIndexByID: [StaffID: Int],
+        systemTop: CGFloat,
+        metrics: LayoutMetrics,
+        restartX: CGFloat?
+    ) -> [ElementLayout] {
+        var result: [ElementLayout] = []
+        for (index, pending) in pendingWedges.enumerated() where pending.systemIndex == systemIndex {
+            guard endX > pending.startX + metrics.staffSpace else { continue }
+            let staffID = pending.direction.staffID ?? staffIDs.first ?? StaffID(rawValue: "1")
+            let kind: ScoreWedgeKind
+            if case .wedge(let wedgeKind) = pending.direction.kind {
+                kind = wedgeKind
+            } else {
+                kind = .crescendo
+            }
+            let hairpin = hairpinLayout(
+                kind: kind,
+                startX: pending.startX,
+                endX: endX,
+                direction: pending.direction,
+                staffID: staffID,
+                staffIndexByID: staffIndexByID,
+                systemTop: systemTop,
+                metrics: metrics
+            )
+            result.append(ElementLayout(
+                id: ScoreElementID(rawValue: "\(pending.sourceMeasureID.rawValue).hairpin.continuation.\(systemIndex).\(index).\(kind.rawValue)"),
+                kind: .hairpin,
+                measureID: pending.sourceMeasureID,
+                staffID: staffID,
+                frame: hairpin.frame,
+                hairpin: hairpin
+            ))
+        }
+        if let restartX {
+            pendingWedges = pendingWedges.map {
+                guard $0.systemIndex == systemIndex else { return $0 }
+                return PendingWedgeLayout(
+                    direction: $0.direction,
+                    startX: restartX,
+                    sourceMeasureID: $0.sourceMeasureID,
+                    systemIndex: systemIndex + 1
+                )
+            }
+        } else {
+            pendingWedges.removeAll { $0.systemIndex == systemIndex }
+        }
+        return result
+    }
+
+    private func hairpinLayout(
+        kind: ScoreWedgeKind,
+        startX: CGFloat,
+        endX: CGFloat,
+        direction: ScoreDirection,
+        staffID: StaffID,
+        staffIndexByID: [StaffID: Int],
+        systemTop: CGFloat,
+        metrics: LayoutMetrics
+    ) -> HairpinLayout {
+        let y = directionY(direction: direction, staffID: staffID, staffIndexByID: staffIndexByID, systemTop: systemTop, metrics: metrics)
+        let spread = metrics.staffSpace * 0.9
+        let start: CGPoint
+        let upperEnd: CGPoint
+        let lowerEnd: CGPoint
+        if kind == .crescendo {
+            start = CGPoint(x: startX, y: y)
+            upperEnd = CGPoint(x: endX, y: y - spread * 0.5)
+            lowerEnd = CGPoint(x: endX, y: y + spread * 0.5)
+        } else {
+            start = CGPoint(x: endX, y: y)
+            upperEnd = CGPoint(x: startX, y: y - spread * 0.5)
+            lowerEnd = CGPoint(x: startX, y: y + spread * 0.5)
+        }
+        let minX = min(start.x, upperEnd.x, lowerEnd.x)
+        let maxX = max(start.x, upperEnd.x, lowerEnd.x)
+        let minY = min(start.y, upperEnd.y, lowerEnd.y)
+        let maxY = max(start.y, upperEnd.y, lowerEnd.y)
+        let frame = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+            .insetBy(dx: -metrics.staffLineHitHalfWidth * 2, dy: -metrics.staffLineHitHalfWidth * 2)
+        return HairpinLayout(kind: kind, start: start, upperEnd: upperEnd, lowerEnd: lowerEnd, frame: frame)
+    }
+
+    private func directionSortOrder(_ kind: ScoreDirectionKind) -> Int {
+        switch kind {
+        case .dynamic:
+            0
+        case .wedge(.crescendo), .wedge(.diminuendo):
+            1
+        case .wedge(.stop):
+            2
+        }
+    }
+
+    private func directionY(
+        direction: ScoreDirection,
+        staffID: StaffID,
+        staffIndexByID: [StaffID: Int],
+        systemTop: CGFloat,
+        metrics: LayoutMetrics
+    ) -> CGFloat {
+        let staffIndex = staffIndexByID[staffID] ?? 0
+        let middleY = metrics.staffMiddleY(systemTop: systemTop, staffIndex: staffIndex)
+        switch direction.placement {
+        case .above:
+            return middleY - metrics.staffHeight / 2 - metrics.staffSpace * (1.65 + directionLaneOffset(for: direction))
+        case .below, .unspecified:
+            return middleY + metrics.staffHeight / 2 + metrics.staffSpace * (2.25 + directionLaneOffset(for: direction))
+        }
+    }
+
+    private func directionLaneOffset(for direction: ScoreDirection) -> CGFloat {
+        if case .wedge = direction.kind {
+            return 1.05
+        }
+        return 0
+    }
+
     private func tieAndSlurElements(
         measure: Measure,
         noteByID: [NoteID: NoteLayout],
@@ -1539,6 +1852,9 @@ public struct ElementLayout: Sendable {
     public let ledgerLine: LedgerLineLayout?
     public let accidental: String?
     public let annotation: TextAnnotationLayout?
+    public let articulation: ArticulationLayout?
+    public let dynamic: DynamicLayout?
+    public let hairpin: HairpinLayout?
     public let repeatBarline: RepeatBarline?
     public let beam: BeamLayout?
     public let curve: NotationCurveLayout?
@@ -1564,6 +1880,9 @@ public struct ElementLayout: Sendable {
         ledgerLine: LedgerLineLayout? = nil,
         accidental: String? = nil,
         annotation: TextAnnotationLayout? = nil,
+        articulation: ArticulationLayout? = nil,
+        dynamic: DynamicLayout? = nil,
+        hairpin: HairpinLayout? = nil,
         repeatBarline: RepeatBarline? = nil,
         beam: BeamLayout? = nil,
         curve: NotationCurveLayout? = nil,
@@ -1588,6 +1907,9 @@ public struct ElementLayout: Sendable {
         self.ledgerLine = ledgerLine
         self.accidental = accidental
         self.annotation = annotation
+        self.articulation = articulation
+        self.dynamic = dynamic
+        self.hairpin = hairpin
         self.repeatBarline = repeatBarline
         self.beam = beam
         self.curve = curve
@@ -1615,6 +1937,9 @@ public struct ElementLayout: Sendable {
             ledgerLine: ledgerLine?.offsetBy(dx: dx, dy: dy),
             accidental: accidental,
             annotation: annotation?.offsetBy(dx: dx, dy: dy),
+            articulation: articulation?.offsetBy(dx: dx, dy: dy),
+            dynamic: dynamic?.offsetBy(dx: dx, dy: dy),
+            hairpin: hairpin?.offsetBy(dx: dx, dy: dy),
             repeatBarline: repeatBarline,
             beam: beam?.offsetBy(dx: dx, dy: dy),
             curve: curve?.offsetBy(dx: dx, dy: dy),
@@ -1639,6 +1964,75 @@ public struct BeamSegmentLayout: Sendable {
         BeamSegmentLayout(
             start: CGPoint(x: start.x + dx, y: start.y + dy),
             end: CGPoint(x: end.x + dx, y: end.y + dy)
+        )
+    }
+}
+
+public struct ArticulationLayout: Sendable {
+    public let kind: ScoreArticulationKind
+    public let placement: ScoreDirectionPlacement
+    public let point: CGPoint
+    public let frame: CGRect
+
+    init(kind: ScoreArticulationKind, placement: ScoreDirectionPlacement = .unspecified, point: CGPoint, frame: CGRect) {
+        self.kind = kind
+        self.placement = placement
+        self.point = point
+        self.frame = frame
+    }
+
+    fileprivate func offsetBy(dx: CGFloat, dy: CGFloat) -> ArticulationLayout {
+        ArticulationLayout(
+            kind: kind,
+            placement: placement,
+            point: CGPoint(x: point.x + dx, y: point.y + dy),
+            frame: frame.offsetBy(dx: dx, dy: dy)
+        )
+    }
+}
+
+public struct DynamicLayout: Sendable {
+    public let mark: DynamicMark
+    public let origin: CGPoint
+    public let frame: CGRect
+
+    init(mark: DynamicMark, origin: CGPoint, frame: CGRect) {
+        self.mark = mark
+        self.origin = origin
+        self.frame = frame
+    }
+
+    fileprivate func offsetBy(dx: CGFloat, dy: CGFloat) -> DynamicLayout {
+        DynamicLayout(
+            mark: mark,
+            origin: CGPoint(x: origin.x + dx, y: origin.y + dy),
+            frame: frame.offsetBy(dx: dx, dy: dy)
+        )
+    }
+}
+
+public struct HairpinLayout: Sendable {
+    public let kind: ScoreWedgeKind
+    public let start: CGPoint
+    public let upperEnd: CGPoint
+    public let lowerEnd: CGPoint
+    public let frame: CGRect
+
+    init(kind: ScoreWedgeKind, start: CGPoint, upperEnd: CGPoint, lowerEnd: CGPoint, frame: CGRect) {
+        self.kind = kind
+        self.start = start
+        self.upperEnd = upperEnd
+        self.lowerEnd = lowerEnd
+        self.frame = frame
+    }
+
+    fileprivate func offsetBy(dx: CGFloat, dy: CGFloat) -> HairpinLayout {
+        HairpinLayout(
+            kind: kind,
+            start: CGPoint(x: start.x + dx, y: start.y + dy),
+            upperEnd: CGPoint(x: upperEnd.x + dx, y: upperEnd.y + dy),
+            lowerEnd: CGPoint(x: lowerEnd.x + dx, y: lowerEnd.y + dy),
+            frame: frame.offsetBy(dx: dx, dy: dy)
         )
     }
 }
@@ -2070,6 +2464,13 @@ private struct MeasureLayoutPlan {
     let measure: Measure
     let displayedKeySignature: KeySignature?
     let width: CGFloat
+}
+
+private struct PendingWedgeLayout {
+    let direction: ScoreDirection
+    let startX: CGFloat
+    let sourceMeasureID: MeasureID
+    let systemIndex: Int
 }
 
 private func width(

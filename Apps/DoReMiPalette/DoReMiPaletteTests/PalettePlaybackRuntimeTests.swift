@@ -94,7 +94,7 @@ struct PalettePlaybackRuntimeTests {
         let audio = MockPaletteAudioEngine()
         let runtime = PalettePlaybackRuntime(
             events: try Self.events(from: Self.longMetronomeMusicXML),
-            tempoBPM: 240,
+            tempoBPM: 60,
             audioEngine: audio
         )
 
@@ -102,7 +102,7 @@ struct PalettePlaybackRuntimeTests {
         try await Task.sleep(nanoseconds: 80_000_000)
         runtime.setMetronomeEnabled(true)
         let clickCountImmediatelyAfterEnable = audio.metronomeClickCount
-        try await Task.sleep(nanoseconds: 1_200_000_000)
+        try await Task.sleep(nanoseconds: 1_500_000_000)
         runtime.setMetronomeEnabled(false)
         let clickCountAfterDisable = audio.metronomeClickCount
         try await Task.sleep(nanoseconds: 300_000_000)
@@ -416,6 +416,58 @@ struct PalettePlaybackRuntimeTests {
         #expect(audio.silenceCount == 0)
     }
 
+    @Test @MainActor func playbackExpressionAdjustsGateAndVelocity() throws {
+        let audio = MockPaletteAudioEngine()
+        let events = try Self.events(from: Self.expressionPlaybackMusicXML)
+        let staccato = try #require(events.first { $0.expression.articulationKinds.contains(.staccato) })
+        let accent = try #require(events.first { $0.expression.articulationKinds.contains(.accent) })
+        let tenuto = try #require(events.first { $0.expression.articulationKinds.contains(.tenuto) })
+        let runtime = PalettePlaybackRuntime(events: events, tempoBPM: 120, audioEngine: audio)
+
+        #expect(runtime.soundDurationSeconds(for: staccato) < runtime.eventDurationSeconds(for: staccato))
+        #expect(runtime.soundDurationSeconds(for: staccato) < runtime.soundDurationSeconds(for: tenuto))
+        #expect(tenuto.expression.gateScale > 1.0)
+
+        runtime.move(to: try #require(events.firstIndex(of: staccato)))
+        runtime.triggerAudioForCurrentEvent()
+        runtime.move(to: try #require(events.firstIndex(of: accent)))
+        runtime.triggerAudioForCurrentEvent()
+        runtime.move(to: try #require(events.firstIndex(of: tenuto)))
+        runtime.triggerAudioForCurrentEvent()
+
+        #expect(audio.playedDurations[0] < runtime.eventDurationSeconds(for: staccato))
+        #expect(audio.playedVelocities[1] > audio.playedVelocities[0])
+        #expect(audio.playedDurations[2] > audio.playedDurations[0])
+    }
+
+    @Test @MainActor func fermataExpressionExtendsSchedulingAndSoundDurationWithClamp() throws {
+        let events = try Self.events(from: Self.fermataPlaybackMusicXML)
+        let normal = try #require(events.first { !$0.expression.articulationKinds.contains(.fermata) })
+        let fermata = try #require(events.first { $0.expression.articulationKinds.contains(.fermata) })
+        let runtime = PalettePlaybackRuntime(events: events, tempoBPM: 120)
+
+        #expect(fermata.expression.durationScale > normal.expression.durationScale)
+        #expect(runtime.eventDurationSeconds(for: fermata) > runtime.eventDurationSeconds(for: normal))
+        #expect(runtime.soundDurationSeconds(for: fermata) > runtime.soundDurationSeconds(for: normal))
+        #expect(runtime.schedulingIntervalSeconds(from: 1) > runtime.schedulingIntervalSeconds(from: 0))
+    }
+
+    @Test @MainActor func fermataAtMeasureEndExtendsSchedulingIntoNextMeasure() throws {
+        let events = try Self.events(from: Self.measureEndFermataPlaybackMusicXML)
+        let runtime = PalettePlaybackRuntime(events: events, tempoBPM: 120)
+
+        #expect(events.count == 3)
+        #expect(events[1].expression.articulationKinds.contains(.fermata))
+        #expect(events[1].measureID != events[2].measureID)
+        #expect(runtime.schedulingIntervalSeconds(from: 1) > runtime.schedulingIntervalSeconds(from: 0))
+    }
+
+    @Test @MainActor func humanizeIsExperimentalAndDisabledByDefault() {
+        let runtime = PalettePlaybackRuntime()
+
+        #expect(runtime.humanizeEnabled == false)
+    }
+
     @Test @MainActor func fastShortNotesKeepMinimumAudibleSoundDuration() throws {
         let event = try #require(Self.events(from: Self.sixteenthNotesMusicXML).first)
         let runtime = PalettePlaybackRuntime(events: [event], tempoBPM: 240, noteGateRatio: 0.50)
@@ -456,8 +508,8 @@ struct PalettePlaybackRuntimeTests {
         #expect(runtime.soundDurationSeconds(for: d3Event) >= 0.06)
         #expect(SimpleToneAudioEngine.frequency(forMIDIPitch: 50).isFinite)
         #expect(SimpleToneAudioEngine.frequency(forMIDIPitch: 50) > 0)
-        #expect(SimpleToneAudioEngine.synthesizedBufferDuration(for: 0.4) == 0.22)
-        #expect(SimpleToneAudioEngine.synthesizedBufferDuration(for: 8.0) == 0.22)
+        #expect(SimpleToneAudioEngine.synthesizedBufferDuration(for: 0.4) > 0.35)
+        #expect(SimpleToneAudioEngine.synthesizedBufferDuration(for: 8.0) == 8.0)
 
         for index in 0...d3Index {
             runtime.move(to: index)
@@ -467,6 +519,12 @@ struct PalettePlaybackRuntimeTests {
         #expect(audio.playedPitches.count >= 1)
         #expect(audio.playedPitches.last == [50])
         #expect(audio.playedDurations.last ?? 0 >= 0.06)
+    }
+
+    @Test @MainActor func audioBufferDurationPreservesQuarterHalfAndWholeLengths() {
+        #expect(SimpleToneAudioEngine.synthesizedBufferDuration(for: 0.5) == 0.5)
+        #expect(SimpleToneAudioEngine.synthesizedBufferDuration(for: 1.0) == 1.0)
+        #expect(SimpleToneAudioEngine.synthesizedBufferDuration(for: 2.0) == 2.0)
     }
 
     @Test @MainActor func notationCoverageD3StartsAtItsOnsetBeforeC5WholeCompletes() throws {
@@ -769,6 +827,27 @@ struct PalettePlaybackRuntimeTests {
         #expect(audio.silenceCount == 0)
     }
 
+    @Test @MainActor func dottedNotesAndRestsPreservePlaybackTiming() throws {
+        let events = try Self.events(from: Self.dottedRestTimingMusicXML, includeRests: true)
+        let runtime = PalettePlaybackRuntime(events: events, tempoBPM: 120)
+
+        #expect(events.count == 3)
+        let dottedQuarter = events[0]
+        let dottedHalfRest = events[1]
+        let afterRest = events[2]
+
+        #expect(Self.quarterNotes(for: dottedQuarter.nominalDuration) == 1.5)
+        #expect(Self.quarterNotes(for: dottedHalfRest.nominalDuration) == 3.0)
+        #expect(dottedHalfRest.midiPitches.isEmpty)
+        #expect(dottedQuarter.measureID.rawValue == "0.1")
+        #expect(dottedHalfRest.measureID.rawValue == "0.1")
+        #expect(afterRest.measureID.rawValue == "0.2")
+        #expect(Self.quarterNotes(for: afterRest.onset) == 0.0)
+        #expect(abs(runtime.eventDurationSeconds(for: dottedQuarter) - 0.75) < 0.000_001)
+        #expect(abs(runtime.eventDurationSeconds(for: dottedHalfRest) - 1.5) < 0.000_001)
+        #expect(abs(runtime.schedulingIntervalSeconds(from: 1) - 1.5) < 0.000_001)
+    }
+
     @Test @MainActor func emptySequenceTempoChangeDoesNotPlayAudio() {
         let audio = MockPaletteAudioEngine()
         let runtime = PalettePlaybackRuntime(events: [], audioEngine: audio)
@@ -1049,6 +1128,67 @@ struct PalettePlaybackRuntimeTests {
     </score-partwise>
     """.utf8)
 
+    private static let expressionPlaybackMusicXML = Data("""
+    <?xml version="1.0" encoding="UTF-8"?>
+    <score-partwise version="4.0">
+      <part-list><score-part id="P1"><part-name>Expression</part-name></score-part></part-list>
+      <part id="P1">
+        <measure number="1">
+          <attributes>
+            <divisions>4</divisions>
+            <time><beats>4</beats><beat-type>4</beat-type></time>
+            <clef><sign>G</sign><line>2</line></clef>
+          </attributes>
+          <direction placement="below"><direction-type><dynamics><mp/></dynamics></direction-type><staff>1</staff></direction>
+          <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff><notations><articulations><staccato/></articulations></notations></note>
+          <direction placement="below"><direction-type><dynamics><f/></dynamics></direction-type><staff>1</staff></direction>
+          <note><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff><notations><articulations><accent/></articulations></notations></note>
+          <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff><notations><articulations><tenuto/></articulations></notations></note>
+        </measure>
+      </part>
+    </score-partwise>
+    """.utf8)
+
+    private static let fermataPlaybackMusicXML = Data("""
+    <?xml version="1.0" encoding="UTF-8"?>
+    <score-partwise version="4.0">
+      <part-list><score-part id="P1"><part-name>Fermata Playback</part-name></score-part></part-list>
+      <part id="P1">
+        <measure number="1">
+          <attributes>
+            <divisions>4</divisions>
+            <time><beats>4</beats><beat-type>4</beat-type></time>
+            <clef><sign>G</sign><line>2</line></clef>
+          </attributes>
+          <note id="normal"><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+          <note id="fermata"><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff><notations><fermata/></notations></note>
+          <note id="after"><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+        </measure>
+      </part>
+    </score-partwise>
+    """.utf8)
+
+    private static let measureEndFermataPlaybackMusicXML = Data("""
+    <?xml version="1.0" encoding="UTF-8"?>
+    <score-partwise version="4.0">
+      <part-list><score-part id="P1"><part-name>Measure End Fermata Playback</part-name></score-part></part-list>
+      <part id="P1">
+        <measure number="1">
+          <attributes>
+            <divisions>4</divisions>
+            <time><beats>2</beats><beat-type>4</beat-type></time>
+            <clef><sign>G</sign><line>2</line></clef>
+          </attributes>
+          <note id="normal"><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+          <note id="fermata-end"><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff><notations><fermata/></notations></note>
+        </measure>
+        <measure number="2">
+          <note id="after"><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+        </measure>
+      </part>
+    </score-partwise>
+    """.utf8)
+
     private static let longMetronomeMusicXML = Data("""
     <?xml version="1.0" encoding="UTF-8"?>
     <score-partwise version="4.0">
@@ -1148,6 +1288,27 @@ struct PalettePlaybackRuntimeTests {
         </measure>
         <measure number="2">
           <note><pitch><step>F</step><octave>4</octave></pitch><duration>3</duration><voice>1</voice><type>half</type><dot/></note>
+        </measure>
+      </part>
+    </score-partwise>
+    """.utf8)
+
+    private static let dottedRestTimingMusicXML = Data("""
+    <?xml version="1.0" encoding="UTF-8"?>
+    <score-partwise version="4.0">
+      <part-list><score-part id="P1"><part-name>Dotted Rest Timing</part-name></score-part></part-list>
+      <part id="P1">
+        <measure number="1">
+          <attributes>
+            <divisions>4</divisions>
+            <time><beats>6</beats><beat-type>4</beat-type></time>
+            <clef><sign>G</sign><line>2</line></clef>
+          </attributes>
+          <note id="dq"><pitch><step>C</step><octave>4</octave></pitch><duration>6</duration><voice>1</voice><type>quarter</type><dot/></note>
+          <note id="dhr"><rest/><duration>12</duration><voice>1</voice><type>half</type><dot/></note>
+        </measure>
+        <measure number="2">
+          <note id="after"><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type></note>
         </measure>
       </part>
     </score-partwise>

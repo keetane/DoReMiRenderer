@@ -9,6 +9,7 @@ public struct PlaybackEvent: Hashable, Sendable {
     public let measureID: MeasureID
     public let staffIDs: [StaffID]
     public let isTiedContinuation: Bool
+    public let expression: PlaybackExpression
 
     init(
         noteIDs: [NoteID],
@@ -18,7 +19,8 @@ public struct PlaybackEvent: Hashable, Sendable {
         midiPitchDurations: [Int: MusicalTime] = [:],
         measureID: MeasureID,
         staffIDs: [StaffID],
-        isTiedContinuation: Bool
+        isTiedContinuation: Bool,
+        expression: PlaybackExpression = .neutral
     ) {
         self.noteIDs = noteIDs
         self.onset = onset
@@ -28,7 +30,35 @@ public struct PlaybackEvent: Hashable, Sendable {
         self.measureID = measureID
         self.staffIDs = staffIDs
         self.isTiedContinuation = isTiedContinuation
+        self.expression = expression
     }
+}
+
+public struct PlaybackExpression: Hashable, Sendable {
+    public let gateScale: Double
+    public let velocityScale: Double
+    public let durationScale: Double
+    public let maxDurationExtraSeconds: Double
+    public let articulationKinds: [ScoreArticulationKind]
+    public let dynamicMark: DynamicMark?
+
+    public init(
+        gateScale: Double = 1.0,
+        velocityScale: Double = 1.0,
+        durationScale: Double = 1.0,
+        maxDurationExtraSeconds: Double = 0.0,
+        articulationKinds: [ScoreArticulationKind] = [],
+        dynamicMark: DynamicMark? = nil
+    ) {
+        self.gateScale = gateScale.isFinite ? min(max(gateScale, 0.20), 1.15) : 1.0
+        self.velocityScale = velocityScale.isFinite ? min(max(velocityScale, 0.20), 1.60) : 1.0
+        self.durationScale = durationScale.isFinite ? min(max(durationScale, 1.0), 2.0) : 1.0
+        self.maxDurationExtraSeconds = maxDurationExtraSeconds.isFinite ? min(max(maxDurationExtraSeconds, 0), 2.0) : 0.0
+        self.articulationKinds = Array(Set(articulationKinds)).sorted { $0.rawValue < $1.rawValue }
+        self.dynamicMark = dynamicMark
+    }
+
+    public static let neutral = PlaybackExpression()
 }
 
 public struct PlaybackOptions: Hashable, Codable, Sendable {
@@ -203,6 +233,13 @@ struct PlaybackSequenceBuilder: Sendable {
         }
         let staffIDs = Array(Set(notes.map(\.staffID))).sorted { $0.rawValue < $1.rawValue }
         let isTiedContinuation = !pitchedNotes.isEmpty && pitchedNotes.allSatisfy(isTieStopOnly)
+        let expression = playbackExpression(
+            notes: attackNotes.isEmpty ? notes : attackNotes,
+            measure: orderedEntries.first?.measure,
+            measureIndex: key.measureIndex,
+            allEntries: allEntries,
+            onset: key.onset
+        )
 
         return PlaybackEvent(
             noteIDs: notes.map(\.id),
@@ -212,8 +249,191 @@ struct PlaybackSequenceBuilder: Sendable {
             midiPitchDurations: midiPitchDurations,
             measureID: key.measureID,
             staffIDs: staffIDs,
-            isTiedContinuation: isTiedContinuation
+            isTiedContinuation: isTiedContinuation,
+            expression: expression
         )
+    }
+
+    private func playbackExpression(
+        notes: [ScoreNote],
+        measure: Measure?,
+        measureIndex: Int,
+        allEntries: [PlaybackEntry],
+        onset: MusicalTime
+    ) -> PlaybackExpression {
+        let articulations = notes.flatMap(\.articulations)
+        var gateScale = 1.0
+        var velocityScale = 1.0
+        var durationScale = 1.0
+        var maxDurationExtraSeconds = 0.0
+
+        if articulations.contains(.staccato) {
+            gateScale = min(gateScale, 0.42)
+        } else if articulations.contains(.marcato) {
+            gateScale = min(gateScale, 0.82)
+        } else if articulations.contains(.tenuto) {
+            gateScale = max(gateScale, 1.10)
+        }
+
+        if articulations.contains(.accent) {
+            velocityScale *= 1.20
+        }
+        if articulations.contains(.marcato) {
+            velocityScale *= 1.25
+        }
+        if articulations.contains(.fermata) {
+            durationScale = 1.5
+            maxDurationExtraSeconds = 1.0
+        }
+
+        let activeDynamic = activeDynamicMark(in: measure, at: onset)
+        if let activeDynamic {
+            velocityScale *= activeDynamic.velocityScale
+        }
+        if let wedgeScale = activeWedgeVelocityScale(
+            measureIndex: measureIndex,
+            onset: onset,
+            allEntries: allEntries
+        ) ?? activeWedgeVelocityScale(in: measure, at: onset) {
+            velocityScale *= wedgeScale
+        }
+
+        return PlaybackExpression(
+            gateScale: gateScale,
+            velocityScale: velocityScale,
+            durationScale: durationScale,
+            maxDurationExtraSeconds: maxDurationExtraSeconds,
+            articulationKinds: articulations,
+            dynamicMark: activeDynamic
+        )
+    }
+
+    private func activeDynamicMark(in measure: Measure?, at onset: MusicalTime) -> DynamicMark? {
+        measure?.directions
+            .filter { direction in
+                if case .dynamic = direction.kind {
+                    return direction.onset <= onset
+                }
+                return false
+            }
+            .max { $0.onset < $1.onset }
+            .flatMap { direction -> DynamicMark? in
+                if case .dynamic(let mark) = direction.kind {
+                    return mark
+                }
+                return nil
+            }
+    }
+
+    private func activeWedgeVelocityScale(in measure: Measure?, at onset: MusicalTime) -> Double? {
+        guard let directions = measure?.directions.sorted(by: { $0.onset < $1.onset }) else {
+            return nil
+        }
+        var activeStart: ScoreDirection?
+        for direction in directions {
+            switch direction.kind {
+            case .wedge(.crescendo), .wedge(.diminuendo):
+                if direction.onset <= onset {
+                    activeStart = direction
+                }
+            case .wedge(.stop):
+                guard let start = activeStart, start.onset <= onset, onset <= direction.onset else {
+                    activeStart = nil
+                    continue
+                }
+                let startValue = musicalTimeDouble(start.onset)
+                let endValue = musicalTimeDouble(direction.onset)
+                let currentValue = musicalTimeDouble(onset)
+                guard endValue > startValue else {
+                    return nil
+                }
+                let progress = min(max((currentValue - startValue) / (endValue - startValue), 0), 1)
+                if case .wedge(.crescendo) = start.kind {
+                    return 0.70 + progress * 0.60
+                }
+                return 1.30 - progress * 0.60
+            default:
+                break
+            }
+        }
+        return nil
+    }
+
+    private func activeWedgeVelocityScale(
+        measureIndex: Int,
+        onset: MusicalTime,
+        allEntries: [PlaybackEntry]
+    ) -> Double? {
+        let measures = Dictionary(grouping: allEntries, by: \.measureIndex)
+            .compactMapValues { entries in entries.first?.measure }
+        guard !measures.isEmpty else {
+            return nil
+        }
+        let orderedMeasureIndices = measures.keys.sorted()
+        var measureStartQuarters: [Int: Double] = [:]
+        var runningQuarters = 0.0
+        for index in orderedMeasureIndices {
+            measureStartQuarters[index] = runningQuarters
+            if let measure = measures[index] {
+                runningQuarters += max(0.0, measureDurationQuarters(measure))
+            }
+        }
+        guard let currentMeasureStart = measureStartQuarters[measureIndex] else {
+            return nil
+        }
+        let currentQuarters = currentMeasureStart + musicalTimeDouble(onset)
+        var pending: [PlaybackWedgeAnchor] = []
+        for index in orderedMeasureIndices {
+            guard let measure = measures[index],
+                  let measureStart = measureStartQuarters[index]
+            else {
+                continue
+            }
+            for direction in measure.directions.sorted(by: { $0.onset < $1.onset }) {
+                let absoluteQuarters = measureStart + musicalTimeDouble(direction.onset)
+                switch direction.kind {
+                case .wedge(.crescendo), .wedge(.diminuendo):
+                    pending.append(PlaybackWedgeAnchor(
+                        direction: direction,
+                        measureIndex: index,
+                        startQuarters: absoluteQuarters
+                    ))
+                case .wedge(.stop):
+                    guard let pendingIndex = pending.lastIndex(where: { $0.direction.staffID == direction.staffID }) else {
+                        continue
+                    }
+                    let start = pending.remove(at: pendingIndex)
+                    guard start.startQuarters <= currentQuarters,
+                          currentQuarters <= absoluteQuarters,
+                          absoluteQuarters > start.startQuarters
+                    else {
+                        continue
+                    }
+                    let progress = min(max((currentQuarters - start.startQuarters) / (absoluteQuarters - start.startQuarters), 0), 1)
+                    if case .wedge(.crescendo) = start.direction.kind {
+                        return 0.70 + progress * 0.60
+                    }
+                    return 1.30 - progress * 0.60
+                default:
+                    break
+                }
+            }
+        }
+        return nil
+    }
+
+    private func measureDurationQuarters(_ measure: Measure) -> Double {
+        let noteDuration = measure.notes
+            .filter { !$0.isGrace }
+            .map { musicalTimeDouble($0.onset + $0.duration) }
+            .max() ?? 0
+        if noteDuration > 0 {
+            return noteDuration
+        }
+        if let timeSignature = measure.timeSignature {
+            return Double(timeSignature.beats) * (4.0 / Double(timeSignature.beatType))
+        }
+        return 4.0
     }
 
     private func midiPitch(for pitch: Pitch) -> Int {
@@ -269,6 +489,10 @@ struct PlaybackSequenceBuilder: Sendable {
         }
         return MeasureID(partIndex: 0, measureNumber: pieces[1])
     }
+}
+
+private func musicalTimeDouble(_ time: MusicalTime) -> Double {
+    Double(time.ticks) / Double(max(1, time.ticksPerQuarterNote))
 }
 
 private struct RepeatExpansionPlanner {
@@ -846,6 +1070,12 @@ private struct PlaybackEntry: Comparable {
         }
         return lhs.noteIndex < rhs.noteIndex
     }
+}
+
+private struct PlaybackWedgeAnchor: Sendable {
+    let direction: ScoreDirection
+    let measureIndex: Int
+    let startQuarters: Double
 }
 
 private struct PlaybackGroupKey: Hashable, Comparable {
