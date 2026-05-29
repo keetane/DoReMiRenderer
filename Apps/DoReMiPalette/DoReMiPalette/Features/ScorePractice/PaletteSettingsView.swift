@@ -7,6 +7,7 @@ struct PaletteSettingsView: View {
     @Binding var keyboardColorVisible: Bool
     @Binding var keyboardColorPositionTop: Bool
     @Binding var keyboardLineNumberVisible: Bool
+    @Binding var topToolbarVisible: Bool
     @Binding var currentNoteDisplayVisible: Bool
     @Binding var nextNoteDisplayVisible: Bool
     @Binding var measureNumbersVisible: Bool
@@ -35,6 +36,7 @@ struct PaletteSettingsView: View {
                     Toggle("鍵盤の色", isOn: $keyboardColorVisible)
                     Toggle("カラーポジション", isOn: $keyboardColorPositionTop)
                     Toggle("ラインNo.", isOn: $keyboardLineNumberVisible)
+                    Toggle("上部ツールバー", isOn: $topToolbarVisible)
                     Toggle("現在の音を表示", isOn: $currentNoteDisplayVisible)
                     Toggle("次の音を表示", isOn: $nextNoteDisplayVisible)
                     Toggle("小節数を表示", isOn: $measureNumbersVisible)

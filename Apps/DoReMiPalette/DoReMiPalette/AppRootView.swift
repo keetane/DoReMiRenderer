@@ -7,6 +7,7 @@ enum PaletteSettingsKeys {
     static let keyboardColorVisible = "doremi.palette.keyboardColorVisible"
     static let keyboardColorPositionTop = "doremi.palette.keyboardColorPositionTop"
     static let keyboardLineNumberVisible = "doremi.palette.keyboardLineNumberVisible"
+    static let topToolbarVisible = "doremi.palette.topToolbarVisible"
     static let currentNoteDisplayVisible = "doremi.palette.currentNoteDisplayVisible"
     static let nextNoteDisplayVisible = "doremi.palette.nextNoteDisplayVisible"
     static let measureNumbersVisible = "doremi.palette.measureNumbersVisible"
@@ -30,6 +31,7 @@ struct AppRootView: View {
     @AppStorage(PaletteSettingsKeys.keyboardColorVisible) private var keyboardColorVisible = true
     @AppStorage(PaletteSettingsKeys.keyboardColorPositionTop) private var keyboardColorPositionTop = true
     @AppStorage(PaletteSettingsKeys.keyboardLineNumberVisible) private var keyboardLineNumberVisible = false
+    @AppStorage(PaletteSettingsKeys.topToolbarVisible) private var topToolbarVisible = true
     @AppStorage(PaletteSettingsKeys.currentNoteDisplayVisible) private var currentNoteDisplayVisible = true
     @AppStorage(PaletteSettingsKeys.nextNoteDisplayVisible) private var nextNoteDisplayVisible = true
     @AppStorage(PaletteSettingsKeys.measureNumbersVisible) private var measureNumbersVisible = true
@@ -53,6 +55,7 @@ struct AppRootView: View {
             keyboardColorVisible: $keyboardColorVisible,
             keyboardColorPositionTop: $keyboardColorPositionTop,
             keyboardLineNumberVisible: $keyboardLineNumberVisible,
+            topToolbarVisible: $topToolbarVisible,
             currentNoteDisplayVisible: $currentNoteDisplayVisible,
             nextNoteDisplayVisible: $nextNoteDisplayVisible,
             measureNumbersVisible: $measureNumbersVisible,
