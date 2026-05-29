@@ -75,6 +75,31 @@ import Testing
     #expect(hairpin.frame.maxX > secondMeasure.frame.minX)
 }
 
+@Test func dynamicMarkShiftsLeftWhenItWouldCollideWithLowNotehead() throws {
+    let result = try MusicXMLParser().parse(data: Data(dynamicCollisionXML.utf8))
+    let layout = try ScoreLayoutEngine().layout(score: result.score)
+    let note = try #require(result.score.parts.first?.measures.first?.notes.first)
+    let noteLayout = try #require(layout.noteLayout(for: note.id))
+    let dynamic = try #require(layout.elements.first { $0.kind == .dynamic && $0.dynamic?.mark == .mf })
+
+    #expect(dynamic.frame.midX < noteLayout.noteheadCenter.x)
+    #expect(!dynamic.frame.intersects(noteLayout.noteheadFrame.insetBy(dx: -1, dy: -1)))
+    #expect(noteLayout.noteheadCenter.x - dynamic.frame.midX <= 24)
+}
+
+@Test func dynamicMarkAvoidsCrossStaffCentralCollision() throws {
+    let result = try MusicXMLParser().parse(data: Data(dynamicGrandStaffCollisionXML.utf8))
+    let layout = try ScoreLayoutEngine().layout(score: result.score)
+    let note = try #require(result.score.parts.first?.measures.first?.notes.first { $0.staffID.rawValue == "2" })
+    let noteLayout = try #require(layout.noteLayout(for: note.id))
+    let dynamic = try #require(layout.elements.first { $0.kind == .dynamic && $0.dynamic?.mark == .mf })
+
+    #expect(dynamic.staffID?.rawValue == "1")
+    #expect(dynamic.frame.midX < noteLayout.noteheadCenter.x)
+    #expect(!dynamic.frame.intersects(noteLayout.noteheadFrame.insetBy(dx: -1, dy: -1)))
+    #expect(noteLayout.noteheadCenter.x - dynamic.frame.midX <= 32)
+}
+
 @Test func layoutCreatesLyricAndFingeringElements() throws {
     let result = try MusicXMLParser().parse(data: Data(lyricsFingeringXML.utf8))
     let note = try #require(result.score.parts.first?.measures.first?.notes.first)
@@ -427,6 +452,44 @@ private let crossMeasureHairpinXML = """
       <note><pitch><step>A</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
       <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
       <note><pitch><step>C</step><octave>5</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+    </measure>
+  </part>
+</score-partwise>
+"""
+
+private let dynamicCollisionXML = """
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Dynamic Collision</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes>
+        <divisions>4</divisions>
+        <time><beats>4</beats><beat-type>4</beat-type></time>
+        <clef><sign>G</sign><line>2</line></clef>
+      </attributes>
+      <direction placement="below"><direction-type><dynamics><mf/></dynamics></direction-type><staff>1</staff></direction>
+      <note><pitch><step>A</step><octave>3</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+    </measure>
+  </part>
+</score-partwise>
+"""
+
+private let dynamicGrandStaffCollisionXML = """
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Dynamic Grand Staff Collision</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes>
+        <divisions>4</divisions>
+        <time><beats>4</beats><beat-type>4</beat-type></time>
+        <staves>2</staves>
+        <clef number="1"><sign>G</sign><line>2</line></clef>
+        <clef number="2"><sign>F</sign><line>4</line></clef>
+      </attributes>
+      <direction placement="below"><direction-type><dynamics><mf/></dynamics></direction-type><staff>1</staff></direction>
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>2</staff></note>
+      <backup><duration>4</duration></backup>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><voice>2</voice><type>quarter</type><staff>1</staff></note>
     </measure>
   </part>
 </score-partwise>

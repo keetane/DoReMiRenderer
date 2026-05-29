@@ -584,6 +584,7 @@ struct ScoreLayoutEngine: Sendable {
                 measure: item.measure,
                 staffIDs: staffIDs,
                 staffIndexByID: staffIndexByID,
+                existingElements: elements,
                 onsetX: onsetX,
                 measureX: measureX,
                 measureWidth: measureWidth,
@@ -1178,6 +1179,7 @@ struct ScoreLayoutEngine: Sendable {
         measure: Measure,
         staffIDs: [StaffID],
         staffIndexByID: [StaffID: Int],
+        existingElements: [ElementLayout],
         onsetX: [MusicalTime: CGFloat],
         measureX: CGFloat,
         measureWidth: CGFloat,
@@ -1202,7 +1204,14 @@ struct ScoreLayoutEngine: Sendable {
                 let text = mark.rawValue
                 let width = max(metrics.staffSpace * 1.8, CGFloat(text.count) * fontSize * 0.62)
                 let height = fontSize * 1.2
-                let frame = CGRect(x: x - width * 0.5, y: y - height * 0.5, width: width, height: height)
+                let centeredFrame = CGRect(x: x - width * 0.5, y: y - height * 0.5, width: width, height: height)
+                let frame = dynamicFrameAvoidingNotationCollision(
+                    centeredFrame,
+                    measure: measure,
+                    measureX: measureX,
+                    metrics: metrics,
+                    existingElements: existingElements
+                )
                 let layout = DynamicLayout(mark: mark, origin: CGPoint(x: frame.minX, y: y), frame: frame)
                 result.append(ElementLayout(
                     id: ScoreElementID(rawValue: "\(measure.id.rawValue).dynamic.\(index).\(mark.rawValue)"),
@@ -1259,6 +1268,62 @@ struct ScoreLayoutEngine: Sendable {
             }
         }
         return result
+    }
+
+    private func dynamicFrameAvoidingNotationCollision(
+        _ frame: CGRect,
+        measure: Measure,
+        measureX: CGFloat,
+        metrics: LayoutMetrics,
+        existingElements: [ElementLayout]
+    ) -> CGRect {
+        let collisionFrames = existingElements.compactMap { element -> CGRect? in
+            guard element.measureID == measure.id,
+                  isNotationCollisionCandidate(element.kind)
+            else {
+                return nil
+            }
+            return element.frame.insetBy(dx: -metrics.staffLineHitHalfWidth, dy: -metrics.staffLineHitHalfWidth)
+        }
+        guard dynamicFrame(frame, collidesWith: collisionFrames) else {
+            return frame
+        }
+
+        let minimumX = measureX - metrics.staffSpace
+        let maximumShift = max(0, min(max(32, metrics.staffSpace * 2), frame.minX - minimumX))
+        guard maximumShift > 0 else {
+            return frame
+        }
+
+        let candidateShifts = [
+            min(maximumShift, metrics.staffSpace * 0.5),
+            min(maximumShift, metrics.staffSpace * 0.75),
+            min(maximumShift, metrics.staffSpace),
+            min(maximumShift, 24),
+            min(maximumShift, 32),
+            maximumShift,
+        ]
+
+        for shift in candidateShifts where shift > 0 {
+            let shifted = frame.offsetBy(dx: -shift, dy: 0)
+            if !dynamicFrame(shifted, collidesWith: collisionFrames) {
+                return shifted
+            }
+        }
+        return frame.offsetBy(dx: -maximumShift, dy: 0)
+    }
+
+    private func dynamicFrame(_ frame: CGRect, collidesWith frames: [CGRect]) -> Bool {
+        frames.contains { frame.intersects($0) }
+    }
+
+    private func isNotationCollisionCandidate(_ kind: ScoreElementKind) -> Bool {
+        switch kind {
+        case .notehead, .rest, .stem, .flag, .beam, .accidental, .dot, .ledgerLine:
+            true
+        case .staffLine, .clef, .timeSignature, .keySignature, .barline, .lyric, .fingering, .articulation, .dynamic, .hairpin, .tie, .slur, .tuplet, .repeatEnding, .measureRepeat, .playbackJumpMarker:
+            false
+        }
     }
 
     private func flushPendingWedges(
