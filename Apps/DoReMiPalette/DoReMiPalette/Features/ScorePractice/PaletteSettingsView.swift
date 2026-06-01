@@ -38,9 +38,9 @@ struct PaletteSettingsView: View {
                 }
                 .onboardingAnchor(.settingsDisplayOptions)
                 Section("レイアウト") {
+                    Toggle("横一列", isOn: horizontalLayoutBinding)
                     Toggle("鍵盤を表示", isOn: $keyboardVisible)
                     Toggle("上部ツールバー", isOn: $topToolbarVisible)
-                    Toggle("1行表示", isOn: singleLineLayoutBinding)
                     Toggle("現在の音を表示", isOn: $currentNoteDisplayVisible)
                     Toggle("次の音を表示", isOn: $nextNoteDisplayVisible)
                     Toggle("小節数を表示", isOn: $measureNumbersVisible)
@@ -105,11 +105,11 @@ struct PaletteSettingsView: View {
         }
     }
 
-    private var singleLineLayoutBinding: Binding<Bool> {
+    private var horizontalLayoutBinding: Binding<Bool> {
         Binding(
             get: { PaletteScoreLayoutMode.fromRawValue(scoreLayoutModeRawValue) == .horizontal },
-            set: { isSingleLine in
-                scoreLayoutModeRawValue = isSingleLine
+            set: { isHorizontal in
+                scoreLayoutModeRawValue = isHorizontal
                     ? PaletteScoreLayoutMode.horizontal.rawValue
                     : PaletteScoreLayoutMode.a4.rawValue
             }

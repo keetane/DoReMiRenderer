@@ -268,7 +268,7 @@ struct PalettePitchClassColorState: Equatable, Codable, Sendable {
         return (octave + 1) * 12 + [0, 2, 4, 5, 7, 9, 11][degree]
     }
 
-    private static func staffPositionMIDINote(midi: Int, scaleTonicPitchClass: Int?) -> Int {
+    static func staffPositionMIDINote(midi: Int, scaleTonicPitchClass: Int?) -> Int {
         let octave = midi / 12 - 1
         let degree: Int
         if let scaleTonicPitchClass,

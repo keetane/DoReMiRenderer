@@ -1,5 +1,24 @@
 import CoreGraphics
 
+private enum ScoreTitleLayoutConstants {
+    static let fontScale: CGFloat = 1.5
+    static let gapAboveFirstStaff: CGFloat = 50
+}
+
+private enum PrintPageMarginConstants {
+    static let a4AspectRatio: CGFloat = 842.0 / 595.0
+    static let horizontalRatio: CGFloat = 0.04
+    static let verticalRatio: CGFloat = 0.064
+    static let minimumHorizontal: CGFloat = 18
+    static let maximumHorizontal: CGFloat = 27
+    static let minimumVertical: CGFloat = 48
+    static let maximumVertical: CGFloat = 72
+}
+
+private enum GrandStaffLayoutConstants {
+    static let additionalStaffSeparation: CGFloat = 20
+}
+
 public enum DisplayMode: Hashable, Codable, Sendable {
     case print
     case horizontal
@@ -16,6 +35,7 @@ public struct LayoutOptions: Sendable {
     public var showPageMargins: Bool
     public var unsupportedFeaturePolicy: UnsupportedFeaturePolicy
     public var displayTransposeSemitones: Int
+    public var maximumMeasuresPerSystem: Int
 
     public init(
         pageWidth: CGFloat = 800,
@@ -26,7 +46,8 @@ public struct LayoutOptions: Sendable {
         displayMode: DisplayMode = .print,
         showPageMargins: Bool = false,
         unsupportedFeaturePolicy: UnsupportedFeaturePolicy = .ignoreWithWarning,
-        displayTransposeSemitones: Int = 0
+        displayTransposeSemitones: Int = 0,
+        maximumMeasuresPerSystem: Int = 4
     ) {
         self.pageWidth = pageWidth
         self.pageHeight = pageHeight
@@ -37,6 +58,7 @@ public struct LayoutOptions: Sendable {
         self.showPageMargins = showPageMargins
         self.unsupportedFeaturePolicy = unsupportedFeaturePolicy
         self.displayTransposeSemitones = max(-12, min(12, displayTransposeSemitones))
+        self.maximumMeasuresPerSystem = max(1, maximumMeasuresPerSystem)
     }
 
     public static let `default` = LayoutOptions()
@@ -106,11 +128,15 @@ struct ScoreLayoutEngine: Sendable {
         var annotationMaxY: CGFloat = 0
         var pendingWedges: [PendingWedgeLayout] = []
 
-        let staffIDs = orderedStaffIDs(in: score)
+        let displayInput = scoreDisplayInput(for: score)
+        let staffIDs = displayInput.staffIDs
         let staffIndexByID = Dictionary(uniqueKeysWithValues: staffIDs.enumerated().map { ($0.element, $0.offset) })
         let contentWidth = max(metrics.minimumMeasureWidth, options.pageWidth - metrics.leftMargin - metrics.rightMargin)
         let systemHeight = CGFloat(max(staffIDs.count, 1) - 1) * metrics.staffGap + metrics.staffHeight
         let shouldWrapSystems = options.displayMode == .print
+        let shouldRepeatSystemPrefix = options.displayMode == .print && options.showPageMargins
+        var titleLayout = scoreTitleLayout(for: score, options: options, metrics: metrics, contentWidth: contentWidth)
+        let titleReservedHeight = titleLayout.map { $0.frame.maxY + ScoreTitleLayoutConstants.gapAboveFirstStaff } ?? 0
 
         func appendSystem(index: Int, top: CGFloat) {
             systems.append(
@@ -140,20 +166,24 @@ struct ScoreLayoutEngine: Sendable {
         }
 
         var currentSystemIndex = 0
-        var systemTop = metrics.topMargin
+        var systemTop = max(metrics.topMargin, titleReservedHeight)
         appendSystem(index: currentSystemIndex, top: systemTop)
 
         var measureX = metrics.leftMargin
-        let flatMeasures = score.parts.enumerated().flatMap { partIndex, part in
-            part.measures.enumerated().map { measureIndex, measure in
-                (partIndex: partIndex, measureIndex: measureIndex, measure: measure)
-            }
-        }
+        let flatMeasures = displayInput.measures
         diagnostics.append(contentsOf: complexVoiceDiagnostics(in: flatMeasures.map(\.measure)))
+        let measureCountByPart = Dictionary(grouping: flatMeasures, by: \.partIndex)
+            .mapValues(\.count)
 
+        var activeKeySignatureByPart: [Int: KeySignature] = [:]
         let measurePlans = flatMeasures.map { item in
+            if let keySignature = item.measure.keySignature {
+                activeKeySignatureByPart[item.partIndex] = keySignature
+            }
+            let effectiveKeySignature = item.measure.keySignature ?? activeKeySignatureByPart[item.partIndex]
             let displayedKeySignature = displayKeySignature(for: item.measure.keySignature, options: options)
-            let measureCount = score.parts[item.partIndex].measures.count
+            let effectiveDisplayedKeySignature = displayKeySignature(for: effectiveKeySignature, options: options)
+            let measureCount = measureCountByPart[item.partIndex] ?? score.parts[item.partIndex].measures.count
             let measureWidth = width(
                 for: item.measure,
                 measureIndex: item.measureIndex,
@@ -167,22 +197,73 @@ struct ScoreLayoutEngine: Sendable {
                 measureIndex: item.measureIndex,
                 measure: item.measure,
                 displayedKeySignature: displayedKeySignature,
+                effectiveDisplayedKeySignature: effectiveDisplayedKeySignature,
                 width: measureWidth
             )
         }
-        let justifiedWidths = justifiedMeasureWidths(
-            measurePlans.map(\.width),
+        let baseMeasureWidths = measurePlans.map(\.width)
+        var layoutMeasureWidths = shouldWrapSystems
+            ? baseMeasureWidths.map { min($0, contentWidth) }
+            : baseMeasureWidths
+        var systemGroups = printSystemGroups(
+            layoutMeasureWidths,
             shouldWrapSystems: shouldWrapSystems,
+            contentWidth: contentWidth,
+            measureSpacing: options.measureSpacing,
+            maximumMeasuresPerSystem: options.maximumMeasuresPerSystem
+        )
+        if shouldRepeatSystemPrefix {
+            for index in systemGroups.compactMap(\.first) {
+                guard measurePlans.indices.contains(index) else { continue }
+                let plan = measurePlans[index]
+                let measureCount = measureCountByPart[plan.partIndex] ?? score.parts[plan.partIndex].measures.count
+                layoutMeasureWidths[index] = min(contentWidth, max(
+                    layoutMeasureWidths[index],
+                    width(
+                        for: plan.measure,
+                        measureIndex: plan.measureIndex,
+                        measureCount: measureCount,
+                        displayedKeySignature: plan.effectiveDisplayedKeySignature,
+                        forceClefPrefix: true,
+                        options: options,
+                        metrics: metrics
+                    )
+                ))
+            }
+            systemGroups = printSystemGroups(
+                layoutMeasureWidths,
+                shouldWrapSystems: shouldWrapSystems,
+                contentWidth: contentWidth,
+                measureSpacing: options.measureSpacing,
+                maximumMeasuresPerSystem: options.maximumMeasuresPerSystem
+            )
+        }
+        let systemStartPlanIndices = Set(systemGroups.compactMap(\.first))
+        let systemIndexByPlanIndex = systemIndexLookup(for: systemGroups)
+        var justifiedWidths = justifiedMeasureWidths(
+            layoutMeasureWidths,
+            systemGroups: systemGroups,
+            shouldWrapSystems: shouldWrapSystems,
+            allowsFinalSystemJustification: options.showPageMargins,
             contentWidth: contentWidth,
             measureSpacing: options.measureSpacing
         )
+        applyFinalSingleMeasureWidthGuard(
+            to: &justifiedWidths,
+            baseWidths: layoutMeasureWidths,
+            systemGroups: systemGroups,
+            allowsFinalSystemJustification: options.showPageMargins,
+            contentWidth: contentWidth
+        )
 
         for (planIndex, item) in measurePlans.enumerated() {
+            let repeatsSystemPrefix = shouldRepeatSystemPrefix && systemStartPlanIndices.contains(planIndex)
             let displayedKeySignature = item.displayedKeySignature
-            let measureWidth = justifiedWidths.indices.contains(planIndex) ? justifiedWidths[planIndex] : item.width
+            let prefixDisplayedKeySignature = displayedKeySignature ?? (repeatsSystemPrefix ? item.effectiveDisplayedKeySignature : nil)
+            let measureWidth = justifiedWidths.indices.contains(planIndex) ? justifiedWidths[planIndex] : layoutMeasureWidths[planIndex]
             if shouldWrapSystems,
                measureX > metrics.leftMargin,
-               measureX + measureWidth > metrics.leftMargin + contentWidth {
+               systemIndexByPlanIndex[planIndex, default: currentSystemIndex] != currentSystemIndex {
                 elements.append(contentsOf: flushPendingWedges(
                     &pendingWedges,
                     endX: metrics.leftMargin + contentWidth - metrics.staffSpace * 0.9,
@@ -190,6 +271,7 @@ struct ScoreLayoutEngine: Sendable {
                     staffIDs: staffIDs,
                     staffIndexByID: staffIndexByID,
                     systemTop: systemTop,
+                    existingElements: elements,
                     metrics: metrics,
                     restartX: metrics.leftMargin + metrics.staffSpace * 0.9
                 ))
@@ -249,13 +331,14 @@ struct ScoreLayoutEngine: Sendable {
                     measure: item.measure,
                     staffID: staffID,
                     clef: clef,
-                    displayedKeySignature: displayedKeySignature,
+                    displayedKeySignature: prefixDisplayedKeySignature,
+                    forceClef: repeatsSystemPrefix,
                     middleY: middleY,
                     measureX: measureX,
                     metrics: metrics
                 ))
                 for keyElement in keySignatureElements(
-                    keySignature: displayedKeySignature,
+                    keySignature: prefixDisplayedKeySignature,
                     measure: item.measure,
                     staffID: staffID,
                     clef: clef,
@@ -281,8 +364,19 @@ struct ScoreLayoutEngine: Sendable {
                 measureX: measureX,
                 measureWidth: measureWidth,
                 metrics: metrics,
-                displayedKeySignature: displayedKeySignature
+                displayedKeySignature: prefixDisplayedKeySignature,
+                forceClefPrefix: repeatsSystemPrefix
             )
+            for staffID in staffIDs {
+                let middleY = metrics.staffMiddleY(systemTop: systemTop, staffIndex: staffIndexByID[staffID] ?? 0)
+                elements.append(contentsOf: midMeasureClefElements(
+                    measure: item.measure,
+                    staffID: staffID,
+                    onsetX: onsetX,
+                    middleY: middleY,
+                    metrics: metrics
+                ))
+            }
             let chordStemDirections = chordStemDirections(for: item.measure)
             let beamGroups = beamGroups(for: item.measure)
             let beamStemDirections = beamStemDirections(
@@ -291,8 +385,9 @@ struct ScoreLayoutEngine: Sendable {
                 options: options
             )
             let beamedNoteIDs = Set(beamGroups.flatMap(\.noteIDs))
+            var pendingArticulations: [PendingArticulationLayout] = []
             for note in item.measure.notes {
-                let clef = clef(for: note.staffID, in: item.measure)
+                let clef = clef(for: note.staffID, in: item.measure, at: note.onset)
                 let staffIndex = staffIndexByID[note.staffID] ?? 0
                 let middleY = metrics.staffMiddleY(systemTop: systemTop, staffIndex: staffIndex)
                 let displayedPitch = displayPitch(for: note.pitch, options: options)
@@ -365,6 +460,7 @@ struct ScoreLayoutEngine: Sendable {
                     let stemElementID = ScoreElementID(rawValue: "\(note.id.rawValue).stem")
                     let stemDirection = beamStemDirections[note.id]
                         ?? chordStemDirections[ChordStemKey(note)]
+                        ?? explicitStemDirection(for: note)
                         ?? stemDirection(for: position)
                     let stemFrame = stemFrame(
                         direction: stemDirection,
@@ -506,29 +602,20 @@ struct ScoreLayoutEngine: Sendable {
                 }
 
                 for (articulationIndex, articulation) in note.articulations.enumerated() {
-                    let layout = articulationLayout(
+                    pendingArticulations.append(PendingArticulationLayout(
                         kind: articulation,
                         index: articulationIndex,
+                        note: note,
+                        measureID: item.measure.id,
                         noteLayout: noteLayout,
                         stemDirection: beamStemDirections[note.id]
                             ?? chordStemDirections[ChordStemKey(note)]
+                            ?? explicitStemDirection(for: note)
                             ?? stemDirection(for: position),
-                        metrics: metrics
-                    )
-                    elements.append(ElementLayout(
-                        id: ScoreElementID(rawValue: "\(note.id.rawValue).articulation.\(articulation.rawValue).\(articulationIndex)"),
-                        kind: .articulation,
-                        noteID: note.id,
-                        measureID: item.measure.id,
-                        staffID: note.staffID,
-                        voiceID: note.voiceID,
                         clef: clef,
                         keySignature: displayedKeySignature,
                         timeSignature: item.measure.timeSignature,
-                        pitchClassHint: pitch.pitchClass,
-                        frame: layout.frame,
-                        noteLayout: noteLayout,
-                        articulation: layout
+                        pitchClassHint: pitch.pitchClass
                     ))
                 }
 
@@ -567,6 +654,11 @@ struct ScoreLayoutEngine: Sendable {
                 measure: item.measure,
                 noteByID: noteByID,
                 elements: elements,
+                metrics: metrics
+            ))
+            elements.append(contentsOf: articulationElements(
+                pendingArticulations,
+                existingElements: elements,
                 metrics: metrics
             ))
             elements.append(contentsOf: tieAndSlurElements(
@@ -608,7 +700,8 @@ struct ScoreLayoutEngine: Sendable {
                     metrics: metrics
                 ),
                 systemTop: systemTop,
-                metrics: metrics
+                metrics: metrics,
+                includeLeftBarline: repeatsSystemPrefix
             ))
             elements.append(contentsOf: repeatEndingElements(
                 measure: item.measure,
@@ -638,6 +731,7 @@ struct ScoreLayoutEngine: Sendable {
             staffIDs: staffIDs,
             staffIndexByID: staffIndexByID,
             systemTop: systemTop,
+            existingElements: elements,
             metrics: metrics,
             restartX: nil
         ))
@@ -661,6 +755,7 @@ struct ScoreLayoutEngine: Sendable {
             elements = elements.map { $0.offsetBy(dx: originOffset.x, dy: originOffset.y) }
             staffLines = staffLines.map { $0.offsetBy(dx: originOffset.x, dy: originOffset.y) }
             ledgerLines = ledgerLines.map { $0.offsetBy(dx: originOffset.x, dy: originOffset.y) }
+            titleLayout = titleLayout?.offsetBy(dx: originOffset.x, dy: originOffset.y)
             noteByID = noteByID.mapValues { $0.offsetBy(dx: originOffset.x, dy: originOffset.y) }
             annotationMaxY += originOffset.y
             renderBounds = drawingBounds(
@@ -681,14 +776,17 @@ struct ScoreLayoutEngine: Sendable {
             renderBounds.maxY + metrics.bottomMargin,
             options.pageHeight ?? 0
         )
-        let canvasWidth = max(
-            options.pageWidth,
-            measureX + metrics.rightMargin - options.measureSpacing,
-            renderBounds.maxX + metrics.rightMargin
-        )
+        let canvasWidth = shouldWrapSystems
+            ? options.pageWidth
+            : max(
+                options.pageWidth,
+                measureX + metrics.rightMargin - options.measureSpacing,
+                renderBounds.maxX + metrics.rightMargin
+            )
 
         let layout = ScoreLayout(
             canvasSize: CGSize(width: canvasWidth, height: contentHeight),
+            title: titleLayout,
             systems: systems,
             staves: staves,
             measures: measures,
@@ -700,6 +798,46 @@ struct ScoreLayoutEngine: Sendable {
             elementByID: elementByID
         )
         return ScoreLayoutResult(layout: layout, diagnostics: diagnostics)
+    }
+
+    private func scoreTitleLayout(
+        for score: ScoreDocument,
+        options: LayoutOptions,
+        metrics: LayoutMetrics,
+        contentWidth: CGFloat
+    ) -> ScoreTitleLayout? {
+        guard options.displayMode == .print,
+              options.showPageMargins
+        else {
+            return nil
+        }
+        let title = score.title?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let title, !title.isEmpty else { return nil }
+
+        let fontSize = max(14, options.staffSpace * 1.9) * ScoreTitleLayoutConstants.fontScale
+        let frame = CGRect(
+            x: metrics.leftMargin,
+            y: max(0, metrics.topMargin - fontSize * 1.15),
+            width: contentWidth,
+            height: fontSize * 1.35
+        )
+        return ScoreTitleLayout(
+            text: title,
+            frame: frame,
+            fontSize: fontSize,
+            fontName: scoreTitleFontName(for: title)
+        )
+    }
+
+    private func scoreTitleFontName(for title: String) -> String {
+        let usesJapaneseScript = title.unicodeScalars.contains { scalar in
+            let value = scalar.value
+            return (0x3040...0x30FF).contains(value)
+                || (0x3400...0x9FFF).contains(value)
+                || (0xF900...0xFAFF).contains(value)
+        }
+        return usesJapaneseScript ? "HiraginoMincho-W6" : "TimesNewRomanPS-BoldMT"
     }
 
     private func displayPitch(for pitch: Pitch?, options: LayoutOptions) -> Pitch? {
@@ -813,13 +951,19 @@ struct ScoreLayoutEngine: Sendable {
                 guard let pitch = note.pitch else {
                     return nil
                 }
-                return staffPosition(pitch: pitch, clef: clef(for: note.staffID, in: measure)).stepsFromMiddleLine
+                return staffPosition(pitch: pitch, clef: clef(for: note.staffID, in: measure, at: note.onset)).stepsFromMiddleLine
             }
             guard !steps.isEmpty else {
                 continue
             }
-            let averageSteps = Double(steps.reduce(0, +)) / Double(steps.count)
-            directions[key] = averageSteps < 0 ? .up : .down
+            let explicitDirections = notes.compactMap(explicitStemDirection)
+            if let firstExplicit = explicitDirections.first,
+               explicitDirections.allSatisfy({ $0 == firstExplicit }) {
+                directions[key] = firstExplicit
+            } else {
+                let averageSteps = Double(steps.reduce(0, +)) / Double(steps.count)
+                directions[key] = averageSteps < 0 ? .up : .down
+            }
         }
 
         return directions
@@ -840,15 +984,23 @@ struct ScoreLayoutEngine: Sendable {
                 else {
                     return nil
                 }
-                let position = staffPosition(pitch: pitch, clef: clef(for: note.staffID, in: measure))
+                let position = staffPosition(pitch: pitch, clef: clef(for: note.staffID, in: measure, at: note.onset))
                 return position.stepsFromMiddleLine
             }
             guard !steps.isEmpty else {
                 continue
             }
 
-            let averageSteps = Double(steps.reduce(0, +)) / Double(steps.count)
-            let direction: StemDirection = averageSteps < 0 ? .up : .down
+            let groupNotes = group.noteIDs.compactMap { notesByID[$0] }
+            let explicitDirections = groupNotes.compactMap(explicitStemDirection)
+            let direction: StemDirection
+            if let firstExplicit = explicitDirections.first,
+               explicitDirections.allSatisfy({ $0 == firstExplicit }) {
+                direction = firstExplicit
+            } else {
+                let averageSteps = Double(steps.reduce(0, +)) / Double(steps.count)
+                direction = averageSteps < 0 ? .up : .down
+            }
             for noteID in group.noteIDs {
                 directions[noteID] = direction
             }
@@ -863,6 +1015,24 @@ struct ScoreLayoutEngine: Sendable {
             BeamGroupKey(measureID: measure.id, staffID: note.staffID, voiceID: note.voiceID)
         }
         return grouped.flatMap { key, notes -> [BeamGroup] in
+            let explicitlyBeamed = notes.filter { $0.beams.contains { $0.number == 1 } }
+            if !explicitlyBeamed.isEmpty {
+                let unmarkedNotes = notes.filter { note in
+                    !note.beams.contains { $0.number == 1 }
+                }
+                return explicitBeamGroups(key: key, notes: explicitlyBeamed, measure: measure)
+                    + automaticBeamGroups(key: key, notes: unmarkedNotes, measure: measure)
+            }
+            return automaticBeamGroups(key: key, notes: notes, measure: measure)
+        }
+    }
+
+    private func automaticBeamGroups(
+        key: BeamGroupKey,
+        notes: [ScoreNote],
+        measure: Measure
+    ) -> [BeamGroup] {
+        guard !notes.isEmpty else { return [] }
             let notesByID = Dictionary(uniqueKeysWithValues: notes.map { ($0.id, $0) })
             let events = Dictionary(grouping: notes, by: \.onset)
                 .map { onset, onsetNotes in
@@ -894,8 +1064,8 @@ struct ScoreLayoutEngine: Sendable {
                         guard let previousPitch = previous.pitch, let currentPitch = current.pitch else {
                             return false
                         }
-                        let previousDirection = stemDirection(for: staffPosition(pitch: previousPitch, clef: clef(for: previous.staffID, in: measure)))
-                        let currentDirection = stemDirection(for: staffPosition(pitch: currentPitch, clef: clef(for: current.staffID, in: measure)))
+                        let previousDirection = stemDirection(for: previous, pitch: previousPitch, measure: measure)
+                        let currentDirection = stemDirection(for: current, pitch: currentPitch, measure: measure)
                         return previousDirection != currentDirection
                     }
                 } ?? false
@@ -918,7 +1088,79 @@ struct ScoreLayoutEngine: Sendable {
             }
             appendBeamGroupIfAllowed(events: current, key: key, notesByID: notesByID, to: &result)
             return result
+    }
+
+    private func explicitBeamGroups(
+        key: BeamGroupKey,
+        notes: [ScoreNote],
+        measure: Measure
+    ) -> [BeamGroup] {
+        guard !notes.isEmpty else { return [] }
+        let notesByID = Dictionary(uniqueKeysWithValues: notes.map { ($0.id, $0) })
+        let events = Dictionary(grouping: notes, by: \.onset)
+            .map { onset, onsetNotes in
+                BeamEvent(onset: onset, noteIDs: onsetNotes.map(\.id))
+            }
+            .sorted { $0.onset < $1.onset }
+        var result: [BeamGroup] = []
+        var current: [BeamEvent] = []
+        var previousNote: ScoreNote?
+
+        for event in events {
+            let representativeNote = notes.first { $0.id == event.noteIDs.first }
+            let primaryBeamValue = representativeNote?.beams.first { $0.number == 1 }?.value
+            let stemDirectionChanged = previousNote.flatMap { previous in
+                representativeNote.map { current in
+                    guard let previousPitch = previous.pitch, let currentPitch = current.pitch else {
+                        return false
+                    }
+                    let previousDirection = stemDirection(for: previous, pitch: previousPitch, measure: measure)
+                    let currentDirection = stemDirection(for: current, pitch: currentPitch, measure: measure)
+                    return previousDirection != currentDirection
+                }
+            } ?? false
+
+            if stemDirectionChanged {
+                appendExplicitBeamGroupIfAllowed(events: current, key: key, to: &result)
+                current = []
+            }
+
+            switch primaryBeamValue {
+            case .begin:
+                appendExplicitBeamGroupIfAllowed(events: current, key: key, to: &result)
+                current = [event]
+            case .continue:
+                current.append(event)
+            case .end:
+                current.append(event)
+                appendExplicitBeamGroupIfAllowed(events: current, key: key, to: &result)
+                current = []
+            case .forwardHook, .backwardHook, nil:
+                appendExplicitBeamGroupIfAllowed(events: current, key: key, to: &result)
+                current = []
+            }
+
+            if primaryBeamValue != nil {
+                previousNote = representativeNote
+            } else {
+                previousNote = nil
+            }
         }
+        appendExplicitBeamGroupIfAllowed(events: current, key: key, to: &result)
+        return result.filter { group in
+            group.noteIDs.allSatisfy { notesByID[$0] != nil }
+        }
+    }
+
+    private func appendExplicitBeamGroupIfAllowed(
+        events: [BeamEvent],
+        key: BeamGroupKey,
+        to result: inout [BeamGroup]
+    ) {
+        guard events.count >= 2 else {
+            return
+        }
+        result.append(BeamGroup(key: key, events: events))
     }
 
     private func appendBeamGroupIfAllowed(
@@ -1165,13 +1407,97 @@ struct ScoreLayoutEngine: Sendable {
     private func articulationSize(kind: ScoreArticulationKind, metrics: LayoutMetrics) -> CGFloat {
         switch kind {
         case .fermata:
-            max(18, metrics.staffSpace * 1.65)
+            max(10, metrics.staffSpace * 1.65)
         case .accent, .marcato:
-            max(14, metrics.staffSpace * 1.35)
+            max(9, metrics.staffSpace * 1.35)
         case .tenuto:
-            max(12, metrics.staffSpace * 1.15)
+            max(7, metrics.staffSpace * 1.15)
         case .staccato:
-            max(8, metrics.staffSpace * 0.82)
+            max(5, metrics.staffSpace * 0.82)
+        }
+    }
+
+    private func articulationElements(
+        _ pending: [PendingArticulationLayout],
+        existingElements: [ElementLayout],
+        metrics: LayoutMetrics
+    ) -> [ElementLayout] {
+        var result: [ElementLayout] = []
+        for item in pending {
+            let baseLayout = articulationLayout(
+                kind: item.kind,
+                index: item.index,
+                noteLayout: item.noteLayout,
+                stemDirection: item.stemDirection,
+                metrics: metrics
+            )
+            let layout = articulationLayoutAvoidingNotationCollision(
+                baseLayout,
+                metrics: metrics,
+                existingElements: existingElements + result
+            )
+            result.append(ElementLayout(
+                id: ScoreElementID(rawValue: "\(item.note.id.rawValue).articulation.\(item.kind.rawValue).\(item.index)"),
+                kind: .articulation,
+                noteID: item.note.id,
+                measureID: item.measureID,
+                staffID: item.note.staffID,
+                voiceID: item.note.voiceID,
+                clef: item.clef,
+                keySignature: item.keySignature,
+                timeSignature: item.timeSignature,
+                pitchClassHint: item.pitchClassHint,
+                frame: layout.frame,
+                noteLayout: item.noteLayout,
+                articulation: layout
+            ))
+        }
+        return result
+    }
+
+    private func articulationLayoutAvoidingNotationCollision(
+        _ layout: ArticulationLayout,
+        metrics: LayoutMetrics,
+        existingElements: [ElementLayout]
+    ) -> ArticulationLayout {
+        let clearance = max(3, metrics.staffSpace * 0.35)
+        let searchFrame = layout.frame.insetBy(dx: -metrics.staffSpace * 0.8, dy: -metrics.staffSpace * 3.0)
+        let collisionFrames = existingElements.compactMap { element -> CGRect? in
+            guard isArticulationCollisionCandidate(element.kind) else {
+                return nil
+            }
+            let frame = element.frame.insetBy(dx: -clearance, dy: -clearance)
+            return searchFrame.intersects(frame) ? frame : nil
+        }
+        let originalScore = collisionScore(layout.frame, frames: collisionFrames)
+        guard originalScore > 0 else {
+            return layout
+        }
+
+        let side: CGFloat = layout.placement == .below ? 1 : -1
+        let laneStep = max(6, metrics.staffSpace * 0.75)
+        var bestLayout = layout
+        var bestScore = originalScore
+        for multiplier in [1, 1.5, 2, 2.5, 3, 3.5, 4] as [CGFloat] {
+            let shifted = layout.offsetBy(dx: 0, dy: side * laneStep * multiplier)
+            let score = collisionScore(shifted.frame, frames: collisionFrames)
+            if score == 0 {
+                return shifted
+            }
+            if score < bestScore {
+                bestScore = score
+                bestLayout = shifted
+            }
+        }
+        return bestLayout
+    }
+
+    private func isArticulationCollisionCandidate(_ kind: ScoreElementKind) -> Bool {
+        switch kind {
+        case .notehead, .rest, .stem, .flag, .beam, .accidental, .dot, .ledgerLine, .lyric, .fingering, .articulation:
+            true
+        case .staffLine, .clef, .timeSignature, .keySignature, .barline, .dynamic, .hairpin, .pedal, .tie, .slur, .tuplet, .repeatEnding, .measureRepeat, .playbackJumpMarker:
+            false
         }
     }
 
@@ -1200,7 +1526,7 @@ struct ScoreLayoutEngine: Sendable {
             let y = directionY(direction: direction, staffID: staffID, staffIndexByID: staffIndexByID, systemTop: systemTop, metrics: metrics)
             switch direction.kind {
             case .dynamic(let mark):
-                let fontSize = max(15, metrics.staffSpace * 1.65)
+                let fontSize = max(9, metrics.staffSpace * 1.65)
                 let text = mark.rawValue
                 let width = max(metrics.staffSpace * 1.8, CGFloat(text.count) * fontSize * 0.62)
                 let height = fontSize * 1.2
@@ -1220,6 +1546,28 @@ struct ScoreLayoutEngine: Sendable {
                     staffID: staffID,
                     frame: frame,
                     dynamic: layout
+                ))
+            case .pedal(let pedalKind):
+                let fontSize = max(9, metrics.staffSpace * 1.45)
+                let label = pedalLabel(for: pedalKind)
+                let width = max(metrics.staffSpace * 1.6, CGFloat(label.count) * fontSize * 0.54)
+                let height = fontSize * 1.15
+                let centeredFrame = CGRect(x: x - width * 0.5, y: y - height * 0.5, width: width, height: height)
+                let frame = dynamicFrameAvoidingNotationCollision(
+                    centeredFrame,
+                    measure: measure,
+                    measureX: measureX,
+                    metrics: metrics,
+                    existingElements: existingElements + result
+                )
+                let layout = PedalLayout(kind: pedalKind, label: label, origin: CGPoint(x: frame.minX, y: y), frame: frame)
+                result.append(ElementLayout(
+                    id: ScoreElementID(rawValue: "\(measure.id.rawValue).pedal.\(index).\(pedalKind.rawValue)"),
+                    kind: .pedal,
+                    measureID: measure.id,
+                    staffID: staffID,
+                    frame: frame,
+                    pedal: layout
                 ))
             case .wedge(let kind):
                 switch kind {
@@ -1253,7 +1601,8 @@ struct ScoreLayoutEngine: Sendable {
                             staffID: pending.direction.staffID ?? staffID,
                             staffIndexByID: staffIndexByID,
                             systemTop: systemTop,
-                            metrics: metrics
+                            metrics: metrics,
+                            existingElements: existingElements + result
                         )
                         result.append(ElementLayout(
                             id: ScoreElementID(rawValue: "\(measure.id.rawValue).hairpin.\(index).\(pendingKind.rawValue)"),
@@ -1283,7 +1632,8 @@ struct ScoreLayoutEngine: Sendable {
             else {
                 return nil
             }
-            return element.frame.insetBy(dx: -metrics.staffLineHitHalfWidth, dy: -metrics.staffLineHitHalfWidth)
+            let clearance = max(4, metrics.staffSpace * 0.5)
+            return element.frame.insetBy(dx: -clearance, dy: -clearance)
         }
         guard dynamicFrame(frame, collidesWith: collisionFrames) else {
             return frame
@@ -1310,7 +1660,40 @@ struct ScoreLayoutEngine: Sendable {
                 return shifted
             }
         }
-        return frame.offsetBy(dx: -maximumShift, dy: 0)
+        let verticalStep = max(8, metrics.staffSpace)
+        let horizontalCandidates: [CGFloat] = [0] + candidateShifts.map { -$0 }
+        let verticalCandidates: [CGFloat] = [
+            -verticalStep,
+            verticalStep,
+            -verticalStep * 1.5,
+            verticalStep * 1.5,
+            -verticalStep * 2,
+            verticalStep * 2,
+            -verticalStep * 2.5,
+            verticalStep * 2.5,
+            -verticalStep * 3,
+            verticalStep * 3,
+            -verticalStep * 3.5,
+            verticalStep * 3.5,
+            -verticalStep * 4,
+            verticalStep * 4,
+        ]
+        var bestFrame = frame.offsetBy(dx: -maximumShift, dy: 0)
+        var bestScore = collisionScore(bestFrame, frames: collisionFrames)
+        for dx in horizontalCandidates {
+            for dy in verticalCandidates {
+                let shifted = frame.offsetBy(dx: dx, dy: dy)
+                let score = collisionScore(shifted, frames: collisionFrames)
+                if score == 0 {
+                    return shifted
+                }
+                if score < bestScore {
+                    bestScore = score
+                    bestFrame = shifted
+                }
+            }
+        }
+        return bestFrame
     }
 
     private func dynamicFrame(_ frame: CGRect, collidesWith frames: [CGRect]) -> Bool {
@@ -1319,9 +1702,9 @@ struct ScoreLayoutEngine: Sendable {
 
     private func isNotationCollisionCandidate(_ kind: ScoreElementKind) -> Bool {
         switch kind {
-        case .notehead, .rest, .stem, .flag, .beam, .accidental, .dot, .ledgerLine:
+        case .notehead, .rest, .stem, .flag, .beam, .accidental, .dot, .ledgerLine, .lyric, .fingering, .articulation:
             true
-        case .staffLine, .clef, .timeSignature, .keySignature, .barline, .lyric, .fingering, .articulation, .dynamic, .hairpin, .tie, .slur, .tuplet, .repeatEnding, .measureRepeat, .playbackJumpMarker:
+        case .staffLine, .clef, .timeSignature, .keySignature, .barline, .dynamic, .hairpin, .pedal, .tie, .slur, .tuplet, .repeatEnding, .measureRepeat, .playbackJumpMarker:
             false
         }
     }
@@ -1333,6 +1716,7 @@ struct ScoreLayoutEngine: Sendable {
         staffIDs: [StaffID],
         staffIndexByID: [StaffID: Int],
         systemTop: CGFloat,
+        existingElements: [ElementLayout],
         metrics: LayoutMetrics,
         restartX: CGFloat?
     ) -> [ElementLayout] {
@@ -1354,7 +1738,8 @@ struct ScoreLayoutEngine: Sendable {
                 staffID: staffID,
                 staffIndexByID: staffIndexByID,
                 systemTop: systemTop,
-                metrics: metrics
+                metrics: metrics,
+                existingElements: existingElements
             )
             result.append(ElementLayout(
                 id: ScoreElementID(rawValue: "\(pending.sourceMeasureID.rawValue).hairpin.continuation.\(systemIndex).\(index).\(kind.rawValue)"),
@@ -1389,7 +1774,8 @@ struct ScoreLayoutEngine: Sendable {
         staffID: StaffID,
         staffIndexByID: [StaffID: Int],
         systemTop: CGFloat,
-        metrics: LayoutMetrics
+        metrics: LayoutMetrics,
+        existingElements: [ElementLayout]
     ) -> HairpinLayout {
         let y = directionY(direction: direction, staffID: staffID, staffIndexByID: staffIndexByID, systemTop: systemTop, metrics: metrics)
         let spread = metrics.staffSpace * 0.9
@@ -1411,12 +1797,162 @@ struct ScoreLayoutEngine: Sendable {
         let maxY = max(start.y, upperEnd.y, lowerEnd.y)
         let frame = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
             .insetBy(dx: -metrics.staffLineHitHalfWidth * 2, dy: -metrics.staffLineHitHalfWidth * 2)
-        return HairpinLayout(kind: kind, start: start, upperEnd: upperEnd, lowerEnd: lowerEnd, frame: frame)
+        let layout = HairpinLayout(kind: kind, start: start, upperEnd: upperEnd, lowerEnd: lowerEnd, frame: frame)
+        return hairpinLayoutAvoidingNotationCollision(layout, metrics: metrics, existingElements: existingElements)
+    }
+
+    private func hairpinLayoutAvoidingNotationCollision(
+        _ layout: HairpinLayout,
+        metrics: LayoutMetrics,
+        existingElements: [ElementLayout]
+    ) -> HairpinLayout {
+        let collisionFrames = hairpinCollisionFrames(
+            for: layout.frame,
+            metrics: metrics,
+            existingElements: existingElements
+        )
+        let originalCollisionScore = hairpinCollisionScore(layout.frame, frames: collisionFrames)
+        guard originalCollisionScore > 0 else {
+            return layout
+        }
+
+        let laneStep = max(8, metrics.staffSpace * 0.8)
+        let preferredOffsetDirection = preferredHairpinCollisionAvoidanceDirection(
+            for: layout.frame,
+            collisionFrames: collisionFrames
+        )
+        let candidateOffsets: [CGFloat] = [
+            -laneStep,
+            laneStep,
+            -laneStep * 1.5,
+            laneStep * 1.5,
+            -laneStep * 2,
+            laneStep * 2,
+            -laneStep * 2.5,
+            laneStep * 2.5,
+            -laneStep * 3,
+            laneStep * 3,
+            -laneStep * 3.5,
+            laneStep * 3.5,
+            -laneStep * 4,
+            laneStep * 4,
+            -laneStep * 5,
+            laneStep * 5,
+            -laneStep * 6,
+            laneStep * 6,
+            -laneStep * 7,
+            laneStep * 7,
+            -laneStep * 8,
+            laneStep * 8,
+        ]
+
+        var bestLayout = layout
+        var bestCollisionScore = adjustedHairpinCollisionScore(
+            originalCollisionScore,
+            offset: 0,
+            preferredOffsetDirection: preferredOffsetDirection
+        )
+        for offset in candidateOffsets {
+            let shifted = layout.offsetBy(dx: 0, dy: offset)
+            let collisionScore = hairpinCollisionScore(shifted.frame, frames: collisionFrames)
+            if collisionScore == 0 {
+                return shifted
+            }
+            let adjustedScore = adjustedHairpinCollisionScore(
+                collisionScore,
+                offset: offset,
+                preferredOffsetDirection: preferredOffsetDirection
+            )
+            if adjustedScore < bestCollisionScore {
+                bestCollisionScore = adjustedScore
+                bestLayout = shifted
+            }
+        }
+        return bestLayout
+    }
+
+    private func hairpinCollisionFrames(
+        for frame: CGRect,
+        metrics: LayoutMetrics,
+        existingElements: [ElementLayout]
+    ) -> [CGRect] {
+        let clearance = hairpinCollisionClearance(metrics: metrics)
+        let searchFrame = frame.insetBy(dx: -metrics.staffSpace * 0.8, dy: -metrics.staffSpace * 4.5)
+        return existingElements.compactMap { element -> CGRect? in
+            guard isHairpinCollisionCandidate(element.kind) else {
+                return nil
+            }
+            let collisionFrame = element.frame.insetBy(dx: -clearance, dy: -clearance)
+            guard searchFrame.intersects(collisionFrame) else {
+                return nil
+            }
+            return collisionFrame
+        }
+    }
+
+    private func hairpinFrame(_ frame: CGRect, collidesWith frames: [CGRect]) -> Bool {
+        frames.contains { frame.intersects($0) }
+    }
+
+    private func hairpinCollisionScore(_ frame: CGRect, frames: [CGRect]) -> CGFloat {
+        collisionScore(frame, frames: frames)
+    }
+
+    private func collisionScore(_ frame: CGRect, frames: [CGRect]) -> CGFloat {
+        frames.reduce(CGFloat(0)) { partialResult, collisionFrame in
+            guard frame.intersects(collisionFrame) else {
+                return partialResult
+            }
+            let intersection = frame.intersection(collisionFrame)
+            return partialResult + max(0, intersection.width) * max(0, intersection.height)
+        }
+    }
+
+    private func preferredHairpinCollisionAvoidanceDirection(for frame: CGRect, collisionFrames: [CGRect]) -> CGFloat {
+        let intersectingFrames = collisionFrames.filter { frame.intersects($0) }
+        guard !intersectingFrames.isEmpty else {
+            return 0
+        }
+        let averageCollisionY = intersectingFrames.reduce(CGFloat(0)) { $0 + $1.midY } / CGFloat(intersectingFrames.count)
+        if averageCollisionY > frame.midY {
+            return -1
+        }
+        if averageCollisionY < frame.midY {
+            return 1
+        }
+        return 0
+    }
+
+    private func adjustedHairpinCollisionScore(
+        _ score: CGFloat,
+        offset: CGFloat,
+        preferredOffsetDirection: CGFloat
+    ) -> CGFloat {
+        guard preferredOffsetDirection != 0, offset != 0 else {
+            return score
+        }
+        let movesAwayFromCollision = offset.sign == preferredOffsetDirection.sign
+        let minimumEscape: CGFloat = 12
+        let insufficientEscapePenalty: CGFloat = abs(offset) < minimumEscape ? 1_000 : 0
+        return movesAwayFromCollision ? score + insufficientEscapePenalty : score + 10_000
+    }
+
+    private func hairpinCollisionClearance(metrics: LayoutMetrics) -> CGFloat {
+        max(6, metrics.staffSpace * 0.75)
+    }
+
+    private func isHairpinCollisionCandidate(_ kind: ScoreElementKind) -> Bool {
+        switch kind {
+        case .notehead, .rest, .stem, .flag, .beam, .accidental, .dot, .ledgerLine, .dynamic, .pedal, .lyric, .fingering, .articulation:
+            true
+        case .staffLine, .clef, .timeSignature, .keySignature, .barline, .hairpin, .tie, .slur, .tuplet, .repeatEnding, .measureRepeat, .playbackJumpMarker:
+            false
+        }
     }
 
     private func directionSortOrder(_ kind: ScoreDirectionKind) -> Int {
         switch kind {
-        case .dynamic:
+        case .dynamic, .pedal:
             0
         case .wedge(.crescendo), .wedge(.diminuendo):
             1
@@ -1447,6 +1983,19 @@ struct ScoreLayoutEngine: Sendable {
             return 1.05
         }
         return 0
+    }
+
+    private func pedalLabel(for kind: PedalMarkKind) -> String {
+        switch kind {
+        case .start:
+            return "Ped."
+        case .stop:
+            return "*"
+        case .change:
+            return "* Ped."
+        case .continuePedal:
+            return "Ped."
+        }
     }
 
     private func tieAndSlurElements(
@@ -1585,6 +2134,22 @@ struct ScoreLayoutEngine: Sendable {
         position.stepsFromMiddleLine < 0 ? .up : .down
     }
 
+    private func explicitStemDirection(for note: ScoreNote) -> StemDirection? {
+        switch note.stemDirection {
+        case .up:
+            return .up
+        case .down:
+            return .down
+        case .some(.none), .some(.double), nil:
+            return nil
+        }
+    }
+
+    private func stemDirection(for note: ScoreNote, pitch: Pitch, measure: Measure) -> StemDirection {
+        explicitStemDirection(for: note)
+            ?? stemDirection(for: staffPosition(pitch: pitch, clef: clef(for: note.staffID, in: measure, at: note.onset)))
+    }
+
     private func stemFrame(
         direction: StemDirection,
         noteFrame: CGRect,
@@ -1717,6 +2282,7 @@ struct ScoreLayoutEngine: Sendable {
 
 public struct ScoreLayout: Sendable {
     public let canvasSize: CGSize
+    public let title: ScoreTitleLayout?
     public let systems: [SystemLayout]
     public let staves: [StaffLayout]
     public let measures: [MeasureLayout]
@@ -1729,6 +2295,7 @@ public struct ScoreLayout: Sendable {
 
     init(
         canvasSize: CGSize = .zero,
+        title: ScoreTitleLayout? = nil,
         systems: [SystemLayout] = [],
         staves: [StaffLayout] = [],
         measures: [MeasureLayout] = [],
@@ -1740,6 +2307,7 @@ public struct ScoreLayout: Sendable {
         elementByID: [ScoreElementID: ElementLayout] = [:]
     ) {
         self.canvasSize = canvasSize
+        self.title = title
         self.systems = systems
         self.staves = staves
         self.measures = measures
@@ -1763,6 +2331,29 @@ public struct ScoreLayout: Sendable {
         elementByID[id]
     }
 
+}
+
+public struct ScoreTitleLayout: Sendable {
+    public let text: String
+    public let frame: CGRect
+    public let fontSize: CGFloat
+    public let fontName: String
+
+    init(text: String, frame: CGRect, fontSize: CGFloat, fontName: String) {
+        self.text = text
+        self.frame = frame
+        self.fontSize = fontSize
+        self.fontName = fontName
+    }
+
+    fileprivate func offsetBy(dx: CGFloat, dy: CGFloat) -> ScoreTitleLayout {
+        ScoreTitleLayout(
+            text: text,
+            frame: frame.offsetBy(dx: dx, dy: dy),
+            fontSize: fontSize,
+            fontName: fontName
+        )
+    }
 }
 
 public struct SystemLayout: Sendable {
@@ -1920,6 +2511,8 @@ public struct ElementLayout: Sendable {
     public let articulation: ArticulationLayout?
     public let dynamic: DynamicLayout?
     public let hairpin: HairpinLayout?
+    public let pedal: PedalLayout?
+    public let barlineStyle: BarlineStyle?
     public let repeatBarline: RepeatBarline?
     public let beam: BeamLayout?
     public let curve: NotationCurveLayout?
@@ -1948,6 +2541,8 @@ public struct ElementLayout: Sendable {
         articulation: ArticulationLayout? = nil,
         dynamic: DynamicLayout? = nil,
         hairpin: HairpinLayout? = nil,
+        pedal: PedalLayout? = nil,
+        barlineStyle: BarlineStyle? = nil,
         repeatBarline: RepeatBarline? = nil,
         beam: BeamLayout? = nil,
         curve: NotationCurveLayout? = nil,
@@ -1975,6 +2570,8 @@ public struct ElementLayout: Sendable {
         self.articulation = articulation
         self.dynamic = dynamic
         self.hairpin = hairpin
+        self.pedal = pedal
+        self.barlineStyle = barlineStyle
         self.repeatBarline = repeatBarline
         self.beam = beam
         self.curve = curve
@@ -2005,6 +2602,8 @@ public struct ElementLayout: Sendable {
             articulation: articulation?.offsetBy(dx: dx, dy: dy),
             dynamic: dynamic?.offsetBy(dx: dx, dy: dy),
             hairpin: hairpin?.offsetBy(dx: dx, dy: dy),
+            pedal: pedal?.offsetBy(dx: dx, dy: dy),
+            barlineStyle: barlineStyle,
             repeatBarline: repeatBarline,
             beam: beam?.offsetBy(dx: dx, dy: dy),
             curve: curve?.offsetBy(dx: dx, dy: dy),
@@ -2070,6 +2669,29 @@ public struct DynamicLayout: Sendable {
     fileprivate func offsetBy(dx: CGFloat, dy: CGFloat) -> DynamicLayout {
         DynamicLayout(
             mark: mark,
+            origin: CGPoint(x: origin.x + dx, y: origin.y + dy),
+            frame: frame.offsetBy(dx: dx, dy: dy)
+        )
+    }
+}
+
+public struct PedalLayout: Sendable {
+    public let kind: PedalMarkKind
+    public let label: String
+    public let origin: CGPoint
+    public let frame: CGRect
+
+    init(kind: PedalMarkKind, label: String, origin: CGPoint, frame: CGRect) {
+        self.kind = kind
+        self.label = label
+        self.origin = origin
+        self.frame = frame
+    }
+
+    fileprivate func offsetBy(dx: CGFloat, dy: CGFloat) -> PedalLayout {
+        PedalLayout(
+            kind: kind,
+            label: label,
             origin: CGPoint(x: origin.x + dx, y: origin.y + dy),
             frame: frame.offsetBy(dx: dx, dy: dy)
         )
@@ -2470,6 +3092,7 @@ private struct LayoutMetrics {
     let staffGap: CGFloat
     let noteheadSize: CGSize
     let noteInset: CGFloat
+    let rhythmicSpacingUnitWidth: CGFloat
     let minimumMeasureWidth: CGFloat
     let absoluteMinimumMeasureWidth: CGFloat
     let normalMeasureMinimumWidth: CGFloat
@@ -2479,26 +3102,217 @@ private struct LayoutMetrics {
     let staffSpace: CGFloat
 
     init(options: LayoutOptions) {
-        leftMargin = options.showPageMargins ? 48 : 24
-        rightMargin = options.showPageMargins ? 48 : 24
-        topMargin = options.showPageMargins ? 48 : 32
-        bottomMargin = options.showPageMargins ? 48 : 32
+        if options.displayMode == .print, options.showPageMargins {
+            let printPageHeight = options.pageHeight ?? options.pageWidth * PrintPageMarginConstants.a4AspectRatio
+            let horizontalMargin = Self.standardPrintHorizontalMargin(forPageWidth: options.pageWidth)
+            let verticalMargin = Self.standardPrintVerticalMargin(forPageHeight: printPageHeight)
+            leftMargin = horizontalMargin
+            rightMargin = horizontalMargin
+            topMargin = verticalMargin
+            bottomMargin = verticalMargin
+        } else {
+            leftMargin = options.showPageMargins ? 48 : 24
+            rightMargin = options.showPageMargins ? 48 : 24
+            topMargin = options.showPageMargins ? 48 : 32
+            bottomMargin = options.showPageMargins ? 48 : 32
+        }
         staffHeight = options.staffSpace * 4
-        staffGap = max(options.systemSpacing, options.staffSpace * 8)
+        staffGap = max(options.systemSpacing, options.staffSpace * 8) + GrandStaffLayoutConstants.additionalStaffSeparation
         noteheadSize = CGSize(width: options.staffSpace * 1.95, height: options.staffSpace * 1.55)
-        noteInset = options.staffSpace * 3
-        minimumMeasureWidth = options.staffSpace * 12
-        absoluteMinimumMeasureWidth = max(options.staffSpace * 18, 180)
-        normalMeasureMinimumWidth = max(options.staffSpace * 22, 220)
+        if options.displayMode == .print, options.showPageMargins {
+            noteInset = options.staffSpace * 2
+            rhythmicSpacingUnitWidth = options.staffSpace * 1.5
+            minimumMeasureWidth = max(options.staffSpace * 7, 84)
+            absoluteMinimumMeasureWidth = max(options.staffSpace * 7, 84)
+            normalMeasureMinimumWidth = max(options.staffSpace * 7.5, 90)
+        } else {
+            noteInset = options.staffSpace * 3
+            rhythmicSpacingUnitWidth = options.staffSpace * 4.5
+            minimumMeasureWidth = options.staffSpace * 12
+            absoluteMinimumMeasureWidth = max(options.staffSpace * 18, 180)
+            normalMeasureMinimumWidth = max(options.staffSpace * 22, 220)
+        }
         pickupMeasureMinRatio = 0.75
         staffLineHitHalfWidth = max(1, options.staffSpace * 0.08)
         ledgerLineWidth = options.staffSpace * 2.1
         staffSpace = options.staffSpace
     }
 
+    private static func standardPrintHorizontalMargin(forPageWidth pageWidth: CGFloat) -> CGFloat {
+        min(
+            max((pageWidth * PrintPageMarginConstants.horizontalRatio).rounded(), PrintPageMarginConstants.minimumHorizontal),
+            PrintPageMarginConstants.maximumHorizontal
+        )
+    }
+
+    private static func standardPrintVerticalMargin(forPageHeight pageHeight: CGFloat) -> CGFloat {
+        min(
+            max((pageHeight * PrintPageMarginConstants.verticalRatio).rounded(), PrintPageMarginConstants.minimumVertical),
+            PrintPageMarginConstants.maximumVertical
+        )
+    }
+
     func staffMiddleY(systemTop: CGFloat, staffIndex: Int) -> CGFloat {
         systemTop + 2 * staffHeight / 4 + CGFloat(staffIndex) * staffGap
     }
+}
+
+private struct DisplayMeasureItem {
+    let partIndex: Int
+    let measureIndex: Int
+    let measure: Measure
+}
+
+private struct ScoreDisplayInput {
+    let staffIDs: [StaffID]
+    let measures: [DisplayMeasureItem]
+}
+
+private func scoreDisplayInput(for score: ScoreDocument) -> ScoreDisplayInput {
+    guard score.parts.count > 1 else {
+        return ScoreDisplayInput(
+            staffIDs: orderedStaffIDs(in: score),
+            measures: score.parts.enumerated().flatMap { partIndex, part in
+                part.measures.enumerated().map { measureIndex, measure in
+                    DisplayMeasureItem(partIndex: partIndex, measureIndex: measureIndex, measure: measure)
+                }
+            }
+        )
+    }
+
+    let localStaffIDsByPart = score.parts.enumerated().map { _, part in
+        orderedStaffIDs(in: ScoreDocument(parts: [part]))
+    }
+    var nextStaffOrdinal = 1
+    var staffMapByPart: [[StaffID: StaffID]] = []
+    var displayStaffIDs: [StaffID] = []
+    for localStaffIDs in localStaffIDsByPart {
+        var map: [StaffID: StaffID] = [:]
+        for localStaffID in localStaffIDs {
+            let displayStaffID = StaffID(rawValue: "\(nextStaffOrdinal)")
+            nextStaffOrdinal += 1
+            map[localStaffID] = displayStaffID
+            displayStaffIDs.append(displayStaffID)
+        }
+        staffMapByPart.append(map)
+    }
+
+    let maxMeasureCount = score.parts.map(\.measures.count).max() ?? 0
+    let mergedMeasures: [DisplayMeasureItem] = (0..<maxMeasureCount).compactMap { measureIndex in
+        let measuresAtIndex = score.parts.enumerated().compactMap { partIndex, part -> (Int, Measure)? in
+            guard part.measures.indices.contains(measureIndex) else { return nil }
+            return (partIndex, part.measures[measureIndex])
+        }
+        guard let primary = measuresAtIndex.first else { return nil }
+        return DisplayMeasureItem(
+            partIndex: 0,
+            measureIndex: measureIndex,
+            measure: mergedDisplayMeasure(
+                primary: primary.1,
+                measuresAtIndex: measuresAtIndex,
+                staffMapByPart: staffMapByPart
+            )
+        )
+    }
+
+    return ScoreDisplayInput(
+        staffIDs: displayStaffIDs.isEmpty ? [StaffID(rawValue: "1")] : displayStaffIDs,
+        measures: mergedMeasures
+    )
+}
+
+private func mergedDisplayMeasure(
+    primary: Measure,
+    measuresAtIndex: [(partIndex: Int, measure: Measure)],
+    staffMapByPart: [[StaffID: StaffID]]
+) -> Measure {
+    var notes: [ScoreNote] = []
+    var clefsByStaff: [StaffID: Clef] = [:]
+    var effectiveClefsByStaff: [StaffID: Clef] = [:]
+    var clefChanges: [ClefChange] = []
+    var directions: [ScoreDirection] = []
+    var tempoEvents: [TempoEvent] = []
+
+    for (partIndex, measure) in measuresAtIndex {
+        let staffMap = staffMapByPart.indices.contains(partIndex) ? staffMapByPart[partIndex] : [:]
+        notes.append(contentsOf: measure.notes.map { remapStaffID(in: $0, using: staffMap) })
+        clefsByStaff.merge(remapStaffIDs(in: measure.clefsByStaff, using: staffMap), uniquingKeysWith: { first, _ in first })
+        effectiveClefsByStaff.merge(remapStaffIDs(in: measure.effectiveClefsByStaff, using: staffMap), uniquingKeysWith: { first, _ in first })
+        clefChanges.append(contentsOf: measure.clefChanges.map { remapStaffID(in: $0, using: staffMap) })
+        directions.append(contentsOf: measure.directions.map { remapStaffID(in: $0, using: staffMap) })
+        tempoEvents.append(contentsOf: measure.tempoEvents)
+    }
+
+    return Measure(
+        id: MeasureID(partIndex: 0, measureNumber: primary.number),
+        number: primary.number,
+        notes: notes,
+        clef: primary.clef,
+        clefsByStaff: clefsByStaff,
+        effectiveClefsByStaff: effectiveClefsByStaff,
+        clefChanges: clefChanges,
+        keySignature: primary.keySignature,
+        timeSignature: primary.timeSignature,
+        tempoEvents: tempoEvents.isEmpty ? primary.tempoEvents : tempoEvents,
+        directions: directions,
+        repeatBarlines: primary.repeatBarlines,
+        leftBarlineStyle: primary.leftBarlineStyle,
+        rightBarlineStyle: primary.rightBarlineStyle,
+        repeatEndings: primary.repeatEndings,
+        measureRepeat: primary.measureRepeat,
+        playbackJumpMarkers: primary.playbackJumpMarkers,
+        musicXMLTranspose: primary.musicXMLTranspose
+    )
+}
+
+private func remapStaffIDs(in clefs: [StaffID: Clef], using map: [StaffID: StaffID]) -> [StaffID: Clef] {
+    Dictionary(uniqueKeysWithValues: clefs.map { staffID, clef in
+        (map[staffID] ?? staffID, clef)
+    })
+}
+
+private func remapStaffID(in change: ClefChange, using map: [StaffID: StaffID]) -> ClefChange {
+    ClefChange(
+        staffID: map[change.staffID] ?? change.staffID,
+        clef: change.clef,
+        onset: change.onset
+    )
+}
+
+private func remapStaffID(in direction: ScoreDirection, using map: [StaffID: StaffID]) -> ScoreDirection {
+    ScoreDirection(
+        kind: direction.kind,
+        onset: direction.onset,
+        staffID: direction.staffID.map { map[$0] ?? $0 },
+        placement: direction.placement
+    )
+}
+
+private func remapStaffID(in note: ScoreNote, using map: [StaffID: StaffID]) -> ScoreNote {
+    ScoreNote(
+        id: note.id,
+        pitch: note.pitch,
+        onset: note.onset,
+        duration: note.duration,
+        noteValueKind: note.noteValueKind,
+        dotCount: note.dotCount,
+        voiceID: note.voiceID,
+        staffID: map[note.staffID] ?? note.staffID,
+        isChordTone: note.isChordTone,
+        chordOrdinal: note.chordOrdinal,
+        accidental: note.accidental,
+        stemDirection: note.stemDirection,
+        ties: note.ties,
+        slurs: note.slurs,
+        beams: note.beams,
+        articulations: note.articulations,
+        lyrics: note.lyrics,
+        fingerings: note.fingerings,
+        isGrace: note.isGrace,
+        hasTimeModification: note.hasTimeModification,
+        hasTupletNotation: note.hasTupletNotation,
+        tuplet: note.tuplet
+    )
 }
 
 private func orderedStaffIDs(in score: ScoreDocument) -> [StaffID] {
@@ -2514,6 +3328,9 @@ private func orderedStaffIDs(in score: ScoreDocument) -> [StaffID] {
 }
 
 private func clef(for staffID: StaffID, in measure: Measure) -> Clef {
+    if let clef = measure.effectiveClefsByStaff[staffID] {
+        return clef
+    }
     if let clef = measure.clefsByStaff[staffID] {
         return clef
     }
@@ -2523,11 +3340,22 @@ private func clef(for staffID: StaffID, in measure: Measure) -> Clef {
     return staffID.rawValue == "2" ? Clef(kind: .bass) : Clef(kind: .treble)
 }
 
+private func clef(for staffID: StaffID, in measure: Measure, at onset: MusicalTime) -> Clef {
+    var effectiveClef = clef(for: staffID, in: measure)
+    for change in measure.clefChanges
+        .filter({ $0.staffID == staffID && $0.onset <= onset })
+        .sorted(by: { $0.onset < $1.onset }) {
+        effectiveClef = change.clef
+    }
+    return effectiveClef
+}
+
 private struct MeasureLayoutPlan {
     let partIndex: Int
     let measureIndex: Int
     let measure: Measure
     let displayedKeySignature: KeySignature?
+    let effectiveDisplayedKeySignature: KeySignature?
     let width: CGFloat
 }
 
@@ -2538,33 +3366,54 @@ private struct PendingWedgeLayout {
     let systemIndex: Int
 }
 
+private struct PendingArticulationLayout {
+    let kind: ScoreArticulationKind
+    let index: Int
+    let note: ScoreNote
+    let measureID: MeasureID
+    let noteLayout: NoteLayout
+    let stemDirection: StemDirection
+    let clef: Clef
+    let keySignature: KeySignature?
+    let timeSignature: TimeSignature?
+    let pitchClassHint: PitchClass?
+}
+
 private func width(
     for measure: Measure,
     measureIndex: Int,
     measureCount: Int,
     displayedKeySignature: KeySignature?,
+    forceClefPrefix: Bool = false,
     options: LayoutOptions,
     metrics: LayoutMetrics
 ) -> CGFloat {
     let spacingUnits = spacingUnitCount(for: measure)
-    let rhythmicSpacingWidth = CGFloat(max(spacingUnits, 1)) * options.staffSpace * 4.5 + metrics.noteInset * 2
-    let prefixRequiredWidth = prefixRequiredWidth(
+    let trailingInset = trailingNotationInsetWidth(for: measure, metrics: metrics)
+    let rhythmicSpacingWidth = CGFloat(max(spacingUnits, 1)) * metrics.rhythmicSpacingUnitWidth
+        + metrics.noteInset
+        + trailingInset
+    let midMeasureClefWidth = midMeasureClefSpacingWidth(for: measure, metrics: metrics)
+    let noteStartOffset = prefixNoteStartOffset(
         for: measure,
         displayedKeySignature: displayedKeySignature,
+        forceClefPrefix: forceClefPrefix,
         metrics: metrics
     )
+    let prefixRequiredWidth = prefixRequiredWidth(noteStartOffset: noteStartOffset, metrics: metrics)
     let minimumWidth = minimumMeasureWidth(
         for: measure,
         measureIndex: measureIndex,
         measureCount: measureCount,
         metrics: metrics
     )
-    return max(
+    let baseContentWidth = max(
         metrics.minimumMeasureWidth,
         rhythmicSpacingWidth,
-        prefixRequiredWidth,
         minimumWidth
     )
+    let contentWidth = baseContentWidth + midMeasureClefWidth
+    return max(contentWidth + noteStartOffset - metrics.noteInset, prefixRequiredWidth)
 }
 
 private func minimumMeasureWidth(
@@ -2585,7 +3434,9 @@ private func minimumMeasureWidth(
 
 private func justifiedMeasureWidths(
     _ baseWidths: [CGFloat],
+    systemGroups: [[Int]],
     shouldWrapSystems: Bool,
+    allowsFinalSystemJustification: Bool,
     contentWidth: CGFloat,
     measureSpacing: CGFloat
 ) -> [CGFloat] {
@@ -2593,12 +3444,98 @@ private func justifiedMeasureWidths(
         return baseWidths
     }
 
+    var systems = systemGroups
+    if systems.isEmpty {
+        systems = printSystemGroups(
+            baseWidths,
+            shouldWrapSystems: shouldWrapSystems,
+            contentWidth: contentWidth,
+            measureSpacing: measureSpacing,
+            maximumMeasuresPerSystem: Int.max
+        )
+    }
+
+    var widths = baseWidths
+    for (systemIndex, indices) in systems.enumerated() {
+        let isFinalSystem = systemIndex == systems.count - 1
+        if isFinalSystem && !allowsFinalSystemJustification {
+            continue
+        }
+        let occupiedWidth = indices.reduce(CGFloat(0)) { $0 + baseWidths[$1] }
+            + CGFloat(max(indices.count - 1, 0)) * measureSpacing
+        let extra = contentWidth - occupiedWidth
+        guard extra > 0 else { continue }
+        let distributableExtra = isFinalSystem
+            ? finalSystemJustificationExtra(extra: extra, indices: indices, baseWidths: baseWidths)
+            : extra
+        guard distributableExtra > 0 else { continue }
+        let perMeasureExtra = distributableExtra / CGFloat(indices.count)
+        for index in indices {
+            widths[index] += perMeasureExtra
+        }
+    }
+    return widths
+}
+
+private func finalSystemJustificationExtra(
+    extra: CGFloat,
+    indices: [Int],
+    baseWidths: [CGFloat]
+) -> CGFloat {
+    guard !indices.isEmpty else {
+        return 0
+    }
+    if indices.count == 1 {
+        return extra * 0.45
+    }
+    return extra * 0.65
+}
+
+private func applyFinalSingleMeasureWidthGuard(
+    to widths: inout [CGFloat],
+    baseWidths: [CGFloat],
+    systemGroups: [[Int]],
+    allowsFinalSystemJustification: Bool,
+    contentWidth: CGFloat
+) {
+    guard allowsFinalSystemJustification,
+          let finalGroup = systemGroups.last,
+          finalGroup.count == 1,
+          let index = finalGroup.first,
+          widths.indices.contains(index),
+          baseWidths.indices.contains(index)
+    else {
+        return
+    }
+    let baseWidth = baseWidths[index]
+    let extra = contentWidth - baseWidth
+    guard extra > 0 else {
+        return
+    }
+    widths[index] = max(
+        widths[index],
+        baseWidth + finalSystemJustificationExtra(extra: extra, indices: [index], baseWidths: baseWidths)
+    )
+}
+
+private func printSystemGroups(
+    _ baseWidths: [CGFloat],
+    shouldWrapSystems: Bool,
+    contentWidth: CGFloat,
+    measureSpacing: CGFloat,
+    maximumMeasuresPerSystem: Int
+) -> [[Int]] {
+    guard shouldWrapSystems, !baseWidths.isEmpty else {
+        return [Array(baseWidths.indices)]
+    }
+
+    let maximumCount = max(1, maximumMeasuresPerSystem)
     var systems: [[Int]] = []
     var current: [Int] = []
     var occupied: CGFloat = 0
     for (index, width) in baseWidths.enumerated() {
         let candidate = current.isEmpty ? width : occupied + measureSpacing + width
-        if !current.isEmpty, candidate > contentWidth {
+        if !current.isEmpty, (current.count >= maximumCount || candidate > contentWidth) {
             systems.append(current)
             current = [index]
             occupied = width
@@ -2610,36 +3547,126 @@ private func justifiedMeasureWidths(
     if !current.isEmpty {
         systems.append(current)
     }
+    return systems
+}
 
-    var widths = baseWidths
-    for (systemIndex, indices) in systems.enumerated() where systemIndex < systems.count - 1 && indices.count > 1 {
-        let occupiedWidth = indices.reduce(CGFloat(0)) { $0 + baseWidths[$1] }
-            + CGFloat(max(indices.count - 1, 0)) * measureSpacing
-        let extra = contentWidth - occupiedWidth
-        guard extra > 0 else { continue }
-        let perMeasureExtra = extra / CGFloat(indices.count)
+private func systemIndexLookup(for groups: [[Int]]) -> [Int: Int] {
+    var lookup: [Int: Int] = [:]
+    for (systemIndex, indices) in groups.enumerated() {
         for index in indices {
-            widths[index] += perMeasureExtra
+            lookup[index] = systemIndex
         }
     }
-    return widths
+    return lookup
 }
 
 private func prefixRequiredWidth(
     for measure: Measure,
     displayedKeySignature: KeySignature?,
+    forceClefPrefix: Bool = false,
     metrics: LayoutMetrics
 ) -> CGFloat {
-    let prefixWidth = keySignaturePrefixWidth(for: displayedKeySignature, metrics: metrics)
+    prefixRequiredWidth(
+        noteStartOffset: prefixNoteStartOffset(
+            for: measure,
+            displayedKeySignature: displayedKeySignature,
+            forceClefPrefix: forceClefPrefix,
+            metrics: metrics
+        ),
+        metrics: metrics
+    )
+}
+
+private func prefixRequiredWidth(noteStartOffset: CGFloat, metrics: LayoutMetrics) -> CGFloat {
+    metrics.noteInset + noteStartOffset + metrics.noteheadSize.width * 2
+}
+
+private func measurePrefixContentWidth(
+    for measure: Measure,
+    displayedKeySignature: KeySignature?,
+    forceClefPrefix: Bool = false,
+    metrics: LayoutMetrics
+) -> CGFloat {
+    keySignaturePrefixWidth(for: displayedKeySignature, metrics: metrics)
+        + timeSignaturePrefixWidth(for: measure, metrics: metrics)
+        + clefPrefixWidth(for: measure, forceClef: forceClefPrefix, metrics: metrics)
+        + forwardRepeatPrefixWidth(for: measure, metrics: metrics)
+}
+
+private func prefixNoteSeparationWidth(
+    prefixContentWidth: CGFloat,
+    timeSignatureWidth: CGFloat,
+    metrics: LayoutMetrics
+) -> CGFloat {
+    guard prefixContentWidth > 0 else {
+        return 0
+    }
+    let baseSeparation = metrics.noteheadSize.width / 2
+    guard timeSignatureWidth > 0 else {
+        return metrics.staffSpace * 0.15
+    }
+    return baseSeparation + metrics.staffSpace * 0.35
+}
+
+private func prefixNoteStartOffset(
+    for measure: Measure,
+    displayedKeySignature: KeySignature?,
+    forceClefPrefix: Bool = false,
+    metrics: LayoutMetrics
+) -> CGFloat {
+    let prefixContentWidth = measurePrefixContentWidth(
+        for: measure,
+        displayedKeySignature: displayedKeySignature,
+        forceClefPrefix: forceClefPrefix,
+        metrics: metrics
+    )
+    guard prefixContentWidth > 0 else {
+        return metrics.noteInset
+    }
+
     let timeWidth = timeSignaturePrefixWidth(for: measure, metrics: metrics)
-    let clefWidth = clefPrefixWidth(for: measure, metrics: metrics)
     let repeatWidth = forwardRepeatPrefixWidth(for: measure, metrics: metrics)
-    return metrics.noteInset * 2
-        + prefixWidth
-        + timeWidth
-        + clefWidth
-        + repeatWidth
-        + metrics.noteheadSize.width * 2
+    if timeWidth > 0 || repeatWidth > 0 {
+        return metrics.noteInset + prefixContentWidth + prefixNoteSeparationWidth(
+            prefixContentWidth: prefixContentWidth,
+            timeSignatureWidth: timeWidth,
+            metrics: metrics
+        )
+    }
+
+    let visualPrefixEnd = visualPrefixEndWidth(
+        for: measure,
+        displayedKeySignature: displayedKeySignature,
+        forceClefPrefix: forceClefPrefix,
+        metrics: metrics
+    )
+    let hasVisibleKeySignature = (displayedKeySignature?.fifths ?? 0) != 0
+    let desiredGap = hasVisibleKeySignature
+        ? max(3, metrics.staffSpace * 0.45)
+        : max(8, metrics.staffSpace * 0.95)
+    return max(metrics.noteInset, visualPrefixEnd + desiredGap + metrics.noteheadSize.width / 2)
+}
+
+private func visualPrefixEndWidth(
+    for measure: Measure,
+    displayedKeySignature: KeySignature?,
+    forceClefPrefix: Bool = false,
+    metrics: LayoutMetrics
+) -> CGFloat {
+    var maxX: CGFloat = 0
+    if forceClefPrefix || measure.clef != nil || !measure.clefsByStaff.isEmpty {
+        maxX = max(maxX, metrics.staffSpace * 0.65 + metrics.staffSpace * 2.0)
+    }
+    if let displayedKeySignature, displayedKeySignature.fifths != 0 {
+        let count = min(abs(displayedKeySignature.fifths), 7)
+        maxX = max(
+            maxX,
+            metrics.staffSpace * 4.0
+                + CGFloat(max(count - 1, 0)) * keySignatureAccidentalSpacing(metrics: metrics)
+                + metrics.noteheadSize.width * 0.5
+        )
+    }
+    return maxX
 }
 
 private func isPickupMeasure(_ measure: Measure, measureIndex: Int, measureCount: Int) -> Bool {
@@ -2711,29 +3738,46 @@ private func xCoordinatesByOnset(
     measureX: CGFloat,
     measureWidth: CGFloat,
     metrics: LayoutMetrics,
-    displayedKeySignature: KeySignature? = nil
+    displayedKeySignature: KeySignature? = nil,
+    forceClefPrefix: Bool = false
 ) -> [MusicalTime: CGFloat] {
     let onsets = Array(Set(measure.notes.map(\.onset))).sorted()
     guard !onsets.isEmpty else {
         return [:]
     }
 
-    let prefixWidth = keySignaturePrefixWidth(for: displayedKeySignature ?? measure.keySignature, metrics: metrics)
-    let timeWidth = timeSignaturePrefixWidth(for: measure, metrics: metrics)
-    let clefWidth = clefPrefixWidth(for: measure, metrics: metrics)
-    let repeatWidth = forwardRepeatPrefixWidth(for: measure, metrics: metrics)
-    let startX = measureX + metrics.noteInset + prefixWidth + timeWidth + clefWidth + repeatWidth
+    let noteStartOffset = prefixNoteStartOffset(
+        for: measure,
+        displayedKeySignature: displayedKeySignature ?? measure.keySignature,
+        forceClefPrefix: forceClefPrefix,
+        metrics: metrics
+    )
+    let startX = measureX + noteStartOffset
 
     if onsets.count == 1 {
-        return [onsets[0]: startX]
+        return applyMidMeasureClefOffsets(
+            to: [onsets[0]: startX],
+            for: measure,
+            metrics: metrics
+        )
     }
 
-    let availableWidth = max(0, measureWidth - metrics.noteInset * 2 - prefixWidth - timeWidth - clefWidth - repeatWidth)
+    let availableWidth = max(
+        0,
+        measureWidth
+            - noteStartOffset
+            - trailingNotationInsetWidth(for: measure, metrics: metrics)
+            - midMeasureClefSpacingWidth(for: measure, metrics: metrics)
+    )
     if measureContainsCompactShortNotes(measure) {
-        return compactShortNoteXCoordinates(
-            onsets: onsets,
-            startX: startX,
-            availableWidth: availableWidth,
+        return applyMidMeasureClefOffsets(
+            to: compactShortNoteXCoordinates(
+                onsets: onsets,
+                startX: startX,
+                availableWidth: availableWidth,
+                metrics: metrics
+            ),
+            for: measure,
             metrics: metrics
         )
     }
@@ -2747,15 +3791,52 @@ private func xCoordinatesByOnset(
 
     guard measureDurationValue > 0 else {
         let stepWidth = usableWidth / CGFloat(onsets.count - 1)
-        return Dictionary(uniqueKeysWithValues: onsets.enumerated().map { index, onset in
+        return applyMidMeasureClefOffsets(to: Dictionary(uniqueKeysWithValues: onsets.enumerated().map { index, onset in
             (onset, startX + CGFloat(index) * stepWidth)
-        })
+        }), for: measure, metrics: metrics)
     }
 
-    return Dictionary(uniqueKeysWithValues: onsets.map { onset in
+    return applyMidMeasureClefOffsets(to: Dictionary(uniqueKeysWithValues: onsets.map { onset in
         let offset = musicalTimeValue(onset - measureStart) / measureDurationValue
         return (onset, startX + usableWidth * offset)
-    })
+    }), for: measure, metrics: metrics)
+}
+
+private func trailingNotationInsetWidth(for measure: Measure, metrics: LayoutMetrics) -> CGFloat {
+    let hasFlaggedNote = measure.notes.contains { $0.pitch != nil && $0.noteValueKind.flagCount > 0 }
+    guard hasFlaggedNote else {
+        return metrics.noteInset
+    }
+    return max(metrics.noteInset, metrics.noteheadSize.width * 1.55)
+}
+
+private func midMeasureClefSpacingWidth(for measure: Measure, metrics: LayoutMetrics) -> CGFloat {
+    let onsets = Set(measure.clefChanges.map(\.onset))
+    guard !onsets.isEmpty else {
+        return 0
+    }
+    return CGFloat(onsets.count) * midMeasureClefAdvanceWidth(metrics: metrics)
+}
+
+private func midMeasureClefAdvanceWidth(metrics: LayoutMetrics) -> CGFloat {
+    metrics.staffSpace * 2.65
+}
+
+private func applyMidMeasureClefOffsets(
+    to coordinates: [MusicalTime: CGFloat],
+    for measure: Measure,
+    metrics: LayoutMetrics
+) -> [MusicalTime: CGFloat] {
+    let changeOnsets = Set(measure.clefChanges.map(\.onset)).sorted()
+    guard !changeOnsets.isEmpty else {
+        return coordinates
+    }
+    var adjusted: [MusicalTime: CGFloat] = [:]
+    for (onset, x) in coordinates {
+        let offsetCount = changeOnsets.filter { $0 <= onset }.count
+        adjusted[onset] = x + CGFloat(offsetCount) * midMeasureClefAdvanceWidth(metrics: metrics)
+    }
+    return adjusted
 }
 
 private func measureContainsCompactShortNotes(_ measure: Measure) -> Bool {
@@ -2816,8 +3897,8 @@ private func keySignaturePrefixWidth(for keySignature: KeySignature?, metrics: L
     return CGFloat(count - 1) * keySignatureAccidentalSpacing(metrics: metrics) + keySignatureAccidentalFrameWidth(metrics: metrics)
 }
 
-private func clefPrefixWidth(for measure: Measure, metrics: LayoutMetrics) -> CGFloat {
-    (measure.clef == nil && measure.clefsByStaff.isEmpty) ? 0 : metrics.staffSpace * 2.9
+private func clefPrefixWidth(for measure: Measure, forceClef: Bool = false, metrics: LayoutMetrics) -> CGFloat {
+    (!forceClef && measure.clef == nil && measure.clefsByStaff.isEmpty) ? 0 : metrics.staffSpace * 2.9
 }
 
 private func timeSignaturePrefixWidth(for measure: Measure, metrics: LayoutMetrics) -> CGFloat {
@@ -2825,7 +3906,11 @@ private func timeSignaturePrefixWidth(for measure: Measure, metrics: LayoutMetri
 }
 
 private func forwardRepeatPrefixWidth(for measure: Measure, metrics: LayoutMetrics) -> CGFloat {
-    measure.repeatBarlines.contains { $0.direction == .forward } ? metrics.staffSpace * 1.6 : 0
+    measure.repeatBarlines.contains { $0.direction == .forward } ? repeatBarlineFrameWidth(metrics: metrics) : 0
+}
+
+private func repeatBarlineFrameWidth(metrics: LayoutMetrics) -> CGFloat {
+    max(metrics.staffSpace * 2.1, 18)
 }
 
 private func keySignatureAccidentalSpacing(metrics: LayoutMetrics) -> CGFloat {
@@ -2841,17 +3926,18 @@ private func prefixElements(
     staffID: StaffID,
     clef: Clef,
     displayedKeySignature: KeySignature?,
+    forceClef: Bool = false,
     middleY: CGFloat,
     measureX: CGFloat,
     metrics: LayoutMetrics
 ) -> [ElementLayout] {
     var elements: [ElementLayout] = []
-    if measure.clef != nil || measure.clefsByStaff[staffID] != nil {
+    if forceClef || measure.clef != nil || measure.clefsByStaff[staffID] != nil {
         let clefYOffset: CGFloat = switch clef.kind {
         case .treble:
-            metrics.staffSpace * 0.8 - 15
+            metrics.staffSpace * 0.8 - 9
         case .bass:
-            -metrics.staffSpace * 1.2 + 12
+            -metrics.staffSpace * 1.2 + 6
         case .alto, .tenor, .unknown:
             0
         }
@@ -2899,6 +3985,49 @@ private func prefixElements(
     return elements
 }
 
+private func midMeasureClefElements(
+    measure: Measure,
+    staffID: StaffID,
+    onsetX: [MusicalTime: CGFloat],
+    middleY: CGFloat,
+    metrics: LayoutMetrics
+) -> [ElementLayout] {
+    measure.clefChanges
+        .filter { $0.staffID == staffID }
+        .enumerated()
+        .map { index, change in
+            let clefScale: CGFloat = 0.72
+            let baseClefHeight = metrics.staffSpace * 4.55
+            let clefWidth = metrics.staffSpace * 2.0 * clefScale
+            let clefHeight = baseClefHeight * clefScale
+            let clefYOffset: CGFloat = switch change.clef.kind {
+            case .treble:
+                metrics.staffSpace * 0.8 - 9
+            case .bass:
+                -metrics.staffSpace * 1.2 + 6
+            case .alto, .tenor, .unknown:
+                0
+            }
+            let noteX = onsetX[change.onset]
+                ?? (onsetX.values.sorted().first ?? metrics.leftMargin) + midMeasureClefAdvanceWidth(metrics: metrics)
+            let noteheadLeadingEdge = noteX - metrics.noteheadSize.width / 2
+            let frame = CGRect(
+                x: noteheadLeadingEdge - metrics.staffSpace * 0.35 - clefWidth,
+                y: middleY - metrics.staffSpace * 2.1 + clefYOffset + (baseClefHeight - clefHeight) / 2,
+                width: clefWidth,
+                height: clefHeight
+            )
+            return ElementLayout(
+                id: ScoreElementID(rawValue: "\(staffID.rawValue).\(measure.id.rawValue).clefChange.\(index).\(change.onset.ticks)"),
+                kind: .clef,
+                measureID: measure.id,
+                staffID: staffID,
+                clef: change.clef,
+                frame: frame
+            )
+        }
+}
+
 private func barlineElements(
     measure: Measure,
     staffIDs: [StaffID],
@@ -2907,7 +4036,8 @@ private func barlineElements(
     measureWidth: CGFloat,
     forwardRepeatX: CGFloat,
     systemTop: CGFloat,
-    metrics: LayoutMetrics
+    metrics: LayoutMetrics,
+    includeLeftBarline: Bool = false
 ) -> [ElementLayout] {
     guard !staffIDs.isEmpty else {
         return []
@@ -2919,20 +4049,44 @@ private func barlineElements(
     let top = metrics.staffMiddleY(systemTop: systemTop, staffIndex: topStaffIndex) - metrics.staffHeight / 2
     let bottom = metrics.staffMiddleY(systemTop: systemTop, staffIndex: bottomStaffIndex) + metrics.staffHeight / 2
 
-    elements.append(ElementLayout(
-        id: ScoreElementID(rawValue: "\(measure.id.rawValue).barline.right"),
-        kind: .barline,
-        measureID: measure.id,
-        frame: CGRect(x: rightX - metrics.staffLineHitHalfWidth, y: top, width: metrics.staffLineHitHalfWidth * 2, height: bottom - top)
-    ))
+    if includeLeftBarline {
+        elements.append(ElementLayout(
+            id: ScoreElementID(rawValue: "\(measure.id.rawValue).barline.left"),
+            kind: .barline,
+            measureID: measure.id,
+            frame: CGRect(x: measureX - metrics.staffLineHitHalfWidth, y: top, width: metrics.staffLineHitHalfWidth * 2, height: bottom - top),
+            barlineStyle: measure.leftBarlineStyle
+        ))
+    } else if let leftStyle = measure.leftBarlineStyle, leftStyle != .none {
+        elements.append(ElementLayout(
+            id: ScoreElementID(rawValue: "\(measure.id.rawValue).barline.leftStyle"),
+            kind: .barline,
+            measureID: measure.id,
+            frame: CGRect(x: measureX - metrics.staffLineHitHalfWidth, y: top, width: metrics.staffLineHitHalfWidth * 2, height: bottom - top),
+            barlineStyle: leftStyle
+        ))
+    }
+
+    let hasBackwardRepeat = measure.repeatBarlines.contains { $0.direction == .backward }
+    if !hasBackwardRepeat {
+        elements.append(ElementLayout(
+            id: ScoreElementID(rawValue: "\(measure.id.rawValue).barline.right"),
+            kind: .barline,
+            measureID: measure.id,
+            frame: CGRect(x: rightX - metrics.staffLineHitHalfWidth, y: top, width: metrics.staffLineHitHalfWidth * 2, height: bottom - top),
+            barlineStyle: measure.rightBarlineStyle
+        ))
+    }
 
     for repeatBarline in measure.repeatBarlines {
         let x = repeatBarline.direction == .forward ? forwardRepeatX : rightX
+        let repeatFrameWidth = repeatBarlineFrameWidth(metrics: metrics)
+        let frameX = repeatBarline.direction == .forward ? x : x - repeatFrameWidth
         elements.append(ElementLayout(
             id: ScoreElementID(rawValue: "\(measure.id.rawValue).repeat.\(repeatBarline.direction.rawValue)"),
             kind: .barline,
             measureID: measure.id,
-            frame: CGRect(x: x - metrics.staffSpace * 0.3, y: top, width: metrics.staffSpace * 0.6, height: bottom - top),
+            frame: CGRect(x: frameX, y: top, width: repeatFrameWidth, height: bottom - top),
             repeatBarline: repeatBarline
         ))
     }
@@ -2969,13 +4123,17 @@ private func repeatEndingElements(
 
     return startEndings.flatMap { ending in
         ending.numbers.map { number in
-            let sameMeasureStop = measure.repeatEndings.contains { candidate in
+            let sameMeasureClose = measure.repeatEndings.contains { candidate in
                 candidate.numbers.contains(number)
                     && (candidate.kind == .stop || candidate.kind == .discontinue)
             }
+            let drawsEndHook = measure.repeatEndings.contains { candidate in
+                candidate.numbers.contains(number) && candidate.kind == .stop
+            }
+            let closesAtBackwardRepeat = drawsEndHook && measure.repeatBarlines.contains { $0.direction == .backward }
             let label = "\(number)."
-            let startHookEnd = CGPoint(x: lineStart.x, y: lineStart.y + hookLength)
-            let endHookEnd = sameMeasureStop ? CGPoint(x: lineEnd.x, y: lineEnd.y + hookLength) : nil
+            let startHookEnd = closesAtBackwardRepeat ? nil : CGPoint(x: lineStart.x, y: lineStart.y + hookLength)
+            let endHookEnd = drawsEndHook ? CGPoint(x: lineEnd.x, y: lineEnd.y + hookLength) : nil
             let labelPoint = CGPoint(x: lineStart.x + metrics.staffSpace * 0.75, y: lineStart.y + labelHeight * 0.65)
             let frame = CGRect(
                 x: lineStart.x - metrics.staffLineHitHalfWidth * 2,
@@ -2988,7 +4146,7 @@ private func repeatEndingElements(
                 label: label,
                 kind: ending.kind,
                 startsHere: true,
-                stopsHere: sameMeasureStop,
+                stopsHere: sameMeasureClose,
                 lineStart: lineStart,
                 lineEnd: lineEnd,
                 startHookEnd: startHookEnd,
@@ -3133,7 +4291,7 @@ private func forwardRepeatX(
         .min()
     let desiredX = prefixEndX + metrics.staffSpace * 0.85
     let minimumX = prefixEndX + metrics.staffSpace * 0.45
-    let xBeforeFirstNote = firstNoteMinX.map { $0 - metrics.staffSpace * 0.70 } ?? desiredX
+    let xBeforeFirstNote = firstNoteMinX.map { $0 - repeatBarlineFrameWidth(metrics: metrics) - metrics.staffSpace * 0.25 } ?? desiredX
     return max(measureX, max(minimumX, min(desiredX, xBeforeFirstNote)))
 }
 

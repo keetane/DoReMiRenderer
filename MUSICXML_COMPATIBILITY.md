@@ -204,7 +204,9 @@ structures remain warning-backed diagnostics.
 
 Current Phase 16.5 stabilization status:
 
-- Rhythm values, dots, common rests, stems, flags, simple beams, mixed
+- Rhythm values, dots, common rests, explicit MusicXML `<stem>` directions
+  where safe, flags, MusicXML `<beam>`
+  begin/continue/end grouping with safe inferred fallback, mixed
   eighth/sixteenth beam checks, ledger lines,
   clefs, accidentals, key signatures, time signatures, repeat barlines, basic
   triplet brackets, and attack/continuation highlights are visible at MVP
@@ -212,8 +214,13 @@ Current Phase 16.5 stabilization status:
 - Tie `<tie>` data affects playback and continuation highlighting. Basic
   same-system MusicXML notation `<tied>` pairs render MVP tie curves; complex
   and system-crossing tie chains remain limited.
-- Dynamic text and tempo words are not rendered. `<sound tempo="">` is retained
-  for playback metadata, but visible tempo words remain future work.
+- Dynamic text is rendered as MVP staff text, and pedal directions render as
+  basic `Ped.` / `*` text. `<sound tempo="">` and simple metronome
+  `<beat-unit>` / `<per-minute>` markings are retained for playback metadata,
+  but visible tempo words remain future work.
+- Basic MusicXML `bar-style` variants are retained on left/right barlines and
+  rendered for common thin/heavy combinations. Less common dotted, dashed,
+  tick, and short styles currently fall back to the nearest MVP line style.
 - DoReMi Palette supports a piano-focused transpose setting for generated
   playback, keyboard highlight, current-note sounding text, and sounding-key
   text. Phase T2 adds optional display transpose: when `譜面も移調` is enabled,
@@ -222,7 +229,12 @@ Current Phase 16.5 stabilization status:
   note IDs and playback events.
 - Prefix notation is laid out in standard engraving order (`clef -> key
   signature -> time signature`) with MVP collision-safe spacing for bass clefs,
-  display-transposed key signatures, and first note/rest placement.
+  display-transposed key signatures, and first note/rest placement. Clef changes
+  that appear inside a measure are retained with their musical onset, drawn as
+  smaller in-measure clefs before the following notes, and used for subsequent
+  note staff-position calculation; the active clef carries into later measures.
+  Measures with in-measure clefs reserve additional horizontal space for the clef
+  insertion and trailing flagged notation.
 - Note accidentals inherit the associated displayed note's pitch color when
   note colors are enabled, including display-transposed layouts. Key-signature
   accidentals use pitch-class color in the current MVP.

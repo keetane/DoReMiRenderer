@@ -273,17 +273,33 @@ public struct ScorePart: Hashable, Codable, Sendable {
     }
 }
 
+public struct ClefChange: Hashable, Codable, Sendable {
+    public let staffID: StaffID
+    public let clef: Clef
+    public let onset: MusicalTime
+
+    public init(staffID: StaffID, clef: Clef, onset: MusicalTime) {
+        self.staffID = staffID
+        self.clef = clef
+        self.onset = onset
+    }
+}
+
 public struct Measure: Hashable, Codable, Sendable {
     public let id: MeasureID
     public let number: String
     public let notes: [ScoreNote]
     public let clef: Clef?
     public let clefsByStaff: [StaffID: Clef]
+    public let effectiveClefsByStaff: [StaffID: Clef]
+    public let clefChanges: [ClefChange]
     public let keySignature: KeySignature?
     public let timeSignature: TimeSignature?
     public let tempoEvents: [TempoEvent]
     public let directions: [ScoreDirection]
     public let repeatBarlines: [RepeatBarline]
+    public let leftBarlineStyle: BarlineStyle?
+    public let rightBarlineStyle: BarlineStyle?
     public let repeatEndings: [RepeatEnding]
     public let measureRepeat: MeasureRepeat?
     public let playbackJumpMarkers: [PlaybackJumpMarker]
@@ -295,11 +311,15 @@ public struct Measure: Hashable, Codable, Sendable {
         notes: [ScoreNote],
         clef: Clef? = nil,
         clefsByStaff: [StaffID: Clef] = [:],
+        effectiveClefsByStaff: [StaffID: Clef] = [:],
+        clefChanges: [ClefChange] = [],
         keySignature: KeySignature? = nil,
         timeSignature: TimeSignature? = nil,
         tempoEvents: [TempoEvent] = [],
         directions: [ScoreDirection] = [],
         repeatBarlines: [RepeatBarline] = [],
+        leftBarlineStyle: BarlineStyle? = nil,
+        rightBarlineStyle: BarlineStyle? = nil,
         repeatEndings: [RepeatEnding] = [],
         measureRepeat: MeasureRepeat? = nil,
         playbackJumpMarkers: [PlaybackJumpMarker] = [],
@@ -310,11 +330,15 @@ public struct Measure: Hashable, Codable, Sendable {
         self.notes = notes
         self.clef = clef
         self.clefsByStaff = clefsByStaff
+        self.effectiveClefsByStaff = effectiveClefsByStaff
+        self.clefChanges = clefChanges
         self.keySignature = keySignature
         self.timeSignature = timeSignature
         self.tempoEvents = tempoEvents
         self.directions = directions
         self.repeatBarlines = repeatBarlines
+        self.leftBarlineStyle = leftBarlineStyle
+        self.rightBarlineStyle = rightBarlineStyle
         self.repeatEndings = repeatEndings
         self.measureRepeat = measureRepeat
         self.playbackJumpMarkers = playbackJumpMarkers
@@ -383,9 +407,34 @@ public enum MusicXMLTieKind: String, Hashable, Codable, Sendable {
     case stop
 }
 
+public enum MusicXMLStemDirection: String, Hashable, Codable, Sendable {
+    case up
+    case down
+    case none
+    case double
+}
+
 public enum MusicXMLSlurKind: String, Hashable, Codable, Sendable {
     case start
     case stop
+}
+
+public enum MusicXMLBeamValue: String, Hashable, Codable, Sendable {
+    case begin
+    case `continue`
+    case end
+    case forwardHook = "forward hook"
+    case backwardHook = "backward hook"
+}
+
+public struct MusicXMLBeam: Hashable, Codable, Sendable {
+    public let number: Int
+    public let value: MusicXMLBeamValue
+
+    public init(number: Int = 1, value: MusicXMLBeamValue) {
+        self.number = max(1, number)
+        self.value = value
+    }
 }
 
 public enum MusicXMLTupletKind: String, Hashable, Codable, Sendable {
@@ -437,9 +486,17 @@ public enum ScoreWedgeKind: String, Hashable, Codable, Sendable {
     case stop
 }
 
+public enum PedalMarkKind: String, Hashable, Codable, Sendable {
+    case start
+    case stop
+    case change
+    case continuePedal = "continue"
+}
+
 public enum ScoreDirectionKind: Hashable, Codable, Sendable {
     case dynamic(DynamicMark)
     case wedge(ScoreWedgeKind)
+    case pedal(PedalMarkKind)
 }
 
 public struct ScoreDirection: Hashable, Codable, Sendable {
@@ -531,8 +588,10 @@ public struct ScoreNote: Hashable, Codable, Sendable {
     public let isChordTone: Bool
     public let chordOrdinal: Int
     public let accidental: String?
+    public let stemDirection: MusicXMLStemDirection?
     public let ties: [MusicXMLTieKind]
     public let slurs: [MusicXMLSlurKind]
+    public let beams: [MusicXMLBeam]
     public let articulations: [ScoreArticulationKind]
     public let lyrics: [LyricAnnotation]
     public let fingerings: [FingeringAnnotation]
@@ -553,8 +612,10 @@ public struct ScoreNote: Hashable, Codable, Sendable {
         isChordTone: Bool = false,
         chordOrdinal: Int = 0,
         accidental: String? = nil,
+        stemDirection: MusicXMLStemDirection? = nil,
         ties: [MusicXMLTieKind] = [],
         slurs: [MusicXMLSlurKind] = [],
+        beams: [MusicXMLBeam] = [],
         articulations: [ScoreArticulationKind] = [],
         lyrics: [LyricAnnotation] = [],
         fingerings: [FingeringAnnotation] = [],
@@ -574,8 +635,10 @@ public struct ScoreNote: Hashable, Codable, Sendable {
         self.isChordTone = isChordTone
         self.chordOrdinal = chordOrdinal
         self.accidental = accidental
+        self.stemDirection = stemDirection
         self.ties = ties
         self.slurs = slurs
+        self.beams = beams
         self.articulations = articulations
         self.lyrics = lyrics
         self.fingerings = fingerings
@@ -634,6 +697,24 @@ public struct TempoEvent: Hashable, Codable, Sendable {
 public enum RepeatDirection: String, Hashable, Codable, Sendable {
     case forward
     case backward
+}
+
+public enum BarlineStyle: String, Hashable, Codable, Sendable {
+    case regular
+    case dotted
+    case dashed
+    case heavy
+    case lightLight = "light-light"
+    case lightHeavy = "light-heavy"
+    case heavyLight = "heavy-light"
+    case heavyHeavy = "heavy-heavy"
+    case none
+    case tick
+    case short
+
+    public init?(musicXMLValue: String) {
+        self.init(rawValue: musicXMLValue.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
 }
 
 public struct RepeatBarline: Hashable, Codable, Sendable {
@@ -705,6 +786,7 @@ public enum ScoreElementKind: Hashable, Codable, Sendable {
     case articulation
     case dynamic
     case hairpin
+    case pedal
     case tie
     case slur
     case tuplet

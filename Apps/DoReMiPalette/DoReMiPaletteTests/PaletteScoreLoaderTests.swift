@@ -29,6 +29,27 @@ struct PaletteScoreLoaderTests {
         #expect(loaded.displayName == "Loader Title")
     }
 
+    @Test func missingMusicXMLTitleUsesSourceNameInsteadOfPartName() throws {
+        let loaded = try PaletteScoreLoader().load(data: Self.validMusicXML, sourceName: "ode_sample.musicxml")
+
+        #expect(loaded.score.parts.first?.name == "Unit")
+        #expect(loaded.score.title == "ode sample")
+        #expect(loaded.score.title != loaded.score.parts.first?.name)
+        #expect(loaded.a4Layout.title?.text == "ode sample")
+    }
+
+    @Test func bundledSampleDisplayTitleOverridesPartNameWhenMusicXMLHasNoTitle() throws {
+        let loaded = try PaletteScoreLoader().load(
+            data: Self.validMusicXML,
+            sourceName: "Ode_to_Joy_Easy_variation.musicxml",
+            displayTitle: "Ode to Joy Easy Variation"
+        )
+
+        #expect(loaded.score.parts.first?.name == "Unit")
+        #expect(loaded.score.title == "Ode to Joy Easy Variation")
+        #expect(loaded.a4Layout.title?.text == "Ode to Joy Easy Variation")
+    }
+
     @Test func parseFailureThrows() {
         #expect(throws: Error.self) {
             _ = try PaletteScoreLoader().load(data: Data("<score-partwise>".utf8), sourceName: "broken.musicxml")
@@ -179,12 +200,52 @@ struct PaletteScoreLoaderTests {
     @Test func scoreLoaderCreatesHorizontalAndA4LayoutsForTheSameScore() throws {
         let loaded = try PaletteScoreLoader().load(data: Self.validMusicXML, sourceName: "unit.musicxml")
 
-        #expect(loaded.layoutMode == .horizontal)
-        #expect(loaded.layout.canvasSize == loaded.horizontalLayout.canvasSize)
+        #expect(loaded.layoutMode == .a4)
+        #expect(loaded.layout.canvasSize == loaded.a4Layout.canvasSize)
         #expect(loaded.printLayout.canvasSize == loaded.a4Layout.canvasSize)
         #expect(loaded.horizontalLayout.canvasSize.width != loaded.a4Layout.canvasSize.width)
+        #expect(loaded.a4Layout.staves.first?.frame.height == 32)
+        #expect(abs((loaded.a4Layout.systems.first?.frame.width ?? 0) - 547) < 0.001)
         #expect(Set(loaded.horizontalLayout.noteByID.keys) == Set(loaded.a4Layout.noteByID.keys))
-        #expect(Set(loaded.horizontalLayout.elementByID.keys) == Set(loaded.a4Layout.elementByID.keys))
+        let horizontalElementIDs = Set(loaded.horizontalLayout.elementByID.keys)
+        let a4ElementIDs = Set(loaded.a4Layout.elementByID.keys.filter { !$0.rawValue.hasSuffix(".barline.left") })
+        #expect(horizontalElementIDs == a4ElementIDs)
+    }
+
+    @Test func odeToJoyA4HairpinsAvoidNoteCollisions() throws {
+        let loaded = try PaletteScoreLoader().load(
+            data: Self.appSampleData("Ode_to_Joy_Easy_variation.mxl"),
+            sourceName: "Ode_to_Joy_Easy_variation.mxl",
+            displayTitle: "Ode to Joy Easy Variation"
+        )
+        let hairpins = loaded.a4Layout.elements.filter { $0.kind == .hairpin }
+        let notationFrames = loaded.a4Layout.elements
+            .filter { Self.isHairpinCollisionCandidate($0.kind) }
+            .map { $0.frame.insetBy(dx: -6, dy: -6) }
+        let measure8Hairpin = try #require(hairpins.first { $0.measureID?.rawValue == "0.8" })
+
+        #expect(!hairpins.isEmpty)
+        #expect(hairpins.allSatisfy { hairpin in
+            !notationFrames.contains { hairpin.frame.intersects($0) }
+        })
+        #expect(!notationFrames.contains { measure8Hairpin.frame.intersects($0) })
+    }
+
+    @Test func furEliseMeasure8RepeatEndKeepsReadableDoubleBarlineFrame() throws {
+        let loaded = try PaletteScoreLoader().load(
+            data: Self.appSampleData("Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl"),
+            sourceName: "Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl",
+            displayTitle: "Fur Elise - Beginner Piano"
+        )
+        let measure8ID = MeasureID(partIndex: 0, measureNumber: "8")
+        let repeatEnd = try #require(loaded.a4Layout.elements.first {
+            $0.measureID == measure8ID && $0.kind == .barline && $0.repeatBarline?.direction == .backward
+        })
+
+        #expect(repeatEnd.frame.width >= 18)
+        #expect(!loaded.a4Layout.elements.contains {
+            $0.id.rawValue == "\(measure8ID.rawValue).barline.right"
+        })
     }
 
     @Test @MainActor func scoreLayoutModeSwitchesActiveLayoutWithoutChangingPlaybackIdentity() throws {
@@ -269,6 +330,43 @@ struct PaletteScoreLoaderTests {
         #expect(PaletteZoomScale.clamped(.nan) == PaletteZoomScale.default)
         #expect(PaletteZoomScale.clamped(1.35) == 1.35)
         #expect(PaletteZoomScale.percentText(1.25) == "125%")
+    }
+
+    @Test func a4ZoomScaleFitsPageWidthIntoViewport() {
+        let fitted = PaletteZoomScale.fittedForA4IfNeeded(
+            1.0,
+            layoutMode: .a4,
+            canvasWidth: 595,
+            viewportWidth: 390
+        )
+        #expect(abs(fitted - (378.0 / (595.0 + 128.0))) < 0.0001)
+        let zoomed = PaletteZoomScale.fittedForA4IfNeeded(
+            2.0,
+            layoutMode: .a4,
+            canvasWidth: 595,
+            viewportWidth: 390
+        )
+        #expect(abs(zoomed - (2.0 * 378.0 / (595.0 + 128.0))) < 0.0001)
+        let wideFit = PaletteZoomScale.fittedForA4IfNeeded(
+            1.0,
+            layoutMode: .a4,
+            canvasWidth: 595,
+            viewportWidth: 820
+        )
+        #expect(abs(wideFit - (808.0 / (595.0 + 128.0))) < 0.0001)
+        let wideZoomed = PaletteZoomScale.fittedForA4IfNeeded(
+            1.5,
+            layoutMode: .a4,
+            canvasWidth: 595,
+            viewportWidth: 820
+        )
+        #expect(abs(wideZoomed - (1.5 * 808.0 / (595.0 + 128.0))) < 0.0001)
+        #expect(PaletteZoomScale.fittedForA4IfNeeded(
+            1.5,
+            layoutMode: .horizontal,
+            canvasWidth: 595,
+            viewportWidth: 390
+        ) == 1.5)
     }
 
     @Test func settingsKeysStoreAndRestoreValues() throws {
@@ -450,6 +548,26 @@ struct PaletteScoreLoaderTests {
             #expect(session.loadedScore?.sourceName == existingSourceName)
             #expect(session.errorMessage?.contains("対応していないファイル形式") == true)
         }
+    }
+
+    @Test @MainActor func loadingNewScoreResetsKeyTransposeState() throws {
+        let session = PaletteScoreSession()
+        try session.load(data: Self.validMusicXML, sourceName: "first.musicxml")
+
+        session.setTransposeSemitones(7)
+        session.setDisplayTransposeEnabled(true)
+        #expect(session.transposeSemitones == 7)
+
+        try session.load(
+            data: Self.appSampleData("Ode_to_Joy_Easy_variation.mxl"),
+            sourceName: "Ode_to_Joy_Easy_variation.mxl"
+        )
+
+        #expect(session.loadedScore?.sourceName == "Ode_to_Joy_Easy_variation.mxl")
+        #expect(session.transposeSemitones == 0)
+        #expect(session.displayTransposeEnabled)
+        #expect(session.currentKeyDisplay?.displayKey == nil)
+        #expect(session.currentKeyDisplay?.transposeDescription == nil)
     }
 
     @Test func librarySampleItemsAreGeneratedAndDistinguishSourceTypes() throws {
@@ -755,6 +873,8 @@ struct PaletteScoreLoaderTests {
         session.openLibraryItem(sampleItem, bundle: .main)
 
         #expect(session.loadedScore?.sourceName == "Ode_to_Joy_Easy_variation.mxl")
+        #expect(session.loadedScore?.score.title == "Ode to Joy Easy Variation")
+        #expect(session.loadedScore?.a4Layout.title?.text == "Ode to Joy Easy Variation")
         #expect(session.errorMessage == nil)
     }
 
@@ -764,15 +884,17 @@ struct PaletteScoreLoaderTests {
             "Ode_to_Joy_Easy_variation",
             "Fur_Elise_-_Beethoven_-_for_beginner_piano",
             "articulation_dynamics_coverage_sample",
+            "Beauty_and_the_Beast",
         ])
 
-        #expect(catalog.samples.count == 3)
+        #expect(catalog.samples.count == 4)
         #expect(catalog.samples.map(\.resourceName) == [
             "Ode_to_Joy_Easy_variation",
             "Fur_Elise_-_Beethoven_-_for_beginner_piano",
             "articulation_dynamics_coverage_sample",
+            "Beauty_and_the_Beast",
         ])
-        #expect(catalog.samples.map(\.fileExtension) == ["mxl", "mxl", "musicxml"])
+        #expect(catalog.samples.map(\.fileExtension) == ["mxl", "mxl", "musicxml", "musicxml"])
         #expect(bundledSampleNames.isSubset(of: Set(catalog.samples.map(\.resourceName))))
     }
 
@@ -1237,6 +1359,15 @@ struct PaletteScoreLoaderTests {
 
     private static func quarterNotes(for time: MusicalTime) -> Double {
         Double(time.ticks) / Double(time.ticksPerQuarterNote)
+    }
+
+    private static func isHairpinCollisionCandidate(_ kind: ScoreElementKind) -> Bool {
+        switch kind {
+        case .notehead, .rest, .stem, .flag, .beam, .accidental, .dot, .ledgerLine, .dynamic, .pedal, .lyric, .fingering, .articulation:
+            true
+        case .staffLine, .clef, .timeSignature, .keySignature, .barline, .hairpin, .tie, .slur, .tuplet, .repeatEnding, .measureRepeat, .playbackJumpMarker:
+            false
+        }
     }
 
     private static func temporaryURL(fileName: String) -> URL {

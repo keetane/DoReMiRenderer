@@ -121,6 +121,12 @@ struct SampleScoreCatalog: Hashable {
             displayName: "Articulation & Dynamics Coverage Sample",
             resourceName: "articulation_dynamics_coverage_sample",
             fileExtension: "musicxml"
+        ),
+        SampleScoreItem(
+            id: UUID(uuidString: "D7B68E1A-58BD-4D42-971A-A95CE7D23B42")!,
+            displayName: "美女と野獣",
+            resourceName: "Beauty_and_the_Beast",
+            fileExtension: "musicxml"
         )
     ])
 

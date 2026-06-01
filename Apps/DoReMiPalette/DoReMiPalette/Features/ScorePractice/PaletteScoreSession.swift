@@ -156,7 +156,12 @@ final class PaletteScoreSession: ObservableObject {
             fail(PaletteImportError.bundledSampleMissing("\(sample.resourceName).\(sample.fileExtension)"))
             return
         }
-        loadFileData(from: url, sourceName: url.lastPathComponent, securityScoped: false)
+        loadFileData(
+            from: url,
+            sourceName: url.lastPathComponent,
+            securityScoped: false,
+            displayTitle: sample.displayName
+        )
     }
 
     func loadImportedFile(url: URL, currentZoomScale: Double? = nil) {
@@ -371,6 +376,7 @@ final class PaletteScoreSession: ObservableObject {
         from url: URL,
         sourceName: String,
         securityScoped: Bool,
+        displayTitle: String? = nil,
         libraryImportURL: URL? = nil,
         currentZoomScale: Double? = nil,
         bookmarkData: Data? = nil
@@ -396,20 +402,22 @@ final class PaletteScoreSession: ObservableObject {
                     currentZoomScale: currentZoomScale
                 )
             } else {
-                try load(data: data, sourceName: sourceName)
+                try load(data: data, sourceName: sourceName, displayTitle: displayTitle)
             }
         } catch {
             fail(error)
         }
     }
 
-    func load(data: Data, sourceName: String) throws {
+    func load(data: Data, sourceName: String, displayTitle: String? = nil) throws {
         isLoading = true
         defer { isLoading = false }
         do {
+            resetKeyStateForScoreLoad()
             let displayed = try loader.load(
                 data: data,
                 sourceName: sourceName,
+                displayTitle: displayTitle,
                 displayTransposeSemitones: activeDisplayTransposeSemitones
             )
             loadedScore = displayed
@@ -434,6 +442,7 @@ final class PaletteScoreSession: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         do {
+            resetKeyStateForScoreLoad()
             let displayed = try loader.load(
                 data: data,
                 sourceName: sourceName,
@@ -534,6 +543,12 @@ final class PaletteScoreSession: ObservableObject {
 
     private var activeDisplayTransposeSemitones: Int {
         displayTransposeEnabled ? transposeSemitones : 0
+    }
+
+    private func resetKeyStateForScoreLoad() {
+        displayTransposeEnabled = true
+        playbackRuntime.setTransposeSemitones(0)
+        transposeSemitones = playbackRuntime.transposeSemitones
     }
 
     private func bindPlaybackRuntime() {

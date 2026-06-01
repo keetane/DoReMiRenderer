@@ -66,7 +66,9 @@ struct KeyboardView: View {
                             colorIdleKey: colorIdleKeys,
                             colorPositionTop: colorPositionTop,
                             showsPitchLabel: !showsLineNumbers,
-                            lineNumber: showsLineNumbers ? KeyboardLineNumber.number(for: midi) : nil,
+                            lineNumber: showsLineNumbers
+                                ? KeyboardLineNumber.number(for: midi, scaleTonicPitchClass: scaleTonicPitchClass)
+                                : nil,
                             colorBandHeight: colorBandHeight
                         )
                         .frame(width: whiteWidth)
@@ -83,7 +85,9 @@ struct KeyboardView: View {
                         isPitchColorEnabled: isPitchColorEnabled(for: key.midi),
                         colorIdleKey: colorIdleKeys,
                         colorPositionTop: colorPositionTop,
-                        lineNumber: showsLineNumbers ? KeyboardLineNumber.number(for: key.midi) : nil,
+                        lineNumber: showsLineNumbers
+                            ? KeyboardLineNumber.number(for: key.midi, scaleTonicPitchClass: scaleTonicPitchClass)
+                            : nil,
                         colorBandHeight: colorBandHeight
                     )
                     .frame(width: whiteWidth * 0.62, height: proxy.size.height * 0.62)
@@ -157,10 +161,25 @@ struct KeyboardView: View {
 }
 
 enum KeyboardLineNumber {
-    static func number(for midi: Int) -> Int? {
-        guard !KeyboardPitchMapper.isBlackKey(midi: midi) else {
+    static func number(for midi: Int, scaleTonicPitchClass: Int? = nil) -> Int? {
+        guard scaleTonicPitchClass != nil || !KeyboardPitchMapper.isBlackKey(midi: midi) else {
             return nil
         }
+        if let scaleTonicPitchClass,
+           KeyboardScaleColor.majorScalePitchClass(midi: midi, tonicPitchClass: scaleTonicPitchClass) == nil {
+            return nil
+        }
+        let staffPositionMidi = PalettePitchClassColorState.staffPositionMIDINote(
+            midi: midi,
+            scaleTonicPitchClass: scaleTonicPitchClass
+        )
+        guard PalettePitchClassColorState.staffLineMIDINotes.contains(staffPositionMidi) else {
+            return nil
+        }
+        return numberForNaturalStaffPosition(midi: staffPositionMidi)
+    }
+
+    private static func numberForNaturalStaffPosition(midi: Int) -> Int? {
         let octave = midi / 12 - 1
         let pitchClass = PalettePitchClassColorState.normalizedPitchClass(midi)
         let degree: Int

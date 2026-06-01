@@ -1,4 +1,5 @@
 import CoreGraphics
+import Foundation
 import Testing
 @testable import DoReMiRendererKit
 
@@ -768,16 +769,62 @@ import Testing
     }
 
     let repeatElement = try #require(layout.elements.first { $0.kind == .barline && $0.repeatBarline != nil })
-    let thickRepeatLines = context.commands.filter {
+    let repeatLines = context.commands.filter {
         $0.kind == .strokeLine
-            && $0.lineWidth == 6
             && ($0.lineStart?.x ?? -1) >= repeatElement.frame.minX - 0.1
             && ($0.lineStart?.x ?? -1) <= repeatElement.frame.maxX + 0.1
+            && abs(($0.lineStart?.x ?? 0) - ($0.lineEnd?.x ?? 1)) < 0.1
+            && abs(($0.lineStart?.y ?? 0) - repeatElement.frame.minY) < 0.1
+            && abs(($0.lineEnd?.y ?? 0) - repeatElement.frame.maxY) < 0.1
     }
-    let thickRepeatLine = try #require(thickRepeatLines.first)
-    #expect(thickRepeatLines.count == 1)
-    #expect(abs((thickRepeatLine.lineStart?.y ?? 0) - repeatElement.frame.minY) < 0.1)
-    #expect(abs((thickRepeatLine.lineEnd?.y ?? 0) - repeatElement.frame.maxY) < 0.1)
+    let thickRepeatLine = try #require(repeatLines.max { ($0.lineWidth ?? 0) < ($1.lineWidth ?? 0) })
+    let thinRepeatLine = try #require(repeatLines.min { ($0.lineWidth ?? 0) < ($1.lineWidth ?? 0) })
+    let repeatLineXs = repeatLines.compactMap { $0.lineStart?.x }.sorted()
+    #expect(repeatLines.count == 2)
+    #expect((thickRepeatLine.lineWidth ?? 0) > (thinRepeatLine.lineWidth ?? 0))
+    #expect((repeatLineXs.last ?? 0) - (repeatLineXs.first ?? 0) >= 7)
+}
+
+@Test func furEliseA4Measure8RepeatEndDrawsSeparatedThinAndThickLines() throws {
+    let sampleURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        .appendingPathComponent("Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl")
+    let score = try DoReMiRenderer().parse(input: .mxlData(Data(contentsOf: sampleURL)))
+    let layout = try ScoreLayoutEngine().layout(
+        score: score,
+        options: LayoutOptions(
+            pageWidth: 595,
+            pageHeight: 842,
+            staffSpace: 8,
+            systemSpacing: 48,
+            measureSpacing: 0,
+            displayMode: .print,
+            showPageMargins: true
+        )
+    )
+    var context = RecordingDrawingContext()
+
+    ScorePainter(smuflFontName: "Bravura").draw(layout: layout, score: score, style: renderingStyle(), into: &context)
+
+    let repeatElement = try #require(layout.elements.first {
+        $0.measureID?.rawValue == "0.8" && $0.kind == .barline && $0.repeatBarline?.direction == .backward
+    })
+    let repeatLines = context.commands.filter {
+        $0.kind == .strokeLine
+            && ($0.lineStart?.x ?? -1) >= repeatElement.frame.minX - 0.1
+            && ($0.lineStart?.x ?? -1) <= repeatElement.frame.maxX + 0.1
+            && abs(($0.lineStart?.x ?? 0) - ($0.lineEnd?.x ?? 1)) < 0.1
+            && abs(($0.lineStart?.y ?? 0) - repeatElement.frame.minY) < 0.1
+            && abs(($0.lineEnd?.y ?? 0) - repeatElement.frame.maxY) < 0.1
+    }
+    let thickRepeatLine = try #require(repeatLines.max { ($0.lineWidth ?? 0) < ($1.lineWidth ?? 0) })
+    let thinRepeatLine = try #require(repeatLines.min { ($0.lineWidth ?? 0) < ($1.lineWidth ?? 0) })
+    let repeatLineXs = repeatLines.compactMap { $0.lineStart?.x }.sorted()
+
+    #expect(repeatElement.frame.width >= 18)
+    #expect(repeatLines.count == 2)
+    #expect((thickRepeatLine.lineWidth ?? 0) > (thinRepeatLine.lineWidth ?? 0))
+    #expect((repeatLineXs.last ?? 0) - (repeatLineXs.first ?? 0) >= 6)
+    #expect(!layout.elements.contains { $0.id.rawValue == "0.8.barline.right" })
 }
 
 @Test func scorePainterDrawsRepeatEndingBracketAndNumber() throws {
@@ -820,10 +867,11 @@ import Testing
             && $0.lineStart == ending.lineStart
             && $0.lineEnd == ending.lineEnd
     })
+    #expect(ending.startHookEnd == nil)
     #expect(context.commands.contains {
         $0.kind == .strokeLine
-            && $0.lineStart == ending.lineStart
-            && $0.lineEnd == ending.startHookEnd
+            && $0.lineStart == ending.lineEnd
+            && $0.lineEnd == ending.endHookEnd
     })
     #expect(context.commands.contains {
         $0.kind == .drawText
@@ -866,9 +914,89 @@ import Testing
     }
     #expect(repeatDots.count == 4)
 
-    let thickRepeatLine = try #require(context.commands.first { $0.kind == .strokeLine && $0.lineWidth == 6 })
+    let thickRepeatLine = try #require(context.commands
+        .filter { $0.kind == .strokeLine }
+        .max { ($0.lineWidth ?? 0) < ($1.lineWidth ?? 0) })
     #expect(abs((thickRepeatLine.lineStart?.y ?? 0) - 40) < 0.1)
     #expect(abs((thickRepeatLine.lineEnd?.y ?? 0) - 160) < 0.1)
+}
+
+@Test func styledDoubleBarlineUsesSingleStaffSpacingInGrandStaff() throws {
+    let measureID = MeasureID(partIndex: 0, measureNumber: "8")
+    let barlineElement = ElementLayout(
+        id: ScoreElementID(rawValue: "measure8.double"),
+        kind: .barline,
+        measureID: measureID,
+        frame: CGRect(x: 320, y: 40, width: 8, height: 120),
+        barlineStyle: .lightLight
+    )
+    let layout = ScoreLayout(
+        canvasSize: CGSize(width: 420, height: 180),
+        staves: [
+            StaffLayout(staffID: StaffID(rawValue: "1"), systemIndex: 0, frame: CGRect(x: 20, y: 40, width: 360, height: 24), middleLineY: 52),
+            StaffLayout(staffID: StaffID(rawValue: "2"), systemIndex: 0, frame: CGRect(x: 20, y: 136, width: 360, height: 24), middleLineY: 148),
+        ],
+        measures: [
+            MeasureLayout(measureID: measureID, systemIndex: 0, frame: CGRect(x: 20, y: 40, width: 360, height: 120)),
+        ],
+        elements: [barlineElement],
+        elementByID: [barlineElement.id: barlineElement]
+    )
+    var context = RecordingDrawingContext()
+
+    ScorePainter(smuflFontName: nil).draw(layout: layout, style: renderingStyle(), into: &context)
+
+    let doubleLines = context.commands.filter {
+        $0.kind == .strokeLine
+            && abs(($0.lineStart?.x ?? 0) - ($0.lineEnd?.x ?? 1)) < 0.1
+            && abs(($0.lineStart?.y ?? 0) - barlineElement.frame.minY) < 0.1
+            && abs(($0.lineEnd?.y ?? 0) - barlineElement.frame.maxY) < 0.1
+    }
+    let lineXs = doubleLines.compactMap { $0.lineStart?.x }.sorted()
+    let lineGap = (lineXs.last ?? 0) - (lineXs.first ?? 0)
+
+    #expect(doubleLines.count == 2)
+    #expect(lineGap >= 3)
+    #expect(lineGap <= 4)
+}
+
+@Test func styledDoubleBarlineAtMeasureEndDoesNotFloatPastStaffEnd() throws {
+    let measureID = MeasureID(partIndex: 0, measureNumber: "8")
+    let measureFrame = CGRect(x: 20, y: 40, width: 360, height: 120)
+    let barlineElement = ElementLayout(
+        id: ScoreElementID(rawValue: "measure8.double"),
+        kind: .barline,
+        measureID: measureID,
+        frame: CGRect(x: measureFrame.maxX - 1, y: 40, width: 2, height: 120),
+        barlineStyle: .lightLight
+    )
+    let layout = ScoreLayout(
+        canvasSize: CGSize(width: 420, height: 180),
+        staves: [
+            StaffLayout(staffID: StaffID(rawValue: "1"), systemIndex: 0, frame: CGRect(x: 20, y: 40, width: 360, height: 24), middleLineY: 52),
+            StaffLayout(staffID: StaffID(rawValue: "2"), systemIndex: 0, frame: CGRect(x: 20, y: 136, width: 360, height: 24), middleLineY: 148),
+        ],
+        measures: [
+            MeasureLayout(measureID: measureID, systemIndex: 0, frame: measureFrame),
+        ],
+        elements: [barlineElement],
+        elementByID: [barlineElement.id: barlineElement]
+    )
+    var context = RecordingDrawingContext()
+
+    ScorePainter(smuflFontName: nil).draw(layout: layout, style: renderingStyle(), into: &context)
+
+    let doubleLines = context.commands.filter {
+        $0.kind == .strokeLine
+            && abs(($0.lineStart?.x ?? 0) - ($0.lineEnd?.x ?? 1)) < 0.1
+            && abs(($0.lineStart?.y ?? 0) - barlineElement.frame.minY) < 0.1
+            && abs(($0.lineEnd?.y ?? 0) - barlineElement.frame.maxY) < 0.1
+    }
+    let lineXs = doubleLines.compactMap { $0.lineStart?.x }.sorted()
+
+    #expect(doubleLines.count == 2)
+    #expect(abs((lineXs.last ?? 0) - measureFrame.maxX) < 0.1)
+    #expect((lineXs.first ?? 0) < measureFrame.maxX)
 }
 
 @Test func scorePainterDrawsOneBarMeasureRepeatGlyph() throws {
@@ -1052,9 +1180,10 @@ import Testing
 
     let flagCommand = try #require(context.commands.first { $0.text == SMuFLGlyph.flagEighthUp.string && $0.fontName == "Bravura" })
     let point = try #require(flagCommand.point)
+    let expectedVerticalAdjustment = try #require(layout.noteLayout(for: NoteID(rawValue: "eighth"))?.noteheadFrame.height ?? nil) * 0.97
     #expect(point.x > stemEnd.x)
     #expect(point.x - stemEnd.x <= flag.frame.width * 0.25)
-    #expect(abs(point.y - (stemEnd.y + 15)) < 0.001)
+    #expect(abs(point.y - (stemEnd.y + expectedVerticalAdjustment)) < 0.001)
 }
 
 @Test func scorePainterAnchorsDownStemSMuFLFlagNearStemEnd() throws {
@@ -1089,9 +1218,10 @@ import Testing
         $0.text == SMuFLGlyph.flagEighthUp.string && $0.fontName == "Bravura" && !$0.mirroredHorizontally && $0.mirroredVertically
     })
     let point = try #require(flagCommand.point)
+    let expectedVerticalAdjustment = try #require(layout.noteLayout(for: NoteID(rawValue: "down-eighth"))?.noteheadFrame.height ?? nil) * 0.97
     #expect(point.x > stemEnd.x)
     #expect(point.x - stemEnd.x <= flag.frame.width * 0.25)
-    #expect(abs(point.y - (stemEnd.y - 15)) < 0.001)
+    #expect(abs(point.y - (stemEnd.y - expectedVerticalAdjustment)) < 0.001)
 }
 
 @Test func smuflGlyphSizePolicyKeepsLearningGlyphsReadable() throws {

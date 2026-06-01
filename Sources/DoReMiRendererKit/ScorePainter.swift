@@ -51,6 +51,7 @@ struct ScorePainter: Sendable {
         let effectiveSelection = selection ?? ScoreSelection()
 
         context.fill(CGRect(origin: .zero, size: layout.canvasSize), color: style.backgroundColor)
+        drawScoreTitle(layout: layout, style: style, into: &context)
         drawStaffLines(layout: layout, score: score, style: style, selection: effectiveSelection, into: &context)
         drawLedgerLines(layout: layout, score: score, style: style, selection: effectiveSelection, into: &context)
         drawContinuationNoteHighlights(layout: layout, noteIDs: secondaryNoteIDs, style: style, into: &context)
@@ -67,6 +68,23 @@ struct ScorePainter: Sendable {
         drawMeasureNumbers(layout: layout, style: style, into: &context)
     }
 
+    private func drawScoreTitle<Context: ScoreDrawingContext>(
+        layout: ScoreLayout,
+        style: ScoreStyle,
+        into context: inout Context
+    ) {
+        guard let title = layout.title, isVisible(title.frame) else {
+            return
+        }
+        context.drawText(
+            title.text,
+            at: CGPoint(x: title.frame.midX, y: title.frame.midY),
+            color: style.defaultInkColor,
+            size: title.fontSize,
+            fontName: title.fontName
+        )
+    }
+
     private func drawMeasureNumbers<Context: ScoreDrawingContext>(
         layout: ScoreLayout,
         style: ScoreStyle,
@@ -75,7 +93,8 @@ struct ScorePainter: Sendable {
         guard style.measureNumberDisplayMode != .hidden else {
             return
         }
-        let fontSize: CGFloat = 11
+        let staffSpace = layout.staves.first.map { max(1, $0.frame.height / 4) } ?? 10
+        let fontSize: CGFloat = max(7, min(11, staffSpace * 1.15))
         for measure in layout.measures where shouldDrawMeasureNumber(measure) && isVisible(measure.frame) {
             let bottomStaffFrame = bottomStaffFrame(for: measure, in: layout) ?? measure.frame
             let point = CGPoint(
@@ -172,13 +191,19 @@ struct ScorePainter: Sendable {
     ) {
         let frame = element.frame
         if let repeatBarline = element.repeatBarline {
-            let x1 = repeatBarline.direction == .forward ? frame.minX : frame.maxX
-            let x2 = repeatBarline.direction == .forward ? frame.minX + frame.width * 0.45 : frame.maxX - frame.width * 0.45
             let staffFrames = repeatStaffFrames(for: element, in: layout)
             let lineFrame = repeatLineFrame(for: frame, staffFrames: staffFrames)
-            context.strokeLine(from: CGPoint(x: x1, y: lineFrame.minY), to: CGPoint(x: x1, y: lineFrame.maxY), color: color, lineWidth: 6)
-            context.strokeLine(from: CGPoint(x: x2, y: lineFrame.minY), to: CGPoint(x: x2, y: lineFrame.maxY), color: color, lineWidth: 1)
-            let dotX = repeatBarline.direction == .forward ? frame.maxX : frame.minX
+            let staffSpace = max(1, staffFrames.first.map { $0.height / 4 } ?? frame.height / 4)
+            let thickLineWidth = max(3, staffSpace * 0.55)
+            let thinLineWidth = max(1, staffSpace * 0.12)
+            let lineGap = max(staffSpace * 0.75, (thickLineWidth + thinLineWidth) / 2 + 2)
+            let thickInset = thickLineWidth / 2
+            let thickX = repeatBarline.direction == .forward ? frame.minX + thickInset : frame.maxX - thickInset
+            let thinX = repeatBarline.direction == .forward ? thickX + lineGap : thickX - lineGap
+            context.strokeLine(from: CGPoint(x: thickX, y: lineFrame.minY), to: CGPoint(x: thickX, y: lineFrame.maxY), color: color, lineWidth: thickLineWidth)
+            context.strokeLine(from: CGPoint(x: thinX, y: lineFrame.minY), to: CGPoint(x: thinX, y: lineFrame.maxY), color: color, lineWidth: thinLineWidth)
+            let dotGap = max(staffSpace * 0.7, 5)
+            let dotX = repeatBarline.direction == .forward ? thinX + dotGap : thinX - dotGap
             for staffFrame in staffFrames {
                 let staffSpace = max(1, staffFrame.height / 4)
                 let dotSize = max(3, staffSpace * 0.5)
@@ -196,8 +221,98 @@ struct ScorePainter: Sendable {
                 }
             }
         } else {
-            context.strokeLine(from: CGPoint(x: frame.midX, y: frame.minY), to: CGPoint(x: frame.midX, y: frame.maxY), color: color, lineWidth: 1)
+            drawStyledBarline(
+                style: element.barlineStyle ?? .regular,
+                frame: frame,
+                anchor: styledBarlineAnchor(for: element, in: layout),
+                staffFrames: repeatStaffFrames(for: element, in: layout),
+                color: color,
+                into: &context
+            )
         }
+    }
+
+    private func drawStyledBarline<Context: ScoreDrawingContext>(
+        style: BarlineStyle,
+        frame: CGRect,
+        anchor: StyledBarlineAnchor,
+        staffFrames: [CGRect],
+        color: ScoreColor,
+        into context: inout Context
+    ) {
+        guard style != .none else { return }
+        let staffSpace = max(1, staffFrames.first.map { $0.height / 4 } ?? frame.height / 8)
+        let thinWidth = max(1, staffSpace * 0.12)
+        let heavyWidth = max(3, staffSpace * 0.48)
+        let gap = max(3, staffSpace * 0.55)
+        let primaryX = anchor.primaryX(fallback: frame.midX)
+        let pairXs = anchor.pairXs(gap: gap, fallback: frame.midX)
+        func stroke(_ x: CGFloat, width: CGFloat) {
+            context.strokeLine(from: CGPoint(x: x, y: frame.minY), to: CGPoint(x: x, y: frame.maxY), color: color, lineWidth: width)
+        }
+        switch style {
+        case .regular:
+            stroke(primaryX, width: thinWidth)
+        case .heavy:
+            stroke(primaryX, width: heavyWidth)
+        case .lightLight:
+            stroke(pairXs.left, width: thinWidth)
+            stroke(pairXs.right, width: thinWidth)
+        case .lightHeavy:
+            stroke(pairXs.left, width: thinWidth)
+            stroke(pairXs.right, width: heavyWidth)
+        case .heavyLight:
+            stroke(pairXs.left, width: heavyWidth)
+            stroke(pairXs.right, width: thinWidth)
+        case .heavyHeavy:
+            stroke(pairXs.left, width: heavyWidth)
+            stroke(pairXs.right, width: heavyWidth)
+        case .dotted, .dashed, .tick, .short:
+            stroke(primaryX, width: thinWidth)
+        case .none:
+            break
+        }
+    }
+
+    private enum StyledBarlineAnchor {
+        case centered
+        case leftBoundary(CGFloat)
+        case rightBoundary(CGFloat)
+
+        func primaryX(fallback: CGFloat) -> CGFloat {
+            switch self {
+            case .centered:
+                return fallback
+            case .leftBoundary(let x), .rightBoundary(let x):
+                return x
+            }
+        }
+
+        func pairXs(gap: CGFloat, fallback: CGFloat) -> (left: CGFloat, right: CGFloat) {
+            switch self {
+            case .centered:
+                return (fallback - gap / 2, fallback + gap / 2)
+            case .leftBoundary(let x):
+                return (x, x + gap)
+            case .rightBoundary(let x):
+                return (x - gap, x)
+            }
+        }
+    }
+
+    private func styledBarlineAnchor(for element: ElementLayout, in layout: ScoreLayout) -> StyledBarlineAnchor {
+        guard let measureID = element.measureID,
+              let measure = layout.measures.first(where: { $0.measureID == measureID }) else {
+            return .centered
+        }
+        let tolerance = max(2, element.frame.width * 2)
+        if abs(element.frame.midX - measure.frame.minX) <= tolerance {
+            return .leftBoundary(measure.frame.minX)
+        }
+        if abs(element.frame.midX - measure.frame.maxX) <= tolerance {
+            return .rightBoundary(measure.frame.maxX)
+        }
+        return .centered
     }
 
     private func repeatStaffFrames(for element: ElementLayout, in layout: ScoreLayout) -> [CGRect] {
@@ -791,7 +906,7 @@ struct ScorePainter: Sendable {
         selection: ScoreSelection,
         into context: inout Context
     ) {
-        for element in layout.elements where isVisible(element.frame) && (element.kind == .articulation || element.kind == .dynamic || element.kind == .hairpin) {
+        for element in layout.elements where isVisible(element.frame) && (element.kind == .articulation || element.kind == .dynamic || element.kind == .hairpin || element.kind == .pedal) {
             let resolved = style.colorResolver.resolvedStyle(
                 for: element,
                 score: score,
@@ -806,7 +921,7 @@ struct ScorePainter: Sendable {
                 drawArticulation(articulation, color: color, into: &context)
             case .dynamic:
                 guard let dynamic = element.dynamic else { continue }
-                let size = max(15, dynamic.frame.height * 0.95)
+                let size = max(9, dynamic.frame.height * 0.95)
                 context.drawText(
                     dynamic.mark.rawValue,
                     at: dynamic.origin,
@@ -816,8 +931,17 @@ struct ScorePainter: Sendable {
                 )
             case .hairpin:
                 guard let hairpin = element.hairpin else { continue }
-                context.strokeLine(from: hairpin.start, to: hairpin.upperEnd, color: color, lineWidth: max(1.4, hairpin.frame.height * 0.12))
-                context.strokeLine(from: hairpin.start, to: hairpin.lowerEnd, color: color, lineWidth: max(1.4, hairpin.frame.height * 0.12))
+                context.strokeLine(from: hairpin.start, to: hairpin.upperEnd, color: color, lineWidth: max(0.9, hairpin.frame.height * 0.12))
+                context.strokeLine(from: hairpin.start, to: hairpin.lowerEnd, color: color, lineWidth: max(0.9, hairpin.frame.height * 0.12))
+            case .pedal:
+                guard let pedal = element.pedal else { continue }
+                context.drawText(
+                    pedal.label,
+                    at: pedal.origin,
+                    color: color,
+                    size: max(9, pedal.frame.height * 0.92),
+                    fontName: "Georgia-Italic"
+                )
             default:
                 break
             }
@@ -832,7 +956,7 @@ struct ScorePainter: Sendable {
         let size = min(articulation.frame.width, articulation.frame.height)
         switch articulation.kind {
         case .staccato:
-            let dotSize = max(4, size * 0.38)
+            let dotSize = max(2, size * 0.38)
             context.fillEllipse(
                 in: CGRect(
                     x: articulation.point.x - dotSize / 2,
@@ -843,20 +967,20 @@ struct ScorePainter: Sendable {
                 color: color
             )
         case .tenuto:
-            let halfWidth = max(6, size * 0.45)
+            let halfWidth = max(3, size * 0.45)
             context.strokeLine(
                 from: CGPoint(x: articulation.point.x - halfWidth, y: articulation.point.y),
                 to: CGPoint(x: articulation.point.x + halfWidth, y: articulation.point.y),
                 color: color,
-                lineWidth: max(1.5, size * 0.13)
+                lineWidth: max(0.9, size * 0.13)
             )
         case .accent:
-            context.drawText(">", at: articulation.point, color: color, size: max(15, size), fontName: "Georgia-Italic")
+            context.drawText(">", at: articulation.point, color: color, size: max(9, size), fontName: "Georgia-Italic")
         case .marcato:
-            context.drawText("^", at: articulation.point, color: color, size: max(15, size), fontName: "Georgia-Italic")
+            context.drawText("^", at: articulation.point, color: color, size: max(9, size), fontName: "Georgia-Italic")
         case .fermata:
             let glyph = articulation.placement == .below ? "\u{1D111}" : "\u{1D110}"
-            context.drawText(glyph, at: articulation.point, color: color, size: max(18, size * 1.05), fontName: smuflFontName)
+            context.drawText(glyph, at: articulation.point, color: color, size: max(10, size * 1.05), fontName: smuflFontName)
         }
     }
 
@@ -962,7 +1086,7 @@ struct ScorePainter: Sendable {
         // offset places the visual leading edge of the flag on the stem instead of
         // placing the glyph center on the stem, which makes the flag look detached.
         let visualStemEdgeOffset = noteLayout.noteheadFrame.width * 0.2
-        let verticalAdjustment: CGFloat = drawsDown ? -15 : 15
+        let verticalAdjustment = noteLayout.noteheadFrame.height * 0.97 * (drawsDown ? -1 : 1)
         return CGPoint(
             x: stemX + visualStemEdgeOffset,
             y: stemEndY + verticalAdjustment

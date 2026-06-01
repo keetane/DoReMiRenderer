@@ -32,6 +32,30 @@ APIs may change before `1.0`.
   beat 0 as the strong click, pickup measures do not drift following measures,
   and turning the metronome ON mid-playback starts from the next planned click
   instead of restarting a local beat cycle.
+- Fixed A4 repeat-end barline spacing so the thin and thick closing-repeat
+  lines remain visually separated at small staff sizes, including Fur Elise
+  measure 8, and prevented a duplicate normal right barline from stacking on
+  backward repeat measures.
+- Adjusted volta bracket hook rendering so the Fur Elise first ending can stay
+  open on the left at the closing repeat, while the second ending start remains
+  open on the right when MusicXML marks the ending as `discontinue`.
+- Parsed MusicXML `<beam>` tags into the domain model and use explicit beam
+  begin/continue/end markings for layout when present. Fur Elise now follows the
+  source beam grouping more closely, while files without beam tags still use the
+  existing safe inferred grouping and mixed natural stem directions remain split.
+- Parsed MusicXML mid-measure clef changes with onset timing, carry effective
+  clefs into following measures, and render smaller clef-change glyphs at the
+  corresponding musical position. Fur Elise measure 13 now places the lower
+  staff treble-clef change near the fourth beat instead of treating it as a
+  measure-start clef.
+- Expanded measure width calculation for in-measure clef changes and trailing
+  flagged notes so dense measures can reserve extra horizontal space instead of
+  letting the clef/flag cluster spill toward the next measure.
+- Reduced bundled Ode to Joy / Fur Elise MusicXML diagnostics by retaining
+  basic `<tied>` notation, simple `<metronome>` tempo marks, explicit safe
+  `<stem>` directions, common `<bar-style>` values, and basic `<pedal>` text
+  layout. These features now flow through parser/domain/layout/painter instead
+  of being reported as unsupported direct notation warnings.
 
 ### SMuFL glyph rendering
 
@@ -201,11 +225,16 @@ APIs may change before `1.0`.
   inverted fermata glyph for upward-stem flagged notes, fermata events extend
   generated playback duration with a bounded scheduler-safe clamp, and
   cross-measure hairpins can span within a system or split at system breaks.
+- Added a stronger expression collision pass in `ScoreLayoutEngine`: note
+  articulations are placed after beams so they can avoid beam/flag/stem frames,
+  dynamic marks can escape both horizontally and vertically from notation,
+  lyrics, fingerings, and articulations, and hairpins choose collision-minimized
+  vertical lanes with expanded A4 grand-staff checks.
 - Added the self-authored `Articulation & Dynamics Coverage Sample` for
   display and playback QA, with licensing recorded in `ASSET_LICENSES.md`.
 - Kept Core Graphics fallback rendering for font lookup or registration failure.
 - Advanced dynamic carry-forward, ornaments, advanced beams, complex tuplets,
-  and publishing-quality collision-aware engraving remain future work.
+  and full multi-voice collision-aware engraving remain future work.
 
 ### Phase 17A real iPad QA start
 

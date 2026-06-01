@@ -73,12 +73,15 @@ This document records the known limitations of DoReMiRendererKit after Phase 0 t
 - Basic same-system slurs and basic 3:2 triplet brackets render at MVP quality.
   Articulation / Dynamics MVP now renders staccato, accent, tenuto,
   marcato/strong-accent, fermata, dynamic text, and same-system hairpins with
-  MVP continuation splitting at system breaks. Advanced dynamic carry-forward,
-  ornaments, grace-note rendering, advanced beam grouping, nested tuplets, and
-  publishing-quality expression collision avoidance remain diagnostic-only or
+  MVP continuation splitting at system breaks. Expression marks use a
+  publication-oriented lane pass: articulations are laid out after beams, dynamic
+  marks can escape from notation/text frames, and hairpins avoid nearby
+  notehead/stem/flag/beam/lyric/fingering/articulation frames. Advanced dynamic
+  carry-forward, ornaments, grace-note rendering, advanced beam grouping,
+  nested tuplets, and full engraving optimization remain diagnostic-only or
   unsupported.
-- Complex multi-voice collision avoidance is not implemented; Phase 11F emits
-  layout diagnostics for basic collision cases.
+- Complex multi-voice and cross-staff collision avoidance is not fully
+  implemented; Phase 11F emits layout diagnostics for basic collision cases.
 - A4-width system wrapping is available for display and the Print MVP, but full
   physical page pagination, page headers/footers, and advanced page breaking
   are not implemented.

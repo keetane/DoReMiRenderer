@@ -104,7 +104,7 @@ private func hitTestPriority(_ kind: ScoreElementKind) -> Int {
         return 9
     case .staffLine:
         return 10
-    case .barline, .repeatEnding, .measureRepeat, .playbackJumpMarker, .dynamic, .hairpin:
+    case .barline, .repeatEnding, .measureRepeat, .playbackJumpMarker, .dynamic, .hairpin, .pedal:
         return 11
     case .ledgerLine, .clef, .timeSignature, .keySignature:
         return 12
