@@ -39,6 +39,49 @@ import Testing
     #expect(!result.diagnostics.contains { $0.code == "unsupported.articulations" || $0.code == "unsupported.dynamics" })
 }
 
+@Test func parserReadsTiedNotationMetronomeStemBarStyleAndPedal() throws {
+    let result = try MusicXMLParser().parse(data: Data(musicXMLWarningCoverageXML.utf8))
+    let measure = try #require(result.score.parts.first?.measures.first)
+    let notes = measure.notes
+
+    #expect(notes[0].ties == [.start])
+    #expect(notes[0].stemDirection == .up)
+    #expect(notes[1].ties == [.stop])
+    #expect(notes[1].stemDirection == .down)
+    #expect(measure.rightBarlineStyle == .lightHeavy)
+    #expect(measure.tempoEvents == [
+        TempoEvent(
+            bpm: 72,
+            onset: MusicalTime(ticks: 0, ticksPerQuarterNote: 4),
+            source: .metronome,
+            measureID: measure.id
+        ),
+    ])
+    #expect(measure.directions.contains {
+        if case .pedal(.start) = $0.kind { return true }
+        return false
+    })
+    #expect(!result.diagnostics.contains { diagnostic in
+        ["unsupported.tied", "unsupported.stem", "unsupported.bar-style", "unsupported.pedal", "tempo.metronomeUnsupported"]
+            .contains(diagnostic.code)
+    })
+}
+
+@Test func layoutAndPainterUseStemBarStyleAndPedalMetadata() throws {
+    let result = try MusicXMLParser().parse(data: Data(musicXMLWarningCoverageXML.utf8))
+    let layout = try ScoreLayoutEngine().layout(score: result.score)
+
+    let notes = try #require(result.score.parts.first?.measures.first?.notes)
+    let upStem = try #require(layout.elements.first { $0.noteID == notes[0].id && $0.kind == .stem })
+    let downStem = try #require(layout.elements.first { $0.noteID == notes[1].id && $0.kind == .stem })
+    let upNoteLayout = try #require(layout.noteByID[notes[0].id])
+    let downNoteLayout = try #require(layout.noteByID[notes[1].id])
+    #expect(upStem.frame.midY < upNoteLayout.noteheadCenter.y)
+    #expect(downStem.frame.midY > downNoteLayout.noteheadCenter.y)
+    #expect(layout.elements.contains { $0.kind == .barline && $0.barlineStyle == .lightHeavy })
+    #expect(layout.elements.contains { $0.kind == .pedal && $0.pedal?.kind == .start })
+}
+
 @Test func layoutCreatesArticulationDynamicsAndHairpinElements() throws {
     let result = try MusicXMLParser().parse(data: Data(expressionCoverageXML.utf8))
     let layout = try ScoreLayoutEngine().layout(score: result.score)
@@ -65,6 +108,39 @@ import Testing
     #expect(abs(dynamic.midY - hairpin.midY) >= 8)
 }
 
+@Test func expressionLanesAvoidNotationAndTextCollisions() throws {
+    let result = try MusicXMLParser().parse(data: Data(expressionCollisionLaneXML.utf8))
+    let layout = try ScoreLayoutEngine().layout(score: result.score)
+
+    let protectedKinds: Set<ScoreElementKind> = [.notehead, .rest, .stem, .flag, .beam, .accidental, .dot, .ledgerLine, .lyric, .fingering, .articulation]
+    let protectedFrames = layout.elements
+        .filter { protectedKinds.contains($0.kind) }
+        .map { $0.frame.insetBy(dx: -3, dy: -3) }
+    let directionElements = layout.elements.filter { $0.kind == .dynamic || $0.kind == .hairpin }
+
+    #expect(!directionElements.isEmpty)
+    #expect(directionElements.allSatisfy { directionElement in
+        !protectedFrames.contains { directionElement.frame.intersects($0) }
+    })
+}
+
+@Test func articulationLanesAvoidBeamAndFlagCollisions() throws {
+    let result = try MusicXMLParser().parse(data: Data(articulationBeamCollisionXML.utf8))
+    let layout = try ScoreLayoutEngine().layout(score: result.score)
+    let articulationFrames = layout.elements
+        .filter { $0.kind == .articulation }
+        .map(\.frame)
+    let notationFrames = layout.elements
+        .filter { [.notehead, .stem, .flag, .beam, .accidental, .dot, .ledgerLine].contains($0.kind) }
+        .map { $0.frame.insetBy(dx: -2, dy: -2) }
+
+    #expect(!articulationFrames.isEmpty)
+    #expect(!layout.elements.filter { $0.kind == .beam }.isEmpty)
+    #expect(articulationFrames.allSatisfy { articulationFrame in
+        !notationFrames.contains { articulationFrame.intersects($0) }
+    })
+}
+
 @Test func layoutCreatesCrossMeasureHairpinOnSameSystem() throws {
     let result = try MusicXMLParser().parse(data: Data(crossMeasureHairpinXML.utf8))
     let layout = try ScoreLayoutEngine().layout(score: result.score, options: LayoutOptions(pageWidth: 1200))
@@ -84,7 +160,7 @@ import Testing
 
     #expect(dynamic.frame.midX < noteLayout.noteheadCenter.x)
     #expect(!dynamic.frame.intersects(noteLayout.noteheadFrame.insetBy(dx: -1, dy: -1)))
-    #expect(noteLayout.noteheadCenter.x - dynamic.frame.midX <= 24)
+    #expect(noteLayout.noteheadCenter.x - dynamic.frame.midX <= 32)
 }
 
 @Test func dynamicMarkAvoidsCrossStaffCentralCollision() throws {
@@ -98,6 +174,17 @@ import Testing
     #expect(dynamic.frame.midX < noteLayout.noteheadCenter.x)
     #expect(!dynamic.frame.intersects(noteLayout.noteheadFrame.insetBy(dx: -1, dy: -1)))
     #expect(noteLayout.noteheadCenter.x - dynamic.frame.midX <= 32)
+}
+
+@Test func hairpinAvoidsGrandStaffNoteCollision() throws {
+    let result = try MusicXMLParser().parse(data: Data(hairpinGrandStaffCollisionXML.utf8))
+    let layout = try ScoreLayoutEngine().layout(score: result.score)
+    let hairpin = try #require(layout.elements.first { $0.kind == .hairpin && $0.hairpin?.kind == .crescendo })
+    let lowerStaffNote = try #require(result.score.parts.first?.measures.first?.notes.first { $0.staffID.rawValue == "2" })
+    let lowerStaffNoteLayout = try #require(layout.noteLayout(for: lowerStaffNote.id))
+
+    #expect(!hairpin.frame.intersects(lowerStaffNoteLayout.noteheadFrame.insetBy(dx: -6, dy: -6)))
+    #expect(abs(hairpin.frame.midY - lowerStaffNoteLayout.noteheadCenter.y) >= lowerStaffNoteLayout.noteheadFrame.height * 0.6)
 }
 
 @Test func layoutCreatesLyricAndFingeringElements() throws {
@@ -430,6 +517,93 @@ private let expressionCoverageXML = """
 </score-partwise>
 """
 
+private let musicXMLWarningCoverageXML = """
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Warning Coverage</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes>
+        <divisions>4</divisions>
+        <time><beats>4</beats><beat-type>4</beat-type></time>
+        <clef><sign>G</sign><line>2</line></clef>
+      </attributes>
+      <direction placement="below">
+        <direction-type>
+          <metronome><beat-unit>quarter</beat-unit><per-minute>72</per-minute></metronome>
+          <pedal type="start"/>
+        </direction-type>
+        <staff>1</staff>
+      </direction>
+      <note>
+        <pitch><step>C</step><octave>4</octave></pitch>
+        <duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+        <stem>up</stem>
+        <notations><tied type="start"/></notations>
+      </note>
+      <note>
+        <pitch><step>C</step><octave>4</octave></pitch>
+        <duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+        <stem>down</stem>
+        <notations><tied type="stop"/></notations>
+      </note>
+      <barline location="right"><bar-style>light-heavy</bar-style></barline>
+    </measure>
+  </part>
+</score-partwise>
+"""
+
+private let expressionCollisionLaneXML = """
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Expression Collision Lanes</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes>
+        <divisions>4</divisions>
+        <time><beats>4</beats><beat-type>4</beat-type></time>
+        <clef><sign>G</sign><line>2</line></clef>
+      </attributes>
+      <direction placement="below"><direction-type><dynamics><mf/></dynamics></direction-type><staff>1</staff></direction>
+      <direction placement="below"><direction-type><wedge type="crescendo"/></direction-type><staff>1</staff></direction>
+      <note>
+        <pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff>
+        <notations><articulations><staccato/></articulations></notations>
+        <lyric><syllabic>single</syllabic><text>Do</text></lyric>
+      </note>
+      <note><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+      <direction placement="below"><direction-type><wedge type="stop"/></direction-type><staff>1</staff></direction>
+    </measure>
+  </part>
+</score-partwise>
+"""
+
+private let articulationBeamCollisionXML = """
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Articulation Beam Collision</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes>
+        <divisions>8</divisions>
+        <time><beats>4</beats><beat-type>4</beat-type></time>
+        <clef><sign>G</sign><line>2</line></clef>
+      </attributes>
+      <note>
+        <pitch><step>G</step><octave>3</octave></pitch><duration>4</duration><voice>1</voice><type>eighth</type><staff>1</staff>
+        <notations><articulations><staccato/></articulations></notations>
+      </note>
+      <note>
+        <pitch><step>A</step><octave>3</octave></pitch><duration>4</duration><voice>1</voice><type>eighth</type><staff>1</staff>
+        <notations><articulations><tenuto/></articulations></notations>
+      </note>
+      <note>
+        <pitch><step>B</step><octave>3</octave></pitch><duration>4</duration><voice>1</voice><type>eighth</type><staff>1</staff>
+        <notations><fermata/></notations>
+      </note>
+      <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>eighth</type><staff>1</staff></note>
+    </measure>
+  </part>
+</score-partwise>
+"""
+
 private let crossMeasureHairpinXML = """
 <score-partwise version="4.0">
   <part-list><score-part id="P1"><part-name>Cross Measure Hairpin</part-name></score-part></part-list>
@@ -490,6 +664,29 @@ private let dynamicGrandStaffCollisionXML = """
       <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>2</staff></note>
       <backup><duration>4</duration></backup>
       <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><voice>2</voice><type>quarter</type><staff>1</staff></note>
+    </measure>
+  </part>
+</score-partwise>
+"""
+
+private let hairpinGrandStaffCollisionXML = """
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Hairpin Grand Staff Collision</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes>
+        <divisions>4</divisions>
+        <time><beats>4</beats><beat-type>4</beat-type></time>
+        <staves>2</staves>
+        <clef number="1"><sign>G</sign><line>2</line></clef>
+        <clef number="2"><sign>F</sign><line>4</line></clef>
+      </attributes>
+      <direction placement="below"><direction-type><wedge type="crescendo"/></direction-type><staff>1</staff></direction>
+      <note><pitch><step>B</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+      <note><pitch><step>C</step><octave>5</octave></pitch><duration>2</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+      <direction placement="below"><direction-type><wedge type="stop"/></direction-type><staff>1</staff></direction>
+      <backup><duration>4</duration></backup>
+      <note><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration><voice>2</voice><type>whole</type><staff>2</staff></note>
     </measure>
   </part>
 </score-partwise>

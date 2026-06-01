@@ -67,11 +67,16 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
     private var chordOrdinal = 0
     private var currentMeasureClef: Clef?
     private var currentClefsByStaff: [StaffID: Clef] = [:]
+    private var currentMeasureEffectiveClefsByStaff: [StaffID: Clef] = [:]
+    private var currentMeasureClefChanges: [ClefChange] = []
+    private var activeClefsByStaff: [StaffID: Clef] = [:]
     private var currentKeySignature: KeySignature?
     private var currentTimeSignature: TimeSignature?
     private var currentMeasureTempoEvents: [TempoEvent] = []
     private var currentMeasureDirections: [ScoreDirection] = []
     private var currentMeasureRepeatBarlines: [RepeatBarline] = []
+    private var currentMeasureLeftBarlineStyle: BarlineStyle?
+    private var currentMeasureRightBarlineStyle: BarlineStyle?
     private var currentMeasureRepeatEndings: [RepeatEnding] = []
     private var currentMeasureRepeat: MeasureRepeat?
     private var currentMeasurePlaybackJumpMarkers: [PlaybackJumpMarker] = []
@@ -81,6 +86,7 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
     private var noteBuilder: NoteBuilder?
     private var lyricBuilder: LyricBuilder?
     private var directionBuilder: DirectionBuilder?
+    private var metronomeBuilder: MetronomeBuilder?
     private var pendingClefNumber: String?
     private var pendingClefSign: String?
     private var pendingBarlineLocation: String?
@@ -122,6 +128,7 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             currentMeasures = []
             currentOnset = 0
             xmlNoteOrdinal = 0
+            activeClefsByStaff = [:]
         case "measure":
             measureIndex += 1
             currentMeasureNumber = attributeDict["number"] ?? String(measureIndex + 1)
@@ -132,11 +139,15 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             chordOrdinal = 0
             currentMeasureClef = nil
             currentClefsByStaff = [:]
+            currentMeasureEffectiveClefsByStaff = activeClefsByStaff
+            currentMeasureClefChanges = []
             currentKeySignature = nil
             currentTimeSignature = nil
             currentMeasureTempoEvents = []
             currentMeasureDirections = []
             currentMeasureRepeatBarlines = []
+            currentMeasureLeftBarlineStyle = nil
+            currentMeasureRightBarlineStyle = nil
             currentMeasureRepeatEndings = []
             currentMeasureRepeat = nil
             currentMeasurePlaybackJumpMarkers = []
@@ -164,7 +175,11 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             pendingClefSign = nil
         case "tie":
             if let type = attributeDict["type"], let tieKind = MusicXMLTieKind(rawValue: type) {
-                noteBuilder?.ties.append(tieKind)
+                appendTie(tieKind)
+            }
+        case "tied":
+            if let type = attributeDict["type"], let tieKind = MusicXMLTieKind(rawValue: type) {
+                appendTie(tieKind)
             }
         case "slur":
             if let type = attributeDict["type"], let slurKind = MusicXMLSlurKind(rawValue: type) {
@@ -190,12 +205,14 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
                 )
             }
         case "metronome":
-            recordDiagnostic(
-                severity: .warning,
-                code: "tempo.metronomeUnsupported",
-                elementName: elementName,
-                message: "Metronome direction metadata is recognized but detailed metronome conversion is not supported in Phase 11F."
+            metronomeBuilder = MetronomeBuilder(
+                onset: directionBuilder?.onset ?? MusicalTime(ticks: currentOnset, ticksPerQuarterNote: divisions),
+                measureID: MeasureID(partIndex: partIndex, measureNumber: currentMeasureNumber)
             )
+        case "pedal":
+            if let type = attributeDict["type"], let pedalKind = PedalMarkKind(rawValue: type) {
+                directionBuilder?.kinds.append(.pedal(pedalKind))
+            }
         case "time-modification":
             noteBuilder?.hasTimeModification = true
         case "tuplet":
@@ -220,6 +237,10 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             )
         case "fermata":
             noteBuilder?.articulations.append(.fermata)
+        case "beam":
+            if parentElement == "note" {
+                noteBuilder?.pendingBeamNumber = Int(attributeDict["number"] ?? "") ?? 1
+            }
         case "wedge":
             if let type = attributeDict["type"], let kind = ScoreWedgeKind(rawValue: type) {
                 directionBuilder?.kinds.append(.wedge(kind))
@@ -256,8 +277,6 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             )
         case "double":
             transposeBuilder?.doublesAtOctave = true
-        case "beam":
-            break
         default:
             break
         }
@@ -297,12 +316,16 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
                 notes: currentMeasureNotes,
                 clef: currentMeasureClef,
                 clefsByStaff: currentClefsByStaff,
+                effectiveClefsByStaff: currentMeasureEffectiveClefsByStaff,
+                clefChanges: currentMeasureClefChanges,
                 keySignature: currentKeySignature,
-                timeSignature: currentTimeSignature,
-                tempoEvents: currentMeasureTempoEvents,
-                directions: currentMeasureDirections,
-                repeatBarlines: currentMeasureRepeatBarlines,
-                repeatEndings: currentMeasureRepeatEndings,
+            timeSignature: currentTimeSignature,
+            tempoEvents: currentMeasureTempoEvents,
+            directions: currentMeasureDirections,
+            repeatBarlines: currentMeasureRepeatBarlines,
+            leftBarlineStyle: currentMeasureLeftBarlineStyle,
+            rightBarlineStyle: currentMeasureRightBarlineStyle,
+            repeatEndings: currentMeasureRepeatEndings,
                 measureRepeat: currentMeasureRepeat,
                 playbackJumpMarkers: currentMeasurePlaybackJumpMarkers,
                 musicXMLTranspose: currentMusicXMLTranspose
@@ -334,8 +357,16 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             pendingClefSign = text
         case "clef":
             let clef = Clef(kind: clefKind(forSign: pendingClefSign))
-            currentMeasureClef = clef
-            currentClefsByStaff[StaffID(rawValue: pendingClefNumber ?? "1")] = clef
+            let staffID = StaffID(rawValue: pendingClefNumber ?? "1")
+            let onset = MusicalTime(ticks: currentOnset, ticksPerQuarterNote: divisions)
+            if currentOnset <= 0 {
+                currentMeasureClef = clef
+                currentClefsByStaff[staffID] = clef
+                currentMeasureEffectiveClefsByStaff[staffID] = clef
+            } else {
+                currentMeasureClefChanges.append(ClefChange(staffID: staffID, clef: clef, onset: onset))
+            }
+            activeClefsByStaff[staffID] = clef
             pendingClefNumber = nil
             pendingClefSign = nil
         case "step":
@@ -370,6 +401,24 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             if parentElement == "note" {
                 noteBuilder?.noteValueKind = NoteValueKind(musicXMLType: text)
             }
+        case "stem":
+            noteBuilder?.stemDirection = MusicXMLStemDirection(rawValue: text)
+        case "bar-style":
+            if parentElement == "barline", let style = BarlineStyle(musicXMLValue: text) {
+                if pendingBarlineLocation == "left" {
+                    currentMeasureLeftBarlineStyle = style
+                } else {
+                    currentMeasureRightBarlineStyle = style
+                }
+            }
+        case "beat-unit":
+            if parentElement == "metronome" {
+                metronomeBuilder?.beatUnit = text
+            }
+        case "per-minute":
+            if parentElement == "metronome" {
+                metronomeBuilder?.perMinute = text
+            }
         case "syllabic":
             lyricBuilder?.syllabic = LyricSyllabic(rawValue: text) ?? .unknown
         case "text":
@@ -391,8 +440,21 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             if parentElement == "technical", !text.isEmpty {
                 noteBuilder?.fingerings.append(FingeringAnnotation(text: text))
             }
+        case "beam":
+            if parentElement == "note",
+               let beamValue = MusicXMLBeamValue(rawValue: text) {
+                let beamNumber = noteBuilder?.pendingBeamNumber ?? 1
+                noteBuilder?.beams.append(MusicXMLBeam(
+                    number: beamNumber,
+                    value: beamValue
+                ))
+            }
+            noteBuilder?.pendingBeamNumber = nil
         case "barline":
             pendingBarlineLocation = nil
+        case "metronome":
+            recordMetronomeTempo()
+            metronomeBuilder = nil
         case "transpose":
             currentMusicXMLTranspose = transposeBuilder?.make()
             transposeBuilder = nil
@@ -454,7 +516,15 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
     }
 
     private var scoreTitle: String? {
-        movementTitle ?? workTitle ?? movementNumber
+        if let movementTitle, !isPlaceholderTitle(movementTitle) {
+            return movementTitle
+        }
+        return workTitle ?? movementTitle ?? movementNumber
+    }
+
+    private func isPlaceholderTitle(_ title: String) -> Bool {
+        let normalized = title.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return normalized == "subtitle" || normalized == "title" || normalized == "untitled"
     }
 
     private func nonEmptyText(_ text: String) -> String? {
@@ -510,8 +580,10 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             isChordTone: builder.isChordTone,
             chordOrdinal: noteChordOrdinal,
             accidental: builder.accidental,
+            stemDirection: builder.stemDirection,
             ties: builder.ties,
             slurs: builder.slurs,
+            beams: builder.beams,
             articulations: builder.articulations,
             lyrics: builder.lyrics,
             fingerings: builder.fingerings,
@@ -598,6 +670,63 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             source: .sound,
             measureID: MeasureID(partIndex: partIndex, measureNumber: currentMeasureNumber)
         ))
+    }
+
+    private func appendTie(_ kind: MusicXMLTieKind) {
+        guard noteBuilder?.ties.contains(kind) == false else {
+            return
+        }
+        noteBuilder?.ties.append(kind)
+    }
+
+    private func recordMetronomeTempo() {
+        guard let builder = metronomeBuilder else {
+            return
+        }
+        let rawTempo = builder.perMinute.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let perMinute = Double(rawTempo), perMinute > 0 else {
+            if !rawTempo.isEmpty {
+                recordDiagnostic(
+                    severity: .warning,
+                    code: "tempo.metronomeInvalid",
+                    elementName: "metronome",
+                    message: "Invalid MusicXML metronome per-minute value: \(rawTempo)"
+                )
+            }
+            return
+        }
+        let quarterBPM = perMinute * metronomeBeatUnitQuarterMultiplier(builder.beatUnit)
+        currentMeasureTempoEvents.append(TempoEvent(
+            bpm: quarterBPM,
+            onset: builder.onset,
+            source: .metronome,
+            measureID: builder.measureID
+        ))
+    }
+
+    private func metronomeBeatUnitQuarterMultiplier(_ beatUnit: String) -> Double {
+        switch beatUnit.trimmingCharacters(in: .whitespacesAndNewlines) {
+        case "whole":
+            return 4
+        case "half":
+            return 2
+        case "quarter", "":
+            return 1
+        case "eighth":
+            return 0.5
+        case "16th":
+            return 0.25
+        case "32nd":
+            return 0.125
+        default:
+            recordDiagnostic(
+                severity: .warning,
+                code: "tempo.metronomeBeatUnitUnsupported",
+                elementName: "beat-unit",
+                message: "MusicXML metronome beat-unit \(beatUnit) is not supported; using quarter-note BPM."
+            )
+            return 1
+        }
     }
 
     private func recordRepeat(direction: String?, times: String?) {
@@ -717,8 +846,11 @@ private struct NoteBuilder {
     var voiceID: VoiceID?
     var staffID: StaffID?
     var accidental: String?
+    var stemDirection: MusicXMLStemDirection?
     var ties: [MusicXMLTieKind] = []
     var slurs: [MusicXMLSlurKind] = []
+    var beams: [MusicXMLBeam] = []
+    var pendingBeamNumber: Int?
     var articulations: [ScoreArticulationKind] = []
     var lyrics: [LyricAnnotation] = []
     var fingerings: [FingeringAnnotation] = []
@@ -747,6 +879,13 @@ private struct DirectionBuilder {
     var placement: ScoreDirectionPlacement
     var staffID: StaffID?
     var kinds: [ScoreDirectionKind] = []
+}
+
+private struct MetronomeBuilder {
+    var onset: MusicalTime
+    var measureID: MeasureID
+    var beatUnit = "quarter"
+    var perMinute = ""
 }
 
 private struct MusicXMLTransposeBuilder {
@@ -797,6 +936,7 @@ private let recognizedMusicXMLElements: Set<String> = [
     "rest",
     "duration",
     "type",
+    "stem",
     "dot",
     "voice",
     "staff",
@@ -805,6 +945,7 @@ private let recognizedMusicXMLElements: Set<String> = [
     "forward",
     "accidental",
     "tie",
+    "tied",
     "lyric",
     "syllabic",
     "text",
@@ -823,8 +964,10 @@ private let recognizedMusicXMLElements: Set<String> = [
     "metronome",
     "beat-unit",
     "per-minute",
+    "pedal",
     "sound",
     "barline",
+    "bar-style",
     "repeat",
     "ending",
     "measure-style",

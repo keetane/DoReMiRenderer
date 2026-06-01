@@ -18,6 +18,25 @@ enum PaletteZoomScale {
     static func percentText(_ scale: Double) -> String {
         "\(Int((clamped(scale) * 100).rounded()))%"
     }
+
+    static func fittedForA4IfNeeded(
+        _ scale: Double,
+        layoutMode: PaletteScoreLayoutMode,
+        canvasWidth: CGFloat,
+        viewportWidth: CGFloat
+    ) -> Double {
+        let requestedScale = clamped(scale)
+        guard layoutMode == .a4,
+              canvasWidth > 0,
+              viewportWidth > 0
+        else {
+            return requestedScale
+        }
+        let availableWidth = max(1, viewportWidth - 12)
+        let scrollPaddingWidth: CGFloat = 64 * 2
+        let fitScale = Double(availableWidth / (canvasWidth + scrollPaddingWidth))
+        return max(Double(ScoreViewportTransform.minimumScale), fitScale * requestedScale)
+    }
 }
 
 struct ScorePracticeView: View {
@@ -56,6 +75,7 @@ struct ScorePracticeView: View {
     @GestureState private var pinchMagnification = 1.0
     @FocusState private var measureJumpFocused: Bool
     private var playbackControlHeight: CGFloat { isCompact ? 26 : 28 }
+    private var playPauseControlWidth: CGFloat { isCompact ? 86 : 92 }
 
     var body: some View {
         NavigationStack {
@@ -168,6 +188,7 @@ struct ScorePracticeView: View {
                 session.setScoreLayoutMode(PaletteScoreLayoutMode.fromRawValue(newValue))
             }
             .onChange(of: session.loadedScore?.sourceName) { _, _ in
+                resetKeyControlsForScoreLoad()
                 session.setScoreLayoutMode(selectedScoreLayoutMode)
             }
             .onChange(of: metronomeEnabled) { _, newValue in
@@ -367,7 +388,8 @@ struct ScorePracticeView: View {
             playbackCommandButton(
                 session.playbackState == .playing ? "Pause" : "Play",
                 systemImage: session.playbackState == .playing ? "pause.fill" : "play.fill",
-                prominent: true
+                prominent: true,
+                fixedWidth: playPauseControlWidth
             ) {
                 if session.playbackState == .playing { session.pause() } else { session.play() }
             }
@@ -386,6 +408,7 @@ struct ScorePracticeView: View {
         _ title: LocalizedStringKey,
         systemImage: String,
         prominent: Bool = false,
+        fixedWidth: CGFloat? = nil,
         action: @escaping () -> Void
     ) -> some View {
         let label = Label(title, systemImage: systemImage)
@@ -393,7 +416,7 @@ struct ScorePracticeView: View {
             .labelStyle(.titleAndIcon)
             .lineLimit(1)
             .padding(.horizontal, isCompact ? 6 : 9)
-            .frame(height: playbackControlHeight)
+            .frame(width: fixedWidth, height: playbackControlHeight)
             .contentShape(RoundedRectangle(cornerRadius: 12))
 
         if prominent {
@@ -578,7 +601,10 @@ struct ScorePracticeView: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .fixedSize()
-            PaletteKeyDrumPicker(selection: transposeKeyBinding, arrowEdge: .top)
+            PaletteKeyDrumPicker(
+                selection: transposeKeyBinding,
+                arrowEdge: topToolbarVisible ? .top : .bottom
+            )
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("移調キー \(PaletteTranspose.keyName(forPitchClass: transposeKeyBinding.wrappedValue))")
@@ -624,34 +650,37 @@ struct ScorePracticeView: View {
             let highlight = session.currentHighlightState.visible(if: currentNoteDisplayVisible)
             let pitchColorState = PalettePitchClassColorState(encodedValue: pitchClassColorEnabledRawValue)
             VStack(spacing: 0) {
-                scoreTitleBar(loaded)
-                ZStack(alignment: .topLeading) {
-                    ScoreCanvasView(
-                        layout: loaded.layout,
-                        score: loaded.score,
-                        style: PaletteStyleFactory.makeStyle(
-                            noteColorVisible: noteColorVisible,
-                            staffColorVisible: staffColorVisible,
-                            paletteKind: selectedColorScheme,
-                            pitchClassColorState: pitchColorState,
-                            scaleTonicPitchClass: selectedMainKeyPitchClass,
-                            measureNumbersVisible: measureNumbersVisible
-                        ),
-                        currentNoteIDs: highlight.attackNoteIDs,
-                        continuationNoteIDs: highlight.continuationNoteIDs,
-                        followNoteIDs: session.currentNoteIDs,
-                        scale: CGFloat(effectiveZoomScale),
-                        scrollAxes: [.horizontal, .vertical],
-                        followsCurrentNote: currentNoteDisplayVisible,
-                        followPlacement: loaded.layoutMode == .a4 ? .topAligned : .center,
-                        staticRenderKey: scoreStaticRenderKey,
-                        onTap: session.handleTap
-                    )
-                    firstBeatOnboardingAnchor(for: loaded)
+                GeometryReader { proxy in
+                    let scoreScale = fittedScoreScale(for: loaded, viewportWidth: proxy.size.width)
+                    ZStack(alignment: .topLeading) {
+                        ScoreCanvasView(
+                            layout: loaded.layout,
+                            score: loaded.score,
+                            style: PaletteStyleFactory.makeStyle(
+                                noteColorVisible: noteColorVisible,
+                                staffColorVisible: staffColorVisible,
+                                paletteKind: selectedColorScheme,
+                                pitchClassColorState: pitchColorState,
+                                scaleTonicPitchClass: selectedMainKeyPitchClass,
+                                measureNumbersVisible: measureNumbersVisible
+                            ),
+                            currentNoteIDs: highlight.attackNoteIDs,
+                            continuationNoteIDs: highlight.continuationNoteIDs,
+                            followNoteIDs: session.currentNoteIDs,
+                            scale: CGFloat(scoreScale),
+                            scrollAxes: [.horizontal, .vertical],
+                            followsCurrentNote: currentNoteDisplayVisible,
+                            followPlacement: loaded.layoutMode == .a4 ? .topAligned : .center,
+                            staticRenderKey: scoreStaticRenderKey,
+                            onTap: session.handleTap
+                        )
+                        firstBeatOnboardingAnchor(for: loaded, scale: scoreScale)
+                    }
+                    .simultaneousGesture(pinchZoomGesture)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(.systemBackground))
                 }
-                .simultaneousGesture(pinchZoomGesture)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(.systemBackground))
 
                 if keyboardVisible {
                     Divider()
@@ -687,8 +716,8 @@ struct ScorePracticeView: View {
     }
 
     @ViewBuilder
-    private func firstBeatOnboardingAnchor(for loaded: PaletteLoadedScore) -> some View {
-        if let frame = firstBeatAnchorFrame(for: loaded) {
+    private func firstBeatOnboardingAnchor(for loaded: PaletteLoadedScore, scale: Double) -> some View {
+        if let frame = firstBeatAnchorFrame(for: loaded, scale: scale) {
             Color.clear
                 .frame(width: max(frame.width, 28), height: max(frame.height, 28))
                 .position(x: frame.midX, y: frame.midY)
@@ -697,7 +726,7 @@ struct ScorePracticeView: View {
         }
     }
 
-    private func firstBeatAnchorFrame(for loaded: PaletteLoadedScore) -> CGRect? {
+    private func firstBeatAnchorFrame(for loaded: PaletteLoadedScore, scale: Double) -> CGRect? {
         let layout = loaded.layout
         let firstPart = loaded.score.parts.first
         let firstMeasure = firstPart?.measures.first
@@ -728,30 +757,14 @@ struct ScorePracticeView: View {
         }
         guard let noteLayout else { return nil }
 
-        let scale = CGFloat(effectiveZoomScale)
-        let padding = max(CGFloat(48), CGFloat(64)) * max(scale, ScoreViewportTransform.minimumScale)
+        let scale = max(CGFloat(scale), ScoreViewportTransform.minimumScale)
+        let padding = max(CGFloat(48), CGFloat(64)) * scale
         return CGRect(
             x: padding + noteLayout.noteheadFrame.minX * scale,
             y: padding + noteLayout.noteheadFrame.minY * scale,
             width: max(1, noteLayout.noteheadFrame.width * scale),
             height: max(1, noteLayout.noteheadFrame.height * scale)
         )
-    }
-
-    private func scoreTitleBar(_ loaded: PaletteLoadedScore) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: "music.note")
-                .foregroundStyle(.secondary)
-            Text(loaded.displayName)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.primary)
-                .lineLimit(1)
-                .truncationMode(.middle)
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, isCompact ? 14 : 24)
-        .padding(.vertical, 7)
-        .background(Color(.secondarySystemBackground))
     }
 
     private func submitMeasureJump() {
@@ -775,6 +788,15 @@ struct ScorePracticeView: View {
 
     private var effectiveZoomScale: Double {
         PaletteZoomScale.clamped(zoomScale * pinchMagnification)
+    }
+
+    private func fittedScoreScale(for loaded: PaletteLoadedScore, viewportWidth: CGFloat) -> Double {
+        PaletteZoomScale.fittedForA4IfNeeded(
+            effectiveZoomScale,
+            layoutMode: loaded.layoutMode,
+            canvasWidth: loaded.layout.canvasSize.width,
+            viewportWidth: viewportWidth
+        )
     }
 
     private var pinchZoomGesture: some Gesture {
@@ -926,6 +948,17 @@ struct ScorePracticeView: View {
         }
         session.setDisplayTransposeEnabled(true)
         session.setTransposeSemitones(clamped)
+    }
+
+    private func resetKeyControlsForScoreLoad() {
+        if transposeSemitones != 0 {
+            transposeSemitones = 0
+        }
+        if !displayTransposeEnabled {
+            displayTransposeEnabled = true
+        }
+        session.setDisplayTransposeEnabled(true)
+        session.setTransposeSemitones(0)
     }
 
     private func applyPaletteEditorLaunchArgumentsIfNeeded() {

@@ -833,7 +833,10 @@ Supported MVP coverage:
   note while preserving accent, dynamic text, and hairpin placement. Above and
   below fermata glyphs are selected by layout placement so upward-stem flagged
   notes do not render with a reversed fermata. Dynamic text and hairpins use a
-  minimum vertical lane separation to avoid obvious contact.
+  collision-scored lane pass to avoid obvious contact. Articulations are placed
+  after beam layout so staccato, tenuto, and fermata can avoid notehead, stem,
+  flag, beam, lyric, and fingering frames instead of being locked to the first
+  note-local position.
 
 The self-authored
 `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/articulation_dynamics_coverage_sample.musicxml`
@@ -841,10 +844,34 @@ fixture is available from the Library for manual QA. Save iPad Simulator
 evidence under `/tmp/DoReMiPaletteQA/expression-mvp/`.
 
 Known MVP limits: fermata timing is a bounded note/rest extension and does not
-reshape the metronome click plan; hairpin interpolation remains coarse, and
-collision avoidance is lane-based rather than publishing-quality. Humanized
-performance is present only as an internal experimental default-off runtime
-flag; ornaments remain future work.
+reshape the metronome click plan; hairpin interpolation remains coarse, and the
+collision pass is publication-oriented but not a complete engraving optimizer
+for complex multi-voice or cross-staff collisions. Humanized performance is
+present only as an internal experimental default-off runtime flag; ornaments
+remain future work.
+
+## MusicXML Warning Reduction Pass
+
+The bundled Ode to Joy and Fur Elise samples are used as the current
+pre-release warning-reduction targets. The parser now retains basic MusicXML
+notation that previously produced direct visual/playback warnings:
+
+- `<tied>` notation is merged with tie playback data so same-system tie curves
+  can be laid out without duplicating tie starts/stops.
+- Simple `<metronome>` beat-unit / per-minute markings are converted into tempo
+  metadata alongside `<sound tempo="">`.
+- `<stem>` directions are retained as explicit direction hints. Layout honors
+  them only when safe for single notes, unanimous chord directions, or coherent
+  beam groups; mixed up/down directions still split beams to avoid invalid
+  engraving.
+- Common `<bar-style>` values are retained on measure barlines and rendered for
+  thin/heavy combinations.
+- Basic `<pedal>` directions are rendered as `Ped.` / `*` text. Pedal playback
+  remains future work.
+
+Diagnostics should still report metadata, page layout, MIDI, and other features
+that do not yet affect notation or playback. Do not hide unsupported feature
+coverage by silently dropping unknown MusicXML elements.
 
 Run:
 

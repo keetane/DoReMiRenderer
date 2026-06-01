@@ -204,7 +204,7 @@ struct SMuFLGlyphSizePolicy: Sendable {
     let repeatDotScale: CGFloat = 0.70
 
     func clefSize(for frame: CGRect) -> CGFloat {
-        max(34, frame.height * clefScale)
+        max(20, frame.height * clefScale)
     }
 
     func timeSignatureSize(for frame: CGRect) -> CGFloat {
@@ -219,39 +219,34 @@ struct SMuFLGlyphSizePolicy: Sendable {
         case .quarter, .eighth, .sixteenth, .thirtySecond, .other:
             scale = blackNoteheadScale
         }
-        let minimum: CGFloat = switch noteValue {
-        case .whole, .half:
-            38
-        case .quarter, .eighth, .sixteenth, .thirtySecond, .other:
-            38
-        }
-        return max(minimum, frame.height * scale)
+        return max(20, frame.height * scale)
     }
 
     func accidentalSize(for frame: CGRect) -> CGFloat {
-        max(19, frame.height * accidentalScale)
+        max(12, frame.height * accidentalScale)
     }
 
     func keySignatureAccidentalSize(for frame: CGRect) -> CGFloat {
-        max(18, frame.height * keySignatureAccidentalScale)
+        max(12, frame.height * keySignatureAccidentalScale)
     }
 
     func restSize(for frame: CGRect, noteValue: NoteValueKind) -> CGFloat {
-        let minimum: CGFloat = switch noteValue {
+        let baselineMinimum: CGFloat = switch noteValue {
         case .whole, .half:
             34
         case .quarter, .eighth, .sixteenth, .thirtySecond, .other:
             38
         }
-        return max(minimum, frame.height * restScale)
+        let scaledMinimum = min(baselineMinimum, frame.height * 2.46)
+        return max(scaledMinimum, frame.height * restScale)
     }
 
     func flagSize(for frame: CGRect) -> CGFloat {
-        max(24, frame.height * flagScale)
+        max(14, frame.height * flagScale)
     }
 
     func repeatDotSize(for frame: CGRect) -> CGFloat {
-        max(8, frame.height * repeatDotScale)
+        max(4, frame.height * repeatDotScale)
     }
 }
 

@@ -32,6 +32,12 @@ import Testing
     #expect(!result.diagnostics.contains { $0.code == "unsupported.work-title" || $0.code == "unsupported.movement-title" })
 }
 
+@Test func parserFallsBackToWorkTitleWhenMovementTitleIsPlaceholderSubtitle() throws {
+    let result = try parseMusicXML(workTitleWithPlaceholderSubtitleXML)
+
+    #expect(result.score.title == "美女と野獣")
+}
+
 @Test func parserKeepsGrandStaffNoteIDsUniqueForSameVoiceAndOnset() throws {
     let notes = try parseMusicXML(grandStaffXML).score.parts.flatMap(\.measures).flatMap(\.notes)
 
@@ -61,6 +67,32 @@ import Testing
     #expect(notes.map(\.dotCount) == [0, 1, 0, 0, 0, 0])
     #expect(notes[4].pitch == nil)
     #expect(notes[5].pitch == Pitch(step: .g, octave: 4))
+}
+
+@Test func parserReadsMusicXMLBeamTags() throws {
+    let notes = try parseMusicXML(beamedNotesXML).score.parts.flatMap(\.measures).flatMap(\.notes)
+
+    #expect(notes.map(\.beams) == [
+        [MusicXMLBeam(number: 1, value: .begin), MusicXMLBeam(number: 2, value: .begin)],
+        [MusicXMLBeam(number: 1, value: .continue), MusicXMLBeam(number: 2, value: .continue)],
+        [MusicXMLBeam(number: 1, value: .end), MusicXMLBeam(number: 2, value: .end)],
+    ])
+}
+
+@Test func parserReadsMidMeasureClefChangesWithOnset() throws {
+    let measures = try parseMusicXML(midMeasureClefXML).score.parts.flatMap(\.measures)
+    let first = try #require(measures.first)
+    let second = try #require(measures.dropFirst().first)
+
+    #expect(first.clefsByStaff[StaffID(rawValue: "2")] == Clef(kind: .bass))
+    #expect(first.clefChanges == [
+        ClefChange(
+            staffID: StaffID(rawValue: "2"),
+            clef: Clef(kind: .treble),
+            onset: MusicalTime(ticks: 3, ticksPerQuarterNote: 1)
+        ),
+    ])
+    #expect(second.effectiveClefsByStaff[StaffID(rawValue: "2")] == Clef(kind: .treble))
 }
 
 @Test func parserAppliesBackupAndForwardToOnsets() throws {
@@ -163,6 +195,15 @@ private let titledScoreXML = """
 </score-partwise>
 """
 
+private let workTitleWithPlaceholderSubtitleXML = """
+<score-partwise version="4.0">
+  <work><work-title>美女と野獣</work-title></work>
+  <movement-title>Subtitle</movement-title>
+  <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+  <part id="P1"><measure number="1"/></part>
+</score-partwise>
+"""
+
 private let grandStaffXML = """
 <score-partwise version="4.0">
   <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
@@ -222,6 +263,37 @@ private let noteValuesAndDotsXML = """
 </score-partwise>
 """
 
+private let beamedNotesXML = """
+<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes>
+        <divisions>4</divisions>
+        <time><beats>4</beats><beat-type>4</beat-type></time>
+        <clef><sign>G</sign><line>2</line></clef>
+      </attributes>
+      <note>
+        <pitch><step>C</step><octave>5</octave></pitch>
+        <duration>1</duration><voice>1</voice><type>16th</type><staff>1</staff>
+        <beam number="1">begin</beam><beam number="2">begin</beam>
+      </note>
+      <note>
+        <pitch><step>D</step><octave>5</octave></pitch>
+        <duration>1</duration><voice>1</voice><type>16th</type><staff>1</staff>
+        <beam number="1">continue</beam><beam number="2">continue</beam>
+      </note>
+      <note>
+        <pitch><step>E</step><octave>5</octave></pitch>
+        <duration>1</duration><voice>1</voice><type>16th</type><staff>1</staff>
+        <beam number="1">end</beam><beam number="2">end</beam>
+      </note>
+    </measure>
+  </part>
+</score-partwise>
+"""
+
 private let backupForwardXML = """
 <score-partwise version="4.0">
   <part-list><score-part id="P1"><part-name>Part</part-name></score-part></part-list>
@@ -241,6 +313,39 @@ private let backupForwardXML = """
       <note>
         <pitch><step>A</step><octave>3</octave></pitch>
         <duration>2</duration><voice>2</voice><staff>1</staff>
+      </note>
+    </measure>
+  </part>
+</score-partwise>
+"""
+
+private let midMeasureClefXML = """
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes>
+        <divisions>1</divisions>
+        <time><beats>4</beats><beat-type>4</beat-type></time>
+        <clef number="1"><sign>G</sign><line>2</line></clef>
+        <clef number="2"><sign>F</sign><line>4</line></clef>
+      </attributes>
+      <note>
+        <pitch><step>C</step><octave>3</octave></pitch>
+        <duration>3</duration><voice>1</voice><type>half</type><staff>2</staff>
+      </note>
+      <attributes>
+        <clef number="2"><sign>G</sign><line>2</line></clef>
+      </attributes>
+      <note>
+        <pitch><step>E</step><octave>4</octave></pitch>
+        <duration>1</duration><voice>1</voice><type>quarter</type><staff>2</staff>
+      </note>
+    </measure>
+    <measure number="2">
+      <note>
+        <pitch><step>F</step><octave>4</octave></pitch>
+        <duration>4</duration><voice>1</voice><type>whole</type><staff>2</staff>
       </note>
     </measure>
   </part>

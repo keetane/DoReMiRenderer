@@ -447,6 +447,11 @@ Manual sample checks:
 - [ ] Playback: Play / Pause / Stop / Reset remain stable.
 - [ ] Practice: ON/OFF, Next, Previous, Reset, keyboard highlight, and note-name
   display remain stable.
+- [ ] Ode to Joy and Fur Elise diagnostics no longer include direct
+  `unsupported.tied`, `unsupported.stem`, `unsupported.bar-style`,
+  `unsupported.pedal`, or `tempo.metronomeUnsupported` warnings.
+- [ ] Fur Elise repeat barline, explicit stem/beam grouping, and pedal text do
+  not visually regress in A4 mode.
 
 Screenshot targets:
 
@@ -826,6 +831,9 @@ renderer path and must remain layout-driven.
   their owning notes, upward/downward flagged fermatas use the correct glyph,
   cross-measure hairpins layout within a system, and dynamic text / hairpin
   lanes keep a minimum vertical separation.
+- [x] Collision-lane tests cover expression marks against noteheads, stems,
+  flags, beams, lyrics, fingerings, and articulations, including the Ode to Joy
+  A4 measure 8 hairpin regression.
 - [ ] Manual iPad QA: open `Articulation & Dynamics Coverage Sample` and
   confirm staccato dots, accents, tenuto lines, fermatas, p/mp/mf/f/ff marks,
   and hairpins are visible and upright.

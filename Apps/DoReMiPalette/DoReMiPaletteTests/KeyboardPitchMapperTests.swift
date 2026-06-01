@@ -38,6 +38,18 @@ struct KeyboardPitchMapperTests {
         #expect(KeyboardLineNumber.number(for: 61) == nil) // C#4 is not a white-key staff line
     }
 
+    @Test func keyboardLineNumbersFollowSelectedKeyScaleSpelling() {
+        #expect(KeyboardLineNumber.number(for: 51, scaleTonicPitchClass: 4) == 3) // E major D#3 maps to the D3 staff line.
+        #expect(KeyboardLineNumber.number(for: 75, scaleTonicPitchClass: 4) == 4) // E major D#5 maps to the D5 staff line.
+        #expect(KeyboardLineNumber.number(for: 50, scaleTonicPitchClass: 4) == nil) // D natural is outside E major.
+
+        #expect(KeyboardLineNumber.number(for: 54, scaleTonicPitchClass: 7) == 2) // G major F#3 maps to the F3 staff line.
+        #expect(KeyboardLineNumber.number(for: 53, scaleTonicPitchClass: 7) == nil) // F natural is outside G major.
+
+        #expect(KeyboardLineNumber.number(for: 46, scaleTonicPitchClass: 5) == 4) // F major Bb2 maps to the B2 staff line.
+        #expect(KeyboardLineNumber.number(for: 47, scaleTonicPitchClass: 5) == nil) // B natural is outside F major.
+    }
+
     @Test func classifiesBlackKeys() {
         #expect(!KeyboardPitchMapper.isBlackKey(midi: 60))
         #expect(KeyboardPitchMapper.isBlackKey(midi: 61))

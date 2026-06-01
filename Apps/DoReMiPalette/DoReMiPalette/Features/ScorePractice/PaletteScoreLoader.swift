@@ -87,23 +87,29 @@ struct PaletteScoreLoader {
         configuration: RendererConfiguration(unsupportedFeaturePolicy: .ignoreWithWarning)
     )
 
-    func load(data: Data, sourceName: String, displayTransposeSemitones: Int = 0) throws -> PaletteLoadedScore {
+    func load(
+        data: Data,
+        sourceName: String,
+        displayTitle: String? = nil,
+        displayTransposeSemitones: Int = 0
+    ) throws -> PaletteLoadedScore {
         let input = try scoreInput(for: sourceName, data: data)
         let parseResult = try renderer.parseWithDiagnostics(input: input)
-        let layouts = try makeLayouts(score: parseResult.score, displayTransposeSemitones: displayTransposeSemitones)
+        let score = scoreWithDisplayTitle(parseResult.score, sourceName: sourceName, displayTitle: displayTitle)
+        let layouts = try makeLayouts(score: score, displayTransposeSemitones: displayTransposeSemitones)
         let playbackEvents = renderer.makePlaybackSequence(
-            score: parseResult.score,
+            score: score,
             options: PlaybackOptions(includeRests: true)
         )
-        let playbackMetadata = renderer.makePlaybackMetadata(score: parseResult.score)
+        let playbackMetadata = renderer.makePlaybackMetadata(score: score)
         let baseDiagnostics = parseResult.diagnostics + playbackMetadata.diagnostics
         return PaletteLoadedScore(
             sourceName: sourceName,
-            score: parseResult.score,
+            score: score,
             horizontalLayout: layouts.horizontal.layout,
             a4Layout: layouts.a4.layout,
             layoutMode: Self.initialLayoutMode(
-                score: parseResult.score,
+                score: score,
                 horizontalLayout: layouts.horizontal.layout
             ),
             diagnostics: baseDiagnostics + layouts.horizontal.diagnostics + layouts.a4.diagnostics,
@@ -111,6 +117,31 @@ struct PaletteScoreLoader {
             playbackEvents: playbackEvents,
             playbackMetadata: playbackMetadata
         )
+    }
+
+    private func scoreWithDisplayTitle(
+        _ score: ScoreDocument,
+        sourceName: String,
+        displayTitle: String?
+    ) -> ScoreDocument {
+        if let title = score.title?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !title.isEmpty {
+            return score
+        }
+        let resolvedTitle = preferredDisplayTitle(displayTitle, sourceName: sourceName)
+        return ScoreDocument(parts: score.parts, title: resolvedTitle)
+    }
+
+    private func preferredDisplayTitle(_ displayTitle: String?, sourceName: String) -> String {
+        if let displayTitle = displayTitle?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !displayTitle.isEmpty {
+            return displayTitle
+        }
+        let filename = URL(fileURLWithPath: sourceName).deletingPathExtension().lastPathComponent
+        let normalized = filename
+            .replacingOccurrences(of: "_", with: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return normalized.isEmpty ? sourceName : normalized
     }
 
     func relayout(_ loaded: PaletteLoadedScore, displayTransposeSemitones: Int) throws -> PaletteLoadedScore {
@@ -148,8 +179,8 @@ struct PaletteScoreLoader {
             options: LayoutOptions(
                 pageWidth: 595,
                 pageHeight: 842,
-                staffSpace: 12,
-                systemSpacing: 72,
+                staffSpace: 8,
+                systemSpacing: 48,
                 measureSpacing: 0,
                 displayMode: .print,
                 showPageMargins: true,
@@ -159,12 +190,8 @@ struct PaletteScoreLoader {
         return (horizontalLayoutResult, a4LayoutResult)
     }
 
-    private static func initialLayoutMode(score: ScoreDocument, horizontalLayout: ScoreLayout) -> PaletteScoreLayoutMode {
-        let measureCount = score.parts.map(\.measures.count).max() ?? 0
-        if horizontalLayout.canvasSize.width > 16_000 || measureCount > 64 {
-            return .a4
-        }
-        return .horizontal
+    private static func initialLayoutMode(score _: ScoreDocument, horizontalLayout _: ScoreLayout) -> PaletteScoreLayoutMode {
+        return .a4
     }
 
     func scoreInput(for fileName: String, data: Data) throws -> ScoreInput {
