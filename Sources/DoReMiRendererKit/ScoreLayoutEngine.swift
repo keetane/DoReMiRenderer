@@ -806,9 +806,7 @@ struct ScoreLayoutEngine: Sendable {
         metrics: LayoutMetrics,
         contentWidth: CGFloat
     ) -> ScoreTitleLayout? {
-        guard options.displayMode == .print,
-              options.showPageMargins
-        else {
+        guard options.displayMode == .print else {
             return nil
         }
         let title = score.title?

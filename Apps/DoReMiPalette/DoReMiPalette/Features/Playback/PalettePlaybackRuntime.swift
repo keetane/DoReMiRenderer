@@ -558,6 +558,15 @@ final class PalettePlaybackRuntime {
         return min(max(0.01, expressionExtendedDuration(seconds, for: event)), 8)
     }
 
+    func totalSchedulingDurationSeconds() -> TimeInterval {
+        guard !events.isEmpty else {
+            return 0
+        }
+        return events.indices.reduce(0) { partial, index in
+            partial + schedulingIntervalSeconds(from: index)
+        }
+    }
+
     func triggerAudioForCurrentEvent() {
         guard let event = currentEvent else {
             audioEngine.silence()

@@ -24,6 +24,19 @@ struct PalettePlaybackCursor: Equatable {
         events.suffix(from: min(index + 1, events.count)).first { !$0.midiPitches.isEmpty }
     }
 
+    func upcomingPitchedEvents(limit: Int) -> [PlaybackEvent] {
+        guard limit > 0 else {
+            return []
+        }
+        return Array(
+            events
+                .suffix(from: min(index + 1, events.count))
+                .lazy
+                .filter { !$0.midiPitches.isEmpty }
+                .prefix(limit)
+        )
+    }
+
     var stepSummary: String {
         guard !events.isEmpty else {
             return "Step 0/0"
@@ -88,6 +101,19 @@ struct PalettePracticeSession: Equatable {
 
     var nextPitchedEvent: PlaybackEvent? {
         events.suffix(from: min(index + 1, events.count)).first { !$0.midiPitches.isEmpty }
+    }
+
+    func upcomingPitchedEvents(limit: Int) -> [PlaybackEvent] {
+        guard limit > 0 else {
+            return []
+        }
+        return Array(
+            events
+                .suffix(from: min(index + 1, events.count))
+                .lazy
+                .filter { !$0.midiPitches.isEmpty }
+                .prefix(limit)
+        )
     }
 
     var currentNoteID: NoteID? {

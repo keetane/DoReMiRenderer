@@ -311,6 +311,35 @@ import Testing
     ))
 }
 
+@Test func scoreCanvasFollowHeuristicsUsesShorterHorizontalThresholdForSmoothFollow() {
+    let viewport = CGSize(width: 700, height: 520)
+    let initialCenter = CGPoint(x: 180, y: 260)
+    let nearbyCenter = CGPoint(x: 230, y: 260)
+    let smoothFollowCenter = CGPoint(x: 270, y: 260)
+
+    #expect(!ScoreCanvasFollowHeuristics.hasMovedBeyondFollowDistance(
+        noteCenter: smoothFollowCenter,
+        lastFollowCenter: initialCenter,
+        viewportSize: viewport,
+        scale: 1,
+        margin: 48
+    ))
+    #expect(!ScoreCanvasFollowHeuristics.hasMovedBeyondSmoothHorizontalFollowDistance(
+        noteCenter: nearbyCenter,
+        lastFollowCenter: initialCenter,
+        viewportSize: viewport,
+        scale: 1,
+        margin: 48
+    ))
+    #expect(ScoreCanvasFollowHeuristics.hasMovedBeyondSmoothHorizontalFollowDistance(
+        noteCenter: smoothFollowCenter,
+        lastFollowCenter: initialCenter,
+        viewportSize: viewport,
+        scale: 1,
+        margin: 48
+    ))
+}
+
 @Test func scoreCanvasFollowHeuristicsUsesMeasureLeadingXForFollowAnchor() {
     let noteID = NoteID(rawValue: "measure.note")
     let layout = scrollLayout(
@@ -374,6 +403,150 @@ import Testing
     )
 
     #expect(resolved == measuredAnchor)
+}
+
+@Test func scoreCanvasFollowHeuristicsHorizontalSmoothPlacementKeepsExistingMeasuredAnchor() {
+    let measuredAnchor = UnitPoint(x: 0.5, y: 1)
+    let movementAnchor = UnitPoint(x: 0.72, y: 0.68)
+
+    let resolved = ScoreCanvasFollowHeuristics.resolvedScrollAnchor(
+        measuredAnchor: measuredAnchor,
+        movementAnchor: movementAnchor,
+        movedBeyondLastFollow: true,
+        placement: .horizontalSmooth
+    )
+
+    #expect(resolved == measuredAnchor)
+}
+
+@Test func scoreCanvasFollowHeuristicsHorizontalSmoothTargetsCurrentNotePosition() {
+    let noteID = NoteID(rawValue: "smooth.note")
+    let layout = scrollLayout(
+        noteID: noteID,
+        noteheadFrame: CGRect(x: 920, y: 140, width: 20, height: 16),
+        measureFrame: CGRect(x: 880, y: 80, width: 220, height: 180)
+    )
+    let target = ScoreCanvasFollowHeuristics.targetContentOffset(
+        for: layout.noteByID[noteID]!,
+        in: layout,
+        viewportSize: CGSize(width: 400, height: 240),
+        contentSize: CGSize(width: 1_600, height: 500),
+        scale: 1,
+        padding: 64,
+        currentContentOffset: CGPoint(x: 120, y: 150),
+        placement: .horizontalSmooth
+    )
+
+    #expect(abs(target.x - 826) < 0.01)
+    #expect(abs(target.y - 150) < 0.01)
+}
+
+@Test func scoreCanvasFollowHeuristicsHorizontalSmoothPreservesVerticalOffsetOutsideContentBounds() {
+    let noteID = NoteID(rawValue: "smooth.vertical.note")
+    let layout = scrollLayout(
+        noteID: noteID,
+        noteheadFrame: CGRect(x: 920, y: 140, width: 20, height: 16),
+        measureFrame: CGRect(x: 880, y: 80, width: 220, height: 180)
+    )
+    let pulledDownTarget = ScoreCanvasFollowHeuristics.targetContentOffset(
+        for: layout.noteByID[noteID]!,
+        in: layout,
+        viewportSize: CGSize(width: 400, height: 240),
+        contentSize: CGSize(width: 1_600, height: 500),
+        scale: 1,
+        padding: 64,
+        currentContentOffset: CGPoint(x: 120, y: -96),
+        placement: .horizontalSmooth
+    )
+    let pushedDownTarget = ScoreCanvasFollowHeuristics.targetContentOffset(
+        for: layout.noteByID[noteID]!,
+        in: layout,
+        viewportSize: CGSize(width: 400, height: 240),
+        contentSize: CGSize(width: 1_600, height: 500),
+        scale: 1,
+        padding: 64,
+        currentContentOffset: CGPoint(x: 120, y: 640),
+        placement: .horizontalSmooth
+    )
+
+    #expect(abs(pulledDownTarget.y - -96) < 0.01)
+    #expect(abs(pushedDownTarget.y - 640) < 0.01)
+}
+
+@Test func scoreCanvasFollowHeuristicsHorizontalSmoothAnimationDurationFollowsPlaybackCadence() {
+    let defaultDuration = ScoreCanvasFollowHeuristics.horizontalSmoothAnimationDuration(noteInterval: nil)
+    let fastDuration = ScoreCanvasFollowHeuristics.horizontalSmoothAnimationDuration(noteInterval: 0.08)
+    let quarterLikeDuration = ScoreCanvasFollowHeuristics.horizontalSmoothAnimationDuration(noteInterval: 0.5)
+    let longDuration = ScoreCanvasFollowHeuristics.horizontalSmoothAnimationDuration(noteInterval: 2.0)
+
+    #expect(abs(defaultDuration - 0.342) < 0.001)
+    #expect(abs(fastDuration - 0.16) < 0.001)
+    #expect(abs(quarterLikeDuration - 0.475) < 0.001)
+    #expect(abs(longDuration - 1.1) < 0.001)
+}
+
+@Test func scoreCanvasFollowHeuristicsContinuousFollowDurationUsesConstantScrollSpeed() {
+    let invalidDuration = ScoreCanvasFollowHeuristics.continuousFollowAnimationDuration(distance: -1)
+    let tinyDistanceDuration = ScoreCanvasFollowHeuristics.continuousFollowAnimationDuration(distance: 12)
+    let shortDistanceDuration = ScoreCanvasFollowHeuristics.continuousFollowAnimationDuration(distance: 110)
+    let longDistanceDuration = ScoreCanvasFollowHeuristics.continuousFollowAnimationDuration(distance: 440)
+    let clampedDuration = ScoreCanvasFollowHeuristics.continuousFollowAnimationDuration(distance: 2_000)
+
+    #expect(abs(invalidDuration - 0.342) < 0.001)
+    #expect(abs(tinyDistanceDuration - 0.22) < 0.001)
+    #expect(abs(shortDistanceDuration - 0.5) < 0.001)
+    #expect(abs(longDistanceDuration - 2.0) < 0.001)
+    #expect(abs(clampedDuration - 5.5) < 0.001)
+}
+
+@Test func scoreCanvasFollowHeuristicsContinuousFollowSpeedUsesWholeScoreDuration() {
+    let speed = ScoreCanvasFollowHeuristics.continuousFollowSpeed(
+        contentSize: CGSize(width: 2_400, height: 600),
+        viewportSize: CGSize(width: 400, height: 300),
+        playbackDuration: 20
+    )
+    let minimumSpeed = ScoreCanvasFollowHeuristics.continuousFollowSpeed(
+        contentSize: CGSize(width: 800, height: 600),
+        viewportSize: CGSize(width: 400, height: 300),
+        playbackDuration: 80
+    )
+    let maximumSpeed = ScoreCanvasFollowHeuristics.continuousFollowSpeed(
+        contentSize: CGSize(width: 8_400, height: 600),
+        viewportSize: CGSize(width: 400, height: 300),
+        playbackDuration: 10
+    )
+    let unavailableSpeed = ScoreCanvasFollowHeuristics.continuousFollowSpeed(
+        contentSize: CGSize(width: 300, height: 600),
+        viewportSize: CGSize(width: 400, height: 300),
+        playbackDuration: 20
+    )
+
+    #expect(abs(speed - 100) < 0.001)
+    #expect(abs(minimumSpeed - 36) < 0.001)
+    #expect(abs(maximumSpeed - 220) < 0.001)
+    #expect(unavailableSpeed == 0)
+}
+
+@Test func scoreCanvasFollowHeuristicsTopAlignedTargetsSystemNearViewportTop() {
+    let noteID = NoteID(rawValue: "a4.note")
+    let layout = scrollLayout(
+        noteID: noteID,
+        noteheadFrame: CGRect(x: 260, y: 940, width: 20, height: 16),
+        measureFrame: CGRect(x: 220, y: 920, width: 220, height: 180),
+        systemFrame: CGRect(x: 180, y: 860, width: 580, height: 260)
+    )
+    let target = ScoreCanvasFollowHeuristics.targetContentOffset(
+        for: layout.noteByID[noteID]!,
+        in: layout,
+        viewportSize: CGSize(width: 400, height: 300),
+        contentSize: CGSize(width: 900, height: 1_500),
+        scale: 1,
+        padding: 64,
+        placement: .topAligned
+    )
+
+    #expect(abs(target.x - 134) < 0.01)
+    #expect(abs(target.y - 888) < 0.01)
 }
 
 @Test func scoreCanvasScrollableContentSizeKeepsPositiveScrollExtentWithInset() {
