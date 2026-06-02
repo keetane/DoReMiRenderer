@@ -1843,6 +1843,34 @@ import Testing
     #expect(abs(firstSystem.frame.minY - title.frame.maxY - 50) < 0.001)
 }
 
+@Test func horizontalLayoutOmitsCanvasTitleForFixedAppHeader() throws {
+    let score = ScoreDocument(
+        parts: [
+            ScorePart(id: "p1", measures: [
+                Measure(
+                    id: MeasureID(partIndex: 0, measureNumber: "1"),
+                    number: "1",
+                    notes: [
+                        makeNote(id: "horizontal-title-note", pitch: Pitch(step: .c, octave: 4), onsetTicks: 0),
+                    ],
+                    clef: Clef(kind: .treble),
+                    timeSignature: TimeSignature(beats: 4, beatType: 4)
+                ),
+            ]),
+        ],
+        title: "Ode to Joy"
+    )
+
+    let layout = try ScoreLayoutEngine().layout(
+        score: score,
+        options: LayoutOptions(pageWidth: 980, staffSpace: 16, displayMode: .horizontal)
+    )
+    let firstSystem = try #require(layout.systems.first)
+
+    #expect(layout.title == nil)
+    #expect(firstSystem.frame.minY >= 0)
+}
+
 @Test func a4PrintLayoutDoesNotUsePartNameAsScoreTitle() throws {
     let score = ScoreDocument(parts: [
         ScorePart(id: "p1", name: "Piano", measures: [
@@ -1859,6 +1887,29 @@ import Testing
     ])
 
     let layout = try ScoreLayoutEngine().layout(score: score, options: a4PrintOptions())
+
+    #expect(layout.title == nil)
+}
+
+@Test func horizontalLayoutDoesNotUsePartNameAsScoreTitle() throws {
+    let score = ScoreDocument(parts: [
+        ScorePart(id: "p1", name: "Piano", measures: [
+            Measure(
+                id: MeasureID(partIndex: 0, measureNumber: "1"),
+                number: "1",
+                notes: [
+                    makeNote(id: "horizontal-part-title-note", pitch: Pitch(step: .c, octave: 4), onsetTicks: 0),
+                ],
+                clef: Clef(kind: .treble),
+                timeSignature: TimeSignature(beats: 4, beatType: 4)
+            ),
+        ]),
+    ])
+
+    let layout = try ScoreLayoutEngine().layout(
+        score: score,
+        options: LayoutOptions(pageWidth: 980, staffSpace: 16, displayMode: .horizontal)
+    )
 
     #expect(layout.title == nil)
 }

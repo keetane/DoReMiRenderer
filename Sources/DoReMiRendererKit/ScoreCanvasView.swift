@@ -5,6 +5,7 @@ import UIKit
 
 public enum ScoreCanvasFollowPlacement: Sendable, Hashable {
     case center
+    case horizontalSmooth
     case topAligned
 }
 
@@ -16,6 +17,8 @@ public struct ScoreCanvasView: View {
     public let currentNoteIDs: Set<NoteID>
     public let continuationNoteIDs: Set<NoteID>
     public let followNoteIDs: Set<NoteID>?
+    public let nextFollowNoteIDs: Set<NoteID>
+    public let continuousFollowNoteIDs: [NoteID]
     public let scale: CGFloat
     public let contentOffset: CGPoint
     public let viewportSize: CGSize
@@ -23,6 +26,8 @@ public struct ScoreCanvasView: View {
     public let followsCurrentNote: Bool
     public let scrollFollowMargin: CGFloat
     public let followPlacement: ScoreCanvasFollowPlacement
+    public let followAnimationDuration: TimeInterval?
+    public let continuousFollowPlaybackDuration: TimeInterval?
     public let staticRenderKey: String?
     public let onTap: ((HitTestResult) -> Void)?
 
@@ -38,6 +43,8 @@ public struct ScoreCanvasView: View {
         currentNoteID: NoteID? = nil,
         continuationNoteIDs: Set<NoteID> = [],
         followNoteIDs: Set<NoteID>? = nil,
+        nextFollowNoteIDs: Set<NoteID> = [],
+        continuousFollowNoteIDs: [NoteID] = [],
         scale: CGFloat = 1,
         contentOffset: CGPoint = .zero,
         viewportSize: CGSize = .zero,
@@ -45,6 +52,8 @@ public struct ScoreCanvasView: View {
         followsCurrentNote: Bool = false,
         scrollFollowMargin: CGFloat = 48,
         followPlacement: ScoreCanvasFollowPlacement = .center,
+        followAnimationDuration: TimeInterval? = nil,
+        continuousFollowPlaybackDuration: TimeInterval? = nil,
         staticRenderKey: String? = nil,
         onTap: ((HitTestResult) -> Void)? = nil
     ) {
@@ -56,6 +65,8 @@ public struct ScoreCanvasView: View {
             currentNoteIDs: currentNoteID.map { [$0] } ?? [],
             continuationNoteIDs: continuationNoteIDs,
             followNoteIDs: followNoteIDs,
+            nextFollowNoteIDs: nextFollowNoteIDs,
+            continuousFollowNoteIDs: continuousFollowNoteIDs,
             scale: scale,
             contentOffset: contentOffset,
             viewportSize: viewportSize,
@@ -63,6 +74,8 @@ public struct ScoreCanvasView: View {
             followsCurrentNote: followsCurrentNote,
             scrollFollowMargin: scrollFollowMargin,
             followPlacement: followPlacement,
+            followAnimationDuration: followAnimationDuration,
+            continuousFollowPlaybackDuration: continuousFollowPlaybackDuration,
             staticRenderKey: staticRenderKey,
             onTap: onTap
         )
@@ -76,6 +89,8 @@ public struct ScoreCanvasView: View {
         currentNoteIDs: Set<NoteID>,
         continuationNoteIDs: Set<NoteID> = [],
         followNoteIDs: Set<NoteID>? = nil,
+        nextFollowNoteIDs: Set<NoteID> = [],
+        continuousFollowNoteIDs: [NoteID] = [],
         scale: CGFloat = 1,
         contentOffset: CGPoint = .zero,
         viewportSize: CGSize = .zero,
@@ -83,6 +98,8 @@ public struct ScoreCanvasView: View {
         followsCurrentNote: Bool = false,
         scrollFollowMargin: CGFloat = 48,
         followPlacement: ScoreCanvasFollowPlacement = .center,
+        followAnimationDuration: TimeInterval? = nil,
+        continuousFollowPlaybackDuration: TimeInterval? = nil,
         staticRenderKey: String? = nil,
         onTap: ((HitTestResult) -> Void)? = nil
     ) {
@@ -93,6 +110,8 @@ public struct ScoreCanvasView: View {
         self.currentNoteIDs = currentNoteIDs
         self.continuationNoteIDs = continuationNoteIDs
         self.followNoteIDs = followNoteIDs
+        self.nextFollowNoteIDs = nextFollowNoteIDs
+        self.continuousFollowNoteIDs = continuousFollowNoteIDs
         self.scale = max(scale, ScoreViewportTransform.minimumScale)
         self.contentOffset = contentOffset
         self.viewportSize = viewportSize
@@ -100,6 +119,8 @@ public struct ScoreCanvasView: View {
         self.followsCurrentNote = followsCurrentNote
         self.scrollFollowMargin = max(0, scrollFollowMargin)
         self.followPlacement = followPlacement
+        self.followAnimationDuration = followAnimationDuration
+        self.continuousFollowPlaybackDuration = continuousFollowPlaybackDuration
         self.staticRenderKey = staticRenderKey
         self.onTap = onTap
     }
@@ -113,6 +134,7 @@ public struct ScoreCanvasView: View {
                     ScrollView(scrollAxes) {
                         scrollableCanvasContent
                     }
+                    .defaultScrollAnchor(.topLeading)
                     .coordinateSpace(name: ScoreCanvasScrollCoordinateSpace.name)
                     .onAppear {
                         scheduleScrollToCurrentNote(with: proxy, viewportSize: effectiveViewportSize(geometry.size), force: true)
@@ -121,6 +143,12 @@ public struct ScoreCanvasView: View {
                         scheduleScrollToCurrentNote(with: proxy, viewportSize: effectiveViewportSize(geometry.size))
                     }
                     .onChange(of: followNoteIDs) { _, _ in
+                        scheduleScrollToCurrentNote(with: proxy, viewportSize: effectiveViewportSize(geometry.size))
+                    }
+                    .onChange(of: nextFollowNoteIDs) { _, _ in
+                        scheduleScrollToCurrentNote(with: proxy, viewportSize: effectiveViewportSize(geometry.size))
+                    }
+                    .onChange(of: continuousFollowNoteIDs) { _, _ in
                         scheduleScrollToCurrentNote(with: proxy, viewportSize: effectiveViewportSize(geometry.size))
                     }
                     .onChange(of: currentNoteIDs) { _, _ in
@@ -183,6 +211,9 @@ public struct ScoreCanvasView: View {
             scrollableCanvas
             measureFollowAnchors
             currentFollowAnchors
+#if canImport(UIKit)
+            scrollFollowDriver
+#endif
         }
         .frame(width: scrollableContentSize.width, height: scrollableContentSize.height)
     }
@@ -494,6 +525,33 @@ public struct ScoreCanvasView: View {
         return continuationNoteIDs.sorted { $0.rawValue < $1.rawValue }.first
     }
 
+    private var nextFollowNoteID: NoteID? {
+        guard followsCurrentNote else {
+            return nil
+        }
+        return nextFollowNoteIDs.sorted(by: { $0.rawValue < $1.rawValue }).first
+    }
+
+#if canImport(UIKit)
+    private var scrollFollowDriver: some View {
+        ScoreCanvasScrollFollowDriver(
+            layout: layout,
+            currentNoteID: currentFollowNoteID,
+            nextNoteID: nextFollowNoteID,
+            continuousNoteIDs: continuousFollowNoteIDs,
+            followAnimationDuration: followAnimationDuration,
+            continuousFollowPlaybackDuration: continuousFollowPlaybackDuration,
+            scale: scale,
+            padding: scrollContentPadding,
+            contentSize: scrollableContentSize,
+            placement: followPlacement
+        )
+        .frame(width: 1, height: 1)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+#endif
+
     private func effectiveViewportSize(_ geometrySize: CGSize) -> CGSize {
         viewportSize == .zero ? geometrySize : viewportSize
     }
@@ -503,12 +561,17 @@ public struct ScoreCanvasView: View {
         viewportSize: CGSize,
         force: Bool = false
     ) {
+#if canImport(UIKit)
+        // UIKit-backed scrolling drives exact content offsets for smooth playback follow.
+        return
+#else
         pendingScrollFollowTask?.cancel()
         pendingScrollFollowTask = Task { @MainActor in
             await Task.yield()
             guard !Task.isCancelled else { return }
             scrollToCurrentNote(with: proxy, viewportSize: viewportSize, force: force)
         }
+#endif
     }
 
     private func scrollToCurrentNote(with proxy: ScrollViewProxy, viewportSize: CGSize, force: Bool = false) {
@@ -525,6 +588,16 @@ public struct ScoreCanvasView: View {
             scale: scale,
             margin: scrollFollowMargin
         )
+        let usesSmoothHorizontalFollow = followPlacement == .horizontalSmooth
+        let movedBeyondSmoothHorizontalFollow = usesSmoothHorizontalFollow
+            ? ScoreCanvasFollowHeuristics.hasMovedBeyondSmoothHorizontalFollowDistance(
+                noteCenter: noteLayout.noteheadCenter,
+                lastFollowCenter: lastScrollFollowCenter,
+                viewportSize: viewportSize,
+                scale: scale,
+                margin: scrollFollowMargin
+            )
+            : false
         var scrollAnchor = ScoreCanvasFollowHeuristics.scrollAnchorForLayoutMovement(
             noteCenter: noteLayout.noteheadCenter,
             lastFollowCenter: lastScrollFollowCenter
@@ -540,7 +613,8 @@ public struct ScoreCanvasView: View {
                viewportSize: viewportSize,
                margin: scrollFollowMargin
            ),
-           !movedBeyondLastFollow {
+           !movedBeyondLastFollow,
+           !movedBeyondSmoothHorizontalFollow {
             return
         }
         let measuredAnchor = ScoreCanvasFollowHeuristics.scrollAnchor(
@@ -557,6 +631,15 @@ public struct ScoreCanvasView: View {
 
         lastScrollFollowCenter = noteLayout.noteheadCenter
         lastScrollFollowScale = scale
+        if usesSmoothHorizontalFollow {
+            let targetAnchor = ScoreCanvasScrollAnchor(noteID: noteID, kind: .notehead)
+            let noteAnchor = UnitPoint(x: 0.42, y: scrollAnchor.y)
+            let animation: Animation = force ? .easeInOut(duration: 0.16) : .easeInOut(duration: 0.18)
+            withAnimation(animation) {
+                proxy.scrollTo(targetAnchor, anchor: noteAnchor)
+            }
+            return
+        }
         let measureLeadingAnchor = UnitPoint(x: 0, y: scrollAnchor.y)
         let animation: Animation? = force ? .easeInOut(duration: 0.16) : nil
         if let measureID = noteLayout.measureID {
@@ -594,6 +677,327 @@ private struct ScoreCanvasScrollAnchor: Hashable {
 private struct ScoreCanvasMeasureScrollAnchor: Hashable {
     let measureID: MeasureID
 }
+
+#if canImport(UIKit)
+private struct ScoreCanvasScrollFollowDriver: UIViewRepresentable {
+    let layout: ScoreLayout
+    let currentNoteID: NoteID?
+    let nextNoteID: NoteID?
+    let continuousNoteIDs: [NoteID]
+    let followAnimationDuration: TimeInterval?
+    let continuousFollowPlaybackDuration: TimeInterval?
+    let scale: CGFloat
+    let padding: CGFloat
+    let contentSize: CGSize
+    let placement: ScoreCanvasFollowPlacement
+
+    func makeUIView(context _: Context) -> ScoreCanvasScrollFollowDriverView {
+        ScoreCanvasScrollFollowDriverView()
+    }
+
+    func updateUIView(_ uiView: ScoreCanvasScrollFollowDriverView, context _: Context) {
+        uiView.configure(
+            layout: layout,
+            currentNoteID: currentNoteID,
+            nextNoteID: nextNoteID,
+            continuousNoteIDs: continuousNoteIDs,
+            followAnimationDuration: followAnimationDuration,
+            continuousFollowPlaybackDuration: continuousFollowPlaybackDuration,
+            scale: scale,
+            padding: padding,
+            contentSize: contentSize,
+            placement: placement
+        )
+    }
+}
+
+private final class ScoreCanvasScrollFollowDriverView: UIView {
+    private struct Configuration {
+        let layout: ScoreLayout
+        let currentNoteID: NoteID?
+        let nextNoteID: NoteID?
+        let continuousNoteIDs: [NoteID]
+        let followAnimationDuration: TimeInterval?
+        let continuousFollowPlaybackDuration: TimeInterval?
+        let scale: CGFloat
+        let padding: CGFloat
+        let contentSize: CGSize
+        let placement: ScoreCanvasFollowPlacement
+    }
+
+    private var configuration: Configuration?
+    private weak var trackedScrollView: UIScrollView?
+    private var lastAppliedTarget: CGPoint?
+    private var lastAppliedNoteID: NoteID?
+    private var lastAppliedScale: CGFloat = 1
+    private var lastAppliedContentSize: CGSize = .zero
+    private var lastNoteChangeTime: TimeInterval?
+    private var smoothedNoteChangeInterval: TimeInterval?
+    private var continuousDisplayLink: CADisplayLink?
+    private var lastContinuousTick: CFTimeInterval?
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if window == nil {
+            continuousDisplayLink?.invalidate()
+            continuousDisplayLink = nil
+            lastContinuousTick = nil
+        }
+        requestFollow()
+    }
+
+    override func didMoveToSuperview() {
+        super.didMoveToSuperview()
+        requestFollow()
+    }
+
+    func configure(
+        layout: ScoreLayout,
+        currentNoteID: NoteID?,
+        nextNoteID: NoteID?,
+        continuousNoteIDs: [NoteID],
+        followAnimationDuration: TimeInterval?,
+        continuousFollowPlaybackDuration: TimeInterval?,
+        scale: CGFloat,
+        padding: CGFloat,
+        contentSize: CGSize,
+        placement: ScoreCanvasFollowPlacement
+    ) {
+        configuration = Configuration(
+            layout: layout,
+            currentNoteID: currentNoteID,
+            nextNoteID: nextNoteID,
+            continuousNoteIDs: continuousNoteIDs,
+            followAnimationDuration: followAnimationDuration,
+            continuousFollowPlaybackDuration: continuousFollowPlaybackDuration,
+            scale: scale,
+            padding: padding,
+            contentSize: contentSize,
+            placement: placement
+        )
+        updateContinuousFollowDisplayLink()
+        requestFollow()
+    }
+
+    private func requestFollow() {
+        DispatchQueue.main.async { [weak self] in
+            self?.followCurrentNoteIfNeeded()
+        }
+    }
+
+    private func followCurrentNoteIfNeeded() {
+        guard let configuration,
+              let noteID = configuration.currentNoteID,
+              let noteLayout = configuration.layout.noteLayout(for: noteID),
+              let scrollView = enclosingScrollView(),
+              scrollView.bounds.width > 0,
+              scrollView.bounds.height > 0 else {
+            return
+        }
+
+        let viewportSize = scrollView.bounds.size
+        let current = scrollView.contentOffset
+        guard !isContinuousFollowActive(configuration) else {
+            return
+        }
+        let targetNoteLayout = configuration.placement == .horizontalSmooth
+            ? (nextTargetNoteLayout(from: configuration) ?? noteLayout)
+            : noteLayout
+        let target = ScoreCanvasFollowHeuristics.targetContentOffset(
+            for: targetNoteLayout,
+            in: configuration.layout,
+            viewportSize: viewportSize,
+            contentSize: configuration.contentSize,
+            scale: configuration.scale,
+            padding: configuration.padding,
+            currentContentOffset: current,
+            placement: configuration.placement
+        )
+
+        let moved = hypot(target.x - current.x, target.y - current.y)
+        let targetChanged = lastAppliedTarget.map { hypot(target.x - $0.x, target.y - $0.y) > 0.5 } ?? true
+        let noteChanged = lastAppliedNoteID != noteID
+        let inputChanged = noteChanged
+            || lastAppliedScale != configuration.scale
+            || lastAppliedContentSize != configuration.contentSize
+        guard moved > 0.5, targetChanged || inputChanged else {
+            return
+        }
+
+        let now = ProcessInfo.processInfo.systemUptime
+        if noteChanged {
+            if let lastNoteChangeTime {
+                let interval = now - lastNoteChangeTime
+                if interval >= 0.06, interval <= 2.5 {
+                    if let smoothedNoteChangeInterval {
+                        self.smoothedNoteChangeInterval = smoothedNoteChangeInterval * 0.65 + interval * 0.35
+                    } else {
+                        smoothedNoteChangeInterval = interval
+                    }
+                }
+            }
+            lastNoteChangeTime = now
+        }
+
+        trackedScrollView = scrollView
+        lastAppliedTarget = target
+        lastAppliedNoteID = noteID
+        lastAppliedScale = configuration.scale
+        lastAppliedContentSize = configuration.contentSize
+
+        let animationDuration = resolvedAnimationDuration(for: configuration, movedDistance: moved)
+        let animationCurve: UIView.AnimationOptions = configuration.followAnimationDuration == nil
+            ? .curveEaseOut
+            : .curveLinear
+        UIView.animate(
+            withDuration: animationDuration,
+            delay: 0,
+            options: [.allowUserInteraction, .beginFromCurrentState, animationCurve]
+        ) {
+            scrollView.contentOffset = target
+        }
+    }
+
+    private func nextTargetNoteLayout(from configuration: Configuration) -> NoteLayout? {
+        guard let nextNoteID = configuration.nextNoteID,
+              nextNoteID != configuration.currentNoteID else {
+            return nil
+        }
+        return configuration.layout.noteLayout(for: nextNoteID)
+    }
+
+    private func continuousTargetNoteLayout(from configuration: Configuration, currentOffset: CGPoint, viewportSize: CGSize) -> NoteLayout? {
+        let layouts = configuration.continuousNoteIDs.compactMap { configuration.layout.noteLayout(for: $0) }
+        guard !layouts.isEmpty else {
+            return nextTargetNoteLayout(from: configuration)
+        }
+        if configuration.placement == .horizontalSmooth {
+            let targetMinimumX = currentOffset.x + viewportSize.width * 0.6
+            return layouts.last(where: {
+                ScoreCanvasFollowHeuristics.targetContentOffset(
+                    for: $0,
+                    in: configuration.layout,
+                    viewportSize: viewportSize,
+                    contentSize: configuration.contentSize,
+                    scale: configuration.scale,
+                    padding: configuration.padding,
+                    currentContentOffset: currentOffset,
+                    placement: configuration.placement
+                ).x >= targetMinimumX
+            }) ?? layouts.last
+        }
+        return layouts.first
+    }
+
+    private func resolvedAnimationDuration(for configuration: Configuration, movedDistance: CGFloat) -> TimeInterval {
+        if configuration.followAnimationDuration != nil {
+            return ScoreCanvasFollowHeuristics.continuousFollowAnimationDuration(distance: movedDistance)
+        }
+        if configuration.placement == .horizontalSmooth {
+            return ScoreCanvasFollowHeuristics.horizontalSmoothAnimationDuration(noteInterval: smoothedNoteChangeInterval)
+        }
+        return 0.22
+    }
+
+    private func isContinuousFollowActive(_ configuration: Configuration) -> Bool {
+        guard configuration.followAnimationDuration != nil,
+              configuration.continuousFollowPlaybackDuration != nil,
+              configuration.currentNoteID != nil else {
+            return false
+        }
+        return true
+    }
+
+    private func updateContinuousFollowDisplayLink() {
+        guard let configuration, isContinuousFollowActive(configuration) else {
+            continuousDisplayLink?.invalidate()
+            continuousDisplayLink = nil
+            lastContinuousTick = nil
+            return
+        }
+        guard continuousDisplayLink == nil else {
+            return
+        }
+        let displayLink = CADisplayLink(target: self, selector: #selector(handleContinuousFollowTick(_:)))
+        displayLink.add(to: .main, forMode: .common)
+        continuousDisplayLink = displayLink
+        lastContinuousTick = nil
+    }
+
+    @objc private func handleContinuousFollowTick(_ displayLink: CADisplayLink) {
+        guard let configuration,
+              isContinuousFollowActive(configuration),
+              let scrollView = enclosingScrollView(),
+              scrollView.bounds.width > 0,
+              scrollView.bounds.height > 0,
+              let targetNoteLayout = continuousTargetNoteLayout(
+                from: configuration,
+                currentOffset: scrollView.contentOffset,
+                viewportSize: scrollView.bounds.size
+              ) else {
+            updateContinuousFollowDisplayLink()
+            return
+        }
+
+        let timestamp = displayLink.timestamp
+        let previousTimestamp = lastContinuousTick ?? timestamp
+        lastContinuousTick = timestamp
+        let deltaTime = min(max(timestamp - previousTimestamp, 0), 0.08)
+        guard deltaTime > 0 else {
+            return
+        }
+
+        let viewportSize = scrollView.bounds.size
+        let current = scrollView.contentOffset
+        let target = ScoreCanvasFollowHeuristics.targetContentOffset(
+            for: targetNoteLayout,
+            in: configuration.layout,
+            viewportSize: viewportSize,
+            contentSize: configuration.contentSize,
+            scale: configuration.scale,
+            padding: configuration.padding,
+            currentContentOffset: current,
+            placement: configuration.placement
+        )
+        let speed = ScoreCanvasFollowHeuristics.continuousFollowSpeed(
+            contentSize: configuration.contentSize,
+            viewportSize: viewportSize,
+            playbackDuration: configuration.continuousFollowPlaybackDuration
+        )
+        guard speed > 0 else {
+            return
+        }
+
+        let vector = CGPoint(x: target.x - current.x, y: target.y - current.y)
+        let distance = hypot(vector.x, vector.y)
+        guard distance > 0.5 else {
+            return
+        }
+
+        let step = min(distance, speed * CGFloat(deltaTime))
+        let nextOffset = CGPoint(
+            x: current.x + vector.x / distance * step,
+            y: current.y + vector.y / distance * step
+        )
+        scrollView.setContentOffset(nextOffset, animated: false)
+    }
+
+    private func enclosingScrollView() -> UIScrollView? {
+        if let trackedScrollView {
+            return trackedScrollView
+        }
+        var view: UIView? = self
+        while let current = view?.superview {
+            if let scrollView = current as? UIScrollView {
+                trackedScrollView = scrollView
+                return scrollView
+            }
+            view = current
+        }
+        return nil
+    }
+}
+#endif
 
 private enum ScoreCanvasScrollCoordinateSpace {
     static let name = "DoReMiRendererKit.ScoreCanvasView.scroll"
@@ -919,6 +1323,97 @@ struct ScoreCanvasFollowHeuristics {
         return UnitPoint(x: x, y: y)
     }
 
+    static func targetContentOffset(
+        for noteLayout: NoteLayout,
+        in layout: ScoreLayout,
+        viewportSize: CGSize,
+        contentSize: CGSize,
+        scale: CGFloat,
+        padding: CGFloat,
+        currentContentOffset: CGPoint = .zero,
+        placement: ScoreCanvasFollowPlacement
+    ) -> CGPoint {
+        guard viewportSize.width > 0, viewportSize.height > 0 else {
+            return .zero
+        }
+
+        let effectiveScale = max(scale, ScoreViewportTransform.minimumScale)
+        let noteFrame = frame(for: noteLayout, scale: effectiveScale, padding: padding)
+        let maxOffset = CGPoint(
+            x: max(0, contentSize.width - viewportSize.width),
+            y: max(0, contentSize.height - viewportSize.height)
+        )
+
+        let rawOffset: CGPoint
+        switch placement {
+        case .horizontalSmooth:
+            rawOffset = CGPoint(
+                x: noteFrame.midX - viewportSize.width * 0.42,
+                y: currentContentOffset.y
+            )
+        case .topAligned:
+            let layoutY: CGFloat
+            if let measureID = noteLayout.measureID,
+               let measure = layout.measures.first(where: { $0.measureID == measureID }) {
+                layoutY = measureTopY(for: measure, in: layout)
+            } else {
+                layoutY = noteLayout.noteheadFrame.minY
+            }
+            rawOffset = CGPoint(
+                x: noteFrame.midX - viewportSize.width * 0.5,
+                y: padding + layoutY * effectiveScale - viewportSize.height * 0.12
+            )
+        case .center:
+            rawOffset = CGPoint(
+                x: noteFrame.midX - viewportSize.width * 0.5,
+                y: noteFrame.midY - viewportSize.height * 0.5
+            )
+        }
+
+        if placement == .horizontalSmooth {
+            return CGPoint(
+                x: rawOffset.x.clamped(to: 0...maxOffset.x),
+                y: rawOffset.y
+            )
+        }
+        return CGPoint(
+            x: rawOffset.x.clamped(to: 0...maxOffset.x),
+            y: rawOffset.y.clamped(to: 0...maxOffset.y)
+        )
+    }
+
+    static func horizontalSmoothAnimationDuration(noteInterval: TimeInterval?) -> TimeInterval {
+        let interval = noteInterval ?? 0.36
+        return (interval * 0.95).clamped(to: 0.16...1.1)
+    }
+
+    static func continuousFollowAnimationDuration(distance: CGFloat) -> TimeInterval {
+        let pointsPerSecond: CGFloat = 220
+        guard distance.isFinite, distance > 0, pointsPerSecond > 0 else {
+            return horizontalSmoothAnimationDuration(noteInterval: nil)
+        }
+        return TimeInterval(distance / pointsPerSecond).clamped(to: 0.22...5.5)
+    }
+
+    static func continuousFollowSpeed(
+        contentSize: CGSize,
+        viewportSize: CGSize,
+        playbackDuration: TimeInterval?
+    ) -> CGFloat {
+        guard let playbackDuration,
+              playbackDuration.isFinite,
+              playbackDuration > 0,
+              contentSize.width.isFinite,
+              viewportSize.width.isFinite else {
+            return 0
+        }
+        let scrollableWidth = max(0, contentSize.width - viewportSize.width)
+        guard scrollableWidth > 0 else {
+            return 0
+        }
+        return (scrollableWidth / CGFloat(playbackDuration)).clamped(to: 36...220)
+    }
+
     static func resolvedScrollAnchor(
         measuredAnchor: UnitPoint,
         movementAnchor: UnitPoint,
@@ -927,7 +1422,7 @@ struct ScoreCanvasFollowHeuristics {
     ) -> UnitPoint {
         let resolvedAnchor = measuredAnchor == .center && movedBeyondLastFollow ? movementAnchor : measuredAnchor
         switch placement {
-        case .center:
+        case .center, .horizontalSmooth:
             return resolvedAnchor
         case .topAligned:
             return UnitPoint(x: resolvedAnchor.x, y: 0.12)
@@ -953,6 +1448,24 @@ struct ScoreCanvasFollowHeuristics {
         let horizontalThreshold = max(safeMargin * 2, viewportSize.width * 0.42)
         let verticalThreshold = max(safeMargin * 2, viewportSize.height * 0.42)
         return dx > horizontalThreshold || dy > verticalThreshold
+    }
+
+    static func hasMovedBeyondSmoothHorizontalFollowDistance(
+        noteCenter: CGPoint,
+        lastFollowCenter: CGPoint?,
+        viewportSize: CGSize,
+        scale: CGFloat,
+        margin: CGFloat
+    ) -> Bool {
+        guard let lastFollowCenter,
+              viewportSize.width > 0 else {
+            return true
+        }
+        let effectiveScale = max(scale, ScoreViewportTransform.minimumScale)
+        let dx = abs(noteCenter.x - lastFollowCenter.x) * effectiveScale
+        let safeMargin = max(margin, 0)
+        let horizontalThreshold = max(40, min(viewportSize.width * 0.18, safeMargin * 1.5))
+        return dx > horizontalThreshold
     }
 
     static func scrollAnchorForLayoutMovement(noteCenter: CGPoint, lastFollowCenter: CGPoint?) -> UnitPoint {
@@ -1086,5 +1599,11 @@ private extension Color {
             blue: scoreColor.blue,
             opacity: scoreColor.alpha
         )
+    }
+}
+
+private extension Comparable {
+    func clamped(to range: ClosedRange<Self>) -> Self {
+        min(max(self, range.lowerBound), range.upperBound)
     }
 }

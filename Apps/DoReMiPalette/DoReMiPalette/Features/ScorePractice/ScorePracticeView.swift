@@ -652,6 +652,7 @@ struct ScorePracticeView: View {
             VStack(spacing: 0) {
                 GeometryReader { proxy in
                     let scoreScale = fittedScoreScale(for: loaded, viewportWidth: proxy.size.width)
+                    let usesSmoothPlaybackFollow = loaded.layoutMode == .horizontal
                     ZStack(alignment: .topLeading) {
                         ScoreCanvasView(
                             layout: loaded.layout,
@@ -667,13 +668,20 @@ struct ScorePracticeView: View {
                             currentNoteIDs: highlight.attackNoteIDs,
                             continuationNoteIDs: highlight.continuationNoteIDs,
                             followNoteIDs: session.currentNoteIDs,
+                            nextFollowNoteIDs: session.nextFollowNoteIDs,
+                            continuousFollowNoteIDs: usesSmoothPlaybackFollow ? session.continuousFollowNoteIDs : [],
                             scale: CGFloat(scoreScale),
                             scrollAxes: [.horizontal, .vertical],
                             followsCurrentNote: currentNoteDisplayVisible,
-                            followPlacement: loaded.layoutMode == .a4 ? .topAligned : .center,
+                            followPlacement: usesSmoothPlaybackFollow ? .horizontalSmooth : .topAligned,
+                            followAnimationDuration: usesSmoothPlaybackFollow ? session.currentFollowAnimationDuration : nil,
+                            continuousFollowPlaybackDuration: usesSmoothPlaybackFollow ? session.continuousFollowPlaybackDuration : nil,
                             staticRenderKey: scoreStaticRenderKey,
                             onTap: session.handleTap
                         )
+                        if loaded.layoutMode == .horizontal {
+                            horizontalScoreTitle(loaded.displayName)
+                        }
                         firstBeatOnboardingAnchor(for: loaded, scale: scoreScale)
                     }
                     .simultaneousGesture(pinchZoomGesture)
@@ -713,6 +721,34 @@ struct ScorePracticeView: View {
                 description: Text(session.errorMessage ?? "Sample Reload または 読み込み を試してください。")
             )
         }
+    }
+
+    @ViewBuilder
+    private func horizontalScoreTitle(_ title: String) -> some View {
+        Text(title)
+            .font(.custom(horizontalScoreTitleFontName(for: title), size: horizontalScoreTitleFontSize()))
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 6)
+            .background(.regularMaterial, in: Capsule())
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.top, 6)
+            .allowsHitTesting(false)
+    }
+
+    private func horizontalScoreTitleFontSize() -> CGFloat {
+        46
+    }
+
+    private func horizontalScoreTitleFontName(for title: String) -> String {
+        let usesJapaneseScript = title.unicodeScalars.contains { scalar in
+            let value = scalar.value
+            return (0x3040...0x30FF).contains(value)
+                || (0x3400...0x9FFF).contains(value)
+                || (0xF900...0xFAFF).contains(value)
+        }
+        return usesJapaneseScript ? "HiraginoMincho-W6" : "TimesNewRomanPS-BoldMT"
     }
 
     @ViewBuilder

@@ -63,6 +63,39 @@ final class PaletteScoreSession: ObservableObject {
         practiceSession.isEnabled ? practiceSession.currentEvent : playbackCursor.currentEvent
     }
 
+    var nextFollowNoteIDs: Set<NoteID> {
+        let event = practiceSession.isEnabled ? practiceSession.nextPitchedEvent : playbackCursor.nextPitchedEvent
+        return Set(event?.noteIDs ?? [])
+    }
+
+    var continuousFollowNoteIDs: [NoteID] {
+        guard playbackState == .playing,
+              !practiceSession.isEnabled else {
+            return []
+        }
+        return playbackCursor
+            .upcomingPitchedEvents(limit: 16)
+            .flatMap(\.noteIDs)
+    }
+
+    var currentFollowAnimationDuration: TimeInterval? {
+        guard playbackState == .playing,
+              !practiceSession.isEnabled,
+              let event = playbackCursor.currentEvent else {
+            return nil
+        }
+        return playbackRuntime.eventDurationSeconds(for: event)
+    }
+
+    var continuousFollowPlaybackDuration: TimeInterval? {
+        guard playbackState == .playing,
+              !practiceSession.isEnabled else {
+            return nil
+        }
+        let duration = playbackRuntime.totalSchedulingDurationSeconds()
+        return duration.isFinite && duration > 0 ? duration : nil
+    }
+
     var totalMeasureCount: Int {
         loadedScore?.score.parts.first?.measures.count ?? 0
     }
