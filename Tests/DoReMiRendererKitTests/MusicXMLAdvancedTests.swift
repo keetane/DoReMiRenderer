@@ -287,6 +287,33 @@ import Testing
     #expect(measures[4].playbackJumpMarkers.contains { $0.kind == .daCapoAlFine })
 }
 
+@Test func parserRetainsSymbolicSegnoAndCodaAndExpandsDalSegnoAlCoda() throws {
+    let result = try MusicXMLParser().parse(data: Data(symbolicDalSegnoCodaXML.utf8))
+    let measures = try #require(result.score.parts.first?.measures)
+
+    #expect(measures[0].playbackJumpMarkers.contains { $0.kind == .segno })
+    #expect(measures[1].playbackJumpMarkers.contains { $0.kind == .toCoda })
+    #expect(measures[2].playbackJumpMarkers.contains { $0.kind == .dalSegnoAlCoda })
+    #expect(measures[3].playbackJumpMarkers.contains { $0.kind == .coda })
+    #expect(!result.diagnostics.contains { $0.code == "unsupported.segno" || $0.code == "unsupported.coda" })
+
+    let layout = try ScoreLayoutEngine().layout(score: result.score)
+    let jumpMarkerKinds = Set(layout.elements.compactMap { $0.playbackJumpMarker?.marker.kind })
+    #expect(jumpMarkerKinds.isSuperset(of: [.segno, .toCoda, .dalSegnoAlCoda, .coda]))
+
+    let builder = PlaybackSequenceBuilder()
+    let events = builder.build(score: result.score)
+    let metadata = builder.metadata(score: result.score)
+
+    #expect(events.map(\.measureID.rawValue) == ["0.1", "0.2", "0.3", "0.1", "0.2", "0.4", "0.5"])
+    #expect(!metadata.diagnostics.contains { diagnostic in
+        diagnostic.code == "jump.dsSegnoMissing"
+            || diagnostic.code == "jump.toCodaMissing"
+            || diagnostic.code == "jump.codaMissing"
+            || diagnostic.code == "jump.codaUnsupported"
+    })
+}
+
 @Test func parserRetainsOneBarMeasureRepeatMetadata() throws {
     let result = try MusicXMLParser().parse(data: Data(measureRepeatXML.utf8))
     let measure = try #require(result.score.parts.first?.measures.first)
@@ -643,6 +670,38 @@ private let dynamicCollisionXML = """
       </attributes>
       <direction placement="below"><direction-type><dynamics><mf/></dynamics></direction-type><staff>1</staff></direction>
       <note><pitch><step>A</step><octave>3</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>
+    </measure>
+  </part>
+</score-partwise>
+"""
+
+private let symbolicDalSegnoCodaXML = """
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Symbolic D.S. Coda</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes>
+        <divisions>4</divisions>
+        <time><beats>4</beats><beat-type>4</beat-type></time>
+        <clef><sign>G</sign><line>2</line></clef>
+      </attributes>
+      <direction placement="above"><direction-type><segno/></direction-type></direction>
+      <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type></note>
+    </measure>
+    <measure number="2">
+      <direction placement="above"><direction-type><words>To 𝄌</words></direction-type></direction>
+      <note><pitch><step>D</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type></note>
+    </measure>
+    <measure number="3">
+      <direction placement="above"><direction-type><words>Dal Segno al Coda</words></direction-type></direction>
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type></note>
+    </measure>
+    <measure number="4">
+      <direction placement="above"><direction-type><coda/></direction-type></direction>
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type></note>
+    </measure>
+    <measure number="5">
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type></note>
     </measure>
   </part>
 </score-partwise>

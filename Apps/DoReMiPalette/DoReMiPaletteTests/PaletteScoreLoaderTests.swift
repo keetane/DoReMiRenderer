@@ -50,6 +50,16 @@ struct PaletteScoreLoaderTests {
         #expect(loaded.a4Layout.title?.text == "Ode to Joy Easy Variation")
     }
 
+    @Test func printPageLayoutKeepsA4WidthAndSplitsTallScores() {
+        let pageSize = PalettePrintPageLayout.pageSize(forContentWidth: 595)
+
+        #expect(abs(pageSize.width - 595) < 0.001)
+        #expect(abs(pageSize.height - 842) < 0.001)
+        #expect(PalettePrintPageLayout.pageCount(forContentHeight: 841, pageHeight: pageSize.height) == 1)
+        #expect(PalettePrintPageLayout.pageCount(forContentHeight: 843, pageHeight: pageSize.height) == 2)
+        #expect(PalettePrintPageLayout.contentOffsetY(forPageIndex: 2, pageHeight: pageSize.height) == 1684)
+    }
+
     @Test func parseFailureThrows() {
         #expect(throws: Error.self) {
             _ = try PaletteScoreLoader().load(data: Data("<score-partwise>".utf8), sourceName: "broken.musicxml")
@@ -241,10 +251,95 @@ struct PaletteScoreLoaderTests {
         let repeatEnd = try #require(loaded.a4Layout.elements.first {
             $0.measureID == measure8ID && $0.kind == .barline && $0.repeatBarline?.direction == .backward
         })
+        let horizontalRepeatEnd = try #require(loaded.horizontalLayout.elements.first {
+            $0.measureID == measure8ID && $0.kind == .barline && $0.repeatBarline?.direction == .backward
+        })
+        let playbackMeasureIDs = loaded.playbackEvents.map(\.measureID.rawValue)
 
         #expect(repeatEnd.frame.width >= 18)
+        #expect(horizontalRepeatEnd.frame.width >= 18)
         #expect(!loaded.a4Layout.elements.contains {
             $0.id.rawValue == "\(measure8ID.rawValue).barline.right"
+        })
+        #expect(playbackMeasureIDs.filter { $0 == "0.1" }.count > 1)
+        #expect(playbackMeasureIDs.filter { $0 == "0.8" }.count > 1)
+        #expect(playbackMeasureIDs.contains("0.9"))
+    }
+
+    @Test func beautyAndBeastRepeatBarlinesDisplayAndPlaybackExpand() throws {
+        let loaded = try PaletteScoreLoader().load(
+            data: Self.appSampleData("Beauty_and_the_Beast.mxl"),
+            sourceName: "Beauty_and_the_Beast.mxl",
+            displayTitle: "美女と野獣"
+        )
+        let repeatStartID = MeasureID(partIndex: 0, measureNumber: "29")
+        let repeatEndID = MeasureID(partIndex: 0, measureNumber: "39")
+
+        let a4RepeatStart = try #require(loaded.a4Layout.elements.first {
+            $0.measureID == repeatStartID && $0.kind == .barline && $0.repeatBarline?.direction == .forward
+        })
+        let a4RepeatEnd = try #require(loaded.a4Layout.elements.first {
+            $0.measureID == repeatEndID && $0.kind == .barline && $0.repeatBarline?.direction == .backward
+        })
+        let horizontalRepeatStart = try #require(loaded.horizontalLayout.elements.first {
+            $0.measureID == repeatStartID && $0.kind == .barline && $0.repeatBarline?.direction == .forward
+        })
+        let horizontalRepeatEnd = try #require(loaded.horizontalLayout.elements.first {
+            $0.measureID == repeatEndID && $0.kind == .barline && $0.repeatBarline?.direction == .backward
+        })
+        let playbackMeasureIDs = loaded.playbackEvents.map(\.measureID.rawValue)
+
+        #expect(a4RepeatStart.frame.width >= 18)
+        #expect(a4RepeatEnd.frame.width >= 18)
+        #expect(horizontalRepeatStart.frame.width >= 18)
+        #expect(horizontalRepeatEnd.frame.width >= 18)
+        #expect(!loaded.a4Layout.elements.contains {
+            $0.id.rawValue == "\(repeatStartID.rawValue).barline.leftStyle"
+        })
+        #expect(playbackMeasureIDs.filter { $0 == "0.29" }.count > 1)
+        #expect(playbackMeasureIDs.filter { $0 == "0.39" }.count > 1)
+    }
+
+    @Test func dsCodaBehaviorSampleDisplaysMarkersAndExpandsPlayback() throws {
+        let loaded = try PaletteScoreLoader().load(
+            data: Self.appSampleData("ds_coda_behavior_sample.musicxml"),
+            sourceName: "ds_coda_behavior_sample.musicxml",
+            displayTitle: "D.S. / Coda Behavior Sample"
+        )
+        let markerKinds = Set(loaded.a4Layout.elements.compactMap {
+            $0.playbackJumpMarker?.marker.kind
+        })
+        let playbackMeasureRun = loaded.playbackEvents
+            .map(\.measureID.rawValue)
+            .reduce(into: [String]()) { runs, measureID in
+                if runs.last != measureID {
+                    runs.append(measureID)
+                }
+            }
+
+        #expect(markerKinds.isSuperset(of: [
+            .segno,
+            .toCoda,
+            .dalSegnoAlCoda,
+            .coda,
+        ]))
+        #expect(playbackMeasureRun == [
+            "0.1",
+            "0.2",
+            "0.3",
+            "0.4",
+            "0.1",
+            "0.2",
+            "0.3",
+            "0.5",
+            "0.6",
+            "0.7",
+        ])
+        #expect(!loaded.diagnostics.contains { diagnostic in
+            diagnostic.code == "jump.dsSegnoMissing"
+                || diagnostic.code == "jump.toCodaMissing"
+                || diagnostic.code == "jump.codaMissing"
+                || diagnostic.code == "jump.codaUnsupported"
         })
     }
 
@@ -405,6 +500,7 @@ struct PaletteScoreLoaderTests {
         #expect(OnboardingGuideStep.allCases == [
             .settingsButton,
             .settingsDisplayOptions,
+            .settingsLayoutOptions,
             .currentNoteAndKeyboard,
             .measureJump,
             .nextPrevious,
@@ -417,11 +513,14 @@ struct PaletteScoreLoaderTests {
             .playPracticePrompt
         ])
         #expect(OnboardingGuideStep.settingsButton.next == .settingsDisplayOptions)
+        #expect(OnboardingGuideStep.settingsDisplayOptions.next == .settingsLayoutOptions)
+        #expect(OnboardingGuideStep.settingsLayoutOptions.previous == .settingsDisplayOptions)
         #expect(OnboardingGuideStep.keyAndTranspose.next == .paletteButton)
         #expect(OnboardingGuideStep.keyAndTranspose.previous == .playStop)
         #expect(OnboardingGuideStep.playPracticePrompt.next == nil)
         #expect(OnboardingGuideStep.playPracticePrompt.previous == .paletteKeyButton)
         #expect(OnboardingGuideStep.settingsDisplayOptions.anchorID == .settingsDisplayOptions)
+        #expect(OnboardingGuideStep.settingsLayoutOptions.anchorID == .settingsLayoutOptions)
         #expect(OnboardingGuideStep.currentNoteAndKeyboard.anchorID == .firstBeatNote)
         #expect(OnboardingGuideStep.measureJump.anchorID == .measureDisplay)
         #expect(OnboardingGuideStep.paletteButton.anchorID == .paletteButton)
@@ -885,16 +984,18 @@ struct PaletteScoreLoaderTests {
             "Fur_Elise_-_Beethoven_-_for_beginner_piano",
             "articulation_dynamics_coverage_sample",
             "Beauty_and_the_Beast",
+            "ds_coda_behavior_sample",
         ])
 
-        #expect(catalog.samples.count == 4)
+        #expect(catalog.samples.count == 5)
         #expect(catalog.samples.map(\.resourceName) == [
             "Ode_to_Joy_Easy_variation",
             "Fur_Elise_-_Beethoven_-_for_beginner_piano",
             "articulation_dynamics_coverage_sample",
             "Beauty_and_the_Beast",
+            "ds_coda_behavior_sample",
         ])
-        #expect(catalog.samples.map(\.fileExtension) == ["mxl", "mxl", "musicxml", "musicxml"])
+        #expect(catalog.samples.map(\.fileExtension) == ["mxl", "mxl", "musicxml", "musicxml", "musicxml"])
         #expect(bundledSampleNames.isSubset(of: Set(catalog.samples.map(\.resourceName))))
     }
 

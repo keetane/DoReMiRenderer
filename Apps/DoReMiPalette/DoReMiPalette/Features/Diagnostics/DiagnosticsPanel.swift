@@ -3,6 +3,7 @@ import SwiftUI
 
 struct DiagnosticsPanel: View {
     let diagnostics: [RendererDiagnostic]
+    let context: DiagnosticsScoreContext?
     @Environment(\.dismiss) private var dismiss
     private var presentation: DiagnosticsPresentation {
         DiagnosticsPresentation(diagnostics: diagnostics)
@@ -11,6 +12,11 @@ struct DiagnosticsPanel: View {
     var body: some View {
         NavigationStack {
             List {
+                if let context {
+                    Section("譜面情報") {
+                        DiagnosticsContextGrid(context: context)
+                    }
+                }
                 if diagnostics.isEmpty {
                     ContentUnavailableView(
                         "問題は検出されませんでした",
@@ -37,6 +43,44 @@ struct DiagnosticsPanel: View {
                     }
                 }
             }
+        }
+    }
+}
+
+struct DiagnosticsScoreContext: Equatable {
+    let title: String
+    let sourceName: String
+    let partCount: Int
+    let measureCount: Int
+    let noteCount: Int
+    let playbackEventCount: Int
+    let layoutMode: String
+    let canvasSize: CGSize
+    let tempoBPM: Double
+}
+
+private struct DiagnosticsContextGrid: View {
+    let context: DiagnosticsScoreContext
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            contextRow("曲名", context.title)
+            contextRow("ファイル", context.sourceName)
+            contextRow("構成", "\(context.partCount) part / \(context.measureCount) measures / \(context.noteCount) notes")
+            contextRow("再生", "\(context.playbackEventCount) events / \(Int(context.tempoBPM.rounded())) BPM")
+            contextRow("表示", "\(context.layoutMode) / \(Int(context.canvasSize.width.rounded())) x \(Int(context.canvasSize.height.rounded())) pt")
+        }
+        .font(.callout)
+        .textSelection(.enabled)
+    }
+
+    private func contextRow(_ label: String, _ value: String) -> some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(label)
+                .foregroundStyle(.secondary)
+                .frame(width: 52, alignment: .leading)
+            Text(value)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }
@@ -111,7 +155,13 @@ struct DiagnosticsPresentation {
             return "この譜面には未対応の記譜があります。表示や再生ステップの一部が簡略化される可能性があります。"
         }
         if diagnostic.code.hasPrefix("repeat.") {
-            return "リピート情報を検出しました。MVPではリピート展開は行いません。"
+            return "リピート情報を検出しました。複雑な反復やジャンプは簡略化される可能性があります。"
+        }
+        if diagnostic.code.hasPrefix("layout.") {
+            return "この譜面では一部の記号配置を簡略化しています。表示が重なる場合はA4/横一列の切り替えを試してください。"
+        }
+        if diagnostic.code.hasPrefix("musicxml.") {
+            return "MusicXML内に、このアプリで完全対応していない情報があります。読み込み自体は継続しています。"
         }
         return diagnostic.message
     }

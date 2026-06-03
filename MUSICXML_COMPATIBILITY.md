@@ -84,8 +84,10 @@ S7/S8/S9 repeat playback and visual MVP support:
 - Fallback: a backward repeat without a start repeats from the beginning and
   emits `repeat.startMissingFallback`.
 - Diagnostic-only: unmatched starts, nested repeats, repeat counts outside the
-  MVP two-pass behavior, third endings, ambiguous endings, D.S./Segno/Coda/To
-  Coda, and complex jumps.
+  MVP two-pass behavior, third endings, ambiguous endings, mixed repeat/jump
+  structures, and complex jumps. Clear D.C./D.S./Fine/Coda jump-only scores,
+  including symbolic MusicXML `<segno/>` / `<coda/>`, are supported by the
+  Phase S10 playback/layout path.
 
 ### 11F-5 Complex MusicXML Diagnostics
 

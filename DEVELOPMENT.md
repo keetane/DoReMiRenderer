@@ -76,6 +76,11 @@ swift run DoReMiRendererDiagnostics \
 If `LocalSamples/` is missing, the command writes a skipped report and exits
 successfully.
 
+DoReMi Palette's in-app Diagnostics sheet includes the loaded score source,
+part/measure/note counts, playback event count, layout mode, canvas size, and
+current BPM. Use it as the first manual triage point before exporting local
+compatibility reports.
+
 Phase 11F fixtures must be self-authored. If a private sample exposes a missing
 MusicXML feature, create a small synthetic fixture that reproduces only that
 feature; do not copy measures from the private score into tests.

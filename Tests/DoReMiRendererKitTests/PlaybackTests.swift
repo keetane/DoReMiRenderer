@@ -428,6 +428,28 @@ import Testing
     #expect(!metadata.diagnostics.contains { $0.code == "repeat.countUnsupported" })
 }
 
+@Test func playbackUsesRepeatStructureFromNonPrimaryPart() {
+    let score = ScoreDocument(parts: [
+        ScorePart(id: "right", measures: [
+            repeatPlaybackMeasure(index: 0, id: "right-m1"),
+            repeatPlaybackMeasure(index: 1, id: "right-m2"),
+            repeatPlaybackMeasure(index: 2, id: "right-m3"),
+        ]),
+        ScorePart(id: "left", measures: [
+            repeatPlaybackMeasure(index: 0, id: "left-m1", repeatBarlines: [RepeatBarline(direction: .forward)]),
+            repeatPlaybackMeasure(index: 1, id: "left-m2", repeatBarlines: [RepeatBarline(direction: .backward)]),
+            repeatPlaybackMeasure(index: 2, id: "left-m3"),
+        ]),
+    ])
+
+    let events = PlaybackSequenceBuilder().build(score: score)
+
+    #expect(events.map(\.measureID.rawValue) == ["0.1", "0.2", "0.1", "0.2", "0.3"])
+    #expect(events.filter { $0.noteIDs.contains(NoteID(rawValue: "right-m1")) }.count == 2)
+    #expect(events.filter { $0.noteIDs.contains(NoteID(rawValue: "right-m2")) }.count == 2)
+    #expect(events.filter { $0.noteIDs.contains(NoteID(rawValue: "right-m3")) }.count == 1)
+}
+
 @Test func playbackNestedRepeatEmitsDiagnostic() {
     let score = repeatPlaybackScore(measureRepeatBarlines: [
         [RepeatBarline(direction: .forward)],
@@ -693,18 +715,9 @@ private func repeatPlaybackScore(
     measureJumpMarkers: [[PlaybackJumpMarker]]? = nil
 ) -> ScoreDocument {
     let measures = measureRepeatBarlines.enumerated().map { index, repeatBarlines in
-        let measureNumber = "\(index + 1)"
-        return Measure(
-            id: MeasureID(partIndex: 0, measureNumber: measureNumber),
-            number: measureNumber,
-            notes: [
-                playbackNote(
-                    id: "m\(measureNumber)",
-                    pitch: Pitch(step: .c, octave: 4 + index % 2),
-                    onsetTicks: 0
-                ),
-            ],
-            clef: Clef(kind: .treble),
+        repeatPlaybackMeasure(
+            index: index,
+            id: "m\(index + 1)",
             repeatBarlines: repeatBarlines,
             repeatEndings: measureRepeatEndings?[index] ?? [],
             playbackJumpMarkers: measureJumpMarkers?[index] ?? []
@@ -713,6 +726,31 @@ private func repeatPlaybackScore(
     return ScoreDocument(parts: [
         ScorePart(id: "p1", measures: measures),
     ])
+}
+
+private func repeatPlaybackMeasure(
+    index: Int,
+    id: String,
+    repeatBarlines: [RepeatBarline] = [],
+    repeatEndings: [RepeatEnding] = [],
+    playbackJumpMarkers: [PlaybackJumpMarker] = []
+) -> Measure {
+    let measureNumber = "\(index + 1)"
+    return Measure(
+        id: MeasureID(partIndex: 0, measureNumber: measureNumber),
+        number: measureNumber,
+        notes: [
+            playbackNote(
+                id: id,
+                pitch: Pitch(step: .c, octave: 4 + index % 2),
+                onsetTicks: 0
+            ),
+        ],
+        clef: Clef(kind: .treble),
+        repeatBarlines: repeatBarlines,
+        repeatEndings: repeatEndings,
+        playbackJumpMarkers: playbackJumpMarkers
+    )
 }
 
 private func playbackNote(

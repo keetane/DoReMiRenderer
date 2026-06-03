@@ -1104,6 +1104,47 @@ import Testing
     #expect(time.frame.maxX < firstNote.noteheadFrame.minX)
 }
 
+@Test func layoutUsesRepeatStructureFromNonPrimaryPart() throws {
+    let staffID = StaffID(rawValue: "1")
+    let score = ScoreDocument(parts: [
+        ScorePart(id: "right", measures: [
+            Measure(
+                id: MeasureID(partIndex: 0, measureNumber: "1"),
+                number: "1",
+                notes: [makeNote(id: "right-m1", pitch: Pitch(step: .c, octave: 5), onsetTicks: 0, staffID: staffID)],
+                clef: Clef(kind: .treble)
+            ),
+            Measure(
+                id: MeasureID(partIndex: 0, measureNumber: "2"),
+                number: "2",
+                notes: [makeNote(id: "right-m2", pitch: Pitch(step: .d, octave: 5), onsetTicks: 0, staffID: staffID)],
+                clef: Clef(kind: .treble)
+            ),
+        ]),
+        ScorePart(id: "left", measures: [
+            Measure(
+                id: MeasureID(partIndex: 1, measureNumber: "1"),
+                number: "1",
+                notes: [makeNote(id: "left-m1", pitch: Pitch(step: .c, octave: 3), onsetTicks: 0, staffID: staffID)],
+                clef: Clef(kind: .bass),
+                repeatBarlines: [RepeatBarline(direction: .forward)]
+            ),
+            Measure(
+                id: MeasureID(partIndex: 1, measureNumber: "2"),
+                number: "2",
+                notes: [makeNote(id: "left-m2", pitch: Pitch(step: .d, octave: 3), onsetTicks: 0, staffID: staffID)],
+                clef: Clef(kind: .bass),
+                repeatBarlines: [RepeatBarline(direction: .backward)]
+            ),
+        ]),
+    ])
+
+    let layout = try ScoreLayoutEngine().layout(score: score)
+
+    #expect(layout.elements.contains { $0.kind == .barline && $0.measureID?.rawValue == "0.1" && $0.repeatBarline?.direction == .forward })
+    #expect(layout.elements.contains { $0.kind == .barline && $0.measureID?.rawValue == "0.2" && $0.repeatBarline?.direction == .backward })
+}
+
 @Test func prefixOrderPlacesKeySignatureBeforeTimeSignatureWithoutOverlap() throws {
     let measureID = MeasureID(partIndex: 0, measureNumber: "1")
     let score = ScoreDocument(parts: [

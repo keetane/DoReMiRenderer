@@ -154,6 +154,23 @@
 - Redistribution outside this repository: governed by the repository `LICENSE`
   unless a separate written permission is provided.
 
+## DoReMi Palette D.S. / Coda Behavior Sample
+
+`Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/ds_coda_behavior_sample.musicxml`
+
+- Origin: Original short MusicXML fixture created in this repository for
+  D.S. / Coda visual and playback QA.
+- Contains copyrighted third party music: No.
+- Includes: symbolic `<segno/>`, `To Coda`, `D.S. al Coda`, symbolic
+  `<coda/>`, and a short original melody designed to make playback order easy
+  to verify.
+- Expected playback path: measures 1, 2, 3, 4, then D.S. back to 1, continue
+  through 2 and 3, jump To Coda, then measures 5, 6, and 7.
+- Permitted project use: commercial, test, demo, screenshot, app build, and
+  documentation use within DoReMiRendererKit and DoReMiPalette.
+- Redistribution outside this repository: governed by the repository `LICENSE`
+  unless a separate written permission is provided.
+
 ## DoReMi Palette App Icon
 
 `Apps/DoReMiPalette/DoReMiPalette/Resources/DoReMi_icon.png`
