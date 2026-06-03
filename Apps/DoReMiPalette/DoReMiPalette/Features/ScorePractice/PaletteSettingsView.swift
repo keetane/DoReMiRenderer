@@ -24,6 +24,7 @@ struct PaletteSettingsView: View {
     var onTapTempo: () -> Void = {}
     var onRestartGuide: () -> Void = {}
     var onCompleteGuide: () -> Void = {}
+    var onResetSettings: () -> Void = {}
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -45,6 +46,7 @@ struct PaletteSettingsView: View {
                     Toggle("次の音を表示", isOn: $nextNoteDisplayVisible)
                     Toggle("小節数を表示", isOn: $measureNumbersVisible)
                 }
+                .onboardingAnchor(.settingsLayoutOptions)
                 Section("再生") {
                     Toggle("メトロノーム", isOn: $metronomeEnabled)
                     Picker("複合拍子", selection: $metronomeCompoundModeRawValue) {
@@ -73,6 +75,14 @@ struct PaletteSettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                Section("リセット") {
+                    Button("表示・再生設定を初期状態に戻す", role: .destructive) {
+                        onResetSettings()
+                    }
+                    Text("カラー、レイアウト、鍵盤表示、移調、メトロノーム、ズームを初期状態に戻します。読み込んだ曲やライブラリは削除しません。")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             .navigationTitle("表示設定")
             .toolbar {
@@ -85,7 +95,7 @@ struct PaletteSettingsView: View {
             .overlayPreferenceValue(OnboardingAnchorPreferenceKey.self) { anchors in
                 GeometryReader { proxy in
                     if guideState.isActive,
-                       guideState.currentStep == .settingsDisplayOptions {
+                       guideState.currentStep == .settingsDisplayOptions || guideState.currentStep == .settingsLayoutOptions {
                         let anchorFrame = anchors[guideState.currentStep.anchorID].map { proxy[$0] }
                         OnboardingGuideOverlay(
                             step: guideState.currentStep,

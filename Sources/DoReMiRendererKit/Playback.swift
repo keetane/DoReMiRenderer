@@ -120,17 +120,17 @@ struct PlaybackSequenceBuilder: Sendable {
     }
 
     func metadata(score: ScoreDocument) -> PlaybackMetadata {
-        let measures = score.parts.flatMap(\.measures)
+        let measures = Self.structuralMeasures(for: score)
         let repeats = measures.flatMap(\.repeatBarlines)
         return PlaybackMetadata(
-            tempoEvents: measures.flatMap(\.tempoEvents),
-            timeSignatureEvents: measures.compactMap { measure in
+            tempoEvents: score.parts.flatMap(\.measures).flatMap(\.tempoEvents),
+            timeSignatureEvents: score.parts.flatMap(\.measures).compactMap { measure in
                 measure.timeSignature.map {
                     TimeSignatureEvent(measureID: measure.id, timeSignature: $0)
                 }
             },
             repeatBarlines: repeats,
-            diagnostics: RepeatExpansionPlanner.diagnostics(score: score)
+            diagnostics: RepeatExpansionPlanner.diagnostics(measures: measures)
         )
     }
 
@@ -170,8 +170,8 @@ struct PlaybackSequenceBuilder: Sendable {
         }
 
         var expanded: [PlaybackEvent] = []
-        let primaryMeasures = score.parts.first?.measures ?? []
-        let measureOrder = RepeatExpansionPlanner.expandedMeasureOrder(for: primaryMeasures)
+        let structuralMeasures = Self.structuralMeasures(for: score)
+        let measureOrder = RepeatExpansionPlanner.expandedMeasureOrder(for: structuralMeasures)
         for measureIndex in measureOrder {
             expanded.append(contentsOf: recordsByMeasure[measureIndex, default: []].map(\.event))
         }
@@ -489,10 +489,55 @@ struct PlaybackSequenceBuilder: Sendable {
         }
         return MeasureID(partIndex: 0, measureNumber: pieces[1])
     }
+
+    private static func structuralMeasures(for score: ScoreDocument) -> [Measure] {
+        let measureCount = score.parts.map(\.measures.count).max() ?? 0
+        guard measureCount > 0 else { return [] }
+        return (0..<measureCount).compactMap { measureIndex in
+            let measures = score.parts.compactMap { part -> Measure? in
+                guard part.measures.indices.contains(measureIndex) else { return nil }
+                return part.measures[measureIndex]
+            }
+            guard let primary = measures.first else { return nil }
+            return Measure(
+                id: MeasureID(partIndex: 0, measureNumber: primary.number),
+                number: primary.number,
+                notes: primary.notes,
+                clef: primary.clef,
+                clefsByStaff: primary.clefsByStaff,
+                effectiveClefsByStaff: primary.effectiveClefsByStaff,
+                clefChanges: primary.clefChanges,
+                keySignature: primary.keySignature,
+                timeSignature: primary.timeSignature,
+                tempoEvents: primary.tempoEvents,
+                directions: primary.directions,
+                repeatBarlines: uniquePreservingOrder(measures.flatMap(\.repeatBarlines)),
+                leftBarlineStyle: firstNonEmptyBarlineStyle(measures.compactMap(\.leftBarlineStyle)) ?? primary.leftBarlineStyle,
+                rightBarlineStyle: firstNonEmptyBarlineStyle(measures.compactMap(\.rightBarlineStyle)) ?? primary.rightBarlineStyle,
+                repeatEndings: uniquePreservingOrder(measures.flatMap(\.repeatEndings)),
+                measureRepeat: measures.compactMap(\.measureRepeat).first ?? primary.measureRepeat,
+                playbackJumpMarkers: uniquePreservingOrder(measures.flatMap(\.playbackJumpMarkers)),
+                musicXMLTranspose: primary.musicXMLTranspose
+            )
+        }
+    }
 }
 
 private func musicalTimeDouble(_ time: MusicalTime) -> Double {
     Double(time.ticks) / Double(max(1, time.ticksPerQuarterNote))
+}
+
+private func firstNonEmptyBarlineStyle(_ styles: [BarlineStyle]) -> BarlineStyle? {
+    styles.first { $0 != .none }
+}
+
+private func uniquePreservingOrder<Value: Hashable>(_ values: [Value]) -> [Value] {
+    var seen = Set<Value>()
+    var result: [Value] = []
+    for value in values where seen.insert(value).inserted {
+        result.append(value)
+    }
+    return result
 }
 
 private struct RepeatExpansionPlanner {
@@ -503,10 +548,8 @@ private struct RepeatExpansionPlanner {
         plan(for: measures).order
     }
 
-    static func diagnostics(score: ScoreDocument) -> [RendererDiagnostic] {
-        score.parts.flatMap { part in
-            plan(for: part.measures).diagnostics
-        }
+    static func diagnostics(measures: [Measure]) -> [RendererDiagnostic] {
+        plan(for: measures).diagnostics
     }
 
     private static func plan(for measures: [Measure]) -> (order: [Int], diagnostics: [RendererDiagnostic]) {

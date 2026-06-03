@@ -102,7 +102,12 @@ struct ScorePracticeView: View {
                 allowsMultipleSelection: false,
                 onCompletion: handleImport
             )
-            .sheet(isPresented: $showsDiagnostics) { DiagnosticsPanel(diagnostics: session.diagnostics) }
+            .sheet(isPresented: $showsDiagnostics) {
+                DiagnosticsPanel(
+                    diagnostics: session.diagnostics,
+                    context: diagnosticsContext
+                )
+            }
             .sheet(isPresented: $showsLibrary) {
                 LibraryPanel(
                     session: session,
@@ -138,13 +143,15 @@ struct ScorePracticeView: View {
                     guideState: $onboardingState,
                     onTapTempo: { session.registerTapTempo() },
                     onRestartGuide: { restartOnboardingGuide() },
-                    onCompleteGuide: { completeOnboardingGuide() }
+                    onCompleteGuide: { completeOnboardingGuide() },
+                    onResetSettings: { resetUserSettings() }
                 )
             }
             .overlayPreferenceValue(OnboardingAnchorPreferenceKey.self) { anchors in
                 GeometryReader { proxy in
                     if onboardingState.isActive,
-                       onboardingState.currentStep != .settingsDisplayOptions {
+                       onboardingState.currentStep != .settingsDisplayOptions,
+                       onboardingState.currentStep != .settingsLayoutOptions {
                         let anchorFrame = resolvedOnboardingAnchorFrame(
                             anchors: anchors,
                             proxy: proxy,
@@ -371,9 +378,9 @@ struct ScorePracticeView: View {
                 session.movePlaybackStep(by: 1)
             }
                 .disabled(session.playbackCursor.events.isEmpty || session.playbackCursor.index >= session.playbackCursor.events.count - 1)
+                .onboardingAnchor(.previousNextControls)
         }
         .frame(maxWidth: .infinity, alignment: .center)
-        .onboardingAnchor(.previousNextControls)
         .onAppear {
             syncMeasureJumpInput()
         }
@@ -455,6 +462,7 @@ struct ScorePracticeView: View {
                 }
                 .padding(2)
                 .contentShape(Rectangle())
+                .onboardingAnchor(.measureDisplay)
 
                 playbackCommandButton("Jump", systemImage: "arrow.right.to.line") {
                     submitMeasureJump()
@@ -474,7 +482,6 @@ struct ScorePracticeView: View {
         }
         .padding(.vertical, 1)
         .contentShape(Rectangle())
-        .onboardingAnchor(.measureDisplay)
     }
 
     @ViewBuilder
@@ -712,13 +719,23 @@ struct ScorePracticeView: View {
                 }
             }
         } else if session.isLoading {
-            ProgressView("読み込み中")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            VStack(spacing: 12) {
+                ProgressView()
+                    .controlSize(.large)
+                Text("譜面を読み込み中")
+                    .font(.headline)
+                Text("大きいMusicXML/MXLでは解析とレイアウトに時間がかかることがあります。")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             ContentUnavailableView(
                 "譜面を読み込めません",
                 systemImage: "exclamationmark.triangle",
-                description: Text(session.errorMessage ?? "Sample Reload または 読み込み を試してください。")
+                description: Text(session.errorMessage ?? "MusicXML / MXLファイルを選び直すか、診断を確認してください。")
             )
         }
     }
@@ -849,6 +866,27 @@ struct ScorePracticeView: View {
         session.diagnostics.isEmpty ? "checkmark.seal" : "exclamationmark.triangle"
     }
 
+    private var diagnosticsContext: DiagnosticsScoreContext? {
+        guard let loaded = session.loadedScore else {
+            return nil
+        }
+        let measureCount = loaded.score.parts.map(\.measures.count).max() ?? 0
+        let noteCount = loaded.score.parts
+            .flatMap(\.measures)
+            .reduce(0) { count, measure in count + measure.notes.count }
+        return DiagnosticsScoreContext(
+            title: loaded.displayName,
+            sourceName: loaded.sourceName,
+            partCount: loaded.score.parts.count,
+            measureCount: measureCount,
+            noteCount: noteCount,
+            playbackEventCount: loaded.playbackEvents.count,
+            layoutMode: loaded.layoutMode.displayName,
+            canvasSize: loaded.layout.canvasSize,
+            tempoBPM: session.playbackTempoBPM
+        )
+    }
+
     private func handleImport(_ result: Result<[URL], Error>) {
         switch result {
         case .success(let urls):
@@ -863,6 +901,35 @@ struct ScorePracticeView: View {
     private func reloadSampleResettingZoom() {
         resetZoomForScoreLoad()
         session.reloadSample()
+    }
+
+    private func resetUserSettings() {
+        noteColorVisible = PaletteSettingsDefaults.noteColorVisible
+        staffColorVisible = PaletteSettingsDefaults.staffColorVisible
+        keyboardVisible = PaletteSettingsDefaults.keyboardVisible
+        keyboardColorVisible = PaletteSettingsDefaults.keyboardColorVisible
+        keyboardColorPositionTop = PaletteSettingsDefaults.keyboardColorPositionTop
+        keyboardLineNumberVisible = PaletteSettingsDefaults.keyboardLineNumberVisible
+        topToolbarVisible = PaletteSettingsDefaults.topToolbarVisible
+        currentNoteDisplayVisible = PaletteSettingsDefaults.currentNoteDisplayVisible
+        nextNoteDisplayVisible = PaletteSettingsDefaults.nextNoteDisplayVisible
+        measureNumbersVisible = PaletteSettingsDefaults.measureNumbersVisible
+        zoomScale = PaletteSettingsDefaults.zoomScale
+        colorSchemeRawValue = PaletteSettingsDefaults.colorSchemeRawValue
+        scoreLayoutModeRawValue = PaletteSettingsDefaults.scoreLayoutModeRawValue
+        transposeSemitones = PaletteSettingsDefaults.transposeSemitones
+        displayTransposeEnabled = PaletteSettingsDefaults.displayTransposeEnabled
+        pitchClassColorEnabledRawValue = PaletteSettingsDefaults.pitchClassColorEnabledRawValue
+        metronomeEnabled = PaletteSettingsDefaults.metronomeEnabled
+        metronomeCompoundModeRawValue = PaletteSettingsDefaults.metronomeCompoundModeRawValue
+        metronomeClickSoundStyleRawValue = PaletteSettingsDefaults.metronomeClickSoundStyleRawValue
+
+        session.setScoreLayoutMode(.fromRawValue(PaletteSettingsDefaults.scoreLayoutModeRawValue))
+        session.setDisplayTransposeEnabled(PaletteSettingsDefaults.displayTransposeEnabled)
+        session.setTransposeSemitones(PaletteSettingsDefaults.transposeSemitones)
+        session.setMetronomeEnabled(PaletteSettingsDefaults.metronomeEnabled)
+        session.setMetronomeCompoundMode(.fromRawValue(PaletteSettingsDefaults.metronomeCompoundModeRawValue))
+        session.setMetronomeClickSoundStyle(.fromRawValue(PaletteSettingsDefaults.metronomeClickSoundStyleRawValue))
     }
 
     private func resetZoomForScoreLoad() {
@@ -907,7 +974,7 @@ struct ScorePracticeView: View {
     private func syncOnboardingPresentation(for step: OnboardingGuideStep) {
         guard onboardingState.isActive else { return }
         switch step {
-        case .settingsDisplayOptions:
+        case .settingsDisplayOptions, .settingsLayoutOptions:
             showsSettings = true
         case .currentNoteAndKeyboard:
             showsSettings = false
@@ -945,16 +1012,31 @@ struct ScorePracticeView: View {
             measureNumbersVisible: measureNumbersVisible
         )
         let printLayout = loaded.printLayout
-        let pageRect = CGRect(origin: .zero, size: printLayout.canvasSize)
+        let pageSize = PalettePrintPageLayout.pageSize(forContentWidth: printLayout.canvasSize.width)
+        let pageRect = CGRect(origin: .zero, size: pageSize)
+        let pageCount = PalettePrintPageLayout.pageCount(
+            forContentHeight: printLayout.canvasSize.height,
+            pageHeight: pageSize.height
+        )
         let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
         let data = renderer.pdfData { context in
-            context.beginPage()
-            ScoreGraphicsRenderer().draw(
-                layout: printLayout,
-                score: loaded.score,
-                style: style,
-                in: context.cgContext
-            )
+            for pageIndex in 0..<pageCount {
+                context.beginPage()
+                let cgContext = context.cgContext
+                cgContext.saveGState()
+                cgContext.clip(to: pageRect)
+                cgContext.translateBy(x: 0, y: -PalettePrintPageLayout.contentOffsetY(
+                    forPageIndex: pageIndex,
+                    pageHeight: pageSize.height
+                ))
+                ScoreGraphicsRenderer().draw(
+                    layout: printLayout,
+                    score: loaded.score,
+                    style: style,
+                    in: cgContext
+                )
+                cgContext.restoreGState()
+            }
         }
         printJob = PalettePrintJob(
             jobName: loaded.sourceName,
@@ -1014,6 +1096,26 @@ private struct PalettePrintJob: Identifiable, Equatable {
     let id = UUID()
     let jobName: String
     let data: Data
+}
+
+enum PalettePrintPageLayout {
+    static let a4AspectRatio: CGFloat = 842.0 / 595.0
+
+    static func pageSize(forContentWidth contentWidth: CGFloat) -> CGSize {
+        let width = max(contentWidth, 1)
+        return CGSize(width: width, height: width * a4AspectRatio)
+    }
+
+    static func pageCount(forContentHeight contentHeight: CGFloat, pageHeight: CGFloat) -> Int {
+        guard contentHeight.isFinite, pageHeight.isFinite, pageHeight > 0 else {
+            return 1
+        }
+        return max(1, Int(ceil(max(contentHeight, 1) / pageHeight)))
+    }
+
+    static func contentOffsetY(forPageIndex pageIndex: Int, pageHeight: CGFloat) -> CGFloat {
+        CGFloat(max(pageIndex, 0)) * max(pageHeight, 0)
+    }
 }
 
 private struct PalettePrintPresenter: UIViewControllerRepresentable {

@@ -126,6 +126,12 @@ struct SampleScoreCatalog: Hashable {
             id: UUID(uuidString: "D7B68E1A-58BD-4D42-971A-A95CE7D23B42")!,
             displayName: "美女と野獣",
             resourceName: "Beauty_and_the_Beast",
+            fileExtension: "mxl"
+        ),
+        SampleScoreItem(
+            id: UUID(uuidString: "7B4FB192-7E62-4EE9-B53E-DA3F47E0F086")!,
+            displayName: "D.S. / Coda Behavior Sample",
+            resourceName: "ds_coda_behavior_sample",
             fileExtension: "musicxml"
         )
     ])

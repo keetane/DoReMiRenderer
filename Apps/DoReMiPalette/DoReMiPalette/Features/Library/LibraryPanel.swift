@@ -81,47 +81,25 @@ private struct LibraryRow: View {
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
             Button(action: onOpen) {
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 8) {
-                        Label(item.displayName, systemImage: item.sourceType == .sample ? "music.note.list" : "doc")
-                            .font(.headline)
-                            .lineLimit(1)
+                HStack(alignment: .center, spacing: 12) {
+                    mainContent
 
-                        Text(item.sourceType == .sample ? "サンプル" : "読み込み済み")
-                            .font(.caption)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
-                            .background(Color(.secondarySystemBackground))
-                            .clipShape(Capsule())
-                    }
-
-                    Text("最終更新: \(Self.dateFormatter.string(from: item.lastOpenedAt))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-
-                    if let summary = item.diagnosticsSummary {
-                        Text(summaryText(summary))
-                            .font(.caption)
-                            .foregroundStyle(summary.errors > 0 ? .red : .secondary)
-                    } else if item.sourceType == .imported, item.bookmarkData == nil {
-                        Text("再選択が必要な可能性があります")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                    Text(actionTitle)
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(.tint)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(Color(.secondarySystemBackground))
+                        .clipShape(Capsule())
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
 
-            VStack(spacing: 8) {
-                Button(actionTitle, action: onOpen)
-                    .buttonStyle(.bordered)
-
-                if let onRemove {
-                    Button("削除", role: .destructive, action: onRemove)
-                        .buttonStyle(.borderless)
-                        .font(.caption)
-                }
+            if let onRemove {
+                Button("削除", role: .destructive, action: onRemove)
+                    .buttonStyle(.borderless)
+                    .font(.caption)
             }
         }
         .padding(.vertical, 4)
@@ -129,6 +107,48 @@ private struct LibraryRow: View {
             if let onRemove {
                 Button("削除", role: .destructive, action: onRemove)
             }
+        }
+    }
+
+    private var mainContent: some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                titleRow
+                detailRows
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var titleRow: some View {
+        HStack(spacing: 8) {
+            Label(item.displayName, systemImage: item.sourceType == .sample ? "music.note.list" : "doc")
+                .font(.headline)
+                .lineLimit(1)
+
+            Text(item.sourceType == .sample ? "サンプル" : "読み込み済み")
+                .font(.caption)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(Color(.secondarySystemBackground))
+                .clipShape(Capsule())
+        }
+    }
+
+    @ViewBuilder
+    private var detailRows: some View {
+        Text("最終更新: \(Self.dateFormatter.string(from: item.lastOpenedAt))")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+
+        if let summary = item.diagnosticsSummary {
+            Text(summaryText(summary))
+                .font(.caption)
+                .foregroundStyle(summary.errors > 0 ? .red : .secondary)
+        } else if item.sourceType == .imported, item.bookmarkData == nil {
+            Text("再選択が必要な可能性があります")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 

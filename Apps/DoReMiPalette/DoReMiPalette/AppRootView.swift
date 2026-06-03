@@ -23,27 +23,49 @@ enum PaletteSettingsKeys {
     static let onboardingCompleted = "doremi.palette.onboardingCompleted"
 }
 
+enum PaletteSettingsDefaults {
+    static let noteColorVisible = true
+    static let staffColorVisible = false
+    static let keyboardVisible = true
+    static let keyboardColorVisible = true
+    static let keyboardColorPositionTop = true
+    static let keyboardLineNumberVisible = false
+    static let topToolbarVisible = true
+    static let currentNoteDisplayVisible = true
+    static let nextNoteDisplayVisible = true
+    static let measureNumbersVisible = true
+    static let zoomScale = PaletteZoomScale.default
+    static let colorSchemeRawValue = PaletteColorScheme.educational.rawValue
+    static let scoreLayoutModeRawValue = PaletteScoreLayoutMode.a4.rawValue
+    static let transposeSemitones = 0
+    static let displayTransposeEnabled = true
+    static let pitchClassColorEnabledRawValue = PalettePitchClassColorState.defaultEncodedValue
+    static let metronomeEnabled = false
+    static let metronomeCompoundModeRawValue = PaletteMetronomeCompoundMode.largeBeat.rawValue
+    static let metronomeClickSoundStyleRawValue = PaletteMetronomeClickSoundStyle.classic.rawValue
+}
+
 struct AppRootView: View {
     @StateObject private var session = PaletteScoreSession()
-    @AppStorage(PaletteSettingsKeys.noteColorVisible) private var noteColorVisible = true
-    @AppStorage(PaletteSettingsKeys.staffColorVisible) private var staffColorVisible = false
-    @AppStorage(PaletteSettingsKeys.keyboardVisible) private var keyboardVisible = true
-    @AppStorage(PaletteSettingsKeys.keyboardColorVisible) private var keyboardColorVisible = true
-    @AppStorage(PaletteSettingsKeys.keyboardColorPositionTop) private var keyboardColorPositionTop = true
-    @AppStorage(PaletteSettingsKeys.keyboardLineNumberVisible) private var keyboardLineNumberVisible = false
-    @AppStorage(PaletteSettingsKeys.topToolbarVisible) private var topToolbarVisible = true
-    @AppStorage(PaletteSettingsKeys.currentNoteDisplayVisible) private var currentNoteDisplayVisible = true
-    @AppStorage(PaletteSettingsKeys.nextNoteDisplayVisible) private var nextNoteDisplayVisible = true
-    @AppStorage(PaletteSettingsKeys.measureNumbersVisible) private var measureNumbersVisible = true
-    @AppStorage(PaletteSettingsKeys.zoomScale) private var zoomScale = 1.0
-    @AppStorage(PaletteSettingsKeys.colorScheme) private var colorSchemeRawValue = PaletteColorScheme.educational.rawValue
-    @AppStorage(PaletteSettingsKeys.scoreLayoutMode) private var scoreLayoutModeRawValue = PaletteScoreLayoutMode.a4.rawValue
-    @AppStorage(PaletteSettingsKeys.transposeSemitones) private var transposeSemitones = 0
-    @AppStorage(PaletteSettingsKeys.displayTransposeEnabled) private var displayTransposeEnabled = true
-    @AppStorage(PaletteSettingsKeys.pitchClassColorEnabled) private var pitchClassColorEnabledRawValue = PalettePitchClassColorState.defaultEncodedValue
-    @AppStorage(PaletteSettingsKeys.metronomeEnabled) private var metronomeEnabled = false
-    @AppStorage(PaletteSettingsKeys.metronomeCompoundMode) private var metronomeCompoundModeRawValue = PaletteMetronomeCompoundMode.largeBeat.rawValue
-    @AppStorage(PaletteSettingsKeys.metronomeClickSoundStyle) private var metronomeClickSoundStyleRawValue = PaletteMetronomeClickSoundStyle.classic.rawValue
+    @AppStorage(PaletteSettingsKeys.noteColorVisible) private var noteColorVisible = PaletteSettingsDefaults.noteColorVisible
+    @AppStorage(PaletteSettingsKeys.staffColorVisible) private var staffColorVisible = PaletteSettingsDefaults.staffColorVisible
+    @AppStorage(PaletteSettingsKeys.keyboardVisible) private var keyboardVisible = PaletteSettingsDefaults.keyboardVisible
+    @AppStorage(PaletteSettingsKeys.keyboardColorVisible) private var keyboardColorVisible = PaletteSettingsDefaults.keyboardColorVisible
+    @AppStorage(PaletteSettingsKeys.keyboardColorPositionTop) private var keyboardColorPositionTop = PaletteSettingsDefaults.keyboardColorPositionTop
+    @AppStorage(PaletteSettingsKeys.keyboardLineNumberVisible) private var keyboardLineNumberVisible = PaletteSettingsDefaults.keyboardLineNumberVisible
+    @AppStorage(PaletteSettingsKeys.topToolbarVisible) private var topToolbarVisible = PaletteSettingsDefaults.topToolbarVisible
+    @AppStorage(PaletteSettingsKeys.currentNoteDisplayVisible) private var currentNoteDisplayVisible = PaletteSettingsDefaults.currentNoteDisplayVisible
+    @AppStorage(PaletteSettingsKeys.nextNoteDisplayVisible) private var nextNoteDisplayVisible = PaletteSettingsDefaults.nextNoteDisplayVisible
+    @AppStorage(PaletteSettingsKeys.measureNumbersVisible) private var measureNumbersVisible = PaletteSettingsDefaults.measureNumbersVisible
+    @AppStorage(PaletteSettingsKeys.zoomScale) private var zoomScale = PaletteSettingsDefaults.zoomScale
+    @AppStorage(PaletteSettingsKeys.colorScheme) private var colorSchemeRawValue = PaletteSettingsDefaults.colorSchemeRawValue
+    @AppStorage(PaletteSettingsKeys.scoreLayoutMode) private var scoreLayoutModeRawValue = PaletteSettingsDefaults.scoreLayoutModeRawValue
+    @AppStorage(PaletteSettingsKeys.transposeSemitones) private var transposeSemitones = PaletteSettingsDefaults.transposeSemitones
+    @AppStorage(PaletteSettingsKeys.displayTransposeEnabled) private var displayTransposeEnabled = PaletteSettingsDefaults.displayTransposeEnabled
+    @AppStorage(PaletteSettingsKeys.pitchClassColorEnabled) private var pitchClassColorEnabledRawValue = PaletteSettingsDefaults.pitchClassColorEnabledRawValue
+    @AppStorage(PaletteSettingsKeys.metronomeEnabled) private var metronomeEnabled = PaletteSettingsDefaults.metronomeEnabled
+    @AppStorage(PaletteSettingsKeys.metronomeCompoundMode) private var metronomeCompoundModeRawValue = PaletteSettingsDefaults.metronomeCompoundModeRawValue
+    @AppStorage(PaletteSettingsKeys.metronomeClickSoundStyle) private var metronomeClickSoundStyleRawValue = PaletteSettingsDefaults.metronomeClickSoundStyleRawValue
     @AppStorage(PaletteSettingsKeys.onboardingCompleted) private var onboardingCompleted = false
 
     var body: some View {

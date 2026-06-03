@@ -4,6 +4,7 @@ enum OnboardingGuideAnchorID: String, Hashable, CaseIterable {
     case settingsButton
     case paletteButton
     case settingsDisplayOptions
+    case settingsLayoutOptions
     case firstBeatNote
     case currentNoteDisplay
     case keyboardArea
@@ -20,6 +21,7 @@ enum OnboardingGuideAnchorID: String, Hashable, CaseIterable {
 enum OnboardingGuideStep: String, CaseIterable, Identifiable, Equatable {
     case settingsButton
     case settingsDisplayOptions
+    case settingsLayoutOptions
     case currentNoteAndKeyboard
     case measureJump
     case nextPrevious
@@ -38,7 +40,9 @@ enum OnboardingGuideStep: String, CaseIterable, Identifiable, Equatable {
         case .settingsButton:
             "設定"
         case .settingsDisplayOptions:
-            "表示設定"
+            "カラーリング"
+        case .settingsLayoutOptions:
+            "レイアウト"
         case .currentNoteAndKeyboard:
             "現在の音とキーボード"
         case .measureJump:
@@ -67,7 +71,9 @@ enum OnboardingGuideStep: String, CaseIterable, Identifiable, Equatable {
         case .settingsButton:
             "表示、移調、メトロノーム、パレットなどの細かな設定をここから変更できます。"
         case .settingsDisplayOptions:
-            "音符色、五線色、キーボード表示、現在の音、譜面移調などを切り替えられます。"
+            "音符、五線、鍵盤、ラインNo.の色表示を切り替えられます。"
+        case .settingsLayoutOptions:
+            "横一列表示、鍵盤、上部ツールバー、現在の音、次の音、小節数の表示を切り替えられます。"
         case .currentNoteAndKeyboard:
             "譜面上の現在の音がハイライトされ、下のキーボードでも対応する鍵盤が光ります。"
         case .measureJump:
@@ -97,6 +103,8 @@ enum OnboardingGuideStep: String, CaseIterable, Identifiable, Equatable {
             .settingsButton
         case .settingsDisplayOptions:
             .settingsDisplayOptions
+        case .settingsLayoutOptions:
+            .settingsLayoutOptions
         case .currentNoteAndKeyboard:
             .firstBeatNote
         case .measureJump:
@@ -121,7 +129,7 @@ enum OnboardingGuideStep: String, CaseIterable, Identifiable, Equatable {
     }
 
     var prefersCardAboveAnchor: Bool {
-        self == .settingsDisplayOptions
+        self == .settingsDisplayOptions || self == .settingsLayoutOptions
     }
 
     var stepIndex: Int {

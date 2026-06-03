@@ -56,6 +56,19 @@ APIs may change before `1.0`.
   `<stem>` directions, common `<bar-style>` values, and basic `<pedal>` text
   layout. These features now flow through parser/domain/layout/painter instead
   of being reported as unsupported direct notation warnings.
+- Added release-polish controls before App Store rollout: Settings now exposes
+  a visible reset action for display/playback preferences, loading and import
+  failure states provide clearer guidance, and Diagnostics now includes a score
+  summary with source name, part/measure/note counts, playback event count,
+  layout mode, canvas size, and current BPM.
+- Refined the first-use guide flow: the former display-settings step is now a
+  Coloring step, a separate Layout step was added, the measure-jump guide
+  anchors to the measure input box, and the previous/next guide now highlights
+  the Next control directly.
+- Retained symbolic MusicXML jump directions (`<segno/>`, `<coda/>`) and
+  Unicode Segno/Coda words such as `To 𝄌` and `D.S. al 𝄌`, so clear
+  D.S./Coda scores can render markers and expand playback without falling back
+  to unsupported diagnostics.
 
 ### SMuFL glyph rendering
 

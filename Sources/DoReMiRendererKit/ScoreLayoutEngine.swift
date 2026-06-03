@@ -3230,6 +3230,12 @@ private func mergedDisplayMeasure(
     var clefChanges: [ClefChange] = []
     var directions: [ScoreDirection] = []
     var tempoEvents: [TempoEvent] = []
+    var repeatBarlines: [RepeatBarline] = []
+    var repeatEndings: [RepeatEnding] = []
+    var playbackJumpMarkers: [PlaybackJumpMarker] = []
+    var measureRepeat: MeasureRepeat?
+    var leftBarlineStyle: BarlineStyle?
+    var rightBarlineStyle: BarlineStyle?
 
     for (partIndex, measure) in measuresAtIndex {
         let staffMap = staffMapByPart.indices.contains(partIndex) ? staffMapByPart[partIndex] : [:]
@@ -3239,6 +3245,12 @@ private func mergedDisplayMeasure(
         clefChanges.append(contentsOf: measure.clefChanges.map { remapStaffID(in: $0, using: staffMap) })
         directions.append(contentsOf: measure.directions.map { remapStaffID(in: $0, using: staffMap) })
         tempoEvents.append(contentsOf: measure.tempoEvents)
+        repeatBarlines.append(contentsOf: measure.repeatBarlines)
+        repeatEndings.append(contentsOf: measure.repeatEndings)
+        playbackJumpMarkers.append(contentsOf: measure.playbackJumpMarkers)
+        measureRepeat = measureRepeat ?? measure.measureRepeat
+        leftBarlineStyle = leftBarlineStyle ?? nonEmptyBarlineStyle(measure.leftBarlineStyle)
+        rightBarlineStyle = rightBarlineStyle ?? nonEmptyBarlineStyle(measure.rightBarlineStyle)
     }
 
     return Measure(
@@ -3253,14 +3265,28 @@ private func mergedDisplayMeasure(
         timeSignature: primary.timeSignature,
         tempoEvents: tempoEvents.isEmpty ? primary.tempoEvents : tempoEvents,
         directions: directions,
-        repeatBarlines: primary.repeatBarlines,
-        leftBarlineStyle: primary.leftBarlineStyle,
-        rightBarlineStyle: primary.rightBarlineStyle,
-        repeatEndings: primary.repeatEndings,
-        measureRepeat: primary.measureRepeat,
-        playbackJumpMarkers: primary.playbackJumpMarkers,
+        repeatBarlines: uniquePreservingOrder(repeatBarlines),
+        leftBarlineStyle: leftBarlineStyle ?? primary.leftBarlineStyle,
+        rightBarlineStyle: rightBarlineStyle ?? primary.rightBarlineStyle,
+        repeatEndings: uniquePreservingOrder(repeatEndings),
+        measureRepeat: measureRepeat ?? primary.measureRepeat,
+        playbackJumpMarkers: uniquePreservingOrder(playbackJumpMarkers),
         musicXMLTranspose: primary.musicXMLTranspose
     )
+}
+
+private func nonEmptyBarlineStyle(_ style: BarlineStyle?) -> BarlineStyle? {
+    guard let style, style != .none else { return nil }
+    return style
+}
+
+private func uniquePreservingOrder<Value: Hashable>(_ values: [Value]) -> [Value] {
+    var seen = Set<Value>()
+    var result: [Value] = []
+    for value in values where seen.insert(value).inserted {
+        result.append(value)
+    }
+    return result
 }
 
 private func remapStaffIDs(in clefs: [StaffID: Clef], using map: [StaffID: StaffID]) -> [StaffID: Clef] {
@@ -4046,8 +4072,9 @@ private func barlineElements(
     let bottomStaffIndex = staffIndexByID[staffIDs.last!] ?? 0
     let top = metrics.staffMiddleY(systemTop: systemTop, staffIndex: topStaffIndex) - metrics.staffHeight / 2
     let bottom = metrics.staffMiddleY(systemTop: systemTop, staffIndex: bottomStaffIndex) + metrics.staffHeight / 2
+    let hasForwardRepeat = measure.repeatBarlines.contains { $0.direction == .forward }
 
-    if includeLeftBarline {
+    if includeLeftBarline, !hasForwardRepeat {
         elements.append(ElementLayout(
             id: ScoreElementID(rawValue: "\(measure.id.rawValue).barline.left"),
             kind: .barline,
@@ -4055,7 +4082,7 @@ private func barlineElements(
             frame: CGRect(x: measureX - metrics.staffLineHitHalfWidth, y: top, width: metrics.staffLineHitHalfWidth * 2, height: bottom - top),
             barlineStyle: measure.leftBarlineStyle
         ))
-    } else if let leftStyle = measure.leftBarlineStyle, leftStyle != .none {
+    } else if !hasForwardRepeat, let leftStyle = measure.leftBarlineStyle, leftStyle != .none {
         elements.append(ElementLayout(
             id: ScoreElementID(rawValue: "\(measure.id.rawValue).barline.leftStyle"),
             kind: .barline,

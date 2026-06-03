@@ -34,6 +34,9 @@ or TestFlight preparation.
 - [x] Keyboard can be shown with score still visible.
 - [x] Keyboard current-note highlight is visible.
 - [x] Diagnostics sheet opens without breaking score display.
+- [x] Diagnostics sheet shows score context summary: source name,
+  part/measure/note counts, playback event count, layout mode, canvas size,
+  and current BPM.
 - [x] Settings sheet opens without breaking score display.
 - [ ] Manual `.musicxml` import through the Files picker.
 - [ ] Manual `.xml` import through the Files picker.
@@ -123,6 +126,8 @@ or TestFlight preparation.
 - [x] Keyboard visibility uses `AppStorage`.
 - [x] Zoom scale uses `AppStorage`.
 - [x] Settings keys store and restore values in isolated defaults tests.
+- [x] Settings exposes a visible reset action for display/playback preferences
+  without deleting imported files or Library contents.
 - [x] Note/staff color changes do not change layout or playback identity.
 - [x] Zoom scale does not change the layout coordinate hit-test model.
 - [x] Pinch zoom uses a continuous `0.8x...3.0x` scale and Settings exposes
@@ -138,11 +143,16 @@ or TestFlight preparation.
 - [ ] Manual iPad QA: fresh install shows the guide after sample load.
 - [ ] Manual iPad QA: Settings button guide highlights the toolbar Settings
   button.
-- [ ] Manual iPad QA: display settings guide opens the Settings sheet.
+- [ ] Manual iPad QA: Coloring guide opens the Settings sheet and highlights
+  the color controls.
+- [ ] Manual iPad QA: Layout guide remains in the Settings sheet and highlights
+  the layout controls.
 - [ ] Manual iPad QA: current-note/keyboard guide returns to the main score and
   anchors near the current-note or keyboard area.
-- [ ] Manual iPad QA: measure jump, Previous/Next, Play/Stop, and key/transpose
-  guide steps anchor to the expected controls.
+- [ ] Manual iPad QA: measure jump anchors to the measure input box.
+- [ ] Manual iPad QA: Previous/Next guide anchors to the Next button.
+- [ ] Manual iPad QA: Play/Stop and key/transpose guide steps anchor to the
+  expected controls.
 - [ ] Manual iPad QA: Back / Next / Skip / Done work and completed guides do not
   replay automatically.
 - [ ] Manual iPad QA: Settings `使い方ガイドを再表示` restarts the guide.

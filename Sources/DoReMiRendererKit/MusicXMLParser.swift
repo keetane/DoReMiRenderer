@@ -213,6 +213,14 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             if let type = attributeDict["type"], let pedalKind = PedalMarkKind(rawValue: type) {
                 directionBuilder?.kinds.append(.pedal(pedalKind))
             }
+        case "segno":
+            if directionBuilder != nil {
+                recordPlaybackJumpMarker(kind: .segno, text: "Segno")
+            }
+        case "coda":
+            if directionBuilder != nil {
+                recordPlaybackJumpMarker(kind: .coda, text: "Coda")
+            }
         case "time-modification":
             noteBuilder?.hasTimeModification = true
         case "tuplet":
@@ -802,35 +810,51 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
             .uppercased()
             .replacingOccurrences(of: ".", with: "")
+        let compact = normalized
+            .replacingOccurrences(of: " ", with: "")
+            .replacingOccurrences(of: "\u{00A0}", with: "")
+        let containsSegnoSymbol = text.contains("\u{1D10B}") || normalized.contains("SEGNO")
+        let containsCodaSymbol = text.contains("\u{1D10C}") || normalized.contains("CODA")
+        let containsDalSegno = compact.contains("DS") || normalized.contains("DAL SEGNO")
+        let containsToCoda = normalized.contains("TO CODA")
+            || normalized.contains("TO \u{1D10C}")
+            || compact.contains("TOCODA")
 
         let kind: PlaybackJumpMarkerKind?
-        if normalized.contains("DC") && normalized.contains("CODA") {
+        if compact.contains("DC") && containsCodaSymbol {
             kind = .daCapoAlCoda
-        } else if normalized.contains("DS") && normalized.contains("FINE") {
+        } else if containsDalSegno && normalized.contains("FINE") {
             kind = .dalSegnoAlFine
-        } else if normalized.contains("DS") && normalized.contains("CODA") {
+        } else if containsDalSegno && containsCodaSymbol {
             kind = .dalSegnoAlCoda
-        } else if normalized.contains("DC") && normalized.contains("FINE") {
+        } else if compact.contains("DC") && normalized.contains("FINE") {
             kind = .daCapoAlFine
         } else if normalized == "FINE" || normalized.contains(" FINE") {
             kind = .fine
-        } else if normalized.contains("DS") {
+        } else if containsDalSegno {
             kind = .dalSegno
-        } else if normalized.contains("SEGNO") {
+        } else if containsSegnoSymbol {
             kind = .segno
-        } else if normalized.contains("TO CODA") {
+        } else if containsToCoda {
             kind = .toCoda
-        } else if normalized.contains("CODA") {
+        } else if containsCodaSymbol {
             kind = .coda
-        } else if normalized.contains("DC") {
+        } else if compact.contains("DC") {
             kind = .daCapo
         } else {
             kind = nil
         }
 
         if let kind {
-            currentMeasurePlaybackJumpMarkers.append(PlaybackJumpMarker(kind: kind, text: text))
+            recordPlaybackJumpMarker(kind: kind, text: text)
         }
+    }
+
+    private func recordPlaybackJumpMarker(kind: PlaybackJumpMarkerKind, text: String) {
+        guard !currentMeasurePlaybackJumpMarkers.contains(where: { $0.kind == kind && $0.text == text }) else {
+            return
+        }
+        currentMeasurePlaybackJumpMarkers.append(PlaybackJumpMarker(kind: kind, text: text))
     }
 }
 
@@ -965,6 +989,8 @@ private let recognizedMusicXMLElements: Set<String> = [
     "beat-unit",
     "per-minute",
     "pedal",
+    "segno",
+    "coda",
     "sound",
     "barline",
     "bar-style",
