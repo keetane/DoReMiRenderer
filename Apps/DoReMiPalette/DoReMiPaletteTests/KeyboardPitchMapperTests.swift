@@ -1,4 +1,5 @@
 import DoReMiRendererKit
+import CoreGraphics
 import Foundation
 import Testing
 @testable import DoReMiPalette
@@ -22,6 +23,18 @@ struct KeyboardPitchMapperTests {
         #expect(KeyboardPitchMapper.midiNumber(for: Pitch(step: .g, octave: 4)) == 67)
         #expect(KeyboardPitchMapper.midiNumber(for: Pitch(step: .a, octave: 4)) == 69)
         #expect(KeyboardPitchMapper.midiNumber(for: Pitch(step: .b, octave: 4)) == 71)
+    }
+
+    @Test func palettePreviewKeySignatureUsesProductionBassPositions() {
+        #expect(PalettePreviewKeySignatureLayout.keySignatureMIDIs(fifths: 7, clef: .treble) == [77, 72, 79, 74, 69, 76, 71])
+        #expect(PalettePreviewKeySignatureLayout.keySignatureMIDIs(fifths: 7, clef: .bass) == [53, 48, 55, 50, 45, 52, 47])
+        #expect(PalettePreviewKeySignatureLayout.keySignatureMIDIs(fifths: -7, clef: .treble) == [71, 76, 69, 74, 67, 72, 65])
+        #expect(PalettePreviewKeySignatureLayout.keySignatureMIDIs(fifths: -7, clef: .bass) == [47, 52, 45, 50, 43, 48, 41])
+    }
+
+    @Test func palettePreviewKeySignatureUsesSMuFLAccidentals() {
+        #expect(PalettePreviewKeySignatureLayout.accidentalGlyph(fifths: 1) == String(UnicodeScalar(0xE262)!))
+        #expect(PalettePreviewKeySignatureLayout.accidentalGlyph(fifths: -1) == String(UnicodeScalar(0xE260)!))
     }
 
     @Test func keyboardLineNumbersUseC4AsZeroAndIncreaseByStaffLineDistance() {
@@ -55,6 +68,20 @@ struct KeyboardPitchMapperTests {
         #expect(KeyboardPitchMapper.isBlackKey(midi: 61))
         #expect(KeyboardPitchMapper.isBlackKey(midi: 63))
         #expect(!KeyboardPitchMapper.isBlackKey(midi: 64))
+    }
+
+    @Test func keyFramesProvideSharedKeyboardAndTrackGeometry() {
+        let size = CGSize(width: 980, height: 120)
+        let whiteWidth = KeyboardPitchMapper.whiteKeyWidth(totalWidth: size.width)
+        let c4 = KeyboardPitchMapper.keyFrame(for: 60, totalSize: size)
+        let cSharp4 = KeyboardPitchMapper.keyFrame(for: 61, totalSize: size)
+        let d4 = KeyboardPitchMapper.keyFrame(for: 62, totalSize: size)
+
+        #expect(c4.width == whiteWidth)
+        #expect(d4.minX == c4.maxX)
+        #expect(cSharp4.width == whiteWidth * 0.62)
+        #expect(cSharp4.minX > c4.minX)
+        #expect(cSharp4.minX < d4.minX)
     }
 
     @Test func highlightedKeysUseLayoutPitchLookup() throws {

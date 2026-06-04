@@ -317,7 +317,13 @@ public struct ScoreColorResolver: Sendable {
             let color = resolvedAccidentalColor(for: element, score: score, layout: layout, style: style, context: context)
             return ResolvedVisualStyle(fillColor: color, strokeColor: color, lineWidth: nil, opacity: color.alpha)
         case .keySignature:
-            let color = resolvedKeySignatureColor(for: element, style: style)
+            let color = resolvedKeySignatureColor(
+                for: element,
+                score: score,
+                layout: layout,
+                context: context,
+                style: style
+            )
             return ResolvedVisualStyle(fillColor: color, strokeColor: color, lineWidth: nil, opacity: color.alpha)
         default:
             return ResolvedVisualStyle(
@@ -429,13 +435,46 @@ public struct ScoreColorResolver: Sendable {
 
     private func resolvedKeySignatureColor(
         for element: ElementLayout,
+        score: ScoreDocument,
+        layout: ScoreLayout,
+        context: ColorContext,
         style: ScoreStyle
     ) -> ScoreColor {
-        guard case .pitchClass(let palette) = style.noteColorStyle,
-              let pitchClass = element.pitchClassHint else {
+        guard let pitchClass = element.pitchClassHint else {
             return style.defaultInkColor
         }
-        return palette.color(for: pitchClass)
+        switch style.noteColorStyle {
+        case .monochrome:
+            return style.defaultInkColor
+        case .pitchClass(let palette):
+            return palette.color(for: pitchClass)
+        case .rule(let rule):
+            let note = ScoreNote(
+                id: NoteID(rawValue: "\(element.id.rawValue).keySignatureColorProbe"),
+                pitch: Pitch(step: pitchClass.pitchStep, octave: 4),
+                onset: MusicalTime(ticks: 0, ticksPerQuarterNote: 1),
+                duration: MusicalTime(ticks: 1, ticksPerQuarterNote: 1),
+                voiceID: element.voiceID ?? VoiceID(rawValue: "keySignature"),
+                staffID: element.staffID ?? StaffID(rawValue: "keySignature")
+            )
+            return rule.color(for: note, layout: nil, context: context)
+        case .custom:
+            return style.defaultInkColor
+        }
+    }
+}
+
+private extension PitchClass {
+    var pitchStep: PitchStep {
+        switch self {
+        case .c: return .c
+        case .d: return .d
+        case .e: return .e
+        case .f: return .f
+        case .g: return .g
+        case .a: return .a
+        case .b: return .b
+        }
     }
 }
 

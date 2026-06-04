@@ -52,12 +52,39 @@ struct PaletteScoreLoaderTests {
 
     @Test func printPageLayoutKeepsA4WidthAndSplitsTallScores() {
         let pageSize = PalettePrintPageLayout.pageSize(forContentWidth: 595)
+        let defaultSlices = PalettePrintPageLayout.pageSlices(
+            forContentHeight: 843,
+            pageHeight: pageSize.height,
+            systemFrames: []
+        )
+        let systemAwareSlices = PalettePrintPageLayout.pageSlices(
+            forContentHeight: 1_100,
+            pageHeight: pageSize.height,
+            systemFrames: [
+                CGRect(x: 24, y: 100, width: 540, height: 660),
+                CGRect(x: 24, y: 800, width: 540, height: 120),
+            ]
+        )
 
         #expect(abs(pageSize.width - 595) < 0.001)
         #expect(abs(pageSize.height - 842) < 0.001)
-        #expect(PalettePrintPageLayout.pageCount(forContentHeight: 841, pageHeight: pageSize.height) == 1)
-        #expect(PalettePrintPageLayout.pageCount(forContentHeight: 843, pageHeight: pageSize.height) == 2)
-        #expect(PalettePrintPageLayout.contentOffsetY(forPageIndex: 2, pageHeight: pageSize.height) == 1684)
+        #expect(defaultSlices.map(\.offsetY) == [0, 842])
+        #expect(systemAwareSlices.map(\.offsetY) == [0, 700])
+        #expect(systemAwareSlices.first?.sourceEndY == 760)
+        #expect(systemAwareSlices.first?.visibleHeight == 760)
+        #expect(systemAwareSlices.last?.sourceStartY == 800)
+        #expect(systemAwareSlices.last?.destinationY == 100)
+        for slice in systemAwareSlices {
+            for frame in [
+                CGRect(x: 24, y: 100, width: 540, height: 660),
+                CGRect(x: 24, y: 800, width: 540, height: 120),
+            ] {
+                let cutsTop = slice.sourceStartY > frame.minY && slice.sourceStartY < frame.maxY
+                let cutsBottom = slice.sourceEndY > frame.minY && slice.sourceEndY < frame.maxY
+                #expect(!cutsTop)
+                #expect(!cutsBottom)
+            }
+        }
     }
 
     @Test func parseFailureThrows() {
@@ -170,6 +197,60 @@ struct PaletteScoreLoaderTests {
         )
 
         #expect(staffColorResolved.strokeColor != .black)
+    }
+
+    @Test func paletteStyleColorsKeySignatureWhenNoteColorIsVisible() throws {
+        let loaded = try PaletteScoreLoader().load(
+            data: Self.keySignaturePreviewMusicXML,
+            sourceName: "palette-key-signature-preview.musicxml"
+        )
+        let keyElement = try #require(loaded.layout.elements.first {
+            $0.kind == .keySignature && $0.pitchClassHint == .f
+        })
+        let enabledStyle = PaletteStyleFactory.makeStyle(
+            noteColorVisible: true,
+            staffColorVisible: false,
+            paletteKind: .educational,
+            pitchClassColorState: .allOn
+        )
+        let disabledStyle = PaletteStyleFactory.makeStyle(
+            noteColorVisible: false,
+            staffColorVisible: false,
+            paletteKind: .educational,
+            pitchClassColorState: .allOn
+        )
+        let fOffStyle = PaletteStyleFactory.makeStyle(
+            noteColorVisible: true,
+            staffColorVisible: false,
+            paletteKind: .educational,
+            pitchClassColorState: PalettePitchClassColorState.allOn.toggled(5)
+        )
+
+        let enabledResolved = enabledStyle.colorResolver.resolvedStyle(
+            for: keyElement,
+            score: loaded.score,
+            layout: loaded.layout,
+            style: enabledStyle,
+            selection: nil
+        )
+        let disabledResolved = disabledStyle.colorResolver.resolvedStyle(
+            for: keyElement,
+            score: loaded.score,
+            layout: loaded.layout,
+            style: disabledStyle,
+            selection: nil
+        )
+        let fOffResolved = fOffStyle.colorResolver.resolvedStyle(
+            for: keyElement,
+            score: loaded.score,
+            layout: loaded.layout,
+            style: fOffStyle,
+            selection: nil
+        )
+
+        #expect(enabledResolved.fillColor == defaultEducationalPalette.f)
+        #expect(disabledResolved.fillColor == .black)
+        #expect(fOffResolved.fillColor == .black)
     }
 
     @Test func multipleLedgerLinesUseTheirOwnStaffPitchColors() throws {
@@ -369,6 +450,62 @@ struct PaletteScoreLoaderTests {
         #expect(horizontal.layoutMode == .horizontal)
         #expect(horizontal.layout.canvasSize == horizontal.horizontalLayout.canvasSize)
         #expect(horizontal.printLayout.canvasSize == horizontal.a4Layout.canvasSize)
+
+        session.setScoreLayoutMode(.track)
+        let track = try #require(session.loadedScore)
+
+        #expect(track.layoutMode == .track)
+        #expect(track.layout.canvasSize == track.a4Layout.canvasSize)
+        #expect(track.printLayout.canvasSize == track.a4Layout.canvasSize)
+        #expect(track.playbackEvents.map {
+            "\($0.noteIDs.map(\.rawValue).joined(separator: ","))|\($0.onset.ticks)|\($0.nominalDuration.ticks)"
+        } == playbackIdentity)
+    }
+
+    @Test func trackPlaybackTimelineUsesMonotonicEventStarts() throws {
+        let loaded = try PaletteScoreLoader().load(data: Self.validMusicXML, sourceName: "unit.musicxml")
+        let timeline = TrackPlaybackTimeline(events: loaded.playbackEvents, tempoBPM: 120)
+
+        #expect(timeline.items.count == loaded.playbackEvents.count)
+        #expect(timeline.startTime(at: 0) == 0)
+        for pair in zip(timeline.items, timeline.items.dropFirst()) {
+            #expect(pair.0.startTime < pair.1.startTime)
+            #expect(pair.0.duration > 0)
+        }
+    }
+
+    @Test func trackPlaybackTimelineReportsAllPitchesCrossingHitLine() throws {
+        let loaded = try PaletteScoreLoader().load(data: Self.validMusicXML, sourceName: "unit.musicxml")
+        let events = Array(loaded.playbackEvents.prefix(3))
+        let timeline = TrackPlaybackTimeline(
+            events: events,
+            tempoBPM: 120,
+            scheduledStartTimes: [0, 1, 2],
+            scheduledDurations: [2, 1, 1]
+        )
+
+        let activePitches = timeline.activeMIDIPitches(at: 1.5, transposeSemitones: 0)
+        let expectedPitches = Set(events[0].midiPitches + events[1].midiPitches)
+
+        #expect(timeline.eventIndex(at: 1.5) == 1)
+        #expect(activePitches == expectedPitches)
+    }
+
+    @Test func trackPlaybackTimelineHighlightsOnlyActiveBars() throws {
+        let loaded = try PaletteScoreLoader().load(data: Self.validMusicXML, sourceName: "unit.musicxml")
+        let events = Array(loaded.playbackEvents.prefix(3))
+        let timeline = TrackPlaybackTimeline(
+            events: events,
+            tempoBPM: 120,
+            scheduledStartTimes: [0, 1, 2],
+            scheduledDurations: [1, 1, 1]
+        )
+
+        let activeKeys = timeline.activeBarKeys(at: 0.5)
+
+        #expect(!activeKeys.isEmpty)
+        #expect(activeKeys.allSatisfy { $0.index == 0 })
+        #expect(activeKeys.isDisjoint(with: Set(timeline.bars.filter { $0.index > 0 }.map(\.key))))
     }
 
     @Test @MainActor func handleTapSelectsNearestNoteAndKeepsScoreLoaded() throws {
@@ -1425,6 +1562,24 @@ struct PaletteScoreLoaderTests {
         <measure number="3">
           <note><pitch><step>E</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
           <barline location="right"><repeat direction="backward"/></barline>
+        </measure>
+      </part>
+    </score-partwise>
+    """.utf8)
+
+    static let keySignaturePreviewMusicXML = Data("""
+    <?xml version="1.0" encoding="UTF-8"?>
+    <score-partwise version="4.0">
+      <part-list><score-part id="P1"><part-name>Key signature preview</part-name></score-part></part-list>
+      <part id="P1">
+        <measure number="1">
+          <attributes>
+            <divisions>1</divisions>
+            <key><fifths>1</fifths><mode>major</mode></key>
+            <time><beats>4</beats><beat-type>4</beat-type></time>
+            <clef><sign>G</sign><line>2</line></clef>
+          </attributes>
+          <note><pitch><step>G</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type></note>
         </measure>
       </part>
     </score-partwise>

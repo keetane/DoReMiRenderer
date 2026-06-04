@@ -15,6 +15,7 @@
 		2B0000010000000000000006 /* Features/ScorePractice/PaletteStyleFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001016 /* Features/ScorePractice/PaletteStyleFactory.swift */; };
 		2B0000010000000000000007 /* Features/ScorePractice/ScorePracticeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001017 /* Features/ScorePractice/ScorePracticeView.swift */; };
 		2B0000010000000000000008 /* Features/ScorePractice/PaletteSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001018 /* Features/ScorePractice/PaletteSettingsView.swift */; };
+		2B00000100000000000000F2 /* Features/ScorePractice/TrackLayoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000104A /* Features/ScorePractice/TrackLayoutView.swift */; };
 		2B0000010000000000000009 /* Features/Diagnostics/DiagnosticsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001019 /* Features/Diagnostics/DiagnosticsPanel.swift */; };
 		2B000001000000000000000A /* Features/Keyboard/KeyboardPitchMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000101A /* Features/Keyboard/KeyboardPitchMapper.swift */; };
 		2B000001000000000000000B /* Features/Keyboard/KeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B000001000000000000101B /* Features/Keyboard/KeyboardView.swift */; };
@@ -59,6 +60,7 @@
 		2B0000010000000000001016 /* Features/ScorePractice/PaletteStyleFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/ScorePractice/PaletteStyleFactory.swift; sourceTree = "<group>"; };
 		2B0000010000000000001017 /* Features/ScorePractice/ScorePracticeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/ScorePractice/ScorePracticeView.swift; sourceTree = "<group>"; };
 		2B0000010000000000001018 /* Features/ScorePractice/PaletteSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/ScorePractice/PaletteSettingsView.swift; sourceTree = "<group>"; };
+		2B000001000000000000104A /* Features/ScorePractice/TrackLayoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/ScorePractice/TrackLayoutView.swift; sourceTree = "<group>"; };
 		2B0000010000000000001019 /* Features/Diagnostics/DiagnosticsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Diagnostics/DiagnosticsPanel.swift; sourceTree = "<group>"; };
 		2B000001000000000000101A /* Features/Keyboard/KeyboardPitchMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Keyboard/KeyboardPitchMapper.swift; sourceTree = "<group>"; };
 		2B000001000000000000101B /* Features/Keyboard/KeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Keyboard/KeyboardView.swift; sourceTree = "<group>"; };
@@ -122,6 +124,7 @@
 				2B0000010000000000001016 /* Features/ScorePractice/PaletteStyleFactory.swift */,
 				2B0000010000000000001017 /* Features/ScorePractice/ScorePracticeView.swift */,
 				2B0000010000000000001018 /* Features/ScorePractice/PaletteSettingsView.swift */,
+				2B000001000000000000104A /* Features/ScorePractice/TrackLayoutView.swift */,
 				2B0000010000000000001046 /* Features/ScorePractice/OnboardingGuide.swift */,
 				2B0000010000000000001034 /* Features/ScorePractice/PaletteTranspose.swift */,
 				2B0000010000000000001019 /* Features/Diagnostics/DiagnosticsPanel.swift */,
@@ -284,6 +287,7 @@
 				2B0000010000000000000006 /* Features/ScorePractice/PaletteStyleFactory.swift in Sources */,
 				2B0000010000000000000007 /* Features/ScorePractice/ScorePracticeView.swift in Sources */,
 				2B0000010000000000000008 /* Features/ScorePractice/PaletteSettingsView.swift in Sources */,
+				2B00000100000000000000F2 /* Features/ScorePractice/TrackLayoutView.swift in Sources */,
 				2B00000100000000000000F1 /* Features/ScorePractice/OnboardingGuide.swift in Sources */,
 				2B00000100000000000000B1 /* Features/ScorePractice/PaletteTranspose.swift in Sources */,
 				2B0000010000000000000009 /* Features/Diagnostics/DiagnosticsPanel.swift in Sources */,

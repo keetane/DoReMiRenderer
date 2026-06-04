@@ -7,6 +7,7 @@ enum PaletteSettingsKeys {
     static let keyboardColorVisible = "doremi.palette.keyboardColorVisible"
     static let keyboardColorPositionTop = "doremi.palette.keyboardColorPositionTop"
     static let keyboardLineNumberVisible = "doremi.palette.keyboardLineNumberVisible"
+    static let toolbarVisible = "doremi.palette.toolbarVisible"
     static let topToolbarVisible = "doremi.palette.topToolbarVisible"
     static let currentNoteDisplayVisible = "doremi.palette.currentNoteDisplayVisible"
     static let nextNoteDisplayVisible = "doremi.palette.nextNoteDisplayVisible"
@@ -30,6 +31,7 @@ enum PaletteSettingsDefaults {
     static let keyboardColorVisible = true
     static let keyboardColorPositionTop = true
     static let keyboardLineNumberVisible = false
+    static let toolbarVisible = true
     static let topToolbarVisible = true
     static let currentNoteDisplayVisible = true
     static let nextNoteDisplayVisible = true
@@ -53,6 +55,7 @@ struct AppRootView: View {
     @AppStorage(PaletteSettingsKeys.keyboardColorVisible) private var keyboardColorVisible = PaletteSettingsDefaults.keyboardColorVisible
     @AppStorage(PaletteSettingsKeys.keyboardColorPositionTop) private var keyboardColorPositionTop = PaletteSettingsDefaults.keyboardColorPositionTop
     @AppStorage(PaletteSettingsKeys.keyboardLineNumberVisible) private var keyboardLineNumberVisible = PaletteSettingsDefaults.keyboardLineNumberVisible
+    @AppStorage(PaletteSettingsKeys.toolbarVisible) private var toolbarVisible = PaletteSettingsDefaults.toolbarVisible
     @AppStorage(PaletteSettingsKeys.topToolbarVisible) private var topToolbarVisible = PaletteSettingsDefaults.topToolbarVisible
     @AppStorage(PaletteSettingsKeys.currentNoteDisplayVisible) private var currentNoteDisplayVisible = PaletteSettingsDefaults.currentNoteDisplayVisible
     @AppStorage(PaletteSettingsKeys.nextNoteDisplayVisible) private var nextNoteDisplayVisible = PaletteSettingsDefaults.nextNoteDisplayVisible
@@ -77,6 +80,7 @@ struct AppRootView: View {
             keyboardColorVisible: $keyboardColorVisible,
             keyboardColorPositionTop: $keyboardColorPositionTop,
             keyboardLineNumberVisible: $keyboardLineNumberVisible,
+            toolbarVisible: $toolbarVisible,
             topToolbarVisible: $topToolbarVisible,
             currentNoteDisplayVisible: $currentNoteDisplayVisible,
             nextNoteDisplayVisible: $nextNoteDisplayVisible,
@@ -93,6 +97,10 @@ struct AppRootView: View {
             onboardingCompleted: $onboardingCompleted
         )
         .task {
+            if ProcessInfo.processInfo.arguments.contains("--score-layout-track") {
+                scoreLayoutModeRawValue = PaletteScoreLayoutMode.track.rawValue
+                UserDefaults.standard.set(PaletteScoreLayoutMode.track.rawValue, forKey: PaletteSettingsKeys.scoreLayoutMode)
+            }
             if !displayTransposeEnabled {
                 displayTransposeEnabled = true
             }
@@ -102,6 +110,7 @@ struct AppRootView: View {
             session.setMetronomeCompoundMode(PaletteMetronomeCompoundMode.fromRawValue(metronomeCompoundModeRawValue))
             session.setMetronomeClickSoundStyle(PaletteMetronomeClickSoundStyle.fromRawValue(metronomeClickSoundStyleRawValue))
             session.loadBundledSampleIfNeeded()
+            session.setScoreLayoutMode(PaletteScoreLayoutMode.fromRawValue(scoreLayoutModeRawValue))
 #if DEBUG
             await runDebugAutoplayIfRequested()
 #endif
@@ -127,6 +136,13 @@ struct AppRootView: View {
             try? await Task.sleep(nanoseconds: nanoseconds)
         }
         session.play()
+        if let resetDelay = Double(environment["DOREMI_AUTOPLAY_RESET_AFTER_SECONDS"] ?? "") {
+            let resetNanoseconds = UInt64(max(0, resetDelay) * 1_000_000_000)
+            if resetNanoseconds > 0 {
+                try? await Task.sleep(nanoseconds: resetNanoseconds)
+            }
+            session.resetPlayback()
+        }
     }
 #endif
 }

@@ -7,6 +7,7 @@ struct PaletteSettingsView: View {
     @Binding var keyboardColorVisible: Bool
     @Binding var keyboardColorPositionTop: Bool
     @Binding var keyboardLineNumberVisible: Bool
+    @Binding var toolbarVisible: Bool
     @Binding var topToolbarVisible: Bool
     @Binding var currentNoteDisplayVisible: Bool
     @Binding var nextNoteDisplayVisible: Bool
@@ -39,8 +40,14 @@ struct PaletteSettingsView: View {
                 }
                 .onboardingAnchor(.settingsDisplayOptions)
                 Section("レイアウト") {
-                    Toggle("横一列", isOn: horizontalLayoutBinding)
+                    Picker("表示", selection: layoutModeBinding) {
+                        ForEach(PaletteScoreLayoutMode.allCases) { mode in
+                            Text(mode.displayName).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
                     Toggle("鍵盤を表示", isOn: $keyboardVisible)
+                    Toggle("ツールバー表示", isOn: $toolbarVisible)
                     Toggle("上部ツールバー", isOn: $topToolbarVisible)
                     Toggle("現在の音を表示", isOn: $currentNoteDisplayVisible)
                     Toggle("次の音を表示", isOn: $nextNoteDisplayVisible)
@@ -115,13 +122,14 @@ struct PaletteSettingsView: View {
         }
     }
 
-    private var horizontalLayoutBinding: Binding<Bool> {
+    private var layoutModeBinding: Binding<PaletteScoreLayoutMode> {
         Binding(
-            get: { PaletteScoreLayoutMode.fromRawValue(scoreLayoutModeRawValue) == .horizontal },
-            set: { isHorizontal in
-                scoreLayoutModeRawValue = isHorizontal
-                    ? PaletteScoreLayoutMode.horizontal.rawValue
-                    : PaletteScoreLayoutMode.a4.rawValue
+            get: { PaletteScoreLayoutMode.fromRawValue(scoreLayoutModeRawValue) },
+            set: { mode in
+                scoreLayoutModeRawValue = mode.rawValue
+                if mode == .track {
+                    keyboardVisible = true
+                }
             }
         )
     }

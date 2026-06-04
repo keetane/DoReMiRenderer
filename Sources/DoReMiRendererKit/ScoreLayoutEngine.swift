@@ -649,13 +649,15 @@ struct ScoreLayoutEngine: Sendable {
                 }
             }
 
-            elements.append(contentsOf: beamElements(
+            let beamResult = beamElementsAndAdjustedStems(
                 groups: beamGroups,
                 measure: item.measure,
                 noteByID: noteByID,
                 elements: elements,
                 metrics: metrics
-            ))
+            )
+            elements = beamResult.elements
+            elements.append(contentsOf: beamResult.beams)
             elements.append(contentsOf: articulationElements(
                 pendingArticulations,
                 existingElements: elements,
@@ -710,7 +712,8 @@ struct ScoreLayoutEngine: Sendable {
                 measureX: measureX,
                 measureWidth: measureWidth,
                 systemTop: systemTop,
-                metrics: metrics
+                metrics: metrics,
+                existingElements: elements
             ))
             elements.append(contentsOf: playbackJumpMarkerElements(
                 measure: item.measure,
@@ -719,7 +722,8 @@ struct ScoreLayoutEngine: Sendable {
                 measureX: measureX,
                 measureWidth: measureWidth,
                 systemTop: systemTop,
-                metrics: metrics
+                metrics: metrics,
+                existingElements: elements
             ))
 
             measureX += measureWidth + options.measureSpacing
@@ -1221,20 +1225,23 @@ struct ScoreLayoutEngine: Sendable {
         MusicalTime(ticks: measureStart.ticks + beatDuration.ticks * index, ticksPerQuarterNote: measureStart.ticksPerQuarterNote)
     }
 
-    private func beamElements(
+    private func beamElementsAndAdjustedStems(
         groups: [BeamGroup],
         measure: Measure,
         noteByID: [NoteID: NoteLayout],
         elements: [ElementLayout],
         metrics: LayoutMetrics
-    ) -> [ElementLayout] {
+    ) -> (elements: [ElementLayout], beams: [ElementLayout]) {
+        var adjustedElements = elements
         var stemsByNoteID: [NoteID: ElementLayout] = [:]
-        for element in elements where element.kind == .stem {
+        var stemIndexByNoteID: [NoteID: Int] = [:]
+        for (index, element) in adjustedElements.enumerated() where element.kind == .stem {
             if let noteID = element.noteID {
                 stemsByNoteID[noteID] = element
+                stemIndexByNoteID[noteID] = index
             }
         }
-        return groups.compactMap { group in
+        let beams = groups.compactMap { group -> ElementLayout? in
             guard let firstID = group.noteIDs.first,
                   let lastID = group.noteIDs.last,
                   let firstStem = stemsByNoteID[firstID],
@@ -1243,22 +1250,52 @@ struct ScoreLayoutEngine: Sendable {
             else {
                 return nil
             }
-            let startTip = stemTip(stem: firstStem, noteLayout: firstLayout)
-            let endTip = stemTip(stem: lastStem, noteLayout: noteByID[lastID] ?? firstLayout)
-            let y1 = startTip.y
-            let y2 = endTip.y
-            let x1 = startTip.x
-            let x2 = endTip.x
+            let initialStartTip = stemTip(stem: firstStem, noteLayout: firstLayout)
+            let initialEndTip = stemTip(stem: lastStem, noteLayout: noteByID[lastID] ?? firstLayout)
+            let primary = readablePrimaryBeamSegment(
+                noteIDs: group.noteIDs,
+                noteByID: noteByID,
+                stemsByNoteID: stemsByNoteID,
+                initialStart: initialStartTip,
+                initialEnd: initialEndTip,
+                metrics: metrics
+            )
+            let y1 = primary.start.y
+            let y2 = primary.end.y
+            let x1 = primary.start.x
+            let x2 = primary.end.x
             let thickness = max(3, metrics.noteheadSize.height * 0.16)
+            func yOnPrimary(at x: CGFloat) -> CGFloat {
+                guard abs(x2 - x1) > 0.001 else {
+                    return y1
+                }
+                let t = (x - x1) / (x2 - x1)
+                return y1 + (y2 - y1) * t
+            }
+            for noteID in group.noteIDs {
+                guard let stem = stemsByNoteID[noteID],
+                      let noteLayout = noteByID[noteID],
+                      let index = stemIndexByNoteID[noteID]
+                else {
+                    continue
+                }
+                let adjustedStem = stemElement(
+                    stem,
+                    adjustedToBeamY: yOnPrimary(at: stem.frame.midX),
+                    noteLayout: noteLayout
+                )
+                adjustedElements[index] = adjustedStem
+                stemsByNoteID[noteID] = adjustedStem
+            }
             let secondarySegments = secondaryBeamSegments(
                 group: group,
                 noteByID: noteByID,
                 stemsByNoteID: stemsByNoteID,
-                primaryStart: startTip,
-                primaryEnd: endTip,
+                primaryStart: primary.start,
+                primaryEnd: primary.end,
                 thickness: thickness
             )
-            let allSegments = [BeamSegmentLayout(start: startTip, end: endTip)] + secondarySegments
+            let allSegments = [primary] + secondarySegments
             let minX = min(x1, x2)
             let minY = min(y1, y2) - thickness / 2
             let maxX = max(x1, x2)
@@ -1274,7 +1311,7 @@ struct ScoreLayoutEngine: Sendable {
             let frame = segmentBounds
             let beam = BeamLayout(
                 noteIDs: group.noteIDs,
-                primary: BeamSegmentLayout(start: startTip, end: endTip),
+                primary: primary,
                 secondarySegments: secondarySegments,
                 thickness: thickness
             )
@@ -1290,11 +1327,114 @@ struct ScoreLayoutEngine: Sendable {
                 beam: beam
             )
         }
+        return (adjustedElements, beams)
     }
 
     private func stemTip(stem: ElementLayout, noteLayout: NoteLayout) -> CGPoint {
         let drawsDown = stem.frame.midY > noteLayout.noteheadCenter.y
         return CGPoint(x: stem.frame.midX, y: drawsDown ? stem.frame.maxY : stem.frame.minY)
+    }
+
+    private func readablePrimaryBeamSegment(
+        noteIDs: [NoteID],
+        noteByID: [NoteID: NoteLayout],
+        stemsByNoteID: [NoteID: ElementLayout],
+        initialStart: CGPoint,
+        initialEnd: CGPoint,
+        metrics: LayoutMetrics
+    ) -> BeamSegmentLayout {
+        let dx = initialEnd.x - initialStart.x
+        guard abs(dx) > 0.001 else {
+            return BeamSegmentLayout(start: initialStart, end: initialEnd)
+        }
+
+        let maxSlopeDelta = metrics.staffSpace * 1.25
+        let maxSlope = min(0.18, maxSlopeDelta / abs(dx))
+        let rawSlope = (initialEnd.y - initialStart.y) / dx
+        let slope = min(max(rawSlope, -maxSlope), maxSlope)
+        let midX = (initialStart.x + initialEnd.x) / 2
+        let midY = (initialStart.y + initialEnd.y) / 2
+        var startY = midY + slope * (initialStart.x - midX)
+        var endY = midY + slope * (initialEnd.x - midX)
+
+        func yOnLine(at x: CGFloat) -> CGFloat {
+            let t = (x - initialStart.x) / dx
+            return startY + (endY - startY) * t
+        }
+
+        let minimumStemLength = max(metrics.staffSpace * 2.4, metrics.noteheadSize.height * 1.45)
+        var outwardShift: CGFloat = 0
+        for noteID in noteIDs {
+            guard let stem = stemsByNoteID[noteID],
+                  let noteLayout = noteByID[noteID]
+            else {
+                continue
+            }
+            let drawsDown = stem.frame.midY > noteLayout.noteheadCenter.y
+            let noteSideY = drawsDown ? stem.frame.minY : stem.frame.maxY
+            let beamY = yOnLine(at: stem.frame.midX)
+            let currentLength = drawsDown ? beamY - noteSideY : noteSideY - beamY
+            let deficit = minimumStemLength - currentLength
+            guard deficit > 0 else {
+                continue
+            }
+            if drawsDown {
+                outwardShift = max(outwardShift, deficit)
+            } else {
+                outwardShift = min(outwardShift, -deficit)
+            }
+        }
+        startY += outwardShift
+        endY += outwardShift
+
+        return BeamSegmentLayout(
+            start: CGPoint(x: initialStart.x, y: startY),
+            end: CGPoint(x: initialEnd.x, y: endY)
+        )
+    }
+
+    private func stemElement(_ stem: ElementLayout, adjustedToBeamY beamY: CGFloat, noteLayout: NoteLayout) -> ElementLayout {
+        let drawsDown = stem.frame.midY > noteLayout.noteheadCenter.y
+        let frame: CGRect
+        if drawsDown {
+            let minY = stem.frame.minY
+            let maxY = max(minY + 1, beamY)
+            frame = CGRect(x: stem.frame.minX, y: minY, width: stem.frame.width, height: maxY - minY)
+        } else {
+            let maxY = stem.frame.maxY
+            let minY = min(maxY - 1, beamY)
+            frame = CGRect(x: stem.frame.minX, y: minY, width: stem.frame.width, height: maxY - minY)
+        }
+        return ElementLayout(
+            id: stem.id,
+            kind: stem.kind,
+            noteID: stem.noteID,
+            measureID: stem.measureID,
+            staffID: stem.staffID,
+            voiceID: stem.voiceID,
+            clef: stem.clef,
+            keySignature: stem.keySignature,
+            timeSignature: stem.timeSignature,
+            pitchClassHint: stem.pitchClassHint,
+            frame: frame,
+            noteLayout: stem.noteLayout,
+            staffLine: stem.staffLine,
+            ledgerLine: stem.ledgerLine,
+            accidental: stem.accidental,
+            annotation: stem.annotation,
+            articulation: stem.articulation,
+            dynamic: stem.dynamic,
+            hairpin: stem.hairpin,
+            pedal: stem.pedal,
+            barlineStyle: stem.barlineStyle,
+            repeatBarline: stem.repeatBarline,
+            beam: stem.beam,
+            curve: stem.curve,
+            tuplet: stem.tuplet,
+            repeatEnding: stem.repeatEnding,
+            measureRepeat: stem.measureRepeat,
+            playbackJumpMarker: stem.playbackJumpMarker
+        )
     }
 
     private func secondaryBeamSegments(
@@ -4125,7 +4265,8 @@ private func repeatEndingElements(
     measureX: CGFloat,
     measureWidth: CGFloat,
     systemTop: CGFloat,
-    metrics: LayoutMetrics
+    metrics: LayoutMetrics,
+    existingElements: [ElementLayout]
 ) -> [ElementLayout] {
     guard !staffIDs.isEmpty else {
         return []
@@ -4141,8 +4282,17 @@ private func repeatEndingElements(
     let bracketY = topStaffTop - metrics.staffSpace * 2.1
     let hookLength = metrics.staffSpace * 0.9
     let labelHeight = metrics.staffSpace * 1.05
-    let lineStartX = measureX + metrics.staffSpace * 0.35
     let lineEndX = measureX + measureWidth - metrics.staffSpace * 0.35
+    let lineStartX = repeatAnnotationStartX(
+        measure: measure,
+        measureX: measureX,
+        measureWidth: measureWidth,
+        existingElements: existingElements,
+        metrics: metrics,
+        defaultInset: metrics.staffSpace * 0.35,
+        clearance: metrics.staffSpace * 0.65,
+        maximumStartX: lineEndX - metrics.staffSpace * 2.4
+    )
     let lineStart = CGPoint(x: lineStartX, y: bracketY)
     let lineEnd = CGPoint(x: lineEndX, y: bracketY)
 
@@ -4232,7 +4382,8 @@ private func playbackJumpMarkerElements(
     measureX: CGFloat,
     measureWidth: CGFloat,
     systemTop: CGFloat,
-    metrics: LayoutMetrics
+    metrics: LayoutMetrics,
+    existingElements: [ElementLayout]
 ) -> [ElementLayout] {
     guard !measure.playbackJumpMarkers.isEmpty, let topStaffID = staffIDs.first else {
         return []
@@ -4242,11 +4393,20 @@ private func playbackJumpMarkerElements(
     let topStaffTop = metrics.staffMiddleY(systemTop: systemTop, staffIndex: topStaffIndex) - metrics.staffHeight / 2
     let markerHeight = metrics.staffSpace * 1.15
     let baseY = topStaffTop - metrics.staffSpace * 1.55
-    let baseX = measureX + min(measureWidth * 0.18, metrics.staffSpace * 2.8)
 
     return measure.playbackJumpMarkers.enumerated().map { index, marker in
         let label = playbackJumpMarkerLabel(for: marker)
         let width = max(metrics.staffSpace * 2.3, CGFloat(label.count) * metrics.staffSpace * 0.48)
+        let baseX = repeatAnnotationStartX(
+            measure: measure,
+            measureX: measureX,
+            measureWidth: measureWidth,
+            existingElements: existingElements,
+            metrics: metrics,
+            defaultInset: min(measureWidth * 0.18, metrics.staffSpace * 2.8),
+            clearance: metrics.staffSpace * 0.6,
+            maximumStartX: measureX + measureWidth - width - metrics.staffSpace * 0.5
+        )
         let point = CGPoint(
             x: baseX + CGFloat(index) * (width + metrics.staffSpace * 0.5),
             y: baseY - CGFloat(index / 2) * markerHeight
@@ -4267,6 +4427,30 @@ private func playbackJumpMarkerElements(
             playbackJumpMarker: layout
         )
     }
+}
+
+private func repeatAnnotationStartX(
+    measure: Measure,
+    measureX: CGFloat,
+    measureWidth: CGFloat,
+    existingElements: [ElementLayout],
+    metrics: LayoutMetrics,
+    defaultInset: CGFloat,
+    clearance: CGFloat,
+    maximumStartX: CGFloat
+) -> CGFloat {
+    let defaultX = measureX + defaultInset
+    let avoidedKinds: Set<ScoreElementKind> = [.clef, .keySignature, .timeSignature]
+    let avoidedEndX = existingElements
+        .filter {
+            $0.measureID == measure.id
+                && (avoidedKinds.contains($0.kind)
+                    || ($0.kind == .barline && $0.repeatBarline?.direction == .forward))
+        }
+        .map(\.frame.maxX)
+        .max()
+    let preferredX = max(defaultX, avoidedEndX.map { $0 + clearance } ?? defaultX)
+    return max(measureX, min(maximumStartX, max(measureX, preferredX)))
 }
 
 private func playbackJumpMarkerLabel(for marker: PlaybackJumpMarker) -> String {

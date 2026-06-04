@@ -28,6 +28,7 @@ final class PaletteScoreSession: ObservableObject {
     private var libraryCollection: LibraryCollection
     private var pendingPlaybackCursorIndex: Int?
     private var playbackCursorUpdateTask: Task<Void, Never>?
+    private var preferredScoreLayoutMode: PaletteScoreLayoutMode = .a4
     private static let playbackCursorUpdateIntervalNanoseconds: UInt64 = 180_000_000
 
     init(
@@ -94,6 +95,22 @@ final class PaletteScoreSession: ObservableObject {
         }
         let duration = playbackRuntime.totalSchedulingDurationSeconds()
         return duration.isFinite && duration > 0 ? duration : nil
+    }
+
+    func currentTrackPlaybackTimeSeconds() -> TimeInterval {
+        playbackRuntime.currentPlaybackElapsedSecondsForVisualTimeline()
+    }
+
+    func trackPlaybackStartTimes() -> [TimeInterval] {
+        playbackRuntime.visualTimelineStartTimesForTrack()
+    }
+
+    func trackPlaybackDurations() -> [TimeInterval] {
+        playbackRuntime.visualTimelineDurationsForTrack()
+    }
+
+    func trackPlaybackPitchDurations() -> [[Int: TimeInterval]] {
+        playbackRuntime.visualTimelinePitchDurationsForTrack()
     }
 
     var totalMeasureCount: Int {
@@ -234,7 +251,14 @@ final class PaletteScoreSession: ObservableObject {
         if practiceSession.isEnabled {
             movePracticeStep(by: offset)
         } else {
-            playbackRuntime.move(by: offset)
+            guard !playbackCursor.events.isEmpty else {
+                playbackRuntime.move(to: 0)
+                lastHitSummary = playbackCursor.stepSummary
+                return
+            }
+            let targetIndex = min(max(playbackCursor.index + offset, 0), playbackCursor.events.count - 1)
+            playbackCursor.setIndex(targetIndex)
+            playbackRuntime.move(to: targetIndex)
             lastHitSummary = playbackCursor.stepSummary
         }
     }
@@ -306,6 +330,7 @@ final class PaletteScoreSession: ObservableObject {
     }
 
     func setScoreLayoutMode(_ mode: PaletteScoreLayoutMode) {
+        preferredScoreLayoutMode = mode
         guard var loadedScore, loadedScore.layoutMode != mode else {
             return
         }
@@ -447,12 +472,13 @@ final class PaletteScoreSession: ObservableObject {
         defer { isLoading = false }
         do {
             resetKeyStateForScoreLoad()
-            let displayed = try loader.load(
+            var displayed = try loader.load(
                 data: data,
                 sourceName: sourceName,
                 displayTitle: displayTitle,
                 displayTransposeSemitones: activeDisplayTransposeSemitones
             )
+            displayed.layoutMode = preferredScoreLayoutMode
             loadedScore = displayed
             diagnostics = displayed.diagnostics
             errorMessage = nil
@@ -476,11 +502,12 @@ final class PaletteScoreSession: ObservableObject {
         defer { isLoading = false }
         do {
             resetKeyStateForScoreLoad()
-            let displayed = try loader.load(
+            var displayed = try loader.load(
                 data: data,
                 sourceName: sourceName,
                 displayTransposeSemitones: activeDisplayTransposeSemitones
             )
+            displayed.layoutMode = preferredScoreLayoutMode
             loadedScore = displayed
             diagnostics = displayed.diagnostics
             errorMessage = nil
@@ -595,7 +622,8 @@ final class PaletteScoreSession: ObservableObject {
             guard let self else {
                 return
             }
-            if self.playbackRuntime.state == .playing {
+            if self.playbackRuntime.state == .playing,
+               self.preferredScoreLayoutMode != .track {
                 self.schedulePlaybackCursorUpdate(index)
             } else {
                 self.pendingPlaybackCursorIndex = nil

@@ -1,4 +1,5 @@
 import DoReMiRendererKit
+import CoreGraphics
 import Foundation
 
 struct KeyboardPitchMapper {
@@ -43,6 +44,37 @@ struct KeyboardPitchMapper {
             }
             return KeyboardBlackKey(midi: midi, precedingWhiteIndex: previousIndex)
         }
+    }
+
+    static func whiteKeyWidth(totalWidth: CGFloat, range: ClosedRange<Int> = defaultRange) -> CGFloat {
+        totalWidth / CGFloat(max(whiteKeys(in: range).count, 1))
+    }
+
+    static func keyFrame(
+        for midi: Int,
+        totalSize: CGSize,
+        range: ClosedRange<Int> = defaultRange
+    ) -> CGRect {
+        let whites = whiteKeys(in: range)
+        let whiteWidth = whiteKeyWidth(totalWidth: totalSize.width, range: range)
+        if isBlackKey(midi: midi),
+           let blackKey = blackKeys(in: range).first(where: { $0.midi == midi }) {
+            return CGRect(
+                x: (CGFloat(blackKey.precedingWhiteIndex) + 0.68) * whiteWidth,
+                y: 0,
+                width: whiteWidth * 0.62,
+                height: totalSize.height * 0.62
+            )
+        }
+        guard let whiteIndex = whites.firstIndex(of: midi) else {
+            return .zero
+        }
+        return CGRect(
+            x: CGFloat(whiteIndex) * whiteWidth,
+            y: 0,
+            width: whiteWidth,
+            height: totalSize.height
+        )
     }
 
     static func highlightedMIDINumbers(
@@ -166,6 +198,16 @@ struct CurrentNoteHighlightState: Equatable {
             attackMIDIPitches: attackMIDIPitches,
             continuationMIDIPitches: continuationMIDIPitches.subtracting(attackMIDIPitches),
             isRest: !sawPitchedNote && event.midiPitches.isEmpty
+        )
+    }
+
+    static func makeTrackHighlight(midiPitches: Set<Int>) -> CurrentNoteHighlightState {
+        CurrentNoteHighlightState(
+            attackNoteIDs: [],
+            continuationNoteIDs: [],
+            attackMIDIPitches: midiPitches,
+            continuationMIDIPitches: [],
+            isRest: midiPitches.isEmpty
         )
     }
 }

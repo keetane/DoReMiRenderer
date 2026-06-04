@@ -273,6 +273,13 @@ APIs may change before `1.0`.
 - Added a score layout switcher for DoReMi Palette. Users can toggle between
   the existing horizontal one-row layout (`横一段`) and an A4-width layout (`A4`)
   that wraps measures into systems; printing always uses the A4 layout.
+- Added a DoReMi Palette track layout (`トラック`) that visualizes playback
+  events as keyboard-aligned falling bars for DTM/piano-roll style practice
+  while keeping PDF printing on the existing A4 layout. Track mode now forces
+  the keyboard visible and keeps the falling-note timeline moving from the play
+  start clock instead of resetting at every note change; track lanes and current
+  bars share the same key-frame geometry and current-pitch source as the
+  on-screen keyboard highlight.
 - Domain model for score documents, measures, notes, pitch, time, clefs, staves,
   score elements, diagnostics, and color rules.
 - Minimal MusicXML `score-partwise` parser with diagnostics.
