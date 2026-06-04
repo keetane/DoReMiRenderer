@@ -586,6 +586,65 @@ import Testing
     #expect(layout.elementLayout(for: ScoreElementID(rawValue: "eighth-a.flag")) == nil)
 }
 
+@Test func intermediateBeamedStemTipsMeetSlopedPrimaryBeam() throws {
+    let score = makeScore(notes: [
+        makeNote(id: "beam-a", pitch: Pitch(step: .c, octave: 5), onsetTicks: 0, durationTicks: 2, noteValueKind: .eighth),
+        makeNote(id: "beam-b", pitch: Pitch(step: .g, octave: 5), onsetTicks: 2, durationTicks: 2, noteValueKind: .eighth),
+        makeNote(id: "beam-c", pitch: Pitch(step: .e, octave: 5), onsetTicks: 4, durationTicks: 2, noteValueKind: .eighth),
+    ])
+
+    let layout = try ScoreLayoutEngine().layout(score: score)
+    let beam = try #require(layout.elements.first { $0.kind == .beam }?.beam)
+
+    for noteID in beam.noteIDs {
+        let stem = try #require(layout.elementLayout(for: ScoreElementID(rawValue: "\(noteID.rawValue).stem")))
+        let note = try #require(layout.noteLayout(for: noteID))
+        let tipY = stemTipY(stem: stem, note: note)
+        let beamY = primaryBeamY(beam, at: stem.frame.midX)
+
+        #expect(abs(tipY - beamY) < 0.001)
+    }
+}
+
+@Test func steepBeamsKeepReadableMinimumStemLength() throws {
+    let score = makeScore(notes: [
+        makeNote(
+            id: "steep-a",
+            pitch: Pitch(step: .c, octave: 5),
+            onsetTicks: 0,
+            durationTicks: 2,
+            noteValueKind: .eighth,
+            beams: [MusicXMLBeam(number: 1, value: .begin)]
+        ),
+        makeNote(
+            id: "steep-b",
+            pitch: Pitch(step: .g, octave: 5),
+            onsetTicks: 2,
+            durationTicks: 2,
+            noteValueKind: .eighth,
+            beams: [MusicXMLBeam(number: 1, value: .continue)]
+        ),
+        makeNote(
+            id: "steep-c",
+            pitch: Pitch(step: .e, octave: 5),
+            onsetTicks: 4,
+            durationTicks: 2,
+            noteValueKind: .eighth,
+            beams: [MusicXMLBeam(number: 1, value: .end)]
+        ),
+    ])
+
+    let layout = try ScoreLayoutEngine().layout(score: score, options: LayoutOptions(staffSpace: 10))
+    let beam = try #require(layout.elements.first { $0.kind == .beam }?.beam)
+
+    for noteID in beam.noteIDs {
+        let stem = try #require(layout.elementLayout(for: ScoreElementID(rawValue: "\(noteID.rawValue).stem")))
+        let note = try #require(layout.noteLayout(for: noteID))
+
+        #expect(stemLength(stem: stem, note: note) >= 23.9)
+    }
+}
+
 @Test func beamedNotesShareStemDirectionAcrossTheWholeBeamGroup() throws {
     let score = makeScore(notes: [
         makeNote(id: "chord-low", pitch: Pitch(step: .c, octave: 4), onsetTicks: 0, durationTicks: 2, noteValueKind: .eighth),
@@ -840,6 +899,62 @@ import Testing
 
     #expect(beams.count == 3)
     #expect(beams.allSatisfy { $0.noteIDs.count == 2 })
+}
+
+@Test func furEliseBeamedStemTipsMeetPrimaryBeam() throws {
+    let sampleURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        .appendingPathComponent("Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl")
+    let score = try DoReMiRenderer().parse(input: .mxlData(Data(contentsOf: sampleURL)))
+    let layout = try ScoreLayoutEngine().layout(
+        score: score,
+        options: LayoutOptions(
+            pageWidth: 595,
+            pageHeight: 842,
+            staffSpace: 8,
+            displayMode: .print,
+            showPageMargins: true
+        )
+    )
+    let beams = layout.elements.compactMap(\.beam)
+
+    #expect(beams.isEmpty == false)
+    for beam in beams {
+        for noteID in beam.noteIDs {
+            let stem = try #require(layout.elementLayout(for: ScoreElementID(rawValue: "\(noteID.rawValue).stem")))
+            let note = try #require(layout.noteLayout(for: noteID))
+            let tipY = stemTipY(stem: stem, note: note)
+            let beamY = primaryBeamY(beam, at: stem.frame.midX)
+
+            #expect(abs(tipY - beamY) < 0.001)
+        }
+    }
+}
+
+@Test func furEliseBeamedStemsKeepReadableMinimumLength() throws {
+    let sampleURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        .appendingPathComponent("Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl")
+    let score = try DoReMiRenderer().parse(input: .mxlData(Data(contentsOf: sampleURL)))
+    let layout = try ScoreLayoutEngine().layout(
+        score: score,
+        options: LayoutOptions(
+            pageWidth: 595,
+            pageHeight: 842,
+            staffSpace: 8,
+            displayMode: .print,
+            showPageMargins: true
+        )
+    )
+    let beams = layout.elements.compactMap(\.beam)
+
+    #expect(beams.isEmpty == false)
+    for beam in beams {
+        for noteID in beam.noteIDs {
+            let stem = try #require(layout.elementLayout(for: ScoreElementID(rawValue: "\(noteID.rawValue).stem")))
+            let note = try #require(layout.noteLayout(for: noteID))
+
+            #expect(stemLength(stem: stem, note: note) >= 19.1)
+        }
+    }
 }
 
 @Test func furEliseMeasureThirteenPlacesStaffTwoClefChangeBeforeLastNote() throws {
@@ -1383,6 +1498,40 @@ import Testing
     #expect(secondEnding.endHookEnd == nil)
 }
 
+@Test func furEliseRepeatEndingsAvoidSystemPrefixSymbols() throws {
+    let sampleURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        .appendingPathComponent("Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl")
+    let score = try DoReMiRenderer().parse(input: .mxlData(Data(contentsOf: sampleURL)))
+    let layout = try ScoreLayoutEngine().layout(
+        score: score,
+        options: LayoutOptions(
+            pageWidth: 595,
+            pageHeight: 842,
+            staffSpace: 8,
+            systemSpacing: 48,
+            measureSpacing: 0,
+            displayMode: .print,
+            showPageMargins: true
+        )
+    )
+    let prefixKinds: Set<ScoreElementKind> = [.clef, .keySignature, .timeSignature]
+
+    for id in [
+        ScoreElementID(rawValue: "0.8.repeatEnding.1.start"),
+        ScoreElementID(rawValue: "0.9.repeatEnding.2.start"),
+    ] {
+        let ending = try #require(layout.elementLayout(for: id))
+        let measureID = try #require(ending.measureID)
+        let prefixEndX = layout.elements
+            .filter { $0.measureID == measureID && prefixKinds.contains($0.kind) }
+            .map(\.frame.maxX)
+            .max()
+        guard let prefixEndX else { continue }
+        #expect((ending.repeatEnding?.lineStart.x ?? 0) - prefixEndX >= 4)
+        #expect((ending.repeatEnding?.labelPoint.x ?? 0) - prefixEndX >= 4)
+    }
+}
+
 @Test func furEliseSystemPrefixLeavesReadableSpaceBeforeFirstNote() throws {
     let sampleURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
         .appendingPathComponent("Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl")
@@ -1438,6 +1587,52 @@ import Testing
     }
 
     #expect(checkedPrefixGroups > 0)
+}
+
+@Test func repeatAnnotationsAvoidClefKeyAndTimePrefix() throws {
+    let measureID = MeasureID(partIndex: 0, measureNumber: "1")
+    let staffID = StaffID(rawValue: "1")
+    let score = ScoreDocument(parts: [
+        ScorePart(id: "p1", measures: [
+            Measure(
+                id: measureID,
+                number: "1",
+                notes: [makeNote(id: "prefixed-repeat-note", pitch: Pitch(step: .c, octave: 5), onsetTicks: 0, staffID: staffID)],
+                clef: Clef(kind: .treble),
+                keySignature: KeySignature(fifths: 3, mode: "major"),
+                timeSignature: TimeSignature(beats: 4, beatType: 4),
+                repeatBarlines: [RepeatBarline(direction: .forward)],
+                repeatEndings: [RepeatEnding(numbers: [1], kind: .start)],
+                playbackJumpMarkers: [PlaybackJumpMarker(kind: .segno, text: "Segno")]
+            ),
+        ]),
+    ])
+
+    let layout = try ScoreLayoutEngine().layout(score: score, options: LayoutOptions(staffSpace: 10))
+    let prefixKinds: Set<ScoreElementKind> = [.clef, .keySignature, .timeSignature]
+    let prefixFrames = layout.elements
+        .filter { element in
+            element.measureID == measureID && prefixKinds.contains(element.kind)
+        }
+        .map { element in element.frame }
+    let prefixEndX = try #require(prefixFrames.map { frame in frame.maxX }.max())
+    let repeatStart = try #require(layout.elements.first { element in
+        element.measureID == measureID
+            && element.kind == .barline
+            && element.repeatBarline?.direction == .forward
+    })
+    let ending = try #require(layout.elements.first { element in
+        element.measureID == measureID && element.kind == .repeatEnding
+    })
+    let marker = try #require(layout.elements.first { element in
+        element.measureID == measureID && element.kind == .playbackJumpMarker
+    })
+
+    #expect(repeatStart.frame.minX > prefixEndX)
+    #expect((ending.repeatEnding?.lineStart.x ?? 0) > prefixEndX)
+    #expect(ending.frame.minX > prefixEndX)
+    #expect((marker.playbackJumpMarker?.point.x ?? 0) > prefixEndX)
+    #expect(marker.frame.minX > prefixEndX)
 }
 
 @Test func prefixWithoutTimeSignatureKeepsNotesCloserThanFullSystemPrefix() throws {
@@ -2072,6 +2267,28 @@ private func a4PrintOptions() -> LayoutOptions {
         displayMode: .print,
         showPageMargins: true
     )
+}
+
+private func primaryBeamY(_ beam: BeamLayout, at x: CGFloat) -> CGFloat {
+    let start = beam.primary.start
+    let end = beam.primary.end
+    guard abs(end.x - start.x) > 0.001 else {
+        return start.y
+    }
+    let t = (x - start.x) / (end.x - start.x)
+    return start.y + (end.y - start.y) * t
+}
+
+private func stemTipY(stem: ElementLayout, note: NoteLayout) -> CGFloat {
+    let drawsDown = stem.frame.midY > note.noteheadCenter.y
+    return drawsDown ? stem.frame.maxY : stem.frame.minY
+}
+
+private func stemLength(stem: ElementLayout, note: NoteLayout) -> CGFloat {
+    let drawsDown = stem.frame.midY > note.noteheadCenter.y
+    let noteSideY = drawsDown ? stem.frame.minY : stem.frame.maxY
+    let tipY = stemTipY(stem: stem, note: note)
+    return drawsDown ? tipY - noteSideY : noteSideY - tipY
 }
 
 private func makeScore(

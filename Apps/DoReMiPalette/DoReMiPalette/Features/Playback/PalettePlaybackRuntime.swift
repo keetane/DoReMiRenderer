@@ -98,6 +98,7 @@ final class PalettePlaybackRuntime {
     private var globalTempoEvents: [TempoEvent] = []
     private var timeSignatureByMeasureID: [MeasureID: TimeSignature] = [:]
     private var playbackScheduleStartMonotonic: TimeInterval?
+    private var playbackScheduleBaseElapsed: TimeInterval = 0
     private var currentEventStartedAtMonotonic: TimeInterval?
     private var metronomePlanStartMonotonic: TimeInterval?
     private var metronomeClickPlan: [MetronomeScheduledClick] = []
@@ -231,6 +232,7 @@ final class PalettePlaybackRuntime {
         audioEngine.silence()
         prewarmAudioForUpcomingEvents(startingAt: currentEventIndex)
         let scheduleStart = Self.monotonicTime()
+        playbackScheduleBaseElapsed = elapsedSecondsToEvent(at: currentEventIndex)
         playbackScheduleStartMonotonic = scheduleStart
         currentEventStartedAtMonotonic = scheduleStart
         currentEventStartedAt = Date()
@@ -362,6 +364,7 @@ final class PalettePlaybackRuntime {
 #endif
         prewarmAudioForUpcomingEvents(startingAt: currentEventIndex)
         let scheduleStart = Self.monotonicTime()
+        playbackScheduleBaseElapsed = elapsedSecondsToEvent(at: currentEventIndex)
         playbackScheduleStartMonotonic = scheduleStart
         currentEventStartedAtMonotonic = scheduleStart
         currentEventStartedAt = Date()
@@ -382,6 +385,7 @@ final class PalettePlaybackRuntime {
         audioEngine.silence()
         currentEventStartedAt = nil
         playbackScheduleStartMonotonic = nil
+        playbackScheduleBaseElapsed = elapsedSecondsToEvent(at: currentEventIndex)
         currentEventStartedAtMonotonic = nil
         state = .paused
 #if DEBUG
@@ -396,6 +400,7 @@ final class PalettePlaybackRuntime {
         audioEngine.silence()
         currentEventStartedAt = nil
         playbackScheduleStartMonotonic = nil
+        playbackScheduleBaseElapsed = 0
         currentEventStartedAtMonotonic = nil
         state = .stopped
 #if DEBUG
@@ -421,6 +426,7 @@ final class PalettePlaybackRuntime {
             let now = Self.monotonicTime()
             currentEventStartedAt = Date()
             currentEventStartedAtMonotonic = now
+            playbackScheduleBaseElapsed = elapsedSecondsToEvent(at: currentEventIndex)
             playbackScheduleStartMonotonic = now
             restartMetronomeIfNeeded(resetBeat: false)
             triggerAudio(for: event)
@@ -439,6 +445,7 @@ final class PalettePlaybackRuntime {
             let now = Self.monotonicTime()
             currentEventStartedAt = Date()
             currentEventStartedAtMonotonic = now
+            playbackScheduleBaseElapsed = elapsedSecondsToEvent(at: currentEventIndex)
             playbackScheduleStartMonotonic = now
             restartMetronomeIfNeeded(resetBeat: false)
             triggerAudio(for: event)
@@ -474,6 +481,7 @@ final class PalettePlaybackRuntime {
             let now = Self.monotonicTime()
             currentEventStartedAt = Date()
             currentEventStartedAtMonotonic = now
+            playbackScheduleBaseElapsed = elapsedSecondsToEvent(at: currentEventIndex)
             playbackScheduleStartMonotonic = now
             restartMetronomeIfNeeded(resetBeat: false)
             triggerAudio(for: event)
@@ -564,6 +572,54 @@ final class PalettePlaybackRuntime {
         }
         return events.indices.reduce(0) { partial, index in
             partial + schedulingIntervalSeconds(from: index)
+        }
+    }
+
+    func currentPlaybackElapsedSecondsForVisualTimeline() -> TimeInterval {
+        if state == .playing, let playbackScheduleStartMonotonic {
+            let elapsed = playbackScheduleBaseElapsed + max(0, Self.monotonicTime() - playbackScheduleStartMonotonic)
+            return max(0, elapsed)
+        }
+        return elapsedSecondsToEvent(at: currentEventIndex)
+    }
+
+    func visualTimelineStartTimesForTrack() -> [TimeInterval] {
+        guard !events.isEmpty else {
+            return []
+        }
+        var elapsed: TimeInterval = 0
+        return events.indices.map { index in
+            defer { elapsed += schedulingIntervalSeconds(from: index) }
+            return elapsed
+        }
+    }
+
+    func visualTimelineDurationsForTrack() -> [TimeInterval] {
+        events.map { event in
+            eventDurationSeconds(for: event)
+        }
+    }
+
+    func visualTimelinePitchDurationsForTrack() -> [[Int: TimeInterval]] {
+        events.map { event in
+            event.midiPitches.reduce(into: [Int: TimeInterval]()) { result, midiPitch in
+                let duration = event.midiPitchDurations[midiPitch] ?? event.nominalDuration
+                let seconds = durationSeconds(for: duration, event: event)
+                result[midiPitch] = expressionExtendedDuration(min(max(0.05, seconds), 8), for: event)
+            }
+        }
+    }
+
+    func elapsedSecondsToEvent(at index: Int) -> TimeInterval {
+        guard !events.isEmpty else {
+            return 0
+        }
+        let clampedIndex = min(max(index, 0), events.count)
+        guard clampedIndex > 0 else {
+            return 0
+        }
+        return (0..<clampedIndex).reduce(0) { partial, eventIndex in
+            partial + schedulingIntervalSeconds(from: eventIndex)
         }
     }
 

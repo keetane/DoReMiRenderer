@@ -925,10 +925,11 @@ Manual QA screenshots should be grouped under
 ## Print MVP QA
 
 DoReMi Palette exposes a toolbar `印刷` button and a score layout switcher. The
-on-screen score can use the horizontal one-row layout (`横一段`) or an A4-width
-layout (`A4`) that wraps measures into systems. Printing always uses the A4
-layout so the PDF follows normal sheet-music proportions even if the user is
-viewing the horizontal layout.
+on-screen score can use the horizontal one-row layout (`横一段`), an A4-width
+layout (`A4`) that wraps measures into systems, or a keyboard-aligned track
+layout (`トラック`) that draws falling playback-event bars over pitch lanes.
+Printing always uses the A4 layout so the PDF follows normal sheet-music
+proportions even if the user is viewing the horizontal or track layout.
 
 Implementation boundaries:
 
@@ -938,8 +939,9 @@ Implementation boundaries:
 - The app does not reparse MusicXML, regenerate `NoteID`, or recalculate
   `ScoreLayout` for printing.
 - `PaletteScoreLoader` creates both horizontal and A4 `ScoreLayout` values from
-  the same parsed `ScoreDocument`; the UI only switches which existing layout is
-  active.
+  the same parsed `ScoreDocument`; the UI switches which existing score layout
+  is active, while the track layout remains an app-side visualization driven by
+  `PlaybackEvent` timing and the existing keyboard pitch mapping.
 - Playback, Practice Mode, Library, and Diagnostics are not involved in the
   print path.
 
@@ -947,8 +949,9 @@ Manual QA:
 
 1. Build and launch DoReMi Palette on iPad Simulator or a real iPad.
 2. Load the bundled S6 sample or another sample.
-3. Switch between `横一段` and `A4`; confirm the score changes from a single
-   horizontal system to wrapped A4 systems without changing playback position.
+3. Switch between `横一段`, `A4`, and `トラック`; confirm the score changes from a
+   single horizontal system to wrapped A4 systems and then to falling
+   keyboard-aligned event bars without changing playback position.
 4. Tap `印刷`.
 5. Confirm the iOS print sheet appears with the A4 score PDF.
 6. Cancel the sheet and confirm playback, scrolling, Library, and Diagnostics

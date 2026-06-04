@@ -36,7 +36,7 @@ struct PaletteLoadedScore {
         switch layoutMode {
         case .horizontal:
             horizontalLayout
-        case .a4:
+        case .a4, .track:
             a4Layout
         }
     }
@@ -65,6 +65,7 @@ struct PaletteLoadedScore {
 enum PaletteScoreLayoutMode: String, CaseIterable, Identifiable {
     case horizontal
     case a4
+    case track
 
     var id: String { rawValue }
 
@@ -74,6 +75,8 @@ enum PaletteScoreLayoutMode: String, CaseIterable, Identifiable {
             "横一段"
         case .a4:
             "A4"
+        case .track:
+            "トラック"
         }
     }
 

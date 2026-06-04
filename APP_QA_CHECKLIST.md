@@ -712,14 +712,16 @@ renderer path and must remain layout-driven.
 ## Print MVP QA
 
 - [ ] `印刷` button is visible in the top toolbar when a score is loaded.
-- [ ] `譜面レイアウト` can switch between `横一段` and `A4`.
+- [ ] `譜面レイアウト` can switch between `横一段`, `A4`, and `トラック`.
 - [ ] `横一段` keeps the existing single horizontal score flow.
 - [ ] `A4` wraps measures into normal page-width systems.
+- [ ] `トラック` shows keyboard-aligned falling playback-event bars and keeps the
+  keyboard pitch alignment consistent with the regular keyboard view.
 - [ ] Switching layouts does not change playback position, highlights, Library,
   Diagnostics, or imported score state.
 - [ ] Tapping `印刷` opens the standard iOS print sheet.
 - [ ] Print preview uses the A4 score layout even when the on-screen layout is
-  `横一段`.
+  `横一段` or `トラック`.
 - [ ] Note Color / Staff Color settings are reflected in the generated PDF.
 - [ ] Cancelling the print sheet returns to the score without changing
   playback, Practice Mode, Library, or Diagnostics state.

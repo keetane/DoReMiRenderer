@@ -51,7 +51,7 @@ struct KeyboardView: View {
 
     var body: some View {
         GeometryReader { proxy in
-            let whiteWidth = proxy.size.width / CGFloat(max(whiteKeys.count, 1))
+            let whiteWidth = KeyboardPitchMapper.whiteKeyWidth(totalWidth: proxy.size.width, range: range)
             let colorBandHeight = max(8, proxy.size.height * 0.20)
             ZStack(alignment: .topLeading) {
                 HStack(spacing: 0) {
@@ -76,6 +76,7 @@ struct KeyboardView: View {
                 }
 
                 ForEach(blackKeys, id: \.self) { key in
+                    let frame = KeyboardPitchMapper.keyFrame(for: key.midi, totalSize: proxy.size, range: range)
                     BlackKey(
                         midi: key.midi,
                         highlightKind: highlightKind(for: key.midi),
@@ -90,8 +91,8 @@ struct KeyboardView: View {
                             : nil,
                         colorBandHeight: colorBandHeight
                     )
-                    .frame(width: whiteWidth * 0.62, height: proxy.size.height * 0.62)
-                    .offset(x: (CGFloat(key.precedingWhiteIndex) + 0.68) * whiteWidth)
+                    .frame(width: frame.width, height: frame.height)
+                    .offset(x: frame.minX)
                 }
             }
         }

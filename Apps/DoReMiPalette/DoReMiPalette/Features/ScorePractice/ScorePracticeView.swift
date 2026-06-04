@@ -47,6 +47,7 @@ struct ScorePracticeView: View {
     @Binding var keyboardColorVisible: Bool
     @Binding var keyboardColorPositionTop: Bool
     @Binding var keyboardLineNumberVisible: Bool
+    @Binding var toolbarVisible: Bool
     @Binding var topToolbarVisible: Bool
     @Binding var currentNoteDisplayVisible: Bool
     @Binding var nextNoteDisplayVisible: Bool
@@ -72,6 +73,8 @@ struct ScorePracticeView: View {
     @State private var measureJumpError: String?
     @State private var printJob: PalettePrintJob?
     @State private var onboardingState = OnboardingGuideState.inactive
+    @State private var trackVisualEventIndex: Int?
+    @State private var trackActiveMIDIPitches: Set<Int> = []
     @GestureState private var pinchMagnification = 1.0
     @FocusState private var measureJumpFocused: Bool
     private var playbackControlHeight: CGFloat { isCompact ? 26 : 28 }
@@ -127,6 +130,7 @@ struct ScorePracticeView: View {
                     keyboardColorVisible: $keyboardColorVisible,
                     keyboardColorPositionTop: $keyboardColorPositionTop,
                     keyboardLineNumberVisible: $keyboardLineNumberVisible,
+                    toolbarVisible: $toolbarVisible,
                     topToolbarVisible: $topToolbarVisible,
                     currentNoteDisplayVisible: $currentNoteDisplayVisible,
                     nextNoteDisplayVisible: $nextNoteDisplayVisible,
@@ -172,7 +176,11 @@ struct ScorePracticeView: View {
             .onAppear {
                 displayTransposeEnabled = true
                 zoomScale = PaletteZoomScale.clamped(zoomScale)
+                if selectedScoreLayoutMode == .track {
+                    keyboardVisible = true
+                }
                 syncTransposeSetting()
+                session.setScoreLayoutMode(selectedScoreLayoutMode)
                 applyPaletteEditorLaunchArgumentsIfNeeded()
                 startInitialOnboardingIfNeeded()
             }
@@ -192,11 +200,24 @@ struct ScorePracticeView: View {
                 session.setDisplayTransposeEnabled(true)
             }
             .onChange(of: scoreLayoutModeRawValue) { _, newValue in
-                session.setScoreLayoutMode(PaletteScoreLayoutMode.fromRawValue(newValue))
+                let mode = PaletteScoreLayoutMode.fromRawValue(newValue)
+                resetTrackPlaybackVisualState()
+                if mode == .track {
+                    keyboardVisible = true
+                }
+                session.setScoreLayoutMode(mode)
             }
             .onChange(of: session.loadedScore?.sourceName) { _, _ in
+                resetTrackPlaybackVisualState()
                 resetKeyControlsForScoreLoad()
                 session.setScoreLayoutMode(selectedScoreLayoutMode)
+            }
+            .onChange(of: session.playbackCursor.index) { _, newValue in
+                if selectedScoreLayoutMode == .track,
+                   session.playbackState == .stopped,
+                   newValue == 0 {
+                    resetTrackPlaybackVisualState()
+                }
             }
             .onChange(of: metronomeEnabled) { _, newValue in
                 session.setMetronomeEnabled(newValue)
@@ -311,6 +332,7 @@ struct ScorePracticeView: View {
                         noteColorVisible: $noteColorVisible,
                         staffColorVisible: $staffColorVisible,
                         selectedKeyPitchClass: transposeKeyBinding,
+                        toolbarVisible: $toolbarVisible,
                         keyboardColorPositionTop: keyboardColorPositionTop,
                         keyboardLineNumberVisible: keyboardLineNumberVisible,
                         scaleTonicPitchClass: selectedMainKeyPitchClass,
@@ -332,7 +354,9 @@ struct ScorePracticeView: View {
 
     @ViewBuilder
     private var arrangedContent: some View {
-        if topToolbarVisible {
+        if !toolbarVisible {
+            content
+        } else if topToolbarVisible {
             controlBar
             Divider()
             content
@@ -362,11 +386,13 @@ struct ScorePracticeView: View {
         HStack(alignment: .center, spacing: isCompact ? 10 : 14) {
             playbackCommandButton("Reset", systemImage: "backward.end.fill") {
                 session.resetPlayback()
+                syncTrackPlaybackVisualStateToCursor()
             }
                 .disabled(session.playbackCursor.events.isEmpty || session.playbackCursor.index == 0)
 
             playbackCommandButton("Previous", systemImage: "chevron.left") {
                 session.movePlaybackStep(by: -1)
+                syncTrackPlaybackVisualStateToCursor()
             }
                 .disabled(session.playbackCursor.events.isEmpty || session.playbackCursor.index == 0)
 
@@ -376,6 +402,7 @@ struct ScorePracticeView: View {
 
             playbackCommandButton("Next", systemImage: "chevron.right") {
                 session.movePlaybackStep(by: 1)
+                syncTrackPlaybackVisualStateToCursor()
             }
                 .disabled(session.playbackCursor.events.isEmpty || session.playbackCursor.index >= session.playbackCursor.events.count - 1)
                 .onboardingAnchor(.previousNextControls)
@@ -654,42 +681,81 @@ struct ScorePracticeView: View {
     @ViewBuilder
     private var content: some View {
         if let loaded = session.loadedScore {
-            let highlight = session.currentHighlightState.visible(if: currentNoteDisplayVisible)
             let pitchColorState = PalettePitchClassColorState(encodedValue: pitchClassColorEnabledRawValue)
+            let activeLayoutMode = selectedScoreLayoutMode
+            let visualTrackEventIndex = activeLayoutMode == .track
+                ? min(max(trackVisualEventIndex ?? session.playbackCursor.index, 0), max(loaded.playbackEvents.count - 1, 0))
+                : session.playbackCursor.index
+            let trackHighlight = activeLayoutMode == .track
+                ? CurrentNoteHighlightState.makeTrackHighlight(midiPitches: trackActiveMIDIPitches)
+                : session.currentHighlightState
+            let highlight = trackHighlight.visible(if: currentNoteDisplayVisible)
+            let effectiveKeyboardVisible = keyboardVisible || activeLayoutMode == .track
             VStack(spacing: 0) {
                 GeometryReader { proxy in
                     let scoreScale = fittedScoreScale(for: loaded, viewportWidth: proxy.size.width)
-                    let usesSmoothPlaybackFollow = loaded.layoutMode == .horizontal
+                    let usesSmoothPlaybackFollow = activeLayoutMode == .horizontal
                     ZStack(alignment: .topLeading) {
-                        ScoreCanvasView(
-                            layout: loaded.layout,
-                            score: loaded.score,
-                            style: PaletteStyleFactory.makeStyle(
-                                noteColorVisible: noteColorVisible,
-                                staffColorVisible: staffColorVisible,
-                                paletteKind: selectedColorScheme,
+                        if activeLayoutMode == .track {
+                            TrackLayoutView(
+                                title: loaded.displayName,
+                                events: loaded.playbackEvents,
+                                currentEventIndex: visualTrackEventIndex,
+                                currentMIDIPitches: highlight.attackMIDIPitches.union(highlight.continuationMIDIPitches),
+                                playbackState: session.playbackState,
+                                tempoBPM: session.playbackTempoBPM,
+                                transposeSemitones: transposeSemitones,
+                                palette: selectedColorScheme.palette,
                                 pitchClassColorState: pitchColorState,
                                 scaleTonicPitchClass: selectedMainKeyPitchClass,
-                                measureNumbersVisible: measureNumbersVisible
-                            ),
-                            currentNoteIDs: highlight.attackNoteIDs,
-                            continuationNoteIDs: highlight.continuationNoteIDs,
-                            followNoteIDs: session.currentNoteIDs,
-                            nextFollowNoteIDs: session.nextFollowNoteIDs,
-                            continuousFollowNoteIDs: usesSmoothPlaybackFollow ? session.continuousFollowNoteIDs : [],
-                            scale: CGFloat(scoreScale),
-                            scrollAxes: [.horizontal, .vertical],
-                            followsCurrentNote: currentNoteDisplayVisible,
-                            followPlacement: usesSmoothPlaybackFollow ? .horizontalSmooth : .topAligned,
-                            followAnimationDuration: usesSmoothPlaybackFollow ? session.currentFollowAnimationDuration : nil,
-                            continuousFollowPlaybackDuration: usesSmoothPlaybackFollow ? session.continuousFollowPlaybackDuration : nil,
-                            staticRenderKey: scoreStaticRenderKey,
-                            onTap: session.handleTap
-                        )
-                        if loaded.layoutMode == .horizontal {
-                            horizontalScoreTitle(loaded.displayName)
+                                playbackTimeProvider: {
+                                    session.currentTrackPlaybackTimeSeconds()
+                                },
+                                scheduledStartTimes: session.trackPlaybackStartTimes(),
+                                scheduledDurations: session.trackPlaybackDurations(),
+                                scheduledPitchDurations: session.trackPlaybackPitchDurations(),
+                                onVisualEventIndexChange: { index in
+                                    if trackVisualEventIndex != index {
+                                        trackVisualEventIndex = index
+                                    }
+                                },
+                                onActiveMIDIPitchesChange: { pitches in
+                                    if trackActiveMIDIPitches != pitches {
+                                        trackActiveMIDIPitches = pitches
+                                    }
+                                }
+                            )
+                        } else {
+                            ScoreCanvasView(
+                                layout: loaded.layout,
+                                score: loaded.score,
+                                style: PaletteStyleFactory.makeStyle(
+                                    noteColorVisible: noteColorVisible,
+                                    staffColorVisible: staffColorVisible,
+                                    paletteKind: selectedColorScheme,
+                                    pitchClassColorState: pitchColorState,
+                                    scaleTonicPitchClass: selectedMainKeyPitchClass,
+                                    measureNumbersVisible: measureNumbersVisible
+                                ),
+                                currentNoteIDs: highlight.attackNoteIDs,
+                                continuationNoteIDs: highlight.continuationNoteIDs,
+                                followNoteIDs: session.currentNoteIDs,
+                                nextFollowNoteIDs: session.nextFollowNoteIDs,
+                                continuousFollowNoteIDs: usesSmoothPlaybackFollow ? session.continuousFollowNoteIDs : [],
+                                scale: CGFloat(scoreScale),
+                                scrollAxes: [.horizontal, .vertical],
+                                followsCurrentNote: currentNoteDisplayVisible,
+                                followPlacement: usesSmoothPlaybackFollow ? .horizontalSmooth : .topAligned,
+                                followAnimationDuration: usesSmoothPlaybackFollow ? session.currentFollowAnimationDuration : nil,
+                                continuousFollowPlaybackDuration: usesSmoothPlaybackFollow ? session.continuousFollowPlaybackDuration : nil,
+                                staticRenderKey: scoreStaticRenderKey,
+                                onTap: session.handleTap
+                            )
+                            if activeLayoutMode == .horizontal {
+                                horizontalScoreTitle(loaded.displayName)
+                            }
+                            firstBeatOnboardingAnchor(for: loaded, scale: scoreScale)
                         }
-                        firstBeatOnboardingAnchor(for: loaded, scale: scoreScale)
                     }
                     .simultaneousGesture(pinchZoomGesture)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -697,7 +763,7 @@ struct ScorePracticeView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                if keyboardVisible {
+                if effectiveKeyboardVisible {
                     Divider()
                     KeyboardView(
                         layout: loaded.layout,
@@ -712,7 +778,7 @@ struct ScorePracticeView: View {
                         scaleTonicPitchClass: selectedMainKeyPitchClass
                     )
                         .frame(height: isCompact ? 96 : 132)
-                        .padding(.horizontal, isCompact ? 10 : 16)
+                        .padding(.horizontal, activeLayoutMode == .track ? 0 : (isCompact ? 10 : 16))
                         .padding(.vertical, isCompact ? 6 : 10)
                         .background(Color(.secondarySystemBackground))
                         .onboardingAnchor(.keyboardArea)
@@ -829,6 +895,7 @@ struct ScorePracticeView: View {
         case .success:
             measureJumpError = nil
             measureJumpFocused = false
+            syncTrackPlaybackVisualStateToCursor()
             syncMeasureJumpInput()
         case .failure(let message):
             measureJumpError = message
@@ -903,6 +970,16 @@ struct ScorePracticeView: View {
         session.reloadSample()
     }
 
+    private func resetTrackPlaybackVisualState() {
+        trackVisualEventIndex = nil
+        trackActiveMIDIPitches = []
+    }
+
+    private func syncTrackPlaybackVisualStateToCursor() {
+        trackVisualEventIndex = session.playbackCursor.index
+        trackActiveMIDIPitches = []
+    }
+
     private func resetUserSettings() {
         noteColorVisible = PaletteSettingsDefaults.noteColorVisible
         staffColorVisible = PaletteSettingsDefaults.staffColorVisible
@@ -910,6 +987,7 @@ struct ScorePracticeView: View {
         keyboardColorVisible = PaletteSettingsDefaults.keyboardColorVisible
         keyboardColorPositionTop = PaletteSettingsDefaults.keyboardColorPositionTop
         keyboardLineNumberVisible = PaletteSettingsDefaults.keyboardLineNumberVisible
+        toolbarVisible = PaletteSettingsDefaults.toolbarVisible
         topToolbarVisible = PaletteSettingsDefaults.topToolbarVisible
         currentNoteDisplayVisible = PaletteSettingsDefaults.currentNoteDisplayVisible
         nextNoteDisplayVisible = PaletteSettingsDefaults.nextNoteDisplayVisible
@@ -1014,21 +1092,24 @@ struct ScorePracticeView: View {
         let printLayout = loaded.printLayout
         let pageSize = PalettePrintPageLayout.pageSize(forContentWidth: printLayout.canvasSize.width)
         let pageRect = CGRect(origin: .zero, size: pageSize)
-        let pageCount = PalettePrintPageLayout.pageCount(
+        let pageSlices = PalettePrintPageLayout.pageSlices(
             forContentHeight: printLayout.canvasSize.height,
-            pageHeight: pageSize.height
+            pageHeight: pageSize.height,
+            systemFrames: printLayout.printSystemContentFrames()
         )
         let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
         let data = renderer.pdfData { context in
-            for pageIndex in 0..<pageCount {
+            for pageSlice in pageSlices {
                 context.beginPage()
                 let cgContext = context.cgContext
                 cgContext.saveGState()
-                cgContext.clip(to: pageRect)
-                cgContext.translateBy(x: 0, y: -PalettePrintPageLayout.contentOffsetY(
-                    forPageIndex: pageIndex,
-                    pageHeight: pageSize.height
+                cgContext.clip(to: CGRect(
+                    x: pageRect.minX,
+                    y: pageSlice.destinationY,
+                    width: pageRect.width,
+                    height: pageSlice.visibleHeight
                 ))
+                cgContext.translateBy(x: 0, y: pageSlice.destinationY - pageSlice.sourceStartY)
                 ScoreGraphicsRenderer().draw(
                     layout: printLayout,
                     score: loaded.score,
@@ -1049,7 +1130,8 @@ struct ScorePracticeView: View {
     }
 
     private var selectedScoreLayoutMode: PaletteScoreLayoutMode {
-        PaletteScoreLayoutMode.fromRawValue(scoreLayoutModeRawValue)
+        let storedRawValue = UserDefaults.standard.string(forKey: PaletteSettingsKeys.scoreLayoutMode)
+        return PaletteScoreLayoutMode.fromRawValue(storedRawValue ?? scoreLayoutModeRawValue)
     }
 
     private var isCompact: Bool {
@@ -1098,6 +1180,20 @@ private struct PalettePrintJob: Identifiable, Equatable {
     let data: Data
 }
 
+struct PalettePrintPageSlice: Equatable {
+    let sourceStartY: CGFloat
+    let sourceEndY: CGFloat
+    let destinationY: CGFloat
+
+    var visibleHeight: CGFloat {
+        max(1, sourceEndY - sourceStartY)
+    }
+
+    var offsetY: CGFloat {
+        sourceStartY - destinationY
+    }
+}
+
 enum PalettePrintPageLayout {
     static let a4AspectRatio: CGFloat = 842.0 / 595.0
 
@@ -1106,15 +1202,111 @@ enum PalettePrintPageLayout {
         return CGSize(width: width, height: width * a4AspectRatio)
     }
 
-    static func pageCount(forContentHeight contentHeight: CGFloat, pageHeight: CGFloat) -> Int {
+    static func pageSlices(
+        forContentHeight contentHeight: CGFloat,
+        pageHeight: CGFloat,
+        systemFrames: [CGRect]
+    ) -> [PalettePrintPageSlice] {
         guard contentHeight.isFinite, pageHeight.isFinite, pageHeight > 0 else {
-            return 1
+            return [PalettePrintPageSlice(sourceStartY: 0, sourceEndY: 1, destinationY: 0)]
         }
-        return max(1, Int(ceil(max(contentHeight, 1) / pageHeight)))
+        let safeContentHeight = max(contentHeight, 1)
+        let sortedSystemFrames = systemFrames
+            .filter { !$0.isNull && !$0.isEmpty && $0.minY.isFinite && $0.maxY.isFinite }
+            .sorted { $0.minY < $1.minY }
+        guard !sortedSystemFrames.isEmpty else {
+            return contiguousPageSlices(forContentHeight: safeContentHeight, pageHeight: pageHeight)
+        }
+
+        let repeatedPageTopInset = min(max(0, sortedSystemFrames.first?.minY ?? 0), pageHeight * 0.25)
+        let epsilon: CGFloat = 0.5
+        var slices: [PalettePrintPageSlice] = []
+        var systemIndex = 0
+
+        while systemIndex < sortedSystemFrames.count {
+            let isFirstPage = slices.isEmpty
+            let destinationY: CGFloat = isFirstPage ? 0 : repeatedPageTopInset
+            let availableHeight = max(1, pageHeight - destinationY)
+            let sourceStartY: CGFloat = isFirstPage ? 0 : sortedSystemFrames[systemIndex].minY
+            var sourceEndY = sortedSystemFrames[systemIndex].maxY
+            var nextIndex = systemIndex + 1
+
+            while nextIndex < sortedSystemFrames.count {
+                let candidateEndY = sortedSystemFrames[nextIndex].maxY
+                if candidateEndY - sourceStartY > availableHeight + epsilon {
+                    break
+                }
+                sourceEndY = candidateEndY
+                nextIndex += 1
+            }
+
+            if sourceEndY - sourceStartY > availableHeight + epsilon,
+               nextIndex == systemIndex + 1 {
+                sourceEndY = min(sourceStartY + availableHeight, safeContentHeight)
+            }
+
+            slices.append(PalettePrintPageSlice(
+                sourceStartY: sourceStartY,
+                sourceEndY: max(sourceEndY, sourceStartY + 1),
+                destinationY: destinationY
+            ))
+            systemIndex = max(nextIndex, systemIndex + 1)
+        }
+
+        return slices.isEmpty ? contiguousPageSlices(forContentHeight: safeContentHeight, pageHeight: pageHeight) : slices
     }
 
-    static func contentOffsetY(forPageIndex pageIndex: Int, pageHeight: CGFloat) -> CGFloat {
-        CGFloat(max(pageIndex, 0)) * max(pageHeight, 0)
+    private static func contiguousPageSlices(forContentHeight contentHeight: CGFloat, pageHeight: CGFloat) -> [PalettePrintPageSlice] {
+        var slices: [PalettePrintPageSlice] = []
+        var sourceStartY: CGFloat = 0
+        let epsilon: CGFloat = 0.5
+        while sourceStartY < contentHeight - epsilon {
+            let sourceEndY = min(sourceStartY + pageHeight, contentHeight)
+            slices.append(PalettePrintPageSlice(
+                sourceStartY: sourceStartY,
+                sourceEndY: max(sourceEndY, sourceStartY + 1),
+                destinationY: 0
+            ))
+            sourceStartY = sourceEndY
+        }
+        return slices.isEmpty ? [PalettePrintPageSlice(sourceStartY: 0, sourceEndY: pageHeight, destinationY: 0)] : slices
+    }
+}
+
+private extension ScoreLayout {
+    func printSystemContentFrames() -> [CGRect] {
+        let measureSystemByID = Dictionary(uniqueKeysWithValues: measures.map { ($0.measureID, $0.systemIndex) })
+        var framesBySystem = Dictionary(uniqueKeysWithValues: systems.map { ($0.index, $0.frame) })
+
+        for staff in staves {
+            framesBySystem[staff.systemIndex] = framesBySystem[staff.systemIndex]?.union(staff.frame) ?? staff.frame
+        }
+        for measure in measures {
+            framesBySystem[measure.systemIndex] = framesBySystem[measure.systemIndex]?.union(measure.frame) ?? measure.frame
+        }
+        for element in elements {
+            guard let measureID = element.measureID,
+                  let systemIndex = measureSystemByID[measureID],
+                  !element.frame.isNull,
+                  !element.frame.isEmpty else { continue }
+            framesBySystem[systemIndex] = framesBySystem[systemIndex]?.union(element.frame) ?? element.frame
+        }
+        for note in noteByID.values {
+            guard let measureID = note.measureID,
+                  let systemIndex = measureSystemByID[measureID],
+                  !note.noteheadFrame.isNull,
+                  !note.noteheadFrame.isEmpty else { continue }
+            framesBySystem[systemIndex] = framesBySystem[systemIndex]?.union(note.noteheadFrame) ?? note.noteheadFrame
+        }
+        for ledgerLine in ledgerLines {
+            guard let measureID = ledgerLine.measureID,
+                  let systemIndex = measureSystemByID[measureID],
+                  !ledgerLine.frame.isNull,
+                  !ledgerLine.frame.isEmpty else { continue }
+            framesBySystem[systemIndex] = framesBySystem[systemIndex]?.union(ledgerLine.frame) ?? ledgerLine.frame
+        }
+
+        return systems.compactMap { framesBySystem[$0.index] }
     }
 }
 
@@ -1266,6 +1458,7 @@ private struct PaletteEditorView: View {
     @Binding var noteColorVisible: Bool
     @Binding var staffColorVisible: Bool
     @Binding var selectedKeyPitchClass: Int
+    @Binding var toolbarVisible: Bool
     let keyboardColorPositionTop: Bool
     let keyboardLineNumberVisible: Bool
     let scaleTonicPitchClass: Int?
@@ -1327,6 +1520,14 @@ private struct PaletteEditorView: View {
                 .tint(pitchColorState.isStaffLineOnly ? .blue : .gray)
                 .accessibilityLabel(pitchColorState.isStaffLineOnly ? "ラインモード" : "全音モード")
                 .onboardingAnchor(.colorPatternButton)
+                Button {
+                    toolbarVisible.toggle()
+                } label: {
+                    Text(toolbarVisible ? "ツールバーON" : "ツールバーOFF")
+                        .fontWeight(.semibold)
+                }
+                .buttonStyle(.bordered)
+                .accessibilityLabel(toolbarVisible ? "ツールバー表示 ON" : "ツールバー表示 OFF")
                 Button("全ON") {
                     pitchClassColorEnabledRawValue = PalettePitchClassColorState.allOn.encodedValue
                 }
@@ -1345,7 +1546,7 @@ private struct PaletteEditorView: View {
                 .accessibilityLabel("カラーパレットのキー \(PaletteTranspose.keyName(forPitchClass: selectedKeyPitchClass))")
                 .onboardingAnchor(.paletteKeyButton)
                 Spacer(minLength: 0)
-                Label("MVPでは12 pitch class単位", systemImage: "info.circle")
+                Label("オクターブ違いの同じ音名は同じ色になります", systemImage: "info.circle")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -1403,6 +1604,7 @@ private struct PaletteEditorView: View {
                             pitchClassColorState: pitchColorState,
                             noteColorVisible: noteColorVisible,
                             staffColorVisible: staffColorVisible,
+                            selectedKeyPitchClass: selectedKeyPitchClass,
                             scaleTonicPitchClass: scaleTonicPitchClass
                         )
                         .frame(width: previewWidth, height: scorePreviewHeight)
@@ -1469,6 +1671,7 @@ private struct PaletteScorePreviewView: View {
     let pitchClassColorState: PalettePitchClassColorState
     let noteColorVisible: Bool
     let staffColorVisible: Bool
+    let selectedKeyPitchClass: Int
     let scaleTonicPitchClass: Int?
 
     private let whiteKeyMIDIs: [Int] = Array(36...84).filter { midi in
@@ -1480,7 +1683,10 @@ private struct PaletteScorePreviewView: View {
             let topStaffY: CGFloat = 42
             let bottomStaffY: CGFloat = 132
             let lineSpacing: CGFloat = 10
-            let leftPadding: CGFloat = 26
+            let keySignature = previewKeySignature(forPitchClass: selectedKeyPitchClass)
+            let keySignatureWidth = previewKeySignatureWidth(fifths: keySignature.fifths)
+            let keySignatureX: CGFloat = 26
+            let leftPadding = max(26, keySignatureX + keySignatureWidth + 20)
             let rightPadding: CGFloat = 26
             let usableWidth = max(size.width - leftPadding - rightPadding, 1)
             let stepX = usableWidth / CGFloat(max(whiteKeyMIDIs.count - 1, 1))
@@ -1497,6 +1703,14 @@ private struct PaletteScorePreviewView: View {
                 width: size.width,
                 lineSpacing: lineSpacing,
                 lineMIDIs: [57, 53, 50, 47, 43]
+            )
+            drawKeySignature(
+                context: &context,
+                keySignature: keySignature,
+                x: keySignatureX,
+                topStaffY: topStaffY,
+                bottomStaffY: bottomStaffY,
+                lineSpacing: lineSpacing
             )
             drawLedgerLines(
                 context: &context,
@@ -1517,6 +1731,67 @@ private struct PaletteScorePreviewView: View {
                 context.stroke(Path(ellipseIn: rect), with: .color(Color.black.opacity(0.2)), lineWidth: 0.8)
             }
         }
+    }
+
+    private func drawKeySignature(
+        context: inout GraphicsContext,
+        keySignature: KeySignature,
+        x: CGFloat,
+        topStaffY: CGFloat,
+        bottomStaffY: CGFloat,
+        lineSpacing: CGFloat
+    ) {
+        guard keySignature.fifths != 0 else {
+            return
+        }
+        let accidental = PalettePreviewKeySignatureLayout.accidentalGlyph(fifths: keySignature.fifths)
+        let topPitches = PalettePreviewKeySignatureLayout.keySignatureMIDIs(fifths: keySignature.fifths, clef: .treble)
+        let bottomPitches = PalettePreviewKeySignatureLayout.keySignatureMIDIs(fifths: keySignature.fifths, clef: .bass)
+        for (index, midi) in topPitches.enumerated() {
+            drawKeySignatureAccidental(
+                accidental,
+                midi: midi,
+                index: index,
+                x: x,
+                staffStartY: topStaffY,
+                lineSpacing: lineSpacing,
+                context: &context
+            )
+        }
+        for (index, midi) in bottomPitches.enumerated() {
+            drawKeySignatureAccidental(
+                accidental,
+                midi: midi,
+                index: index,
+                x: x,
+                staffStartY: bottomStaffY,
+                lineSpacing: lineSpacing,
+                context: &context
+            )
+        }
+    }
+
+    private func drawKeySignatureAccidental(
+        _ accidental: String,
+        midi: Int,
+        index: Int,
+        x: CGFloat,
+        staffStartY: CGFloat,
+        lineSpacing: CGFloat,
+        context: inout GraphicsContext
+    ) {
+        let point = CGPoint(
+            x: x + CGFloat(index) * keySignatureAccidentalSpacing,
+            y: yPosition(midi: midi, staffStartY: staffStartY, lineSpacing: lineSpacing)
+        )
+        let color = noteColorVisible ? noteColor(midi: midi) : Color(.label)
+        context.draw(
+            Text(accidental)
+                .font(.custom(PalettePreviewKeySignatureLayout.smuflFontName, size: lineSpacing * 2.75))
+                .foregroundStyle(color),
+            at: point,
+            anchor: .center
+        )
     }
 
     private func drawStaff(context: inout GraphicsContext, startY: CGFloat, width: CGFloat, lineSpacing: CGFloat, lineMIDIs: [Int]) {
@@ -1610,6 +1885,56 @@ private struct PaletteScorePreviewView: View {
     private func color(for pitchClass: PitchClass) -> Color {
         let scoreColor = palette.color(for: pitchClass)
         return Color(.sRGB, red: scoreColor.red, green: scoreColor.green, blue: scoreColor.blue, opacity: 1)
+    }
+
+    private var keySignatureAccidentalSpacing: CGFloat {
+        12
+    }
+
+    private func previewKeySignatureWidth(fifths: Int) -> CGFloat {
+        guard fifths != 0 else {
+            return 0
+        }
+        return CGFloat(min(abs(fifths), 7) - 1) * keySignatureAccidentalSpacing + 18
+    }
+
+    private func previewKeySignature(forPitchClass pitchClass: Int) -> KeySignature {
+        KeySignature(fifths: fifths(forMajorPitchClass: pitchClass), mode: "major")
+    }
+
+    private func fifths(forMajorPitchClass pitchClass: Int) -> Int {
+        let normalized = PalettePitchClassColorState.normalizedPitchClass(pitchClass)
+        let candidates = (-7...7).filter { fifths in
+            PalettePitchClassColorState.normalizedPitchClass(fifths * 7) == normalized
+        }
+        return candidates.min { lhs, rhs in
+            abs(lhs) < abs(rhs)
+        } ?? 0
+    }
+
+}
+
+enum PalettePreviewKeySignatureLayout {
+    static let smuflFontName = "Bravura"
+
+    static func accidentalGlyph(fifths: Int) -> String {
+        guard fifths != 0 else {
+            return ""
+        }
+        let codepoint = fifths > 0 ? 0xE262 : 0xE260
+        return String(UnicodeScalar(codepoint)!)
+    }
+
+    static func keySignatureMIDIs(fifths: Int, clef: ClefKind) -> [Int] {
+        let count = min(abs(fifths), 7)
+        if fifths > 0 {
+            let treble = [77, 72, 79, 74, 69, 76, 71]
+            let bass = [53, 48, 55, 50, 45, 52, 47]
+            return Array((clef == .bass ? bass : treble).prefix(count))
+        }
+        let treble = [71, 76, 69, 74, 67, 72, 65]
+        let bass = [47, 52, 45, 50, 43, 48, 41]
+        return Array((clef == .bass ? bass : treble).prefix(count))
     }
 }
 

@@ -367,12 +367,14 @@ readiness, the app ships a two-song bundled MXL Library copied from `sample/`;
 earlier QA MusicXML fixtures are no longer part of the app sample catalog.
 
 DoReMi Palette also includes a Print MVP and a score layout switcher. The app
-can display either the existing horizontal one-row score (`横一段`) or an A4-width
-score layout (`A4`) that wraps measures into systems. The toolbar `印刷` button
-always generates the PDF from the A4 layout, even when the on-screen view is in
-horizontal mode. The SDK provides `ScoreGraphicsRenderer` for drawing an
-existing layout into a `CGContext`; the app does not reparse MusicXML or
-recalculate score coordinates for printing.
+can display the existing horizontal one-row score (`横一段`), an A4-width score
+layout (`A4`) that wraps measures into systems, or a keyboard-aligned track
+layout (`トラック`) where playback events fall vertically toward the keyboard
+like a DTM/piano-roll practice view. The toolbar `印刷` button always generates
+the PDF from the A4 layout, even when the on-screen view is in horizontal or
+track mode. The SDK provides `ScoreGraphicsRenderer` for drawing an existing
+layout into a `CGContext`; the app does not reparse MusicXML or recalculate
+score coordinates for printing.
 
 ## Snapshot Tests
 

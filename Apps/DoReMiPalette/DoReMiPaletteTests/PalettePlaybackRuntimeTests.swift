@@ -45,6 +45,17 @@ struct PalettePlaybackRuntimeTests {
         #expect(runtime.eventDurationSeconds(for: event) < defaultDuration)
     }
 
+    @Test @MainActor func visualTimelineElapsedUsesScheduledEventStarts() throws {
+        let events = try Self.events(from: PaletteScoreLoaderTests.validMusicXML)
+        let runtime = PalettePlaybackRuntime(events: events, tempoBPM: 120)
+        let targetIndex = min(2, max(events.count - 1, 0))
+        let expectedElapsed = runtime.elapsedSecondsToEvent(at: targetIndex)
+
+        runtime.move(to: targetIndex)
+
+        #expect(abs(runtime.currentPlaybackElapsedSecondsForVisualTimeline() - expectedElapsed) < 0.000_001)
+    }
+
     @Test @MainActor func metronomeDefaultsOffAndCanBeEnabled() throws {
         let runtime = PalettePlaybackRuntime(events: try Self.events(from: PaletteScoreLoaderTests.validMusicXML))
 
@@ -959,6 +970,25 @@ struct PalettePlaybackRuntimeTests {
         #expect((audio.playedDurations.max() ?? 0) > (audio.playedDurations.min() ?? 0))
     }
 
+    @Test @MainActor func trackTimelineDrawsBarsWithPitchSpecificDurations() throws {
+        let event = try #require(Self.events(from: Self.notationCoverageSampleMusicXML, includeRests: true).first {
+            $0.measureID.rawValue == "0.10" && Set($0.midiPitches) == [60, 36]
+        })
+        let runtime = PalettePlaybackRuntime(events: [event], tempoBPM: 120)
+        let timeline = TrackPlaybackTimeline(
+            events: [event],
+            tempoBPM: 120,
+            scheduledStartTimes: runtime.visualTimelineStartTimesForTrack(),
+            scheduledDurations: runtime.visualTimelineDurationsForTrack(),
+            scheduledPitchDurations: runtime.visualTimelinePitchDurationsForTrack()
+        )
+        let cBar = try #require(timeline.bars.first { $0.midiPitch == 60 })
+        let lowCBar = try #require(timeline.bars.first { $0.midiPitch == 36 })
+
+        #expect(lowCBar.duration > cBar.duration)
+        #expect(timeline.activeMIDIPitches(at: cBar.endTime + 0.01, transposeSemitones: 0) == Set([36]))
+    }
+
     @Test @MainActor func tieContinuationDoesNotTriggerNewAttack() throws {
         let audio = MockPaletteAudioEngine()
         let continuation = try #require(Self.events(from: Self.tieStopOnlyMusicXML).first {
@@ -1026,6 +1056,25 @@ struct PalettePlaybackRuntimeTests {
 
         #expect(session.playbackCursor.currentNoteID != first)
         #expect(Set(try #require(session.loadedScore?.layout.noteByID.keys)) == noteIDs)
+    }
+
+    @Test @MainActor func sessionManualStepUsesVisibleCursorAsSourceOfTruth() throws {
+        let runtime = PalettePlaybackRuntime()
+        let session = PaletteScoreSession(playbackRuntime: runtime)
+        try session.load(data: PaletteScoreLoaderTests.validMusicXML, sourceName: "unit.musicxml")
+        #expect(session.playbackCursor.events.count > 2)
+
+        runtime.move(to: 2)
+        session.playbackCursor.setIndex(0)
+
+        session.movePlaybackStep(by: 1)
+        #expect(session.playbackCursor.index == 1)
+
+        runtime.move(to: 2)
+        session.playbackCursor.setIndex(1)
+
+        session.movePlaybackStep(by: -1)
+        #expect(session.playbackCursor.index == 0)
     }
 
     @Test @MainActor func sessionTransposeUpdatesKeyboardHighlightWithoutMutatingPlaybackEvents() throws {
