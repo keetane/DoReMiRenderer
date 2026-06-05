@@ -140,10 +140,14 @@
 
 ## DoReMi Palette Expression MVP Sample
 
+Formerly:
 `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/articulation_dynamics_coverage_sample.musicxml`
 
 - Origin: Original short MusicXML fixture created in this repository for the
   Articulation / Dynamics MVP.
+- TestFlight bundle status: not bundled. Expression coverage is retained as a
+  development / imported QA responsibility rather than a user-facing Library
+  sample.
 - Contains copyrighted third party music: No.
 - Includes: staccato, accent, tenuto, strong-accent, upward/downward flagged
   fermata, fermata rest, dynamic marks, same-measure and cross-measure
@@ -156,10 +160,14 @@
 
 ## DoReMi Palette D.S. / Coda Behavior Sample
 
+Formerly:
 `Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/ds_coda_behavior_sample.musicxml`
 
 - Origin: Original short MusicXML fixture created in this repository for
   D.S. / Coda visual and playback QA.
+- TestFlight bundle status: not bundled. D.S. / Coda coverage is retained in
+  automated tests and development / imported QA rather than a user-facing
+  Library sample.
 - Contains copyrighted third party music: No.
 - Includes: symbolic `<segno/>`, `To Coda`, `D.S. al Coda`, symbolic
   `<coda/>`, and a short original melody designed to make playback order easy

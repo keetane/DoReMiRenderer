@@ -149,6 +149,9 @@ Manual simulator checks for Phase 12:
 - keyboard highlight follows the current note
 - diagnostics sheet opens and shows warnings/errors in Japanese
 - file import accepts `.musicxml`, `.xml`, and `.mxl`
+- file import rejects empty supported files and supported files larger than
+  50 MB before parsing; file-path imports perform the size check before reading
+  file contents into memory
 
 Measure navigation manual QA:
 
@@ -808,14 +811,21 @@ Suggested screenshots:
 Phase 17B is a release-readiness gate, not a feature phase. After the bundled
 sample replacement, the app launch default is
 `Ode to Joy Easy Variation`, and the TestFlight-facing sample Library contains
-`Ode to Joy Easy Variation`, `Fur Elise - Beginner Piano`, and the self-authored
-`Articulation & Dynamics Coverage Sample`.
+only `Ode to Joy Easy Variation` and `Fur Elise - Beginner Piano`.
+`Articulation & Dynamics Coverage Sample`, `D.S. / Coda Behavior Sample`, and
+`美女と野獣` are excluded from the app bundle and remain development / imported
+QA responsibilities.
 `Happy Birthday To You Piano` is kept out of the app bundle after the
 pre-TestFlight rights review because its MusicXML metadata names an arranger and
 has no embedded rights grant. `12 Variations of Twinkle Twinkle Little Star`,
 `Canon in D`, and `The Entertainer` are also kept out of the bundled sample
 catalog. Release configuration, privacy, license, and archive status must be
 recorded before any TestFlight upload.
+
+Import hardening rejects empty `.musicxml`, `.xml`, and `.mxl` inputs and files
+larger than 50 MB before parsing. Failed imports keep the currently loaded score,
+current-note state, and bundled Library metadata intact; QA coverage for the
+rejected cases lives in app loader/session tests.
 
 ## Articulation / Dynamics MVP
 
@@ -843,10 +853,10 @@ Supported MVP coverage:
   flag, beam, lyric, and fingering frames instead of being locked to the first
   note-local position.
 
-The self-authored
-`Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/articulation_dynamics_coverage_sample.musicxml`
-fixture is available from the Library for manual QA. Save iPad Simulator
-evidence under `/tmp/DoReMiPaletteQA/expression-mvp/`.
+The self-authored expression coverage fixture is no longer bundled in the
+TestFlight-facing Library. Use a development fixture or imported local MusicXML
+for manual expression QA. Save iPad Simulator evidence under
+`/tmp/DoReMiPaletteQA/expression-mvp/`.
 
 Known MVP limits: fermata timing is a bounded note/rest extension and does not
 reshape the metronome click plan; hairpin interpolation remains coarse, and the
@@ -865,6 +875,12 @@ notation that previously produced direct visual/playback warnings:
   can be laid out without duplicating tie starts/stops.
 - Simple `<metronome>` beat-unit / per-minute markings are converted into tempo
   metadata alongside `<sound tempo="">`.
+- MusicXML `<credit-type>title</credit-type>` / `<credit-words>` is used as a
+  score title fallback when work and movement titles are missing, while
+  placeholder part names such as `Piano` are still ignored as titles.
+- Clear jump-only D.C./D.S./Coda metadata encoded as `<sound>` attributes
+  (`segno`, `coda`, `tocoda`, `dalsegno`, `dacapo`, `fine`) is retained as the
+  same `PlaybackJumpMarker` data used by word and symbolic direction parsing.
 - `<stem>` directions are retained as explicit direction hints. Layout honors
   them only when safe for single notes, unanimous chord directions, or coherent
   beam groups; mixed up/down directions still split beams to avoid invalid

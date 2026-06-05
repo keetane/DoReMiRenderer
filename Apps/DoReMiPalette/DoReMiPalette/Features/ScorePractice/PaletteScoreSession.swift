@@ -450,6 +450,7 @@ final class PaletteScoreSession: ObservableObject {
         }
 
         do {
+            try loader.validateInputFile(at: url)
             let data = try Data(contentsOf: url)
             if let libraryImportURL {
                 try loadImportedData(

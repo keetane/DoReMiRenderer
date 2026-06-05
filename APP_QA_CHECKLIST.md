@@ -61,6 +61,9 @@ or TestFlight preparation.
 - [x] `.mxl` fixture loads through the app loader.
 - [x] Invalid MusicXML enters an error state.
 - [x] Unsupported extension enters an error state.
+- [x] Empty supported import files are rejected before parsing.
+- [x] Supported import files larger than 50 MB are rejected before reading /
+  parsing.
 - [x] Failed import keeps the previously loaded score.
 - [x] Successful import resets the playback cursor to the first event.
 - [x] Diagnostics are retained or updated after import.
@@ -73,6 +76,8 @@ or TestFlight preparation.
 - [x] Unsupported-feature and repeat diagnostics are mapped to Japanese user messages.
 - [x] Import failure shows an error message.
 - [x] Invalid and unsupported import failures keep the existing score in app-loader tests.
+- [x] Empty and oversized import failures keep the existing score and bundled
+  Library metadata in app-loader tests.
 
 ## Transpose / Prefix / Accidental Color Checks
 
@@ -790,6 +795,11 @@ renderer path and must remain layout-driven.
 - [ ] D.S. al Coda playback order is 1, 2, 3, 4, 2, 3, 5, 6.
 - [ ] Fine, D.C., D.S., Segno, Coda, and To Coda markers are visible as MVP
   text markers above the staff.
+- [x] SDK parser tests cover MusicXML title fallback from
+  `<credit-type>title</credit-type>` / `<credit-words>`.
+- [x] SDK parser/playback tests cover clear jump-only D.C./D.S./Coda metadata
+  encoded as MusicXML `<sound>` attributes, including `segno`, `coda`,
+  `tocoda`, `dalsegno`, `dacapo`, and `fine`.
 - [ ] Unsupported nested repeats, third endings, repeat+jump mixtures, and
   multiple Segno/Coda cases appear in Diagnostics instead of silently
   misplaying.
@@ -802,10 +812,11 @@ renderer path and must remain layout-driven.
 ## Phase 17B TestFlight Readiness QA
 
 - [ ] App launch opens `Ode to Joy Easy Variation` as the bundled MXL default.
-- [ ] The Library shows the two retained musetrainer-derived learning samples
-  plus the self-authored expression QA sample:
-  `Ode to Joy Easy Variation`, `Fur Elise - Beginner Piano`, and
-  `Articulation & Dynamics Coverage Sample`.
+- [ ] The Library shows only the two retained musetrainer-derived learning
+  samples: `Ode to Joy Easy Variation` and `Fur Elise - Beginner Piano`.
+- [ ] QA-only samples, including `Articulation & Dynamics Coverage Sample`,
+  `D.S. / Coda Behavior Sample`, and `美女と野獣`, are not listed in the
+  bundled app sample catalog or copied into the app bundle.
 - [ ] `Happy Birthday To You Piano` is not listed in the bundled sample catalog
   or app bundle after the pre-TestFlight rights review. `12 Variations of
   Twinkle Twinkle Little Star`, `Canon in D`, and `The Entertainer` are also not
@@ -822,6 +833,8 @@ renderer path and must remain layout-driven.
   launch screen settings are recorded in the release checklist.
 - [ ] Privacy notes confirm no account, ads, tracking, analytics, or server
   upload of imported MusicXML.
+- [ ] Import hardening confirms empty files and supported files larger than
+  50 MB are rejected before parsing, with the existing score preserved.
 - [ ] `ASSET_LICENSES.md` and `THIRD_PARTY_NOTICES.md` record Bravura 1.392,
   ZIPFoundation, the app icon, and the user-provided bundled MXL sample set.
 - [ ] `Scripts/check-licenses.sh` and `Scripts/build-docc.sh` pass.
@@ -846,10 +859,10 @@ renderer path and must remain layout-driven.
 - [x] Collision-lane tests cover expression marks against noteheads, stems,
   flags, beams, lyrics, fingerings, and articulations, including the Ode to Joy
   A4 measure 8 hairpin regression.
-- [ ] Manual iPad QA: open `Articulation & Dynamics Coverage Sample` and
-  confirm staccato dots, accents, tenuto lines, fermatas, p/mp/mf/f/ff marks,
-  and hairpins are visible and upright.
-- [ ] Manual iPad QA: play the expression sample and confirm normal notes are
+- [ ] Manual iPad QA: use a development fixture or imported local MusicXML with
+  expression coverage to confirm staccato dots, accents, tenuto lines,
+  fermatas, p/mp/mf/f/ff marks, and hairpins are visible and upright.
+- [ ] Manual iPad QA: play the expression fixture and confirm normal notes are
   not too short, staccato is clearly shorter, accents are stronger, and
   dynamics / hairpins are audible at an MVP level. Final perceived volume and
   articulation balance still requires real-device listening.

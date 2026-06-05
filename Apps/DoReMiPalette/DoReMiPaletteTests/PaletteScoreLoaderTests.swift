@@ -99,6 +99,38 @@ struct PaletteScoreLoaderTests {
         }
     }
 
+    @Test func emptyImportDataThrowsBeforeParsing() {
+        #expect(throws: PaletteImportError.emptyFile("empty.musicxml")) {
+            _ = try PaletteScoreLoader().load(data: Data(), sourceName: "empty.musicxml")
+        }
+    }
+
+    @Test func oversizedImportDataThrowsBeforeParsing() {
+        let data = Data(count: PaletteScoreLoader.maximumInputBytes + 1)
+
+        #expect(throws: PaletteImportError.fileTooLarge("huge.musicxml", maxMegabytes: 50)) {
+            _ = try PaletteScoreLoader().load(data: data, sourceName: "huge.musicxml")
+        }
+    }
+
+    @Test func oversizedImportFileThrowsBeforeReadingContents() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("DoReMiPaletteOversizedImport.musicxml")
+        FileManager.default.createFile(
+            atPath: url.path,
+            contents: nil
+        )
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let handle = try FileHandle(forWritingTo: url)
+        try handle.truncate(atOffset: UInt64(PaletteScoreLoader.maximumInputBytes + 1))
+        try handle.close()
+
+        #expect(throws: PaletteImportError.fileTooLarge("DoReMiPaletteOversizedImport.musicxml", maxMegabytes: 50)) {
+            try PaletteScoreLoader().validateInputFile(at: url)
+        }
+    }
+
     @Test func supportedFileExtensionsMapToScoreInput() throws {
         let loader = PaletteScoreLoader()
         let data = Data("fixture".utf8)
@@ -345,83 +377,6 @@ struct PaletteScoreLoaderTests {
         #expect(playbackMeasureIDs.filter { $0 == "0.1" }.count > 1)
         #expect(playbackMeasureIDs.filter { $0 == "0.8" }.count > 1)
         #expect(playbackMeasureIDs.contains("0.9"))
-    }
-
-    @Test func beautyAndBeastRepeatBarlinesDisplayAndPlaybackExpand() throws {
-        let loaded = try PaletteScoreLoader().load(
-            data: Self.appSampleData("Beauty_and_the_Beast.mxl"),
-            sourceName: "Beauty_and_the_Beast.mxl",
-            displayTitle: "美女と野獣"
-        )
-        let repeatStartID = MeasureID(partIndex: 0, measureNumber: "29")
-        let repeatEndID = MeasureID(partIndex: 0, measureNumber: "39")
-
-        let a4RepeatStart = try #require(loaded.a4Layout.elements.first {
-            $0.measureID == repeatStartID && $0.kind == .barline && $0.repeatBarline?.direction == .forward
-        })
-        let a4RepeatEnd = try #require(loaded.a4Layout.elements.first {
-            $0.measureID == repeatEndID && $0.kind == .barline && $0.repeatBarline?.direction == .backward
-        })
-        let horizontalRepeatStart = try #require(loaded.horizontalLayout.elements.first {
-            $0.measureID == repeatStartID && $0.kind == .barline && $0.repeatBarline?.direction == .forward
-        })
-        let horizontalRepeatEnd = try #require(loaded.horizontalLayout.elements.first {
-            $0.measureID == repeatEndID && $0.kind == .barline && $0.repeatBarline?.direction == .backward
-        })
-        let playbackMeasureIDs = loaded.playbackEvents.map(\.measureID.rawValue)
-
-        #expect(a4RepeatStart.frame.width >= 18)
-        #expect(a4RepeatEnd.frame.width >= 18)
-        #expect(horizontalRepeatStart.frame.width >= 18)
-        #expect(horizontalRepeatEnd.frame.width >= 18)
-        #expect(!loaded.a4Layout.elements.contains {
-            $0.id.rawValue == "\(repeatStartID.rawValue).barline.leftStyle"
-        })
-        #expect(playbackMeasureIDs.filter { $0 == "0.29" }.count > 1)
-        #expect(playbackMeasureIDs.filter { $0 == "0.39" }.count > 1)
-    }
-
-    @Test func dsCodaBehaviorSampleDisplaysMarkersAndExpandsPlayback() throws {
-        let loaded = try PaletteScoreLoader().load(
-            data: Self.appSampleData("ds_coda_behavior_sample.musicxml"),
-            sourceName: "ds_coda_behavior_sample.musicxml",
-            displayTitle: "D.S. / Coda Behavior Sample"
-        )
-        let markerKinds = Set(loaded.a4Layout.elements.compactMap {
-            $0.playbackJumpMarker?.marker.kind
-        })
-        let playbackMeasureRun = loaded.playbackEvents
-            .map(\.measureID.rawValue)
-            .reduce(into: [String]()) { runs, measureID in
-                if runs.last != measureID {
-                    runs.append(measureID)
-                }
-            }
-
-        #expect(markerKinds.isSuperset(of: [
-            .segno,
-            .toCoda,
-            .dalSegnoAlCoda,
-            .coda,
-        ]))
-        #expect(playbackMeasureRun == [
-            "0.1",
-            "0.2",
-            "0.3",
-            "0.4",
-            "0.1",
-            "0.2",
-            "0.3",
-            "0.5",
-            "0.6",
-            "0.7",
-        ])
-        #expect(!loaded.diagnostics.contains { diagnostic in
-            diagnostic.code == "jump.dsSegnoMissing"
-                || diagnostic.code == "jump.toCodaMissing"
-                || diagnostic.code == "jump.codaMissing"
-                || diagnostic.code == "jump.codaUnsupported"
-        })
     }
 
     @Test @MainActor func scoreLayoutModeSwitchesActiveLayoutWithoutChangingPlaybackIdentity() throws {
@@ -786,6 +741,20 @@ struct PaletteScoreLoaderTests {
         }
     }
 
+    @Test @MainActor func emptyImportKeepsExistingScoreAndReportsError() throws {
+        let session = PaletteScoreSession()
+        try session.load(data: Self.validMusicXML, sourceName: "first.musicxml")
+        let existingSourceName = session.loadedScore?.sourceName
+
+        do {
+            try session.load(data: Data(), sourceName: "empty.musicxml")
+            Issue.record("Expected empty import to fail")
+        } catch {
+            #expect(session.loadedScore?.sourceName == existingSourceName)
+            #expect(session.errorMessage?.contains("空のファイル") == true)
+        }
+    }
+
     @Test @MainActor func loadingNewScoreResetsKeyTransposeState() throws {
         let session = PaletteScoreSession()
         try session.load(data: Self.validMusicXML, sourceName: "first.musicxml")
@@ -1114,25 +1083,19 @@ struct PaletteScoreLoaderTests {
         #expect(session.errorMessage == nil)
     }
 
-    @Test func sampleCatalogContainsBundledLearningAndExpressionSamples() throws {
+    @Test func sampleCatalogContainsOnlyBundledReleaseSamples() throws {
         let catalog = SampleScoreCatalog.default
         let bundledSampleNames = Set([
             "Ode_to_Joy_Easy_variation",
             "Fur_Elise_-_Beethoven_-_for_beginner_piano",
-            "articulation_dynamics_coverage_sample",
-            "Beauty_and_the_Beast",
-            "ds_coda_behavior_sample",
         ])
 
-        #expect(catalog.samples.count == 5)
+        #expect(catalog.samples.count == 2)
         #expect(catalog.samples.map(\.resourceName) == [
             "Ode_to_Joy_Easy_variation",
             "Fur_Elise_-_Beethoven_-_for_beginner_piano",
-            "articulation_dynamics_coverage_sample",
-            "Beauty_and_the_Beast",
-            "ds_coda_behavior_sample",
         ])
-        #expect(catalog.samples.map(\.fileExtension) == ["mxl", "mxl", "musicxml", "musicxml", "musicxml"])
+        #expect(catalog.samples.map(\.fileExtension) == ["mxl", "mxl"])
         #expect(bundledSampleNames.isSubset(of: Set(catalog.samples.map(\.resourceName))))
     }
 

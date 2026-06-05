@@ -497,6 +497,12 @@ Phase S10: Complete Repeat Symbols Before TestFlight - complete
 - Implement supported jump-only cases in `PlaybackSequenceBuilder`: D.S. al
   Fine, D.C. al Coda, and D.S. al Coda, while preserving the existing D.C. al
   Fine path.
+- Retain common MusicXML encodings for those jump-only cases, including words,
+  symbolic Segno/Coda directions, and `<sound>` attributes (`segno`, `coda`,
+  `tocoda`, `dalsegno`, `dacapo`, `fine`).
+- Use MusicXML title credits as a parser-level score title fallback when
+  work/movement titles are absent, without adding printed credit engraving to
+  the MVP scope.
 - Keep repeat/jump expansion bounded with max repeat passes, max jump counts,
   and max expanded event safeguards.
 - Treat repeat count as an MVP feature: use explicit counts up to four passes,

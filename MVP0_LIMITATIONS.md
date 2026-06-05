@@ -17,6 +17,10 @@ This document records the known limitations of DoReMiRendererKit after Phase 0 t
   engraving/playback, transposition application, advanced beams, cross-staff
   beam/stem notation, nested tuplets, and voice collision avoidance remain
   diagnostic-only or limited metadata.
+- Score titles use non-placeholder work/movement titles first and MusicXML
+  title credits as a fallback. Full printed credit blocks, subtitles, rights,
+  composer/lyricist credit layout, and page-specific credit engraving remain
+  outside the MVP.
 
 ## Layout And Rendering
 
@@ -80,6 +84,10 @@ This document records the known limitations of DoReMiRendererKit after Phase 0 t
   carry-forward, ornaments, grace-note rendering, advanced beam grouping,
   nested tuplets, and full engraving optimization remain diagnostic-only or
   unsupported.
+- Clear jump-only D.C./D.S./Fine/Coda cases can be parsed from words, symbolic
+  directions, and common MusicXML `<sound>` attributes. Mixed repeat+jump
+  structures, multiple Segno/Coda targets, nested repeats, and ambiguous jump
+  instructions remain diagnostic-backed limitations.
 - Complex multi-voice and cross-staff collision avoidance is not fully
   implemented; Phase 11F emits layout diagnostics for basic collision cases.
 - A4-width system wrapping is available for display and the Print MVP, but full
@@ -212,7 +220,8 @@ This document records the known limitations of DoReMiRendererKit after Phase 0 t
 - The bundled sample and file import use the SDK facade; imported private files
   are not stored by the repository.
 - The piano keyboard is visual only and uses a limited MVP display range.
-- File import supports `.musicxml`, `.xml`, and `.mxl`; persistent document
+- File import supports `.musicxml`, `.xml`, and `.mxl`; empty supported files
+  and files larger than 50 MB are rejected before parsing. Persistent document
   library management and cloud sync are not implemented.
 - Diagnostics are shown in Japanese, but full localization is not implemented.
 - MVP generated-tone audio playback is supported in the app. MIDI, background
