@@ -427,6 +427,10 @@ control is a key picker (`C`, `C#`, `D`, ...) rather than a semitone +/-
 control; playback, keyboard highlights, and the rendered score use the selected
 key together.
 
+Imported `.musicxml`, `.xml`, and `.mxl` files are parsed locally on device.
+Empty supported files and supported files larger than 50 MB are rejected before
+parsing; the previously loaded score remains visible after an import failure.
+
 ### Palette Editor MVP
 
 The app-level palette editor opens from the toolbar palette button. It preserves

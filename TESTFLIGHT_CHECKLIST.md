@@ -2,16 +2,21 @@
 
 ## Internal Testing Scope
 
-- TestFlight upload candidate: `0.1.1 (2)`.
-- Wait for App Store Connect processing, then attach the build to internal
+- TestFlight upload candidate: `1.1 (2)`.
+- `1.1 (2)` was uploaded from `/tmp/DoReMiPalette.xcarchive` on 2026-06-05.
+  Wait for App Store Connect processing, then attach the build to internal
   testing and complete export compliance prompts.
-- Formal App Store release candidate is tracked separately as `1.0 (3)`.
+- `1.1 (1)` was also uploaded earlier on 2026-06-05 and is superseded by
+  `1.1 (2)`.
+- Previous App Store release candidate was tracked separately as `1.0 (3)`.
 
 - Open the default `Ode to Joy Easy Variation` sample.
 - Open the bundled samples from Library:
   - Ode to Joy Easy Variation
   - Fur Elise - Beginner Piano
-  - Articulation & Dynamics Coverage Sample
+- Confirm no QA-only samples, including `Articulation & Dynamics Coverage
+  Sample`, `D.S. / Coda Behavior Sample`, or `美女と野獣`, appear in the
+  TestFlight-facing Library or app bundle.
 - Confirm `Happy Birthday To You Piano` is not present in the bundled Library
   or app bundle; it remains only as a development fixture pending rights
   confirmation.
@@ -52,8 +57,9 @@
   color setting, and persistence.
 - Verify measure display and inline measure jump between Previous and Next.
 - Verify pinch zoom and that opening/reloading a score resets zoom to 100%.
-- Verify MusicXML / MXL import, invalid-file diagnostics, Library / Recent
-  reload, and missing-file handling.
+- Verify MusicXML / MXL import, invalid-file diagnostics, empty-file rejection,
+  oversized-file rejection above 50 MB, Library / Recent reload, and
+  missing-file handling.
 
 ## Known Limitations To Tell Testers
 

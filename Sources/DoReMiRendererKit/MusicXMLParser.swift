@@ -50,6 +50,8 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
     private var workTitle: String?
     private var movementTitle: String?
     private var movementNumber: String?
+    private var creditTitle: String?
+    private var currentCreditType: String?
 
     private var partListNames: [String: String] = [:]
     private var parts: [ScorePart] = []
@@ -119,6 +121,8 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
         }
 
         switch elementName {
+        case "credit":
+            currentCreditType = nil
         case "score-part":
             currentPartID = attributeDict["id"]
         case "part":
@@ -189,6 +193,7 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             if let tempo = attributeDict["tempo"] {
                 recordTempo(tempo)
             }
+            recordSoundJumpMarkers(attributes: attributeDict)
         case "barline":
             pendingBarlineLocation = attributeDict["location"]
         case "repeat":
@@ -303,6 +308,12 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
         let text = textBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
 
         switch elementName {
+        case "credit-type":
+            currentCreditType = nonEmptyText(text)
+        case "credit-words":
+            recordCreditWords(text)
+        case "credit":
+            currentCreditType = nil
         case "work-title":
             workTitle = nonEmptyText(text)
         case "movement-title":
@@ -527,7 +538,13 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
         if let movementTitle, !isPlaceholderTitle(movementTitle) {
             return movementTitle
         }
-        return workTitle ?? movementTitle ?? movementNumber
+        if let workTitle, !isPlaceholderTitle(workTitle) {
+            return workTitle
+        }
+        if let creditTitle, !isPlaceholderTitle(creditTitle) {
+            return creditTitle
+        }
+        return movementNumber
     }
 
     private func isPlaceholderTitle(_ title: String) -> Bool {
@@ -678,6 +695,65 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             source: .sound,
             measureID: MeasureID(partIndex: partIndex, measureNumber: currentMeasureNumber)
         ))
+    }
+
+    private func recordCreditWords(_ rawText: String) {
+        guard let text = nonEmptyText(rawText), !isPlaceholderTitle(text) else {
+            return
+        }
+        let normalizedType = currentCreditType?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current)
+            .lowercased()
+        if normalizedType == "title" || normalizedType == "movement title" || normalizedType == "work title" {
+            creditTitle = creditTitle ?? text
+        }
+    }
+
+    private func recordSoundJumpMarkers(attributes: [String: String]) {
+        let hasDaCapo = soundAttributeIsEnabled(attributes["dacapo"])
+        let hasDalSegno = attributes["dalsegno"].flatMap(nonEmptyText) != nil
+        let hasFine = attributes["fine"].flatMap(nonEmptyText) != nil || soundAttributeIsEnabled(attributes["fine"])
+        let hasToCoda = attributes["tocoda"].flatMap(nonEmptyText) != nil
+        let hasCodaInstruction = hasToCoda || (hasDaCapo || hasDalSegno) && attributes["coda"].flatMap(nonEmptyText) != nil
+
+        if let segnoLabel = attributes["segno"].flatMap(nonEmptyText) {
+            recordPlaybackJumpMarker(kind: .segno, text: segnoLabel)
+        }
+        if let codaLabel = attributes["coda"].flatMap(nonEmptyText), !hasCodaInstruction {
+            recordPlaybackJumpMarker(kind: .coda, text: codaLabel)
+        }
+        if hasToCoda {
+            recordPlaybackJumpMarker(kind: .toCoda, text: attributes["tocoda"].flatMap(nonEmptyText) ?? "To Coda")
+        }
+
+        if hasDalSegno && hasCodaInstruction {
+            recordPlaybackJumpMarker(kind: .dalSegnoAlCoda, text: "D.S. al Coda")
+        } else if hasDalSegno && hasFine {
+            recordPlaybackJumpMarker(kind: .dalSegnoAlFine, text: "D.S. al Fine")
+        } else if hasDalSegno {
+            recordPlaybackJumpMarker(kind: .dalSegno, text: "D.S.")
+        } else if hasDaCapo && hasCodaInstruction {
+            recordPlaybackJumpMarker(kind: .daCapoAlCoda, text: "D.C. al Coda")
+        } else if hasDaCapo && hasFine {
+            recordPlaybackJumpMarker(kind: .daCapoAlFine, text: "D.C. al Fine")
+        } else if hasDaCapo {
+            recordPlaybackJumpMarker(kind: .daCapo, text: "D.C.")
+        } else if hasFine {
+            recordPlaybackJumpMarker(kind: .fine, text: "Fine")
+        }
+    }
+
+    private func soundAttributeIsEnabled(_ value: String?) -> Bool {
+        guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else {
+            return false
+        }
+        switch value.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: .current).lowercased() {
+        case "no", "false", "0":
+            return false
+        default:
+            return true
+        }
     }
 
     private func appendTie(_ kind: MusicXMLTieKind) {
@@ -931,6 +1007,9 @@ private struct MusicXMLTransposeBuilder {
 private let recognizedMusicXMLElements: Set<String> = [
     "score-partwise",
     "score-timewise",
+    "credit",
+    "credit-type",
+    "credit-words",
     "work",
     "work-number",
     "work-title",

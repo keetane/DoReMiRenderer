@@ -325,8 +325,9 @@ struct TrackPlaybackTimeline {
     ) {
         let tempo = min(max(tempoBPM, 30), 240)
         let builtItems: [Item]
-        if scheduledStartTimes.count == events.count,
-           scheduledDurations.count == events.count {
+        let usesScheduledDurations = scheduledStartTimes.count == events.count
+            && scheduledDurations.count == events.count
+        if usesScheduledDurations {
             builtItems = events.enumerated().map { index, event in
                 let duration = scheduledDurations[index]
                 return Item(
@@ -354,7 +355,9 @@ struct TrackPlaybackTimeline {
             item.event.midiPitches.map { midiPitch in
                 let duration = scheduledPitchDurations.indices.contains(item.index)
                     ? scheduledPitchDurations[item.index][midiPitch] ?? item.duration
-                    : Self.pitchDurationSeconds(for: midiPitch, event: item.event, tempoBPM: tempo)
+                    : usesScheduledDurations
+                        ? item.duration
+                        : Self.pitchDurationSeconds(for: midiPitch, event: item.event, tempoBPM: tempo)
                 return Bar(
                     index: item.index,
                     event: item.event,

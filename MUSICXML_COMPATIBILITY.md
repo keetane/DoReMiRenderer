@@ -72,6 +72,9 @@ Completion criteria:
 - unsupported repeat structures emit diagnostics
 - non-repeat playback event order and grouping are unchanged
 - metadata is available through the facade
+- score titles are taken from non-placeholder movement/work titles first, then
+  MusicXML `<credit-type>title</credit-type>` / `<credit-words>` metadata when
+  work and movement titles are absent
 
 S7/S8/S9 repeat playback and visual MVP support:
 
@@ -86,8 +89,9 @@ S7/S8/S9 repeat playback and visual MVP support:
 - Diagnostic-only: unmatched starts, nested repeats, repeat counts outside the
   MVP two-pass behavior, third endings, ambiguous endings, mixed repeat/jump
   structures, and complex jumps. Clear D.C./D.S./Fine/Coda jump-only scores,
-  including symbolic MusicXML `<segno/>` / `<coda/>`, are supported by the
-  Phase S10 playback/layout path.
+  including symbolic MusicXML `<segno/>` / `<coda/>` and MusicXML `<sound>`
+  jump attributes such as `segno`, `coda`, `tocoda`, `dalsegno`, `dacapo`, and
+  `fine`, are supported by the Phase S10 playback/layout path.
 
 ### 11F-5 Complex MusicXML Diagnostics
 

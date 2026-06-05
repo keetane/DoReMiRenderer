@@ -69,6 +69,17 @@ APIs may change before `1.0`.
   Unicode Segno/Coda words such as `To 𝄌` and `D.S. al 𝄌`, so clear
   D.S./Coda scores can render markers and expand playback without falling back
   to unsupported diagnostics.
+- Retained MusicXML `<credit>` title metadata and `<sound>` jump attributes
+  (`segno`, `coda`, `tocoda`, `dalsegno`, `dacapo`, `fine`) so exported files
+  that omit work/movement titles or encode D.C./D.S./Coda behavior in sound
+  attributes keep clearer titles and jump-only playback expansion.
+- Prepared and uploaded the next TestFlight train as `1.1 (2)` with only the
+  Ode to Joy and Fur Elise bundled samples. Track-mode bars now use the same
+  scheduled durations as the playback visual timeline, keeping the falling bars
+  and keyboard highlight aligned.
+- Hardened MusicXML/MXL import by rejecting empty supported files and supported
+  files larger than 50 MB before parsing. Failed empty/oversized imports keep the
+  current score and bundled Library metadata intact.
 
 ### SMuFL glyph rendering
 
@@ -165,6 +176,12 @@ APIs may change before `1.0`.
   arranger and has no embedded rights grant. `12 Variations of Twinkle Twinkle
   Little Star`, `Canon in D`, and `The Entertainer` are also excluded from the
   app sample catalog.
+- Trimmed the TestFlight-facing bundled Library to only `Ode to Joy Easy
+  Variation` and `Fur Elise - Beginner Piano`; `美女と野獣`,
+  `Articulation & Dynamics Coverage Sample`, and `D.S. / Coda Behavior Sample`
+  are no longer copied into the app bundle.
+- Bumped the next TestFlight candidate to `1.1 (1)` so it uses a new
+  pre-release train after the prior `1.0` App Store Connect version.
 - Added a DoReMi Palette Metronome MVP. The app now has a persisted
   metronome ON/OFF setting, starts generated strong/weak clicks with Play,
   stops them on Pause / Stop / Reset / playback end, and follows the current

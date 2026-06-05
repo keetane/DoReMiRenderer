@@ -38,6 +38,48 @@ import Testing
     #expect(result.score.title == "美女と野獣")
 }
 
+@Test func parserReadsCreditTitleWhenWorkAndMovementTitlesAreMissing() throws {
+    let result = try parseMusicXML(creditTitleOnlyXML)
+
+    #expect(result.score.title == "Credit Title")
+    #expect(!result.diagnostics.contains { $0.code == "unsupported.credit" || $0.code == "unsupported.credit-words" })
+}
+
+@Test func parserReadsSoundJumpAttributesAsPlaybackMarkers() throws {
+    let measures = try parseMusicXML(soundJumpAttributesXML).score.parts.flatMap(\.measures)
+
+    #expect(measures.map(\.playbackJumpMarkers) == [
+        [],
+        [PlaybackJumpMarker(kind: .segno, text: "segno")],
+        [PlaybackJumpMarker(kind: .toCoda, text: "coda")],
+        [PlaybackJumpMarker(kind: .dalSegnoAlCoda, text: "D.S. al Coda")],
+        [PlaybackJumpMarker(kind: .coda, text: "coda")],
+    ])
+}
+
+@Test func parserReadsSoundDaCapoFineAttributesAsPlaybackMarkers() throws {
+    let measures = try parseMusicXML(soundDaCapoFineAttributesXML).score.parts.flatMap(\.measures)
+
+    #expect(measures.map(\.playbackJumpMarkers) == [
+        [PlaybackJumpMarker(kind: .fine, text: "Fine")],
+        [PlaybackJumpMarker(kind: .daCapoAlFine, text: "D.C. al Fine")],
+    ])
+}
+
+@Test func soundJumpAttributesExpandPlaybackSequence() throws {
+    let score = try parseMusicXML(soundJumpAttributesXML).score
+    let events = PlaybackSequenceBuilder().build(score: score)
+
+    #expect(events.map(\.measureID.rawValue) == ["0.1", "0.2", "0.3", "0.4", "0.2", "0.3", "0.5"])
+}
+
+@Test func soundDaCapoFineAttributesExpandPlaybackSequence() throws {
+    let score = try parseMusicXML(soundDaCapoFineAttributesXML).score
+    let events = PlaybackSequenceBuilder().build(score: score)
+
+    #expect(events.map(\.measureID.rawValue) == ["0.1", "0.2", "0.1"])
+}
+
 @Test func parserKeepsGrandStaffNoteIDsUniqueForSameVoiceAndOnset() throws {
     let notes = try parseMusicXML(grandStaffXML).score.parts.flatMap(\.measures).flatMap(\.notes)
 
@@ -201,6 +243,65 @@ private let workTitleWithPlaceholderSubtitleXML = """
   <movement-title>Subtitle</movement-title>
   <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
   <part id="P1"><measure number="1"/></part>
+</score-partwise>
+"""
+
+private let creditTitleOnlyXML = """
+<score-partwise version="4.0">
+  <credit page="1">
+    <credit-type>title</credit-type>
+    <credit-words default-x="600" default-y="1520">Credit Title</credit-words>
+  </credit>
+  <credit page="1">
+    <credit-type>subtitle</credit-type>
+    <credit-words>Subtitle</credit-words>
+  </credit>
+  <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+  <part id="P1"><measure number="1"/></part>
+</score-partwise>
+"""
+
+private let soundJumpAttributesXML = """
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes><divisions>1</divisions></attributes>
+      <note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><staff>1</staff></note>
+    </measure>
+    <measure number="2">
+      <direction><sound segno="segno"/></direction>
+      <note><pitch><step>D</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><staff>1</staff></note>
+    </measure>
+    <measure number="3">
+      <direction><sound tocoda="coda"/></direction>
+      <note><pitch><step>E</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><staff>1</staff></note>
+    </measure>
+    <measure number="4">
+      <direction><sound dalsegno="segno" coda="coda"/></direction>
+      <note><pitch><step>F</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><staff>1</staff></note>
+    </measure>
+    <measure number="5">
+      <direction><sound coda="coda"/></direction>
+      <note><pitch><step>G</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><staff>1</staff></note>
+    </measure>
+  </part>
+</score-partwise>
+"""
+
+private let soundDaCapoFineAttributesXML = """
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <direction><sound fine="yes"/></direction>
+      <note><pitch><step>C</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><staff>1</staff></note>
+    </measure>
+    <measure number="2">
+      <direction><sound dacapo="yes" fine="yes"/></direction>
+      <note><pitch><step>D</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><staff>1</staff></note>
+    </measure>
+  </part>
 </score-partwise>
 """
 

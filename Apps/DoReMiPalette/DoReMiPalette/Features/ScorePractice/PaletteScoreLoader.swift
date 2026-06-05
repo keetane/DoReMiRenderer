@@ -6,6 +6,8 @@ enum PaletteImportError: LocalizedError, Equatable {
     case bundledSampleMissing(String)
     case missingLibraryFile(String)
     case unsupportedLibraryItem(String)
+    case emptyFile(String)
+    case fileTooLarge(String, maxMegabytes: Int)
 
     var errorDescription: String? {
         switch self {
@@ -17,6 +19,10 @@ enum PaletteImportError: LocalizedError, Equatable {
             return "\(name) を開けませんでした。ファイルを再選択してください。"
         case .unsupportedLibraryItem(let name):
             return "\(name) はライブラリから開けません。"
+        case .emptyFile(let name):
+            return "\(name) は空のファイルです。MusicXML または MXL ファイルを選択してください。"
+        case .fileTooLarge(let name, let maxMegabytes):
+            return "\(name) は大きすぎます。\(maxMegabytes)MB以下のMusicXMLまたはMXLファイルを選択してください。"
         }
     }
 }
@@ -86,6 +92,9 @@ enum PaletteScoreLayoutMode: String, CaseIterable, Identifiable {
 }
 
 struct PaletteScoreLoader {
+    static let maximumInputBytes = 50 * 1_024 * 1_024
+    static let maximumInputMegabytes = 50
+
     var renderer = DoReMiRenderer(
         configuration: RendererConfiguration(unsupportedFeaturePolicy: .ignoreWithWarning)
     )
@@ -96,6 +105,7 @@ struct PaletteScoreLoader {
         displayTitle: String? = nil,
         displayTransposeSemitones: Int = 0
     ) throws -> PaletteLoadedScore {
+        try validateInputData(data, sourceName: sourceName)
         let input = try scoreInput(for: sourceName, data: data)
         let parseResult = try renderer.parseWithDiagnostics(input: input)
         let score = scoreWithDisplayTitle(parseResult.score, sourceName: sourceName, displayTitle: displayTitle)
@@ -201,11 +211,36 @@ struct PaletteScoreLoader {
         let ext = (fileName as NSString).pathExtension.lowercased()
         switch ext {
         case "musicxml", "xml":
+            try validateInputData(data, sourceName: fileName)
             return .musicXMLData(data)
         case "mxl":
+            try validateInputData(data, sourceName: fileName)
             return .mxlData(data)
         default:
             throw PaletteImportError.unsupportedExtension(ext.isEmpty ? fileName : ext)
+        }
+    }
+
+    func validateInputFile(at url: URL) throws {
+        let name = url.lastPathComponent
+        let values = try url.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey])
+        guard values.isRegularFile != false else {
+            throw PaletteImportError.unsupportedLibraryItem(name)
+        }
+        if values.fileSize == 0 {
+            throw PaletteImportError.emptyFile(name)
+        }
+        if let fileSize = values.fileSize, fileSize > Self.maximumInputBytes {
+            throw PaletteImportError.fileTooLarge(name, maxMegabytes: Self.maximumInputMegabytes)
+        }
+    }
+
+    private func validateInputData(_ data: Data, sourceName: String) throws {
+        if data.isEmpty {
+            throw PaletteImportError.emptyFile(sourceName)
+        }
+        if data.count > Self.maximumInputBytes {
+            throw PaletteImportError.fileTooLarge(sourceName, maxMegabytes: Self.maximumInputMegabytes)
         }
     }
 }

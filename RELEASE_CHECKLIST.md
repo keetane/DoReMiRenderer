@@ -4,10 +4,11 @@
 
 - Default launch sample: `Ode to Joy Easy Variation`
   (`Ode_to_Joy_Easy_variation.mxl`).
-- Bundled sample Library: two musetrainer/library-derived `.mxl` files copied
-  from `sample/` plus one self-authored QA sample:
-  `Ode to Joy Easy Variation`, `Fur Elise - Beginner Piano`, and
-  `Articulation & Dynamics Coverage Sample`.
+- Bundled sample Library: only two musetrainer/library-derived `.mxl` files
+  copied from `sample/`: `Ode to Joy Easy Variation` and
+  `Fur Elise - Beginner Piano`.
+  `Articulation & Dynamics Coverage Sample`, `D.S. / Coda Behavior Sample`,
+  and `美女と野獣` are not bundled in the TestFlight-facing app Library.
   `Happy Birthday To You Piano` is excluded from the TestFlight app bundle after
   the 2026-05-21 rights review because its MusicXML metadata names an arranger
   and has no embedded rights grant. `12 Variations of Twinkle Twinkle Little
@@ -18,8 +19,8 @@
   fixtures and automated tests.
 - Display name: `DoReMi Palette`.
 - Bundle identifier: `com.doremipalette.app`.
-- Version: `1.0`.
-- Build number: `3`.
+- Version: `1.1`.
+- Build number: `1`.
 - Signing: automatic signing with Apple Development identity and the configured
   development team.
 - App icon: `Assets.xcassets/AppIcon.appiconset`.
@@ -144,6 +145,43 @@ Phase 17B verification result:
     (`0.0139...0.0239` vs tolerance `0.01`).
   - DoReMiRendererExample snapshot tests: passed after updating the approved
     baselines.
+- 2026-06-05 TestFlight upload for the post-release train:
+  - App target set to `1.1 (1)` to avoid the closed `1.0` pre-release train.
+  - TestFlight-facing bundled Library contains only
+    `Ode_to_Joy_Easy_variation.mxl` and
+    `Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl`.
+  - `swift test`: passed, 257 tests.
+  - DoReMi Palette App tests on iPad Pro 13-inch (M5), OS 26.4.1: passed with
+    parallel testing disabled, 168 tests.
+  - DoReMiRendererExample snapshot tests: passed after updating the approved
+    baselines for the current score spacing / staff sizing.
+  - License check: passed.
+  - DocC build: passed, archive written to `/tmp/DoReMiRendererKit.doccarchive`.
+  - Local sample diagnostics: passed.
+  - Release generic iOS build: passed.
+  - Archive: passed at `/tmp/DoReMiPalette.xcarchive`.
+  - Archive metadata: bundle identifier `com.doremipalette.app`, version `1.1`,
+    build `1`; iPad orientations include portrait, upside-down portrait,
+    landscape left, and landscape right.
+  - Archive app bundle contains only `Ode_to_Joy_Easy_variation.mxl` and
+    `Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl`.
+  - Export/upload to App Store Connect succeeded; uploaded package is processing.
+- 2026-06-05 post-upload stabilization and replacement upload:
+  - Hardened supported MusicXML/MXL import against empty files and files larger
+    than 50 MB before parsing. File-path imports check size before reading the
+    file into memory.
+  - Failed empty/oversized imports preserve the currently loaded score and
+    bundled Library metadata.
+  - App target build number was bumped to `2`.
+  - Release generic iOS build: passed.
+  - Archive: passed at `/tmp/DoReMiPalette.xcarchive`.
+  - Archive metadata: bundle identifier `com.doremipalette.app`, version `1.1`,
+    build `2`; iPad orientations include portrait, upside-down portrait,
+    landscape left, and landscape right.
+  - Archive app bundle contains only `Ode_to_Joy_Easy_variation.mxl` and
+    `Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl`.
+  - Export/upload to App Store Connect succeeded; uploaded package `1.1 (2)` is
+    processing. This supersedes the earlier `1.1 (1)` upload.
 - Phase 17B screenshot folder: `/tmp/DoReMiPaletteQA/phase-17b/`.
 
 ## Manual Before App Store Submission
