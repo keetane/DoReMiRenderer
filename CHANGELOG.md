@@ -585,6 +585,43 @@ added.
 - Restored follow for offscreen notes whose measured viewport frame is not yet
   available by falling back to the stable note anchor ID.
 
+## Unreleased
+
+- Added `DoReMiRendererPrintQA`, a command-line A4 print audit tool that renders
+  bundled MusicXML/MXL samples to PDF and optional PNG previews with page-slice
+  and spacing metrics.
+- Added SDK-owned A4 print pages through `ScoreLayout.pages`,
+  `ScoreLayoutPage`, and `ScoreLayout.pageLayout(for:)` so DoReMi Palette can
+  print page-bounded layouts without app-side score coordinate slicing.
+- Split screen A4 from print A4: the on-screen A4 layout keeps the practice
+  display scale, while generated PDFs use SDK page assignments with six
+  grand-staff systems as the default density and a four-system page fallback
+  when rendered bounds would otherwise exceed the page.
+- Added manual system/page break inputs to `LayoutOptions` so parsed or
+  future-edited break decisions can stay in the SDK layout model.
+- Added an oversized-system print fallback that slices tall source windows by
+  visual grand-staff rows instead of scaling the entire score to page height.
+- Fixed bottom-system clipping in six-system A4 print pages by separating
+  unpadded fit checks from padded page clip frames and deriving page
+  `contentFrame` values from relocated rendered system bounds.
+- Set the print page vertical margins to 36pt, print grand-staff upper/lower
+  staff whitespace to 36pt, and print grand-staff system gaps to 40pt.
+- Tightened A4 PDF grand-staff system spacing from 68pt to 40pt after visual
+  review of Ode to Joy, Fur Elise, Canon in D, Mozart, and The Entertainer.
+  The SDK uses the same fixed value for page-fit calculation and placement, so
+  shorter pages leave unused area at the bottom rather than vertically
+  stretching systems apart.
+- Reserved the first print page's first grand-staff slot for title/composer
+  space when a score title is present, so the first page carries five systems
+  by default and falls back if rendered bounds require more vertical room.
+- Kept print grand-staff system gaps stable on pages with fewer than six
+  systems so short final pages leave unused space at the bottom instead of
+  spreading systems evenly across the page.
+- Tightened A4-only print staff spacing and added page-level top/bottom safety
+  margins so generated PDFs avoid cutting through normal grand-staff systems.
+- Hardened print page slicing against duplicate `MeasureID` values and
+  measure-less notation elements when importing broader MusicXML samples.
+
 ## Phase 16.5 - Notation / Playback Stabilization
 
 - Added a formal stabilization gate before Phase 17 for notation display,

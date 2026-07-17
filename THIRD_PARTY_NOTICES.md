@@ -81,6 +81,16 @@ implementation references.
 
 No GPL or LGPL dependencies are used by DoReMiRendererKit MVP0.
 
+## A4 Layout Review
+
+The 2026-07-17 A4 print-layout hardening reviewed W3C MusicXML and SMuFL
+specifications plus Bravura font metadata as notation references. It did not
+copy, translate, link, or derive implementation code, tables, or APIs from
+OpenSheetMusicDisplay, VexFlow, Verovio, MuseScore, LilyPond, or another score
+rendering implementation. The resulting changes are limited to this project's
+own SDK page-fit and fixed inter-system-spacing policy; no dependency or asset
+was added.
+
 Phase 17B TestFlight readiness rechecked the listed third-party notices before
 archive preparation. No new third-party code, font, audio, analytics, tracking,
 advertising, or cloud dependency was added for the release-readiness pass.

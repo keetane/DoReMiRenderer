@@ -14,6 +14,24 @@ and the DoReMi Palette app.
   and feed back any missing capability into the SDK when real app usage exposes
   a gap.
 
+## Web Canvas Bridge
+
+Implemented foundation:
+
+- `ScoreWebLayoutProfile.responsive` provides a compact browser reading profile
+  with a maximum of four measures per system.
+- `ScoreWebRenderPlan` exports the SDK's rendered Canvas primitives, colors,
+  glyph orientation flags, and stable `NoteID` anchors as JSON.
+- `DoReMiRendererWebExport` and `Examples/WebCanvasViewer` demonstrate a
+  browser Canvas consumer without browser-side MusicXML parsing or coordinate
+  reconstruction.
+
+Next Web portability milestone:
+
+- Extract CoreGraphics/CoreText/SwiftUI adapters from the parser, domain,
+  layout, interaction, and playback core so a direct client-side Swift/Wasm
+  target can be evaluated without creating a second layout engine.
+
 ## Phase 13: App QA / Import Verification / UI Tuning
 
 Purpose:
@@ -630,3 +648,21 @@ Articulation / Dynamics MVP - complete
   clearer for user testing.
 - Keep humanized performance UI, advanced dynamic carry-forward, ornaments, and
   publishing-quality collision avoidance as future work.
+
+A4 Print Layout Hardening - complete
+
+- Separate interactive screen A4 from compact print A4 so the PDF path can use
+  print-specific staff spacing, page height, and pagination without changing
+  practice display layout.
+- Add SDK page read models (`ScoreLayout.pages`, `ScoreLayoutPage`, and
+  `ScoreLayout.pageLayout(for:)`) so DoReMi Palette prints SDK-defined page
+  regions instead of app-side canvas slices.
+- Target six grand-staff systems per A4 page by default, fall back to four
+  systems when rendered bounds would otherwise exceed the page, and preserve
+  full grand-staff systems at page boundaries.
+- Support manual system/page break inputs in `LayoutOptions` for future parser
+  or editor-driven break control.
+- Add an oversized-system visual-row fallback for imported files whose source
+  systems are taller than a normal page. Publishing-grade horizontal spacing,
+  editorial page turns, and complete page layout optimization remain future
+  work.

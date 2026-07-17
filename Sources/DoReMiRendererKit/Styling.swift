@@ -309,10 +309,10 @@ public struct ScoreColorResolver: Sendable {
             return ResolvedVisualStyle(fillColor: color, strokeColor: color, lineWidth: nil, opacity: color.alpha)
         case .staffLine:
             let color = resolvedStaffLineColor(for: element, style: style, context: context)
-            return ResolvedVisualStyle(fillColor: nil, strokeColor: color, lineWidth: 1, opacity: color.alpha)
+            return ResolvedVisualStyle(fillColor: nil, strokeColor: color, lineWidth: 0.8, opacity: color.alpha)
         case .ledgerLine:
             let color = resolvedLedgerLineColor(for: element, score: score, layout: layout, style: style, context: context)
-            return ResolvedVisualStyle(fillColor: nil, strokeColor: color, lineWidth: 1, opacity: color.alpha)
+            return ResolvedVisualStyle(fillColor: nil, strokeColor: color, lineWidth: 0.8, opacity: color.alpha)
         case .accidental:
             let color = resolvedAccidentalColor(for: element, score: score, layout: layout, style: style, context: context)
             return ResolvedVisualStyle(fillColor: color, strokeColor: color, lineWidth: nil, opacity: color.alpha)

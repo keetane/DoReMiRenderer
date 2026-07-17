@@ -90,9 +90,18 @@ This document records the known limitations of DoReMiRendererKit after Phase 0 t
   instructions remain diagnostic-backed limitations.
 - Complex multi-voice and cross-staff collision avoidance is not fully
   implemented; Phase 11F emits layout diagnostics for basic collision cases.
-- A4-width system wrapping is available for display and the Print MVP, but full
-  physical page pagination, page headers/footers, and advanced page breaking
-  are not implemented.
+- A4-width system wrapping is available for display and the Print MVP. Screen
+  A4 and print A4 are intentionally separate: generated PDFs use SDK page
+  assignments with six grand-staff systems as the default page density and a
+  four-system fallback when rendered bounds would otherwise exceed page content
+  bounds. A titled first page reserves the first slot for title/composer space
+  and targets five systems below it. Page clip frames are derived from rendered
+  system bounds to avoid clipping the bottom system, and oversized source
+  systems fall back to visual-row windows so staff lines are not cut by page
+  boundaries. Pages with fewer than six systems keep fixed 40pt system gaps and
+  leave extra space at the bottom rather than vertically justifying the systems.
+  Page headers/footers, editorial page turns, horizontal density optimization,
+  and publishing-grade page breaking remain future engraving work.
 - Beam grouping is minimal: safe adjacent flagged notes in the same
   measure/staff/voice can render a Core Graphics beam from stem tip to stem tip,
   isolated eighth notes use SMuFL flags, and mixed eighth/sixteenth groups have
@@ -107,6 +116,11 @@ This document records the known limitations of DoReMiRendererKit after Phase 0 t
 - Snapshot tests do not guarantee full MusicXML display quality or
   publishing-quality engraving.
 - Renderer output is intended for MVP0 ID, coordinate, and color stability, not final engraving quality.
+- The Web Canvas bridge exports an already-resolved JSON render plan for browser
+  clients. It is not yet a direct client-side Swift/Wasm SDK: the current
+  package target still contains CoreGraphics, CoreText, and SwiftUI adapters.
+  Browser consumers must render the supplied commands and `NoteID` anchors
+  rather than re-parsing MusicXML or recomputing score coordinates.
 
 ## Interaction
 

@@ -193,22 +193,25 @@ enum SMuFLFont {
 }
 
 struct SMuFLGlyphSizePolicy: Sendable {
-    let clefScale: CGFloat = 0.90
-    let timeSignatureScale: CGFloat = 1.00
+    // Clefs and time signatures must follow the compact staff scale used by
+    // print layout. A fixed 20pt floor made these prefix glyphs dominate a
+    // 6pt print staff even though their layout frames had been reduced.
+    let clefScale: CGFloat = 0.72
+    let timeSignatureScale: CGFloat = 0.74
     let blackNoteheadScale: CGFloat = 2.55
     let hollowNoteheadScale: CGFloat = 2.55
-    let accidentalScale: CGFloat = 1.08
-    let keySignatureAccidentalScale: CGFloat = 1.08
+    let accidentalScale: CGFloat = 1.4
+    let keySignatureAccidentalScale: CGFloat = 1.4
     let restScale: CGFloat = 2.08
     let flagScale: CGFloat = 1.00
     let repeatDotScale: CGFloat = 0.70
 
     func clefSize(for frame: CGRect) -> CGFloat {
-        max(20, frame.height * clefScale)
+        max(12, frame.height * clefScale)
     }
 
     func timeSignatureSize(for frame: CGRect) -> CGFloat {
-        max(20, frame.height * timeSignatureScale)
+        max(12, frame.height * timeSignatureScale)
     }
 
     func noteheadSize(for frame: CGRect, noteValue: NoteValueKind) -> CGFloat {

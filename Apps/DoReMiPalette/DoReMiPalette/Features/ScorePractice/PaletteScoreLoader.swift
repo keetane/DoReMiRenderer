@@ -32,6 +32,7 @@ struct PaletteLoadedScore {
     let score: ScoreDocument
     let horizontalLayout: ScoreLayout
     let a4Layout: ScoreLayout
+    let printLayout: ScoreLayout
     var layoutMode: PaletteScoreLayoutMode
     let diagnostics: [RendererDiagnostic]
     let baseDiagnostics: [RendererDiagnostic]
@@ -45,10 +46,6 @@ struct PaletteLoadedScore {
         case .a4, .track:
             a4Layout
         }
-    }
-
-    var printLayout: ScoreLayout {
-        a4Layout
     }
 
     var performancePreferredLayoutMode: PaletteScoreLayoutMode {
@@ -121,11 +118,12 @@ struct PaletteScoreLoader {
             score: score,
             horizontalLayout: layouts.horizontal.layout,
             a4Layout: layouts.a4.layout,
+            printLayout: layouts.print.layout,
             layoutMode: Self.initialLayoutMode(
                 score: score,
                 horizontalLayout: layouts.horizontal.layout
             ),
-            diagnostics: baseDiagnostics + layouts.horizontal.diagnostics + layouts.a4.diagnostics,
+            diagnostics: baseDiagnostics + layouts.horizontal.diagnostics + layouts.a4.diagnostics + layouts.print.diagnostics,
             baseDiagnostics: baseDiagnostics,
             playbackEvents: playbackEvents,
             playbackMetadata: playbackMetadata
@@ -164,8 +162,9 @@ struct PaletteScoreLoader {
             score: loaded.score,
             horizontalLayout: layouts.horizontal.layout,
             a4Layout: layouts.a4.layout,
+            printLayout: layouts.print.layout,
             layoutMode: loaded.layoutMode,
-            diagnostics: loaded.baseDiagnostics + layouts.horizontal.diagnostics + layouts.a4.diagnostics,
+            diagnostics: loaded.baseDiagnostics + layouts.horizontal.diagnostics + layouts.a4.diagnostics + layouts.print.diagnostics,
             baseDiagnostics: loaded.baseDiagnostics,
             playbackEvents: loaded.playbackEvents,
             playbackMetadata: loaded.playbackMetadata
@@ -175,7 +174,7 @@ struct PaletteScoreLoader {
     private func makeLayouts(
         score: ScoreDocument,
         displayTransposeSemitones: Int
-    ) throws -> (horizontal: ScoreLayoutResult, a4: ScoreLayoutResult) {
+    ) throws -> (horizontal: ScoreLayoutResult, a4: ScoreLayoutResult, print: ScoreLayoutResult) {
         let horizontalLayoutResult = try renderer.layoutWithDiagnostics(
             score: score,
             options: LayoutOptions(
@@ -191,16 +190,28 @@ struct PaletteScoreLoader {
             score: score,
             options: LayoutOptions(
                 pageWidth: 595,
-                pageHeight: 842,
                 staffSpace: 8,
-                systemSpacing: 48,
+                systemSpacing: 120,
                 measureSpacing: 0,
                 displayMode: .print,
                 showPageMargins: true,
                 displayTransposeSemitones: displayTransposeSemitones
             )
         )
-        return (horizontalLayoutResult, a4LayoutResult)
+        let printLayoutResult = try renderer.layoutWithDiagnostics(
+            score: score,
+            options: LayoutOptions(
+                pageWidth: 595,
+                pageHeight: 842,
+                staffSpace: 5.2,
+                systemSpacing: 120,
+                measureSpacing: 0,
+                displayMode: .print,
+                showPageMargins: true,
+                displayTransposeSemitones: displayTransposeSemitones
+            )
+        )
+        return (horizontalLayoutResult, a4LayoutResult, printLayoutResult)
     }
 
     private static func initialLayoutMode(score _: ScoreDocument, horizontalLayout _: ScoreLayout) -> PaletteScoreLayoutMode {

@@ -65,4 +65,32 @@ public struct DoReMiRenderer: Sendable {
     public func makePlaybackMetadata(score: ScoreDocument) -> PlaybackMetadata {
         PlaybackSequenceBuilder().metadata(score: score)
     }
+
+    /// Produces a platform-neutral Canvas command stream for a browser client.
+    ///
+    /// The result is JSON-encodable and retains the coordinates and stable note
+    /// identities calculated by `ScoreLayout`. Web clients must render this
+    /// plan directly instead of re-parsing MusicXML or recomputing positions.
+    public func makeWebRenderPlan(
+        score: ScoreDocument,
+        layout: ScoreLayout,
+        style: ScoreStyle = ScoreStyle(),
+        selection: ScoreSelection? = nil,
+        currentNoteIDs: Set<NoteID> = [],
+        continuationNoteIDs: Set<NoteID> = []
+    ) -> ScoreWebRenderPlan {
+        ScoreWebRenderPlanBuilder().build(
+            score: score,
+            layout: layout,
+            style: style,
+            selection: selection,
+            currentNoteIDs: currentNoteIDs,
+            continuationNoteIDs: continuationNoteIDs
+        )
+    }
+
+    /// Returns the standard responsive reading layout used by the Web Canvas bridge.
+    public func webLayoutOptions(containerWidth: Double) -> LayoutOptions {
+        ScoreWebLayoutProfile.responsive.layoutOptions(containerWidth: containerWidth)
+    }
 }

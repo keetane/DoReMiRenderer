@@ -727,6 +727,41 @@ renderer path and must remain layout-driven.
 - [ ] Tapping `印刷` opens the standard iOS print sheet.
 - [ ] Print preview uses the A4 score layout even when the on-screen layout is
   `横一段` or `トラック`.
+- [x] A4 batch PDF QA can be generated with `DoReMiRendererPrintQA`; latest
+  Codex run generated 60/60 bundled sample PDFs under
+  `/tmp/DoReMiPaletteQA/a4-page-final-v1`.
+- [x] A4 pagination keeps page-level top/bottom safety margins and avoids
+  cutting through normal grand-staff systems.
+- [x] Print PDFs use SDK page assignments (`ScoreLayout.pages`) rather than
+  app-side canvas slicing or global fit-to-height scaling.
+- [x] Print A4 targets six grand-staff systems by default; titled first pages
+  reserve the first slot for title/composer space and target five systems below
+  it.
+- [x] Print A4 uses a fixed 40pt grand-staff system gap in both the page-fit and
+  final-placement passes. Pages with fewer systems leave remaining space below
+  the final system instead of expanding inter-system gaps.
+- [x] Pages whose rendered bounds would exceed the page content bounds fall
+  back to four grand-staff systems, then to fewer systems only for physically
+  extreme cases.
+- [x] Six-system print pages derive clip frames from rendered system bounds, so
+  the bottom system's noteheads, stems, beams, ledger lines, dynamics, and
+  hairpins are not cut by page content clipping.
+- [x] Pages with fewer than six print systems keep the same fixed 40pt
+  grand-staff system gap instead of spreading systems evenly across the page;
+  representative QuickLook renders are saved under
+  `/tmp/DoReMiPaletteQA/a4-page-final-v1-rendered`.
+- [x] Print vertical margins are 36pt, and print grand-staff upper/lower staff
+  whitespace is 36pt; both are covered by layout tests.
+- [x] Full page-fallback PrintQA completes 60/60 samples under
+  `/tmp/DoReMiPaletteQA/a4-page-final-v1` with zero `cutSystemCount` across
+  all samples. Remaining warnings identify very tall source systems or very
+  tight horizontal note spacing.
+- [x] Oversized single-system fallback avoids cutting through visual rows;
+  Gnossienne proof PDF and layout metrics are saved under
+  `/tmp/DoReMiPaletteQA/a4-page-final-v1/Gnossienne_No._1.mxl`.
+- [ ] Manual visual QA: inspect edge-case samples that still report
+  `very-tall-system` or `very-tight-note-gap` warnings for readability rather
+  than page-cut failure.
 - [ ] Note Color / Staff Color settings are reflected in the generated PDF.
 - [ ] Cancelling the print sheet returns to the score without changing
   playback, Practice Mode, Library, or Diagnostics state.

@@ -406,6 +406,24 @@ measure-level anchors; DoReMi Palette does not recompute score coordinates.
 The UIKit static-canvas path compensates SMuFL/CoreText glyph orientation inside
 the renderer drawing helper without changing layout or app hit-test ownership.
 
+## Print Layout Boundary
+
+A4 printing is split between SDK layout ownership and app presentation
+ownership. DoReMiRendererKit creates print page read models through
+`ScoreLayout.pages`, `ScoreLayoutPage`, and `ScoreLayout.pageLayout(for:)`.
+Those pages contain the source layout frame, printable content frame, and
+system indices for each PDF page. DoReMi Palette consumes those read models for
+PDF generation and does not slice the full canvas, globally scale to page
+height, reparse MusicXML, or adjust score coordinates in the app.
+
+Screen A4 remains an interactive reading layout. Print A4 is a separate compact
+layout that targets six grand-staff systems per A4 page by default, uses a fixed
+40pt inter-system gap without vertical page justification, falls back to fewer
+systems when rendered bounds would otherwise exceed the page, supports
+SDK manual system/page break inputs, and uses a visual-row fallback for
+oversized single systems. Remaining print quality work belongs in the SDK
+layout model, not in app-side PDF coordinate corrections.
+
 ## Articulation / Dynamics Boundary
 
 Articulation and dynamics remain SDK-owned notation data. DoReMiRendererKit
