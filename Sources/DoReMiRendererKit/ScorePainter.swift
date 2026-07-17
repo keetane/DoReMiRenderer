@@ -196,7 +196,10 @@ struct ScorePainter: Sendable {
             let staffSpace = max(1, staffFrames.first.map { $0.height / 4 } ?? frame.height / 4)
             let thickLineWidth = max(3, staffSpace * 0.55)
             let thinLineWidth = max(1, staffSpace * 0.12)
-            let lineGap = max(staffSpace * 0.75, (thickLineWidth + thinLineWidth) / 2 + 2)
+            // The historical gap was intentionally generous for small screens, but
+            // was visually twice as wide as a conventional repeat barline.  Retain
+            // enough clearance for the two strokes while halving the visible gap.
+            let lineGap = max(3.5, staffSpace * 0.375)
             let thickInset = thickLineWidth / 2
             let thickX = repeatBarline.direction == .forward ? frame.minX + thickInset : frame.maxX - thickInset
             let thinX = repeatBarline.direction == .forward ? thickX + lineGap : thickX - lineGap
@@ -392,7 +395,7 @@ struct ScorePainter: Sendable {
             return
         }
         let textSize = repeatTextSize(for: element)
-        let symbolSize = max(26, element.frame.height * 1.32)
+        let symbolSize = repeatSymbolSize(for: element)
         switch marker.marker.kind {
         case .segno:
             if !drawSMuFLGlyph(.segno, at: marker.point, color: color, size: symbolSize, into: &context) {
@@ -425,7 +428,11 @@ struct ScorePainter: Sendable {
     }
 
     private func repeatTextSize(for element: ElementLayout) -> CGFloat {
-        max(16, element.frame.height * 1.2)
+        max(9, element.frame.height * 0.72)
+    }
+
+    private func repeatSymbolSize(for element: ElementLayout) -> CGFloat {
+        max(13, element.frame.height * 1.05)
     }
 
     private func drawStaffLines<Context: ScoreDrawingContext>(
@@ -646,11 +653,15 @@ struct ScorePainter: Sendable {
             let left = CGPoint(x: tuplet.frame.minX, y: tuplet.frame.midY)
             let right = CGPoint(x: tuplet.frame.maxX, y: tuplet.frame.midY)
             let tick: CGFloat = max(4, tuplet.frame.height * 0.35)
+            let numberSize = max(10, tuplet.frame.height * 0.75)
+            // Leave a text-sized opening in the bracket. The previous fixed gap
+            // allowed the bracket to pass through the numeral at A4 staff sizes.
+            let numberClearance = max(numberSize * 0.45, tuplet.frame.height * 0.65)
             context.strokeLine(from: CGPoint(x: left.x, y: left.y + tick), to: left, color: color, lineWidth: 1)
-            context.strokeLine(from: left, to: CGPoint(x: tuplet.frame.midX - tuplet.frame.height * 0.4, y: tuplet.frame.midY), color: color, lineWidth: 1)
-            context.strokeLine(from: CGPoint(x: tuplet.frame.midX + tuplet.frame.height * 0.4, y: tuplet.frame.midY), to: right, color: color, lineWidth: 1)
+            context.strokeLine(from: left, to: CGPoint(x: tuplet.frame.midX - numberClearance, y: tuplet.frame.midY), color: color, lineWidth: 1)
+            context.strokeLine(from: CGPoint(x: tuplet.frame.midX + numberClearance, y: tuplet.frame.midY), to: right, color: color, lineWidth: 1)
             context.strokeLine(from: right, to: CGPoint(x: right.x, y: right.y + tick), color: color, lineWidth: 1)
-            context.drawText(tuplet.number, at: CGPoint(x: tuplet.frame.midX, y: tuplet.frame.midY), color: color, size: max(10, tuplet.frame.height * 0.75), fontName: nil)
+            context.drawText(tuplet.number, at: CGPoint(x: tuplet.frame.midX, y: tuplet.frame.midY), color: color, size: numberSize, fontName: nil)
         }
     }
 
@@ -675,7 +686,7 @@ struct ScorePainter: Sendable {
         switch noteValue {
         case .whole, .half:
             context.fillEllipse(in: element.frame, color: style.backgroundColor)
-            context.strokeEllipse(in: element.frame, color: fillColor, lineWidth: max(1.2, element.frame.width * 0.12))
+            context.strokeEllipse(in: element.frame, color: fillColor, lineWidth: max(0.9, element.frame.width * 0.09))
         case .quarter, .eighth, .sixteenth, .thirtySecond, .other:
             context.fillEllipse(in: element.frame, color: fillColor)
             if let strokeColor = resolved.strokeColor {
@@ -699,7 +710,7 @@ struct ScorePainter: Sendable {
         let start = CGPoint(x: element.frame.midX, y: startY)
         let endY = drawsDown ? element.frame.maxY : element.frame.minY
         let end = CGPoint(x: element.frame.midX, y: endY)
-        context.strokeLine(from: start, to: end, color: color, lineWidth: max(1, noteLayout.noteheadFrame.width * 0.08))
+        context.strokeLine(from: start, to: end, color: color, lineWidth: max(0.8, noteLayout.noteheadFrame.width * 0.07))
     }
 
     private func drawBeam<Context: ScoreDrawingContext>(
@@ -736,7 +747,7 @@ struct ScorePainter: Sendable {
             return
         }
         let color = resolved.strokeColor ?? resolved.fillColor ?? style.defaultInkColor
-        let lineWidth = max(1, noteLayout.noteheadFrame.width * 0.08)
+        let lineWidth = max(0.8, noteLayout.noteheadFrame.width * 0.07)
         let drawsDown = element.frame.midY > noteLayout.noteheadCenter.y
         if let glyph = flagGlyph(for: noteLayout.noteValueKind),
            drawSMuFLGlyph(
@@ -921,7 +932,7 @@ struct ScorePainter: Sendable {
                 drawArticulation(articulation, color: color, into: &context)
             case .dynamic:
                 guard let dynamic = element.dynamic else { continue }
-                let size = max(9, dynamic.frame.height * 0.95)
+                let size = max(9, dynamic.frame.height * 0.75)
                 context.drawText(
                     dynamic.mark.rawValue,
                     at: dynamic.origin,
@@ -1081,6 +1092,9 @@ struct ScorePainter: Sendable {
         drawsDown: Bool
     ) -> CGPoint {
         let stemEndY = drawsDown ? element.frame.maxY : element.frame.minY
+        // Flag frames are defined with their connecting edge on the stem: minX for
+        // up-stems and maxX for down-stems. Preserve that attachment even though
+        // stem geometry itself now aligns to the notehead's outer edge.
         let stemX = drawsDown ? element.frame.maxX : element.frame.minX
         // ScoreDrawingContext draws SMuFL glyphs centered on this point. The small x
         // offset places the visual leading edge of the flag on the stem instead of

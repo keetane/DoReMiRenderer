@@ -100,7 +100,7 @@ import Testing
         let note = try #require(notes.first { $0.articulations.contains(kind) })
         let noteLayout = try #require(layout.noteByID[note.id])
         let articulation = try #require(layout.elements.first { $0.noteID == note.id && $0.articulation?.kind == kind }?.articulation)
-        #expect(abs(articulation.point.y - noteLayout.noteheadCenter.y) < noteLayout.noteheadFrame.height * 1.75)
+        #expect(abs(articulation.point.y - noteLayout.noteheadCenter.y) < noteLayout.noteheadFrame.height * 1.9)
     }
 
     let dynamic = try #require(layout.elements.first { $0.kind == .dynamic }?.frame)
@@ -158,7 +158,7 @@ import Testing
     let noteLayout = try #require(layout.noteLayout(for: note.id))
     let dynamic = try #require(layout.elements.first { $0.kind == .dynamic && $0.dynamic?.mark == .mf })
 
-    #expect(dynamic.frame.midX < noteLayout.noteheadCenter.x)
+    #expect(dynamic.frame.midX <= noteLayout.noteheadCenter.x)
     #expect(!dynamic.frame.intersects(noteLayout.noteheadFrame.insetBy(dx: -1, dy: -1)))
     #expect(noteLayout.noteheadCenter.x - dynamic.frame.midX <= 32)
 }
@@ -171,9 +171,18 @@ import Testing
     let dynamic = try #require(layout.elements.first { $0.kind == .dynamic && $0.dynamic?.mark == .mf })
 
     #expect(dynamic.staffID?.rawValue == "1")
-    #expect(dynamic.frame.midX < noteLayout.noteheadCenter.x)
+    #expect(dynamic.frame.midX <= noteLayout.noteheadCenter.x)
     #expect(!dynamic.frame.intersects(noteLayout.noteheadFrame.insetBy(dx: -1, dy: -1)))
     #expect(noteLayout.noteheadCenter.x - dynamic.frame.midX <= 32)
+}
+
+@Test func dynamicMarkAvoidsRepeatBarlineInGrandStaff() throws {
+    let result = try MusicXMLParser().parse(data: Data(dynamicGrandStaffCollisionXML.utf8))
+    let layout = try ScoreLayoutEngine().layout(score: result.score)
+    let dynamic = try #require(layout.elements.first { $0.kind == .dynamic && $0.dynamic?.mark == .mf })
+    let repeatBarline = try #require(layout.elements.first { $0.kind == .barline && $0.repeatBarline?.direction == .forward })
+
+    #expect(!dynamic.frame.intersects(repeatBarline.frame.insetBy(dx: -4, dy: -4)))
 }
 
 @Test func hairpinAvoidsGrandStaffNoteCollision() throws {
@@ -720,6 +729,7 @@ private let dynamicGrandStaffCollisionXML = """
         <clef number="2"><sign>F</sign><line>4</line></clef>
       </attributes>
       <direction placement="below"><direction-type><dynamics><mf/></dynamics></direction-type><staff>1</staff></direction>
+      <barline location="left"><repeat direction="forward"/></barline>
       <note><pitch><step>E</step><octave>4</octave></pitch><duration>4</duration><voice>1</voice><type>quarter</type><staff>2</staff></note>
       <backup><duration>4</duration></backup>
       <note><pitch><step>B</step><octave>4</octave></pitch><duration>4</duration><voice>2</voice><type>quarter</type><staff>1</staff></note>

@@ -35,6 +35,64 @@
 		2B00000100000000000000F1 /* Features/ScorePractice/OnboardingGuide.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001046 /* Features/ScorePractice/OnboardingGuide.swift */; };
 		2B00000100000000000000C5 /* Resources/Samples/Ode_to_Joy_Easy_variation.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001045 /* Resources/Samples/Ode_to_Joy_Easy_variation.mxl */; };
 		2B00000100000000000000C3 /* Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B0000010000000000001043 /* Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl */; };
+		2B7961D6163DDF32B11BE5EB /* Resources/Samples/12_Variations_of_Twinkle_Twinkle_Little_Star.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2BE7E7C75147EF567FB21D9E /* Resources/Samples/12_Variations_of_Twinkle_Twinkle_Little_Star.mxl */; };
+		2BE6EC20D7F17998FACB3CC7 /* Resources/Samples/Arabesque_L._66_No._1_in_E_Major.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B06CC49D37DD0D4C3A03831 /* Resources/Samples/Arabesque_L._66_No._1_in_E_Major.mxl */; };
+		2BAB58079C477E7F148CABA3 /* Resources/Samples/Ave_Maria_D839_-_Schubert_-_Solo_Piano_Arrg..mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B891B3CCAD54ED796F38EA2 /* Resources/Samples/Ave_Maria_D839_-_Schubert_-_Solo_Piano_Arrg..mxl */; };
+		2BB996B5D069B2F9F5996BC1 /* Resources/Samples/Bach_Minuet_in_G_Major_BWV_Anh._114.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2BFB88C4097D6C2C3D3461AF /* Resources/Samples/Bach_Minuet_in_G_Major_BWV_Anh._114.mxl */; };
+		2B5DC09617DFF7E0EF4EE7B7 /* Resources/Samples/Bach_Toccata_and_Fugue_in_D_Minor_Piano_solo.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B1BCCE1C34852E865E02EB3 /* Resources/Samples/Bach_Toccata_and_Fugue_in_D_Minor_Piano_solo.mxl */; };
+		2BDDF98956214F703EABB7C9 /* Resources/Samples/Beethoven_Symphony_No._5_1st_movement_Piano_solo.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2BF9FA548FBE61F823269ECD /* Resources/Samples/Beethoven_Symphony_No._5_1st_movement_Piano_solo.mxl */; };
+		2BA3AC21EF288AF6E5131EC0 /* Resources/Samples/Bella_Ciao.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B98A2E6D6B421BF16B9D9EE /* Resources/Samples/Bella_Ciao.mxl */; };
+		2B997B7BE7D9F45101011B32 /* Resources/Samples/Canon_in_D.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B7644096AF2B663D23DE577 /* Resources/Samples/Canon_in_D.mxl */; };
+		2B7A182FF160BA0C462AD62E /* Resources/Samples/Canon_in_D_easy.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B3221CD9697EC92ACFA5EBC /* Resources/Samples/Canon_in_D_easy.mxl */; };
+		2BE6B81F7E626EAC179C660D /* Resources/Samples/Carol_of_the_Bells.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2BBD9CDA1727C71A10F8E76A /* Resources/Samples/Carol_of_the_Bells.mxl */; };
+		2B6FE3F3CE3327732EA111E2 /* Resources/Samples/Carol_of_the_Bells_easy_piano.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B353E46045D0942E7FF2593 /* Resources/Samples/Carol_of_the_Bells_easy_piano.mxl */; };
+		2B3C14EA8205C21AF2C83EA1 /* Resources/Samples/Chopin_-_Ballade_no._1_in_G_minor_Op._23.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B3EE712499C1A76816A44D2 /* Resources/Samples/Chopin_-_Ballade_no._1_in_G_minor_Op._23.mxl */; };
+		2B6A271A8C2C3282A08552A7 /* Resources/Samples/Chopin_-_Nocturne_Op._9_No._1.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B521E54691A7D3A8AA2B835 /* Resources/Samples/Chopin_-_Nocturne_Op._9_No._1.mxl */; };
+		2B91A2AA005BC0894A25AC04 /* Resources/Samples/Chopin_-_Nocturne_Op_9_No_2_E_Flat_Major.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2BBD21281A8A15E9D3940CB9 /* Resources/Samples/Chopin_-_Nocturne_Op_9_No_2_E_Flat_Major.mxl */; };
+		2BC37142C08A4E5D54B51034 /* Resources/Samples/Clair_de_Lune__Debussy.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B959BCE8EC0037C764A7DD8 /* Resources/Samples/Clair_de_Lune__Debussy.mxl */; };
+		2B83ECB4ED31D7DB047AA815 /* Resources/Samples/Clair_de_lune_-_Claude_Debussy.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2BFCDA54FEA0538F36BAD5EC /* Resources/Samples/Clair_de_lune_-_Claude_Debussy.mxl */; };
+		2B6C461C35FEF173CA672197 /* Resources/Samples/Dance_of_the_sugar_plum_fairy.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B08F3718053257C04E6D0B5 /* Resources/Samples/Dance_of_the_sugar_plum_fairy.mxl */; };
+		2BE54660D169DDF5655C0F8C /* Resources/Samples/Erik_Satie_-_Gymnopedie_No.1.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2BCCFFD8C48E71CE8D37BB25 /* Resources/Samples/Erik_Satie_-_Gymnopedie_No.1.mxl */; };
+		2BA58EB340C41604C8E9B55B /* Resources/Samples/Flight_of_the_Bumblebee.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2BF670084E011E0F0375B909 /* Resources/Samples/Flight_of_the_Bumblebee.mxl */; };
+		2B7A6942E0332C1F0A90BF1C /* Resources/Samples/Fur_Elise.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2BC634EBC9B51922F34D5F06 /* Resources/Samples/Fur_Elise.mxl */; };
+		2BF24EC7CB5F2EECED696C44 /* Resources/Samples/Fur_Elise_Easy_Piano.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B267FF17D8931F17F2CD1CA /* Resources/Samples/Fur_Elise_Easy_Piano.mxl */; };
+		2B5D3A5F20F9D5A005BFF61C /* Resources/Samples/G_Minor_Bach_Original.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2BA3BE10FBAEAE507FA0B799 /* Resources/Samples/G_Minor_Bach_Original.mxl */; };
+		2B3BABFC9AFED69E7C2D4ECE /* Resources/Samples/Gnossienne_No._1.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2BF840F6CCFAC77907555E70 /* Resources/Samples/Gnossienne_No._1.mxl */; };
+		2B94FC15C6FBCFF0E9D604DB /* Resources/Samples/Greensleeves_for_Piano_easy_and_beautiful.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B2CED6106D680B18D1104CE /* Resources/Samples/Greensleeves_for_Piano_easy_and_beautiful.mxl */; };
+		2BD1EF65747A14150032955B /* Resources/Samples/Gymnopdie_No._1__Satie.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2BC18773E7F6692C365EFCF1 /* Resources/Samples/Gymnopdie_No._1__Satie.mxl */; };
+		2B0ACB6A9BCCE0E9DC60DD45 /* Resources/Samples/Happy_Birthday_To_You_C_Major.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B861F5C669120C0B7A8E12B /* Resources/Samples/Happy_Birthday_To_You_C_Major.mxl */; };
+		2B1151488243566738CD69AD /* Resources/Samples/Happy_Birthday_To_You_Piano.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2BE8735455D7E306ED37CD33 /* Resources/Samples/Happy_Birthday_To_You_Piano.mxl */; };
+		2B4462922ECD051B2C8E7FA2 /* Resources/Samples/Hungarian_Dance_No_5_in_G_Minor.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2BF0BF0791F0F9D829F146E1 /* Resources/Samples/Hungarian_Dance_No_5_in_G_Minor.mxl */; };
+		2BEB926AE33E6D094F95FD95 /* Resources/Samples/J._S._Bach_-_Air_on_the_G_String_Piano_arrangement.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B36AE13DB23C010560A8657 /* Resources/Samples/J._S._Bach_-_Air_on_the_G_String_Piano_arrangement.mxl */; };
+		2B99CED7865549D30F0BF82E /* Resources/Samples/La_Campanella_-_Grandes_Etudes_de_Paganini_No._3_-_Franz_Liszt.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B30E9BF0F720B1B93425A72 /* Resources/Samples/La_Campanella_-_Grandes_Etudes_de_Paganini_No._3_-_Franz_Liszt.mxl */; };
+		2B98FE2C264F3144F4C231F2 /* Resources/Samples/Lacrimosa_-_Requiem.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B1734296E4C15911E3CFE09 /* Resources/Samples/Lacrimosa_-_Requiem.mxl */; };
+		2B7A56EBD44741BAD5546856 /* Resources/Samples/Liebestraum_No._3_in_A_Major.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B0699DCB99C0AE5B080D11F /* Resources/Samples/Liebestraum_No._3_in_A_Major.mxl */; };
+		2BB8B9A1704B1DA989674903 /* Resources/Samples/Maple_Leaf_Rag_Scott_Joplin.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B0F40644EAE0562A2831AE0 /* Resources/Samples/Maple_Leaf_Rag_Scott_Joplin.mxl */; };
+		2B0E91F2C7B3B8686BF8781C /* Resources/Samples/Minuet_in_G_Major_Bach.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B8A94CB74454B96886FB104 /* Resources/Samples/Minuet_in_G_Major_Bach.mxl */; };
+		2B941533810DC8B464BEDE2F /* Resources/Samples/Mozart_-_Piano_Sonata_No._16_-_Allegro.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B346E6E6E2BF152260B5085 /* Resources/Samples/Mozart_-_Piano_Sonata_No._16_-_Allegro.mxl */; };
+		2B504E575F3F0E83E4B581A6 /* Resources/Samples/Nocturne_No._20_in_C_Minor.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B8FA9450B8C395F7A49693B /* Resources/Samples/Nocturne_No._20_in_C_Minor.mxl */; };
+		2B4865A21F3092D1CFBE5F86 /* Resources/Samples/Nocturne_in_C_sharp_Minor.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B51F9B7C9A08C1578DC526C /* Resources/Samples/Nocturne_in_C_sharp_Minor.mxl */; };
+		2B6CDD3D78C32A1962F6BFC3 /* Resources/Samples/Nocturne_in_E-flat_Major_Op._9_No._2_Easy.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B90D061C1AC6F1C552C9084 /* Resources/Samples/Nocturne_in_E-flat_Major_Op._9_No._2_Easy.mxl */; };
+		2B8C88DE0E7F3D5214C32979 /* Resources/Samples/Passacaglia.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2BC5D4A909A47E6274B87FDC /* Resources/Samples/Passacaglia.mxl */; };
+		2BF4A3AD2D7B74B79E81F411 /* Resources/Samples/Passacaglia2.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B849D6EFB240E32F36A8026 /* Resources/Samples/Passacaglia2.mxl */; };
+		2B5BD5FB67D47409A0EEC1AD /* Resources/Samples/Piano_Sonata_No._11_K._331_3rd_Movement_Rondo_alla_Turca.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2BF51B70DCE506533F3F22D1 /* Resources/Samples/Piano_Sonata_No._11_K._331_3rd_Movement_Rondo_alla_Turca.mxl */; };
+		2B48ED806B8034E58F0EEEA9 /* Resources/Samples/Prelude_I_in_C_major_BWV_846_-_Well_Tempered_Clavier_First_Book.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B28F800DE8769CBA3AF2D21 /* Resources/Samples/Prelude_I_in_C_major_BWV_846_-_Well_Tempered_Clavier_First_Book.mxl */; };
+		2BA24E90F46BC03B9BC6326C /* Resources/Samples/Prelude_No._2_BWV_847_in_C_Minor.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B32EF9B71C2EF87DAB6CA8A /* Resources/Samples/Prelude_No._2_BWV_847_in_C_Minor.mxl */; };
+		2B8856DEF2DD81892C207490 /* Resources/Samples/Prlude_No._4_in_E_Minor_Op._28_-_Frdric_Chopin.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B31EE016C2B9D3B078ADD7C /* Resources/Samples/Prlude_No._4_in_E_Minor_Op._28_-_Frdric_Chopin.mxl */; };
+		2B41B7D3A887BE56CD64C68F /* Resources/Samples/Prlude_Opus_28_No._4_in_E_Minor__Chopin.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B36F41C00B0FC63352E24F3 /* Resources/Samples/Prlude_Opus_28_No._4_in_E_Minor__Chopin.mxl */; };
+		2BA0E7E04BE1A816EC22B632 /* Resources/Samples/Schubert_Serenade_-_Standchen_-_By_Lizst.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B68E94B3F65F3D93C33AF69 /* Resources/Samples/Schubert_Serenade_-_Standchen_-_By_Lizst.mxl */; };
+		2BEE84A0356746D1BE0AEB53 /* Resources/Samples/Sonata_No._16_1st_Movement_K._545.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B56D3D945EA1131FF674552 /* Resources/Samples/Sonata_No._16_1st_Movement_K._545.mxl */; };
+		2BC4F4C729D37EDA77E3455D /* Resources/Samples/Sonate_No._14_Moonlight_1st_Movement.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B4ED7DC0441FAFC64BF18DE /* Resources/Samples/Sonate_No._14_Moonlight_1st_Movement.mxl */; };
+		2B40C282D734B074FC747ADB /* Resources/Samples/Sonate_No._14_Moonlight_3rd_Movement.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B7ED623297AD05A090BECA8 /* Resources/Samples/Sonate_No._14_Moonlight_3rd_Movement.mxl */; };
+		2B6697DC48CBDC4E53D31A26 /* Resources/Samples/Sonate_No._8_Pathetique_2nd_Movement.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2BB6752AC3386A7EDEB35134 /* Resources/Samples/Sonate_No._8_Pathetique_2nd_Movement.mxl */; };
+		2BCE9E27939760EF1CFA504C /* Resources/Samples/Swan_Lake.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B7DA389F6D397515C42AA87 /* Resources/Samples/Swan_Lake.mxl */; };
+		2B5D13432D68386D42E0EA8C /* Resources/Samples/The_Entertainer_-_Scott_Joplin.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B52F3EFB6A3A8CA818EECCF /* Resources/Samples/The_Entertainer_-_Scott_Joplin.mxl */; };
+		2B9917951E03B9D85D46694B /* Resources/Samples/The_Entertainer_-_Scott_Joplin_-_1902.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B7A6DA05EFDD223C72FB7ED /* Resources/Samples/The_Entertainer_-_Scott_Joplin_-_1902.mxl */; };
+		2BBBA07BB34CD28049883869 /* Resources/Samples/WA_Mozart_Marche_Turque_Turkish_March_fingered.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2BC6DC33F7F34BFA56B580F0 /* Resources/Samples/WA_Mozart_Marche_Turque_Turkish_March_fingered.mxl */; };
+		2B9F73F1D358486AC65D7B04 /* Resources/Samples/Waltz_Opus_64_No._2_in_C_Minor.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2B4F513C224EBB24C818D334 /* Resources/Samples/Waltz_Opus_64_No._2_in_C_Minor.mxl */; };
+		2B70C2AE50215BABCE002F94 /* Resources/Samples/Waltz_in_A_MinorChopin.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2BBD4D50ADB5D8CE03667EA7 /* Resources/Samples/Waltz_in_A_MinorChopin.mxl */; };
+		2B77D15900C89D115D3EBCDE /* Resources/Samples/Waltz_of_the_Flowers.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2BE2568C806AEEF64A10B0E1 /* Resources/Samples/Waltz_of_the_Flowers.mxl */; };
+		2BACBF7A7466984FF1AECA05 /* Resources/Samples/moonlight_sonata_3rd_movement.mxl in Resources */ = {isa = PBXBuildFile; fileRef = 2BAC3BBE6805C62BCE1C6C2E /* Resources/Samples/moonlight_sonata_3rd_movement.mxl */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -76,6 +134,64 @@
 		2B0000010000000000001046 /* Features/ScorePractice/OnboardingGuide.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/ScorePractice/OnboardingGuide.swift; sourceTree = "<group>"; };
 		2B0000010000000000001045 /* Resources/Samples/Ode_to_Joy_Easy_variation.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Ode_to_Joy_Easy_variation.mxl"; sourceTree = "<group>"; };
 		2B0000010000000000001043 /* Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl"; sourceTree = "<group>"; };
+		2BE7E7C75147EF567FB21D9E /* Resources/Samples/12_Variations_of_Twinkle_Twinkle_Little_Star.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/12_Variations_of_Twinkle_Twinkle_Little_Star.mxl"; sourceTree = "<group>"; };
+		2B06CC49D37DD0D4C3A03831 /* Resources/Samples/Arabesque_L._66_No._1_in_E_Major.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Arabesque_L._66_No._1_in_E_Major.mxl"; sourceTree = "<group>"; };
+		2B891B3CCAD54ED796F38EA2 /* Resources/Samples/Ave_Maria_D839_-_Schubert_-_Solo_Piano_Arrg..mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Ave_Maria_D839_-_Schubert_-_Solo_Piano_Arrg..mxl"; sourceTree = "<group>"; };
+		2BFB88C4097D6C2C3D3461AF /* Resources/Samples/Bach_Minuet_in_G_Major_BWV_Anh._114.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Bach_Minuet_in_G_Major_BWV_Anh._114.mxl"; sourceTree = "<group>"; };
+		2B1BCCE1C34852E865E02EB3 /* Resources/Samples/Bach_Toccata_and_Fugue_in_D_Minor_Piano_solo.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Bach_Toccata_and_Fugue_in_D_Minor_Piano_solo.mxl"; sourceTree = "<group>"; };
+		2BF9FA548FBE61F823269ECD /* Resources/Samples/Beethoven_Symphony_No._5_1st_movement_Piano_solo.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Beethoven_Symphony_No._5_1st_movement_Piano_solo.mxl"; sourceTree = "<group>"; };
+		2B98A2E6D6B421BF16B9D9EE /* Resources/Samples/Bella_Ciao.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Bella_Ciao.mxl"; sourceTree = "<group>"; };
+		2B7644096AF2B663D23DE577 /* Resources/Samples/Canon_in_D.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Canon_in_D.mxl"; sourceTree = "<group>"; };
+		2B3221CD9697EC92ACFA5EBC /* Resources/Samples/Canon_in_D_easy.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Canon_in_D_easy.mxl"; sourceTree = "<group>"; };
+		2BBD9CDA1727C71A10F8E76A /* Resources/Samples/Carol_of_the_Bells.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Carol_of_the_Bells.mxl"; sourceTree = "<group>"; };
+		2B353E46045D0942E7FF2593 /* Resources/Samples/Carol_of_the_Bells_easy_piano.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Carol_of_the_Bells_easy_piano.mxl"; sourceTree = "<group>"; };
+		2B3EE712499C1A76816A44D2 /* Resources/Samples/Chopin_-_Ballade_no._1_in_G_minor_Op._23.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Chopin_-_Ballade_no._1_in_G_minor_Op._23.mxl"; sourceTree = "<group>"; };
+		2B521E54691A7D3A8AA2B835 /* Resources/Samples/Chopin_-_Nocturne_Op._9_No._1.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Chopin_-_Nocturne_Op._9_No._1.mxl"; sourceTree = "<group>"; };
+		2BBD21281A8A15E9D3940CB9 /* Resources/Samples/Chopin_-_Nocturne_Op_9_No_2_E_Flat_Major.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Chopin_-_Nocturne_Op_9_No_2_E_Flat_Major.mxl"; sourceTree = "<group>"; };
+		2B959BCE8EC0037C764A7DD8 /* Resources/Samples/Clair_de_Lune__Debussy.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Clair_de_Lune__Debussy.mxl"; sourceTree = "<group>"; };
+		2BFCDA54FEA0538F36BAD5EC /* Resources/Samples/Clair_de_lune_-_Claude_Debussy.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Clair_de_lune_-_Claude_Debussy.mxl"; sourceTree = "<group>"; };
+		2B08F3718053257C04E6D0B5 /* Resources/Samples/Dance_of_the_sugar_plum_fairy.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Dance_of_the_sugar_plum_fairy.mxl"; sourceTree = "<group>"; };
+		2BCCFFD8C48E71CE8D37BB25 /* Resources/Samples/Erik_Satie_-_Gymnopedie_No.1.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Erik_Satie_-_Gymnopedie_No.1.mxl"; sourceTree = "<group>"; };
+		2BF670084E011E0F0375B909 /* Resources/Samples/Flight_of_the_Bumblebee.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Flight_of_the_Bumblebee.mxl"; sourceTree = "<group>"; };
+		2BC634EBC9B51922F34D5F06 /* Resources/Samples/Fur_Elise.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Fur_Elise.mxl"; sourceTree = "<group>"; };
+		2B267FF17D8931F17F2CD1CA /* Resources/Samples/Fur_Elise_Easy_Piano.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Fur_Elise_Easy_Piano.mxl"; sourceTree = "<group>"; };
+		2BA3BE10FBAEAE507FA0B799 /* Resources/Samples/G_Minor_Bach_Original.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/G_Minor_Bach_Original.mxl"; sourceTree = "<group>"; };
+		2BF840F6CCFAC77907555E70 /* Resources/Samples/Gnossienne_No._1.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Gnossienne_No._1.mxl"; sourceTree = "<group>"; };
+		2B2CED6106D680B18D1104CE /* Resources/Samples/Greensleeves_for_Piano_easy_and_beautiful.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Greensleeves_for_Piano_easy_and_beautiful.mxl"; sourceTree = "<group>"; };
+		2BC18773E7F6692C365EFCF1 /* Resources/Samples/Gymnopdie_No._1__Satie.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Gymnopdie_No._1__Satie.mxl"; sourceTree = "<group>"; };
+		2B861F5C669120C0B7A8E12B /* Resources/Samples/Happy_Birthday_To_You_C_Major.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Happy_Birthday_To_You_C_Major.mxl"; sourceTree = "<group>"; };
+		2BE8735455D7E306ED37CD33 /* Resources/Samples/Happy_Birthday_To_You_Piano.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Happy_Birthday_To_You_Piano.mxl"; sourceTree = "<group>"; };
+		2BF0BF0791F0F9D829F146E1 /* Resources/Samples/Hungarian_Dance_No_5_in_G_Minor.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Hungarian_Dance_No_5_in_G_Minor.mxl"; sourceTree = "<group>"; };
+		2B36AE13DB23C010560A8657 /* Resources/Samples/J._S._Bach_-_Air_on_the_G_String_Piano_arrangement.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/J._S._Bach_-_Air_on_the_G_String_Piano_arrangement.mxl"; sourceTree = "<group>"; };
+		2B30E9BF0F720B1B93425A72 /* Resources/Samples/La_Campanella_-_Grandes_Etudes_de_Paganini_No._3_-_Franz_Liszt.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/La_Campanella_-_Grandes_Etudes_de_Paganini_No._3_-_Franz_Liszt.mxl"; sourceTree = "<group>"; };
+		2B1734296E4C15911E3CFE09 /* Resources/Samples/Lacrimosa_-_Requiem.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Lacrimosa_-_Requiem.mxl"; sourceTree = "<group>"; };
+		2B0699DCB99C0AE5B080D11F /* Resources/Samples/Liebestraum_No._3_in_A_Major.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Liebestraum_No._3_in_A_Major.mxl"; sourceTree = "<group>"; };
+		2B0F40644EAE0562A2831AE0 /* Resources/Samples/Maple_Leaf_Rag_Scott_Joplin.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Maple_Leaf_Rag_Scott_Joplin.mxl"; sourceTree = "<group>"; };
+		2B8A94CB74454B96886FB104 /* Resources/Samples/Minuet_in_G_Major_Bach.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Minuet_in_G_Major_Bach.mxl"; sourceTree = "<group>"; };
+		2B346E6E6E2BF152260B5085 /* Resources/Samples/Mozart_-_Piano_Sonata_No._16_-_Allegro.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Mozart_-_Piano_Sonata_No._16_-_Allegro.mxl"; sourceTree = "<group>"; };
+		2B8FA9450B8C395F7A49693B /* Resources/Samples/Nocturne_No._20_in_C_Minor.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Nocturne_No._20_in_C_Minor.mxl"; sourceTree = "<group>"; };
+		2B51F9B7C9A08C1578DC526C /* Resources/Samples/Nocturne_in_C_sharp_Minor.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Nocturne_in_C_sharp_Minor.mxl"; sourceTree = "<group>"; };
+		2B90D061C1AC6F1C552C9084 /* Resources/Samples/Nocturne_in_E-flat_Major_Op._9_No._2_Easy.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Nocturne_in_E-flat_Major_Op._9_No._2_Easy.mxl"; sourceTree = "<group>"; };
+		2BC5D4A909A47E6274B87FDC /* Resources/Samples/Passacaglia.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Passacaglia.mxl"; sourceTree = "<group>"; };
+		2B849D6EFB240E32F36A8026 /* Resources/Samples/Passacaglia2.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Passacaglia2.mxl"; sourceTree = "<group>"; };
+		2BF51B70DCE506533F3F22D1 /* Resources/Samples/Piano_Sonata_No._11_K._331_3rd_Movement_Rondo_alla_Turca.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Piano_Sonata_No._11_K._331_3rd_Movement_Rondo_alla_Turca.mxl"; sourceTree = "<group>"; };
+		2B28F800DE8769CBA3AF2D21 /* Resources/Samples/Prelude_I_in_C_major_BWV_846_-_Well_Tempered_Clavier_First_Book.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Prelude_I_in_C_major_BWV_846_-_Well_Tempered_Clavier_First_Book.mxl"; sourceTree = "<group>"; };
+		2B32EF9B71C2EF87DAB6CA8A /* Resources/Samples/Prelude_No._2_BWV_847_in_C_Minor.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Prelude_No._2_BWV_847_in_C_Minor.mxl"; sourceTree = "<group>"; };
+		2B31EE016C2B9D3B078ADD7C /* Resources/Samples/Prlude_No._4_in_E_Minor_Op._28_-_Frdric_Chopin.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Prlude_No._4_in_E_Minor_Op._28_-_Frdric_Chopin.mxl"; sourceTree = "<group>"; };
+		2B36F41C00B0FC63352E24F3 /* Resources/Samples/Prlude_Opus_28_No._4_in_E_Minor__Chopin.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Prlude_Opus_28_No._4_in_E_Minor__Chopin.mxl"; sourceTree = "<group>"; };
+		2B68E94B3F65F3D93C33AF69 /* Resources/Samples/Schubert_Serenade_-_Standchen_-_By_Lizst.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Schubert_Serenade_-_Standchen_-_By_Lizst.mxl"; sourceTree = "<group>"; };
+		2B56D3D945EA1131FF674552 /* Resources/Samples/Sonata_No._16_1st_Movement_K._545.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Sonata_No._16_1st_Movement_K._545.mxl"; sourceTree = "<group>"; };
+		2B4ED7DC0441FAFC64BF18DE /* Resources/Samples/Sonate_No._14_Moonlight_1st_Movement.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Sonate_No._14_Moonlight_1st_Movement.mxl"; sourceTree = "<group>"; };
+		2B7ED623297AD05A090BECA8 /* Resources/Samples/Sonate_No._14_Moonlight_3rd_Movement.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Sonate_No._14_Moonlight_3rd_Movement.mxl"; sourceTree = "<group>"; };
+		2BB6752AC3386A7EDEB35134 /* Resources/Samples/Sonate_No._8_Pathetique_2nd_Movement.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Sonate_No._8_Pathetique_2nd_Movement.mxl"; sourceTree = "<group>"; };
+		2B7DA389F6D397515C42AA87 /* Resources/Samples/Swan_Lake.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Swan_Lake.mxl"; sourceTree = "<group>"; };
+		2B52F3EFB6A3A8CA818EECCF /* Resources/Samples/The_Entertainer_-_Scott_Joplin.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/The_Entertainer_-_Scott_Joplin.mxl"; sourceTree = "<group>"; };
+		2B7A6DA05EFDD223C72FB7ED /* Resources/Samples/The_Entertainer_-_Scott_Joplin_-_1902.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/The_Entertainer_-_Scott_Joplin_-_1902.mxl"; sourceTree = "<group>"; };
+		2BC6DC33F7F34BFA56B580F0 /* Resources/Samples/WA_Mozart_Marche_Turque_Turkish_March_fingered.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/WA_Mozart_Marche_Turque_Turkish_March_fingered.mxl"; sourceTree = "<group>"; };
+		2B4F513C224EBB24C818D334 /* Resources/Samples/Waltz_Opus_64_No._2_in_C_Minor.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Waltz_Opus_64_No._2_in_C_Minor.mxl"; sourceTree = "<group>"; };
+		2BBD4D50ADB5D8CE03667EA7 /* Resources/Samples/Waltz_in_A_MinorChopin.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Waltz_in_A_MinorChopin.mxl"; sourceTree = "<group>"; };
+		2BE2568C806AEEF64A10B0E1 /* Resources/Samples/Waltz_of_the_Flowers.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/Waltz_of_the_Flowers.mxl"; sourceTree = "<group>"; };
+		2BAC3BBE6805C62BCE1C6C2E /* Resources/Samples/moonlight_sonata_3rd_movement.mxl */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = "Resources/Samples/moonlight_sonata_3rd_movement.mxl"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -133,6 +249,64 @@
 				2B0000010000000000001022 /* Assets.xcassets */,
 				2B0000010000000000001045 /* Resources/Samples/Ode_to_Joy_Easy_variation.mxl */,
 				2B0000010000000000001043 /* Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl */,
+				2BE7E7C75147EF567FB21D9E /* Resources/Samples/12_Variations_of_Twinkle_Twinkle_Little_Star.mxl */,
+				2B06CC49D37DD0D4C3A03831 /* Resources/Samples/Arabesque_L._66_No._1_in_E_Major.mxl */,
+				2B891B3CCAD54ED796F38EA2 /* Resources/Samples/Ave_Maria_D839_-_Schubert_-_Solo_Piano_Arrg..mxl */,
+				2BFB88C4097D6C2C3D3461AF /* Resources/Samples/Bach_Minuet_in_G_Major_BWV_Anh._114.mxl */,
+				2B1BCCE1C34852E865E02EB3 /* Resources/Samples/Bach_Toccata_and_Fugue_in_D_Minor_Piano_solo.mxl */,
+				2BF9FA548FBE61F823269ECD /* Resources/Samples/Beethoven_Symphony_No._5_1st_movement_Piano_solo.mxl */,
+				2B98A2E6D6B421BF16B9D9EE /* Resources/Samples/Bella_Ciao.mxl */,
+				2B7644096AF2B663D23DE577 /* Resources/Samples/Canon_in_D.mxl */,
+				2B3221CD9697EC92ACFA5EBC /* Resources/Samples/Canon_in_D_easy.mxl */,
+				2BBD9CDA1727C71A10F8E76A /* Resources/Samples/Carol_of_the_Bells.mxl */,
+				2B353E46045D0942E7FF2593 /* Resources/Samples/Carol_of_the_Bells_easy_piano.mxl */,
+				2B3EE712499C1A76816A44D2 /* Resources/Samples/Chopin_-_Ballade_no._1_in_G_minor_Op._23.mxl */,
+				2B521E54691A7D3A8AA2B835 /* Resources/Samples/Chopin_-_Nocturne_Op._9_No._1.mxl */,
+				2BBD21281A8A15E9D3940CB9 /* Resources/Samples/Chopin_-_Nocturne_Op_9_No_2_E_Flat_Major.mxl */,
+				2B959BCE8EC0037C764A7DD8 /* Resources/Samples/Clair_de_Lune__Debussy.mxl */,
+				2BFCDA54FEA0538F36BAD5EC /* Resources/Samples/Clair_de_lune_-_Claude_Debussy.mxl */,
+				2B08F3718053257C04E6D0B5 /* Resources/Samples/Dance_of_the_sugar_plum_fairy.mxl */,
+				2BCCFFD8C48E71CE8D37BB25 /* Resources/Samples/Erik_Satie_-_Gymnopedie_No.1.mxl */,
+				2BF670084E011E0F0375B909 /* Resources/Samples/Flight_of_the_Bumblebee.mxl */,
+				2BC634EBC9B51922F34D5F06 /* Resources/Samples/Fur_Elise.mxl */,
+				2B267FF17D8931F17F2CD1CA /* Resources/Samples/Fur_Elise_Easy_Piano.mxl */,
+				2BA3BE10FBAEAE507FA0B799 /* Resources/Samples/G_Minor_Bach_Original.mxl */,
+				2BF840F6CCFAC77907555E70 /* Resources/Samples/Gnossienne_No._1.mxl */,
+				2B2CED6106D680B18D1104CE /* Resources/Samples/Greensleeves_for_Piano_easy_and_beautiful.mxl */,
+				2BC18773E7F6692C365EFCF1 /* Resources/Samples/Gymnopdie_No._1__Satie.mxl */,
+				2B861F5C669120C0B7A8E12B /* Resources/Samples/Happy_Birthday_To_You_C_Major.mxl */,
+				2BE8735455D7E306ED37CD33 /* Resources/Samples/Happy_Birthday_To_You_Piano.mxl */,
+				2BF0BF0791F0F9D829F146E1 /* Resources/Samples/Hungarian_Dance_No_5_in_G_Minor.mxl */,
+				2B36AE13DB23C010560A8657 /* Resources/Samples/J._S._Bach_-_Air_on_the_G_String_Piano_arrangement.mxl */,
+				2B30E9BF0F720B1B93425A72 /* Resources/Samples/La_Campanella_-_Grandes_Etudes_de_Paganini_No._3_-_Franz_Liszt.mxl */,
+				2B1734296E4C15911E3CFE09 /* Resources/Samples/Lacrimosa_-_Requiem.mxl */,
+				2B0699DCB99C0AE5B080D11F /* Resources/Samples/Liebestraum_No._3_in_A_Major.mxl */,
+				2B0F40644EAE0562A2831AE0 /* Resources/Samples/Maple_Leaf_Rag_Scott_Joplin.mxl */,
+				2B8A94CB74454B96886FB104 /* Resources/Samples/Minuet_in_G_Major_Bach.mxl */,
+				2B346E6E6E2BF152260B5085 /* Resources/Samples/Mozart_-_Piano_Sonata_No._16_-_Allegro.mxl */,
+				2B8FA9450B8C395F7A49693B /* Resources/Samples/Nocturne_No._20_in_C_Minor.mxl */,
+				2B51F9B7C9A08C1578DC526C /* Resources/Samples/Nocturne_in_C_sharp_Minor.mxl */,
+				2B90D061C1AC6F1C552C9084 /* Resources/Samples/Nocturne_in_E-flat_Major_Op._9_No._2_Easy.mxl */,
+				2BC5D4A909A47E6274B87FDC /* Resources/Samples/Passacaglia.mxl */,
+				2B849D6EFB240E32F36A8026 /* Resources/Samples/Passacaglia2.mxl */,
+				2BF51B70DCE506533F3F22D1 /* Resources/Samples/Piano_Sonata_No._11_K._331_3rd_Movement_Rondo_alla_Turca.mxl */,
+				2B28F800DE8769CBA3AF2D21 /* Resources/Samples/Prelude_I_in_C_major_BWV_846_-_Well_Tempered_Clavier_First_Book.mxl */,
+				2B32EF9B71C2EF87DAB6CA8A /* Resources/Samples/Prelude_No._2_BWV_847_in_C_Minor.mxl */,
+				2B31EE016C2B9D3B078ADD7C /* Resources/Samples/Prlude_No._4_in_E_Minor_Op._28_-_Frdric_Chopin.mxl */,
+				2B36F41C00B0FC63352E24F3 /* Resources/Samples/Prlude_Opus_28_No._4_in_E_Minor__Chopin.mxl */,
+				2B68E94B3F65F3D93C33AF69 /* Resources/Samples/Schubert_Serenade_-_Standchen_-_By_Lizst.mxl */,
+				2B56D3D945EA1131FF674552 /* Resources/Samples/Sonata_No._16_1st_Movement_K._545.mxl */,
+				2B4ED7DC0441FAFC64BF18DE /* Resources/Samples/Sonate_No._14_Moonlight_1st_Movement.mxl */,
+				2B7ED623297AD05A090BECA8 /* Resources/Samples/Sonate_No._14_Moonlight_3rd_Movement.mxl */,
+				2BB6752AC3386A7EDEB35134 /* Resources/Samples/Sonate_No._8_Pathetique_2nd_Movement.mxl */,
+				2B7DA389F6D397515C42AA87 /* Resources/Samples/Swan_Lake.mxl */,
+				2B52F3EFB6A3A8CA818EECCF /* Resources/Samples/The_Entertainer_-_Scott_Joplin.mxl */,
+				2B7A6DA05EFDD223C72FB7ED /* Resources/Samples/The_Entertainer_-_Scott_Joplin_-_1902.mxl */,
+				2BC6DC33F7F34BFA56B580F0 /* Resources/Samples/WA_Mozart_Marche_Turque_Turkish_March_fingered.mxl */,
+				2B4F513C224EBB24C818D334 /* Resources/Samples/Waltz_Opus_64_No._2_in_C_Minor.mxl */,
+				2BBD4D50ADB5D8CE03667EA7 /* Resources/Samples/Waltz_in_A_MinorChopin.mxl */,
+				2BE2568C806AEEF64A10B0E1 /* Resources/Samples/Waltz_of_the_Flowers.mxl */,
+				2BAC3BBE6805C62BCE1C6C2E /* Resources/Samples/moonlight_sonata_3rd_movement.mxl */,
 			);
 			path = DoReMiPalette;
 			sourceTree = "<group>";
@@ -250,6 +424,64 @@
 				2B0000010000000000000012 /* Assets.xcassets in Resources */,
 				2B00000100000000000000C5 /* Resources/Samples/Ode_to_Joy_Easy_variation.mxl in Resources */,
 				2B00000100000000000000C3 /* Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl in Resources */,
+				2B7961D6163DDF32B11BE5EB /* Resources/Samples/12_Variations_of_Twinkle_Twinkle_Little_Star.mxl in Resources */,
+				2BE6EC20D7F17998FACB3CC7 /* Resources/Samples/Arabesque_L._66_No._1_in_E_Major.mxl in Resources */,
+				2BAB58079C477E7F148CABA3 /* Resources/Samples/Ave_Maria_D839_-_Schubert_-_Solo_Piano_Arrg..mxl in Resources */,
+				2BB996B5D069B2F9F5996BC1 /* Resources/Samples/Bach_Minuet_in_G_Major_BWV_Anh._114.mxl in Resources */,
+				2B5DC09617DFF7E0EF4EE7B7 /* Resources/Samples/Bach_Toccata_and_Fugue_in_D_Minor_Piano_solo.mxl in Resources */,
+				2BDDF98956214F703EABB7C9 /* Resources/Samples/Beethoven_Symphony_No._5_1st_movement_Piano_solo.mxl in Resources */,
+				2BA3AC21EF288AF6E5131EC0 /* Resources/Samples/Bella_Ciao.mxl in Resources */,
+				2B997B7BE7D9F45101011B32 /* Resources/Samples/Canon_in_D.mxl in Resources */,
+				2B7A182FF160BA0C462AD62E /* Resources/Samples/Canon_in_D_easy.mxl in Resources */,
+				2BE6B81F7E626EAC179C660D /* Resources/Samples/Carol_of_the_Bells.mxl in Resources */,
+				2B6FE3F3CE3327732EA111E2 /* Resources/Samples/Carol_of_the_Bells_easy_piano.mxl in Resources */,
+				2B3C14EA8205C21AF2C83EA1 /* Resources/Samples/Chopin_-_Ballade_no._1_in_G_minor_Op._23.mxl in Resources */,
+				2B6A271A8C2C3282A08552A7 /* Resources/Samples/Chopin_-_Nocturne_Op._9_No._1.mxl in Resources */,
+				2B91A2AA005BC0894A25AC04 /* Resources/Samples/Chopin_-_Nocturne_Op_9_No_2_E_Flat_Major.mxl in Resources */,
+				2BC37142C08A4E5D54B51034 /* Resources/Samples/Clair_de_Lune__Debussy.mxl in Resources */,
+				2B83ECB4ED31D7DB047AA815 /* Resources/Samples/Clair_de_lune_-_Claude_Debussy.mxl in Resources */,
+				2B6C461C35FEF173CA672197 /* Resources/Samples/Dance_of_the_sugar_plum_fairy.mxl in Resources */,
+				2BE54660D169DDF5655C0F8C /* Resources/Samples/Erik_Satie_-_Gymnopedie_No.1.mxl in Resources */,
+				2BA58EB340C41604C8E9B55B /* Resources/Samples/Flight_of_the_Bumblebee.mxl in Resources */,
+				2B7A6942E0332C1F0A90BF1C /* Resources/Samples/Fur_Elise.mxl in Resources */,
+				2BF24EC7CB5F2EECED696C44 /* Resources/Samples/Fur_Elise_Easy_Piano.mxl in Resources */,
+				2B5D3A5F20F9D5A005BFF61C /* Resources/Samples/G_Minor_Bach_Original.mxl in Resources */,
+				2B3BABFC9AFED69E7C2D4ECE /* Resources/Samples/Gnossienne_No._1.mxl in Resources */,
+				2B94FC15C6FBCFF0E9D604DB /* Resources/Samples/Greensleeves_for_Piano_easy_and_beautiful.mxl in Resources */,
+				2BD1EF65747A14150032955B /* Resources/Samples/Gymnopdie_No._1__Satie.mxl in Resources */,
+				2B0ACB6A9BCCE0E9DC60DD45 /* Resources/Samples/Happy_Birthday_To_You_C_Major.mxl in Resources */,
+				2B1151488243566738CD69AD /* Resources/Samples/Happy_Birthday_To_You_Piano.mxl in Resources */,
+				2B4462922ECD051B2C8E7FA2 /* Resources/Samples/Hungarian_Dance_No_5_in_G_Minor.mxl in Resources */,
+				2BEB926AE33E6D094F95FD95 /* Resources/Samples/J._S._Bach_-_Air_on_the_G_String_Piano_arrangement.mxl in Resources */,
+				2B99CED7865549D30F0BF82E /* Resources/Samples/La_Campanella_-_Grandes_Etudes_de_Paganini_No._3_-_Franz_Liszt.mxl in Resources */,
+				2B98FE2C264F3144F4C231F2 /* Resources/Samples/Lacrimosa_-_Requiem.mxl in Resources */,
+				2B7A56EBD44741BAD5546856 /* Resources/Samples/Liebestraum_No._3_in_A_Major.mxl in Resources */,
+				2BB8B9A1704B1DA989674903 /* Resources/Samples/Maple_Leaf_Rag_Scott_Joplin.mxl in Resources */,
+				2B0E91F2C7B3B8686BF8781C /* Resources/Samples/Minuet_in_G_Major_Bach.mxl in Resources */,
+				2B941533810DC8B464BEDE2F /* Resources/Samples/Mozart_-_Piano_Sonata_No._16_-_Allegro.mxl in Resources */,
+				2B504E575F3F0E83E4B581A6 /* Resources/Samples/Nocturne_No._20_in_C_Minor.mxl in Resources */,
+				2B4865A21F3092D1CFBE5F86 /* Resources/Samples/Nocturne_in_C_sharp_Minor.mxl in Resources */,
+				2B6CDD3D78C32A1962F6BFC3 /* Resources/Samples/Nocturne_in_E-flat_Major_Op._9_No._2_Easy.mxl in Resources */,
+				2B8C88DE0E7F3D5214C32979 /* Resources/Samples/Passacaglia.mxl in Resources */,
+				2BF4A3AD2D7B74B79E81F411 /* Resources/Samples/Passacaglia2.mxl in Resources */,
+				2B5BD5FB67D47409A0EEC1AD /* Resources/Samples/Piano_Sonata_No._11_K._331_3rd_Movement_Rondo_alla_Turca.mxl in Resources */,
+				2B48ED806B8034E58F0EEEA9 /* Resources/Samples/Prelude_I_in_C_major_BWV_846_-_Well_Tempered_Clavier_First_Book.mxl in Resources */,
+				2BA24E90F46BC03B9BC6326C /* Resources/Samples/Prelude_No._2_BWV_847_in_C_Minor.mxl in Resources */,
+				2B8856DEF2DD81892C207490 /* Resources/Samples/Prlude_No._4_in_E_Minor_Op._28_-_Frdric_Chopin.mxl in Resources */,
+				2B41B7D3A887BE56CD64C68F /* Resources/Samples/Prlude_Opus_28_No._4_in_E_Minor__Chopin.mxl in Resources */,
+				2BA0E7E04BE1A816EC22B632 /* Resources/Samples/Schubert_Serenade_-_Standchen_-_By_Lizst.mxl in Resources */,
+				2BEE84A0356746D1BE0AEB53 /* Resources/Samples/Sonata_No._16_1st_Movement_K._545.mxl in Resources */,
+				2BC4F4C729D37EDA77E3455D /* Resources/Samples/Sonate_No._14_Moonlight_1st_Movement.mxl in Resources */,
+				2B40C282D734B074FC747ADB /* Resources/Samples/Sonate_No._14_Moonlight_3rd_Movement.mxl in Resources */,
+				2B6697DC48CBDC4E53D31A26 /* Resources/Samples/Sonate_No._8_Pathetique_2nd_Movement.mxl in Resources */,
+				2BCE9E27939760EF1CFA504C /* Resources/Samples/Swan_Lake.mxl in Resources */,
+				2B5D13432D68386D42E0EA8C /* Resources/Samples/The_Entertainer_-_Scott_Joplin.mxl in Resources */,
+				2B9917951E03B9D85D46694B /* Resources/Samples/The_Entertainer_-_Scott_Joplin_-_1902.mxl in Resources */,
+				2BBBA07BB34CD28049883869 /* Resources/Samples/WA_Mozart_Marche_Turque_Turkish_March_fingered.mxl in Resources */,
+				2B9F73F1D358486AC65D7B04 /* Resources/Samples/Waltz_Opus_64_No._2_in_C_Minor.mxl in Resources */,
+				2B70C2AE50215BABCE002F94 /* Resources/Samples/Waltz_in_A_MinorChopin.mxl in Resources */,
+				2B77D15900C89D115D3EBCDE /* Resources/Samples/Waltz_of_the_Flowers.mxl in Resources */,
+				2BACBF7A7466984FF1AECA05 /* Resources/Samples/moonlight_sonata_3rd_movement.mxl in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

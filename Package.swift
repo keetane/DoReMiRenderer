@@ -19,6 +19,14 @@ let package = Package(
             name: "DoReMiRendererDiagnostics",
             targets: ["DoReMiRendererDiagnostics"]
         ),
+        .executable(
+            name: "DoReMiRendererPrintQA",
+            targets: ["DoReMiRendererPrintQA"]
+        ),
+        .executable(
+            name: "DoReMiRendererWebExport",
+            targets: ["DoReMiRendererWebExport"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/weichsel/ZIPFoundation.git", .upToNextMajor(from: "0.9.0")),
@@ -35,6 +43,14 @@ let package = Package(
         ),
         .executableTarget(
             name: "DoReMiRendererDiagnostics",
+            dependencies: ["DoReMiRendererKit"]
+        ),
+        .executableTarget(
+            name: "DoReMiRendererPrintQA",
+            dependencies: ["DoReMiRendererKit"]
+        ),
+        .executableTarget(
+            name: "DoReMiRendererWebExport",
             dependencies: ["DoReMiRendererKit"]
         ),
         .testTarget(

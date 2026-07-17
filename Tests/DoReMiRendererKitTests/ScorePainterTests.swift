@@ -140,6 +140,8 @@ import Testing
     #expect(context.commands.contains { $0.kind == .fillEllipse })
     #expect(context.commands.contains { $0.kind == .drawText && $0.text == ">" })
     #expect(context.commands.contains { $0.kind == .drawText && $0.text == "mf" })
+    let dynamicText = try #require(context.commands.first { $0.kind == .drawText && $0.text == "mf" })
+    #expect((dynamicText.size ?? 0) < 15)
     #expect(context.commands.filter { $0.kind == .strokeLine }.count > layout.staffLines.count)
 }
 
@@ -577,7 +579,7 @@ import Testing
             && $0.text == "D.C. al Coda"
             && $0.point == marker.point
             && $0.fontName == "Georgia-Italic"
-            && $0.size == max(16, markerElement.frame.height * 1.2)
+            && $0.size == max(9, markerElement.frame.height * 0.72)
     })
 }
 
@@ -782,7 +784,9 @@ import Testing
     let repeatLineXs = repeatLines.compactMap { $0.lineStart?.x }.sorted()
     #expect(repeatLines.count == 2)
     #expect((thickRepeatLine.lineWidth ?? 0) > (thinRepeatLine.lineWidth ?? 0))
-    #expect((repeatLineXs.last ?? 0) - (repeatLineXs.first ?? 0) >= 7)
+    let repeatLineGap = (repeatLineXs.last ?? 0) - (repeatLineXs.first ?? 0)
+    #expect(repeatLineGap >= 3.5)
+    #expect(repeatLineGap <= 4)
 }
 
 @Test func furEliseA4Measure8RepeatEndDrawsSeparatedThinAndThickLines() throws {
@@ -823,7 +827,9 @@ import Testing
     #expect(repeatElement.frame.width >= 18)
     #expect(repeatLines.count == 2)
     #expect((thickRepeatLine.lineWidth ?? 0) > (thinRepeatLine.lineWidth ?? 0))
-    #expect((repeatLineXs.last ?? 0) - (repeatLineXs.first ?? 0) >= 6)
+    let repeatLineGap = (repeatLineXs.last ?? 0) - (repeatLineXs.first ?? 0)
+    #expect(repeatLineGap >= 3.5)
+    #expect(repeatLineGap <= 4)
     #expect(!layout.elements.contains { $0.id.rawValue == "0.8.barline.right" })
 }
 
@@ -878,7 +884,7 @@ import Testing
             && $0.text == "1."
             && $0.point == ending.labelPoint
             && $0.fontName == "Georgia-Italic"
-            && $0.size == max(16, endingElement.frame.height * 1.2)
+            && $0.size == max(9, endingElement.frame.height * 0.72)
     })
 }
 
@@ -1274,13 +1280,15 @@ import Testing
     let timeDigit = try #require(context.commands.first { $0.text == SMuFLGlyph.timeSignatureDigit(4).string && $0.fontName == "Bravura" })
     let clef = try #require(context.commands.first { $0.text == SMuFLGlyph.trebleClef.string && $0.fontName == "Bravura" })
 
-    #expect((notehead.size ?? 0) >= 38)
-    #expect(accidentalSize >= 22)
+    #expect((notehead.size ?? 0) >= 24)
+    #expect(accidentalSize >= 21)
     #expect(accidentalSize <= 36)
-    #expect((rest.size ?? 0) >= 38)
-    #expect((flag.size ?? 0) >= 24)
-    #expect((timeDigit.size ?? 0) >= 20)
-    #expect((clef.size ?? 0) >= 34)
+    #expect((rest.size ?? 0) >= 23)
+    #expect((flag.size ?? 0) >= 17)
+    #expect((timeDigit.size ?? 0) >= 12)
+    #expect((timeDigit.size ?? 0) < (notehead.size ?? 0))
+    #expect((clef.size ?? 0) >= 12)
+    #expect((clef.size ?? 0) <= 26)
 }
 
 @Test func smuflNoteheadSizesStayConsistentAcrossCommonValues() {

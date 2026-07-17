@@ -958,8 +958,65 @@ Implementation boundaries:
   the same parsed `ScoreDocument`; the UI switches which existing score layout
   is active, while the track layout remains an app-side visualization driven by
   `PlaybackEvent` timing and the existing keyboard pitch mapping.
+- `PaletteScoreLoader` also creates a separate compact print `ScoreLayout`.
+  Screen A4 and print A4 must stay separate: screen A4 is tuned for interactive
+  reading, while print A4 uses page height, smaller staff spacing, and SDK page
+  assignments.
+- `DoReMiRendererKit` exposes SDK page read models through `ScoreLayout.pages`
+  and `ScoreLayout.pageLayout(for:)`. DoReMi Palette prints those pages instead
+  of slicing a full canvas or applying a global page-height scale.
+- Print layout uses SDK page assignments: pages without a title target six
+  grand-staff systems first, while a titled first page reserves the first slot
+  for title/composer space and targets five grand-staff systems below it. If the
+  rendered system bounds would exceed the page content bounds, the SDK falls
+  back to four systems for that page, and only then to fewer systems for
+  physically extreme cases. Very tall single systems use a source-window
+  fallback that groups visual grand-staff rows without cutting through staff
+  lines.
+- Fit checks use unpadded rendered system bounds so normal pages can still hit
+  the six-system target, while page `contentFrame` values use relocated
+  rendered bounds plus clip padding so noteheads, stems, beams, ledger lines,
+  dynamics, and hairpins are not clipped at the bottom page edge.
+- Pages with fewer than six print systems keep the same fixed grand-staff
+  system gap used by full pages. Extra vertical space is left after the final
+  system instead of being distributed between systems, which keeps short final
+  pages readable and avoids overly separated grand staves.
+- A4 print vertical margins are 36pt at the top and bottom. Print grand-staff
+  upper/lower whitespace is 36pt, and the fixed gap between grand-staff systems
+  is 40pt. The page-fit pass and final relocation use the same value, so a
+  shorter page leaves its unused space below the final system rather than
+  stretching systems apart. These values assume normal high/low ledger lines, stems, beams,
+  dynamics, lyrics/fingering, fermatas/articulations, and repeat/jump markers;
+  extreme source geometry can still produce PrintQA warnings.
+- Manual break decisions belong in `LayoutOptions.manualSystemBreakBeforeMeasureIDs`
+  and `LayoutOptions.manualPageBreakBeforeMeasureIDs`; the app should pass read
+  model break choices into the SDK rather than shifting coordinates itself.
 - Playback, Practice Mode, Library, and Diagnostics are not involved in the
   print path.
+- A4 print QA can be run without the app UI via
+  `swift run DoReMiRendererPrintQA --no-png --output /tmp/DoReMiPaletteQA/a4-print-quality`.
+  The command scans bundled `.musicxml` / `.xml` / `.mxl` samples, renders each
+  file with the same app A4 options, writes `score.pdf`, and emits
+  `summary.md` / `summary.json` with page count, system count, page-slice
+  warnings, and spacing metrics. Omit `--no-png` or add `--contains <name>` for
+  representative PNG page previews.
+- A4 print pagination keeps per-page top/bottom safety margins and uses
+  system-content frames so grand-staff systems are not cut through by the PDF
+  page boundary.
+- A4 print staff spacing is intentionally more compact than practice display
+  spacing; it only applies to `.print` layouts with page margins enabled.
+- Latest page-fallback visual QA:
+  `swift run DoReMiRendererPrintQA --output /tmp/DoReMiPaletteQA/a4-page-final-v1 --contains Ode_to_Joy --contains Canon_in_D --contains Gnossienne`
+  completed representative sample rendering with 36pt vertical margins, 36pt
+  upper/lower grand-staff whitespace, 40pt system gaps, stable gaps on pages
+  that have fewer than six systems, and a bounds-driven fallback where six systems
+  would clip.
+- Latest full no-PNG print QA:
+  `swift run DoReMiRendererPrintQA --output /tmp/DoReMiPaletteQA/a4-page-final-v1 --no-png`
+  completed 60/60 bundled samples with zero `cutSystemCount` across all samples.
+  Remaining warnings are limited to very tall source systems or very tight
+  horizontal note spacing, which require future engraving density work rather
+  than page-boundary clipping fixes.
 
 Manual QA:
 
@@ -972,6 +1029,15 @@ Manual QA:
 5. Confirm the iOS print sheet appears with the A4 score PDF.
 6. Cancel the sheet and confirm playback, scrolling, Library, and Diagnostics
    still work.
+7. For batch print QA, run `swift run DoReMiRendererPrintQA --no-png` against
+   the bundled sample folder and inspect `/tmp/DoReMiPaletteQA/a4-print-quality`.
+   For visual review, regenerate representative samples with PNG previews, for
+   example `--contains fur --contains ode --contains arabesque`.
+8. For 6-system print regression review, inspect the full no-PNG run under
+   `/tmp/DoReMiPaletteQA/a4-page-final-v1`.
+9. For page-fallback / short final page gap review, inspect
+   `/tmp/DoReMiPaletteQA/a4-page-final-v1` and the representative QuickLook
+   renders under `/tmp/DoReMiPaletteQA/a4-page-final-v1-rendered`.
 
 ## Phase 16.5 Stabilization Verification
 
@@ -1192,3 +1258,20 @@ Suggested screenshots:
 - `/tmp/doremipalette_palette_sheet_c_off.png`
 - `/tmp/doremipalette_palette_preview_keyboard.png`
 - `/tmp/doremipalette_palette_preview_score.png`
+# Browser Canvas Bridge
+
+The browser bridge is intentionally a transport layer, not a second layout
+engine. `ScoreWebRenderPlan` serializes Canvas drawing commands and stable
+`NoteID` anchors from the SDK's existing `ScoreLayout`. JavaScript consumers
+must not re-parse MusicXML or recalculate coordinates. The reference
+`Examples/WebCanvasViewer` uses Canvas 2D and the bundled Bravura font under its
+existing SIL OFL terms.
+
+Web consumers must await the Bravura font before their first Canvas draw and show
+a visible load failure rather than drawing SMuFL private-use glyphs through a
+fallback font. The exported command stream includes a semantic font role so web
+consumers do not depend on Apple PostScript font registrations.
+
+Direct client-side Swift/Wasm remains a separate future effort: CoreGraphics,
+CoreText, and SwiftUI adapters must first be separated from the platform-neutral
+parser, domain, layout, interaction, and playback layers.

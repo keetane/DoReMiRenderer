@@ -8,15 +8,30 @@ private enum ScoreTitleLayoutConstants {
 private enum PrintPageMarginConstants {
     static let a4AspectRatio: CGFloat = 842.0 / 595.0
     static let horizontalRatio: CGFloat = 0.04
-    static let verticalRatio: CGFloat = 0.064
+    static let verticalRatio: CGFloat = 0.043
     static let minimumHorizontal: CGFloat = 18
     static let maximumHorizontal: CGFloat = 27
-    static let minimumVertical: CGFloat = 48
+    static let minimumVertical: CGFloat = 36
     static let maximumVertical: CGFloat = 72
 }
 
 private enum GrandStaffLayoutConstants {
-    static let additionalStaffSeparation: CGFloat = 20
+    static let interStaffWhitespace: CGFloat = 100
+    static let printInterStaffWhitespace: CGFloat = 36
+    // Keep print systems visually related without using page-height
+    // justification. A fixed 40pt gap preserves predictable reading rhythm
+    // for short final pages and leaves the remaining area as bottom margin.
+    static let printSystemGap: CGFloat = 40
+}
+
+private enum ClefLayoutConstants {
+    static let compactScale: CGFloat = 0.88
+    static let horizontalOffset: CGFloat = 3
+    static let bassVerticalOffset: CGFloat = 1
+}
+
+private enum TimeSignatureLayoutConstants {
+    static let compactScale: CGFloat = 0.88
 }
 
 public enum DisplayMode: Hashable, Codable, Sendable {
@@ -36,6 +51,8 @@ public struct LayoutOptions: Sendable {
     public var unsupportedFeaturePolicy: UnsupportedFeaturePolicy
     public var displayTransposeSemitones: Int
     public var maximumMeasuresPerSystem: Int
+    public var manualSystemBreakBeforeMeasureIDs: Set<MeasureID>
+    public var manualPageBreakBeforeMeasureIDs: Set<MeasureID>
 
     public init(
         pageWidth: CGFloat = 800,
@@ -47,7 +64,9 @@ public struct LayoutOptions: Sendable {
         showPageMargins: Bool = false,
         unsupportedFeaturePolicy: UnsupportedFeaturePolicy = .ignoreWithWarning,
         displayTransposeSemitones: Int = 0,
-        maximumMeasuresPerSystem: Int = 4
+        maximumMeasuresPerSystem: Int = 4,
+        manualSystemBreakBeforeMeasureIDs: Set<MeasureID> = [],
+        manualPageBreakBeforeMeasureIDs: Set<MeasureID> = []
     ) {
         self.pageWidth = pageWidth
         self.pageHeight = pageHeight
@@ -59,6 +78,8 @@ public struct LayoutOptions: Sendable {
         self.unsupportedFeaturePolicy = unsupportedFeaturePolicy
         self.displayTransposeSemitones = max(-12, min(12, displayTransposeSemitones))
         self.maximumMeasuresPerSystem = max(1, maximumMeasuresPerSystem)
+        self.manualSystemBreakBeforeMeasureIDs = manualSystemBreakBeforeMeasureIDs
+        self.manualPageBreakBeforeMeasureIDs = manualPageBreakBeforeMeasureIDs
     }
 
     public static let `default` = LayoutOptions()
@@ -155,7 +176,7 @@ struct ScoreLayoutEngine: Sendable {
                         systemIndex: index,
                         frame: CGRect(
                             x: metrics.leftMargin,
-                            y: middleY - 2 * options.staffSpace,
+                            y: middleY - metrics.staffHeight / 2,
                             width: contentWidth,
                             height: metrics.staffHeight
                         ),
@@ -202,6 +223,13 @@ struct ScoreLayoutEngine: Sendable {
             )
         }
         let baseMeasureWidths = measurePlans.map(\.width)
+        let printMeasureDensityLimits: [Int]? = options.displayMode == .print && options.showPageMargins
+            ? measurePlans.map { maximumMeasuresPerSystemForPrintDensity($0.measure) }
+            : nil
+        let manualSystemBreakPlanIndices = Set(measurePlans.indices.filter { index in
+            options.manualSystemBreakBeforeMeasureIDs.contains(measurePlans[index].measure.id)
+                || options.manualPageBreakBeforeMeasureIDs.contains(measurePlans[index].measure.id)
+        })
         var layoutMeasureWidths = shouldWrapSystems
             ? baseMeasureWidths.map { min($0, contentWidth) }
             : baseMeasureWidths
@@ -210,7 +238,9 @@ struct ScoreLayoutEngine: Sendable {
             shouldWrapSystems: shouldWrapSystems,
             contentWidth: contentWidth,
             measureSpacing: options.measureSpacing,
-            maximumMeasuresPerSystem: options.maximumMeasuresPerSystem
+            maximumMeasuresPerSystem: options.maximumMeasuresPerSystem,
+            perMeasureMaximumMeasuresPerSystem: printMeasureDensityLimits,
+            manualBreakBeforeIndices: manualSystemBreakPlanIndices
         )
         if shouldRepeatSystemPrefix {
             for index in systemGroups.compactMap(\.first) {
@@ -235,7 +265,9 @@ struct ScoreLayoutEngine: Sendable {
                 shouldWrapSystems: shouldWrapSystems,
                 contentWidth: contentWidth,
                 measureSpacing: options.measureSpacing,
-                maximumMeasuresPerSystem: options.maximumMeasuresPerSystem
+                maximumMeasuresPerSystem: options.maximumMeasuresPerSystem,
+                perMeasureMaximumMeasuresPerSystem: printMeasureDensityLimits,
+                manualBreakBeforeIndices: manualSystemBreakPlanIndices
             )
         }
         let systemStartPlanIndices = Set(systemGroups.compactMap(\.first))
@@ -294,7 +326,7 @@ struct ScoreLayoutEngine: Sendable {
                 let clef = clef(for: staffID, in: item.measure)
                 let middleY = metrics.staffMiddleY(systemTop: systemTop, staffIndex: staffIndexByID[staffID] ?? 0)
                 for lineIndex in 0..<5 {
-                    let y = middleY + CGFloat(2 - lineIndex) * options.staffSpace
+                    let y = middleY + CGFloat(2 - lineIndex) * metrics.staffLineSpacing
                     let id = ScoreElementID(rawValue: "\(staffID.rawValue).\(item.measure.id.rawValue).staffLine.\(lineIndex)")
                     let frame = CGRect(x: measureX, y: y - metrics.staffLineHitHalfWidth, width: measureWidth, height: metrics.staffLineHitHalfWidth * 2)
                     let staffLine = StaffLineLayout(
@@ -400,7 +432,7 @@ struct ScoreLayoutEngine: Sendable {
                 )
                 let center = CGPoint(
                     x: noteCenterX,
-                    y: middleY - CGFloat(position?.stepsFromMiddleLine ?? 0) * options.staffSpace / 2
+                    y: middleY - CGFloat(position?.stepsFromMiddleLine ?? 0) * metrics.staffLineSpacing / 2
                 )
                 let noteFrame = CGRect(
                     x: center.x - metrics.noteheadSize.width / 2,
@@ -674,20 +706,6 @@ struct ScoreLayoutEngine: Sendable {
                 elements: elements,
                 metrics: metrics
             ))
-            elements.append(contentsOf: directionElements(
-                measure: item.measure,
-                staffIDs: staffIDs,
-                staffIndexByID: staffIndexByID,
-                existingElements: elements,
-                onsetX: onsetX,
-                measureX: measureX,
-                measureWidth: measureWidth,
-                systemTop: systemTop,
-                systemIndex: currentSystemIndex,
-                metrics: metrics,
-                pendingWedges: &pendingWedges
-            ))
-
             elements.append(contentsOf: barlineElements(
                 measure: item.measure,
                 staffIDs: staffIDs,
@@ -704,6 +722,22 @@ struct ScoreLayoutEngine: Sendable {
                 systemTop: systemTop,
                 metrics: metrics,
                 includeLeftBarline: repeatsSystemPrefix
+            ))
+            // Dynamics and hairpins need repeat-barline frames as collision candidates.
+            // Keep this before direction layout so the layout engine, rather than the
+            // painter, owns their separation.
+            elements.append(contentsOf: directionElements(
+                measure: item.measure,
+                staffIDs: staffIDs,
+                staffIndexByID: staffIndexByID,
+                existingElements: elements,
+                onsetX: onsetX,
+                measureX: measureX,
+                measureWidth: measureWidth,
+                systemTop: systemTop,
+                systemIndex: currentSystemIndex,
+                metrics: metrics,
+                pendingWedges: &pendingWedges
             ))
             elements.append(contentsOf: repeatEndingElements(
                 measure: item.measure,
@@ -791,6 +825,7 @@ struct ScoreLayoutEngine: Sendable {
         let layout = ScoreLayout(
             canvasSize: CGSize(width: canvasWidth, height: contentHeight),
             title: titleLayout,
+            pages: [],
             systems: systems,
             staves: staves,
             measures: measures,
@@ -801,7 +836,165 @@ struct ScoreLayoutEngine: Sendable {
             scoreNoteByID: scoreNoteByID,
             elementByID: elementByID
         )
-        return ScoreLayoutResult(layout: layout, diagnostics: diagnostics)
+        let finalLayout = pageJustifiedLayoutIfNeeded(layout, options: options, metrics: metrics)
+        return ScoreLayoutResult(layout: finalLayout, diagnostics: diagnostics)
+    }
+
+    private func pageJustifiedLayoutIfNeeded(_ layout: ScoreLayout, options: LayoutOptions, metrics: LayoutMetrics) -> ScoreLayout {
+        guard options.displayMode == .print,
+              options.showPageMargins,
+              let pageHeight = options.pageHeight,
+              pageHeight > 0,
+              !layout.systems.isEmpty
+        else {
+            return layout
+        }
+
+        let contentFrames = systemContentFrames(for: layout, overflowAllowance: 0)
+        let measureSystemByID = Dictionary(
+            layout.measures.map { ($0.measureID, $0.systemIndex) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let manualPageBreakBeforeSystemIndices = Set(
+            options.manualPageBreakBeforeMeasureIDs.compactMap { measureSystemByID[$0] }
+        )
+        let assignments = printPageAssignments(
+            systems: layout.systems,
+            contentFramesBySystem: contentFrames,
+            pageBreakBeforeSystemIndices: manualPageBreakBeforeSystemIndices,
+            pageHeight: pageHeight,
+            topMargin: metrics.topMargin,
+            bottomMargin: metrics.bottomMargin,
+            reservesFirstPageTitleSlot: layout.title != nil,
+            firstPageTitleSlotHeight: metrics.staffHeight * 2 + GrandStaffLayoutConstants.printInterStaffWhitespace + GrandStaffLayoutConstants.printSystemGap,
+            targetSystemsPerPage: 6,
+            minimumPreferredSystemsPerPage: 4,
+            systemGap: GrandStaffLayoutConstants.printSystemGap
+        )
+        guard !assignments.isEmpty else {
+            return layout
+        }
+
+        let dyBySystemIndex = Dictionary(uniqueKeysWithValues: assignments.flatMap { assignment in
+            assignment.systemIndices.compactMap { systemIndex -> (Int, CGFloat)? in
+                guard let original = layout.systems.first(where: { $0.index == systemIndex }) else { return nil }
+                let targetTop = assignment.targetTopBySystemIndex[systemIndex] ?? original.frame.minY
+                return (systemIndex, targetTop - original.frame.minY)
+            }
+        })
+
+        func dy(for systemIndex: Int) -> CGFloat {
+            dyBySystemIndex[systemIndex] ?? 0
+        }
+
+        let relocatedSystems = layout.systems.map { $0.offsetBy(dx: 0, dy: dy(for: $0.index)) }
+        let relocatedStaves = layout.staves.map { $0.offsetBy(dx: 0, dy: dy(for: $0.systemIndex)) }
+        let relocatedMeasures = layout.measures.map { $0.offsetBy(dx: 0, dy: dy(for: $0.systemIndex)) }
+
+        let relocatedElements = layout.elements.map { element -> ElementLayout in
+            let systemIndex: Int? = element.measureID.flatMap { measureSystemByID[$0] }
+                ?? layout.systems.min {
+                    abs($0.frame.midY - element.frame.midY) < abs($1.frame.midY - element.frame.midY)
+                }?.index
+            guard let systemIndex else { return element }
+            return element.offsetBy(dx: 0, dy: dy(for: systemIndex))
+        }
+        let relocatedStaffLines = layout.staffLines.map { staffLine -> StaffLineLayout in
+            guard let systemIndex = measureSystemByID[staffLine.measureID] else { return staffLine }
+            return staffLine.offsetBy(dx: 0, dy: dy(for: systemIndex))
+        }
+        let relocatedLedgerLines = layout.ledgerLines.map { ledgerLine -> LedgerLineLayout in
+            let systemIndex: Int? = ledgerLine.measureID.flatMap { measureSystemByID[$0] }
+                ?? ledgerLine.noteID.flatMap { layout.noteByID[$0]?.measureID }.flatMap { measureSystemByID[$0] }
+            guard let systemIndex else { return ledgerLine }
+            return ledgerLine.offsetBy(dx: 0, dy: dy(for: systemIndex))
+        }
+        let relocatedNoteByID = layout.noteByID.mapValues { note -> NoteLayout in
+            guard let measureID = note.measureID,
+                  let systemIndex = measureSystemByID[measureID] else { return note }
+            return note.offsetBy(dx: 0, dy: dy(for: systemIndex))
+        }
+        let relocatedElementByID: [ScoreElementID: ElementLayout] = Dictionary(
+            relocatedElements.map { ($0.id, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let relocatedDraftForPages = ScoreLayout(
+            canvasSize: layout.canvasSize,
+            title: layout.title,
+            pages: [],
+            systems: relocatedSystems,
+            staves: relocatedStaves,
+            measures: relocatedMeasures,
+            elements: relocatedElements,
+            staffLines: relocatedStaffLines,
+            ledgerLines: relocatedLedgerLines,
+            noteByID: relocatedNoteByID,
+            scoreNoteByID: layout.scoreNoteByID,
+            elementByID: relocatedElementByID
+        )
+        let relocatedContentFramesForPages = systemContentFrames(for: relocatedDraftForPages, overflowAllowance: options.staffSpace * 15)
+        let assignmentPages = assignments.map { assignment in
+            let pageFrame = CGRect(x: 0, y: CGFloat(assignment.pageIndex) * pageHeight, width: options.pageWidth, height: pageHeight)
+            return ScoreLayoutPage(
+                index: assignment.pageIndex,
+                frame: pageFrame,
+                contentFrame: printPageContentFrame(
+                    for: assignment,
+                    pageFrame: pageFrame,
+                    layout: relocatedDraftForPages,
+                    contentFramesBySystem: relocatedContentFramesForPages,
+                    metrics: metrics
+                ),
+                systemIndices: assignment.systemIndices
+            )
+        }
+        let relocatedDraft = ScoreLayout(
+            canvasSize: layout.canvasSize,
+            title: layout.title,
+            pages: assignmentPages,
+            systems: relocatedSystems,
+            staves: relocatedStaves,
+            measures: relocatedMeasures,
+            elements: relocatedElements,
+            staffLines: relocatedStaffLines,
+            ledgerLines: relocatedLedgerLines,
+            noteByID: relocatedNoteByID,
+            scoreNoteByID: layout.scoreNoteByID,
+            elementByID: relocatedElementByID
+        )
+        let relocatedContentFrames = systemContentFrames(for: relocatedDraft, overflowAllowance: options.staffSpace * 15)
+        let containsOversizedSystem = relocatedContentFrames.values.contains { $0.height > pageHeight * 2 }
+        let pages = containsOversizedSystem
+            ? printSourceWindowPages(
+                for: relocatedDraft,
+                fallbackPages: assignmentPages,
+                pageWidth: options.pageWidth,
+                pageHeight: pageHeight,
+                metrics: metrics,
+                maxRowsPerPage: 3
+            )
+            : assignmentPages
+        let pageCanvasHeight = CGFloat(max(assignments.count, 1)) * pageHeight
+        let systemMaxY = relocatedSystems.map(\.frame.maxY).max() ?? 0
+        let elementMaxY = relocatedElements.map(\.frame.maxY).max() ?? 0
+        let ledgerMaxY = relocatedLedgerLines.map(\.frame.maxY).max() ?? 0
+        let noteMaxY = relocatedNoteByID.values.map(\.noteheadFrame.maxY).max() ?? 0
+        let contentMaxY = max(max(systemMaxY, elementMaxY), max(ledgerMaxY, noteMaxY)) + metrics.bottomMargin
+
+        return ScoreLayout(
+            canvasSize: CGSize(width: layout.canvasSize.width, height: max(pageCanvasHeight, contentMaxY)),
+            title: layout.title,
+            pages: pages,
+            systems: relocatedSystems,
+            staves: relocatedStaves,
+            measures: relocatedMeasures,
+            elements: relocatedElements,
+            staffLines: relocatedStaffLines,
+            ledgerLines: relocatedLedgerLines,
+            noteByID: relocatedNoteByID,
+            scoreNoteByID: layout.scoreNoteByID,
+            elementByID: relocatedElementByID
+        )
     }
 
     private func scoreTitleLayout(
@@ -1264,7 +1457,7 @@ struct ScoreLayoutEngine: Sendable {
             let y2 = primary.end.y
             let x1 = primary.start.x
             let x2 = primary.end.x
-            let thickness = max(3, metrics.noteheadSize.height * 0.16)
+            let thickness = max(metrics.staffSpace * 0.28, metrics.noteheadSize.height * 0.20)
             func yOnPrimary(at x: CGFloat) -> CGFloat {
                 guard abs(x2 - x1) > 0.001 else {
                     return y1
@@ -2246,12 +2439,26 @@ struct ScoreLayoutEngine: Sendable {
                 return nil
             }
             let number = "\(first.tuplet?.actualNotes ?? 3)"
-            let top = sorted.compactMap { noteByID[$0.id]?.noteheadFrame.minY }.min() ?? firstLayout.noteheadFrame.minY
+            let groupNoteIDs = Set(sorted.map(\.id))
+            // A tuplet bracket needs to clear beams, flags, and stems, not only the
+            // noteheads.  Otherwise the numeral can visually intersect its bracket
+            // or a high beam in compact groups.
+            let top = elements
+                .filter { element in
+                    guard let noteID = element.noteID, groupNoteIDs.contains(noteID) else {
+                        return false
+                    }
+                    return element.kind == .notehead || element.kind == .stem || element.kind == .flag || element.kind == .beam
+                }
+                .map(\.frame.minY)
+                .min()
+                ?? sorted.compactMap { noteByID[$0.id]?.noteheadFrame.minY }.min()
+                ?? firstLayout.noteheadFrame.minY
             let frame = CGRect(
                 x: firstLayout.noteheadCenter.x,
-                y: top - metrics.noteheadSize.height * 1.65,
+                y: top - metrics.noteheadSize.height * 1.9,
                 width: max(metrics.noteheadSize.width * 2, lastLayout.noteheadCenter.x - firstLayout.noteheadCenter.x),
-                height: metrics.noteheadSize.height * 0.8
+                height: max(metrics.noteheadSize.height, metrics.staffSpace * 0.9)
             )
             let tuplet = TupletLayout(noteIDs: sorted.map(\.id), number: number, frame: frame)
             return ElementLayout(
@@ -2293,19 +2500,21 @@ struct ScoreLayoutEngine: Sendable {
         noteFrame: CGRect,
         noteheadCenter center: CGPoint
     ) -> CGRect {
-        let width = max(2, noteFrame.width * 0.2)
+        let width = max(1.2, noteFrame.width * 0.13)
         let length = noteFrame.height * 2.2 + width * 0.25
         switch direction {
         case .up:
             return CGRect(
-                x: noteFrame.maxX - width * 1.75,
+                // Stem center aligns with the visual right edge of an up-stem
+                // notehead.  The down-stem counterpart uses the left edge.
+                x: noteFrame.maxX - width / 2,
                 y: center.y - length - width * 0.4,
                 width: width,
                 height: length
             )
         case .down:
             return CGRect(
-                x: noteFrame.minX + width * 0.65,
+                x: noteFrame.minX - width / 2,
                 y: center.y + width * 0.4,
                 width: width,
                 height: length
@@ -2386,6 +2595,370 @@ struct ScoreLayoutEngine: Sendable {
         }
     }
 
+    private func systemContentFrames(for layout: ScoreLayout, overflowAllowance: CGFloat) -> [Int: CGRect] {
+        let measureSystemByID = Dictionary(layout.measures.map { ($0.measureID, $0.systemIndex) }, uniquingKeysWith: { first, _ in first })
+        var framesBySystem = Dictionary(uniqueKeysWithValues: layout.systems.map { ($0.index, $0.frame) })
+
+        if let title = layout.title, let firstSystemIndex = layout.systems.first?.index {
+            framesBySystem[firstSystemIndex] = framesBySystem[firstSystemIndex]?.union(title.frame) ?? title.frame
+        }
+        for staff in layout.staves {
+            framesBySystem[staff.systemIndex] = framesBySystem[staff.systemIndex]?.union(staff.frame) ?? staff.frame
+        }
+        for measure in layout.measures {
+            framesBySystem[measure.systemIndex] = framesBySystem[measure.systemIndex]?.union(measure.frame) ?? measure.frame
+        }
+        for element in layout.elements where !element.frame.isNull && !element.frame.isEmpty {
+            let systemIndex: Int? = element.measureID.flatMap { measureSystemByID[$0] }
+                ?? layout.systems.min {
+                    abs($0.frame.midY - element.frame.midY) < abs($1.frame.midY - element.frame.midY)
+                }?.index
+            guard let systemIndex else { continue }
+            framesBySystem[systemIndex] = framesBySystem[systemIndex]?.union(element.frame) ?? element.frame
+        }
+        for note in layout.noteByID.values where !note.noteheadFrame.isNull && !note.noteheadFrame.isEmpty {
+            guard let measureID = note.measureID,
+                  let systemIndex = measureSystemByID[measureID] else { continue }
+            framesBySystem[systemIndex] = framesBySystem[systemIndex]?.union(note.noteheadFrame) ?? note.noteheadFrame
+        }
+        for ledgerLine in layout.ledgerLines where !ledgerLine.frame.isNull && !ledgerLine.frame.isEmpty {
+            let systemIndex: Int? = ledgerLine.measureID.flatMap { measureSystemByID[$0] }
+                ?? ledgerLine.noteID.flatMap { layout.noteByID[$0]?.measureID }.flatMap { measureSystemByID[$0] }
+            guard let systemIndex else { continue }
+            framesBySystem[systemIndex] = framesBySystem[systemIndex]?.union(ledgerLine.frame) ?? ledgerLine.frame
+        }
+
+        return Dictionary(uniqueKeysWithValues: layout.systems.compactMap { system in
+            guard var frame = framesBySystem[system.index] else { return nil }
+            let safetyPadding = overflowAllowance > 0
+                ? min(overflowAllowance, max(24, overflowAllowance * 0.4))
+                : 0
+            frame = frame.insetBy(dx: 0, dy: -safetyPadding)
+            if frame.minY < system.frame.minY - safetyPadding {
+                let clampedMinY = system.frame.minY - safetyPadding
+                frame = CGRect(x: frame.minX, y: clampedMinY, width: frame.width, height: max(1, frame.maxY - clampedMinY))
+            }
+            return (system.index, frame)
+        })
+    }
+
+    private func printPageAssignments(
+        systems: [SystemLayout],
+        contentFramesBySystem: [Int: CGRect],
+        pageBreakBeforeSystemIndices: Set<Int>,
+        pageHeight: CGFloat,
+        topMargin: CGFloat,
+        bottomMargin: CGFloat,
+        reservesFirstPageTitleSlot: Bool,
+        firstPageTitleSlotHeight: CGFloat,
+        targetSystemsPerPage: Int,
+        minimumPreferredSystemsPerPage: Int,
+        systemGap: CGFloat
+    ) -> [PrintPageAssignment] {
+        let sortedSystems = systems.sorted { $0.index < $1.index }
+        guard !sortedSystems.isEmpty else { return [] }
+        var assignments: [PrintPageAssignment] = []
+        var cursor = 0
+
+        while cursor < sortedSystems.count {
+            let pageIndex = assignments.count
+            let pageOriginY = CGFloat(pageIndex) * pageHeight
+            let titleSlotHeight = pageIndex == 0 && reservesFirstPageTitleSlot ? max(0, firstPageTitleSlotHeight) : 0
+            let top = pageOriginY + topMargin + titleSlotHeight
+            let bottom = pageOriginY + pageHeight - bottomMargin
+            let availableHeight = max(1, bottom - top)
+
+            let remainingCount = sortedSystems.count - cursor
+            let nextPageBreakOffset = sortedSystems[(cursor + 1)..<sortedSystems.count]
+                .firstIndex { pageBreakBeforeSystemIndices.contains($0.index) }
+                .map { $0 - cursor }
+            let selectableBeforePageBreak = nextPageBreakOffset ?? remainingCount
+            let pageTargetSystems = max(1, targetSystemsPerPage - (titleSlotHeight > 0 ? 1 : 0))
+            var selectedCount = min(pageTargetSystems, selectableBeforePageBreak)
+            if !systemsFit(
+                sortedSystems[cursor..<(cursor + selectedCount)],
+                contentFramesBySystem: contentFramesBySystem,
+                availableHeight: availableHeight,
+                minimumSystemGap: systemGap
+            ) {
+                selectedCount = min(selectedCount, max(1, min(4, selectableBeforePageBreak)))
+                while selectedCount > 1,
+                      !systemsFit(
+                          sortedSystems[cursor..<(cursor + selectedCount)],
+                          contentFramesBySystem: contentFramesBySystem,
+                          availableHeight: availableHeight,
+                          minimumSystemGap: systemGap
+                      ) {
+                    selectedCount -= 1
+                }
+            }
+
+            let pageSystems = Array(sortedSystems[cursor..<(cursor + selectedCount)])
+            let systemIndices = pageSystems.map(\.index)
+            let fixedSystemGap = pageSystems.count > 1 ? max(0, systemGap) : 0
+            var targetTopBySystemIndex: [Int: CGFloat] = [:]
+            var desiredContentTop = top
+            for system in pageSystems {
+                let contentFrame = contentFramesBySystem[system.index] ?? system.frame
+                let originalContentTop = contentFrame.minY
+                targetTopBySystemIndex[system.index] = system.frame.minY + (desiredContentTop - originalContentTop)
+                desiredContentTop += max(1, contentFrame.height) + fixedSystemGap
+            }
+            assignments.append(PrintPageAssignment(
+                pageIndex: pageIndex,
+                systemIndices: systemIndices,
+                targetTopBySystemIndex: targetTopBySystemIndex
+            ))
+            cursor += selectedCount
+        }
+        return assignments
+    }
+
+    private func systemsFit(
+        _ systems: ArraySlice<SystemLayout>,
+        contentFramesBySystem: [Int: CGRect],
+        availableHeight: CGFloat,
+        minimumSystemGap: CGFloat
+    ) -> Bool {
+        guard !systems.isEmpty else { return true }
+        let contentHeight = systems.reduce(CGFloat(0)) { total, system in
+            total + max(1, (contentFramesBySystem[system.index] ?? system.frame).height)
+        }
+        let requiredGaps = CGFloat(max(0, systems.count - 1)) * max(0, minimumSystemGap)
+        return contentHeight + requiredGaps <= availableHeight
+    }
+
+    private func printPageContentFrame(
+        for assignment: PrintPageAssignment,
+        pageFrame: CGRect,
+        layout: ScoreLayout,
+        contentFramesBySystem: [Int: CGRect],
+        metrics: LayoutMetrics
+    ) -> CGRect {
+        let systemFrames = assignment.systemIndices.compactMap { contentFramesBySystem[$0] }
+        var contentFrame = systemFrames.reduce(CGRect.null) { partial, frame in
+            partial.union(frame)
+        }
+        if assignment.pageIndex == 0, let title = layout.title {
+            contentFrame = contentFrame.union(title.frame)
+        }
+        if contentFrame.isNull || contentFrame.isEmpty {
+            return CGRect(
+                x: metrics.leftMargin,
+                y: pageFrame.minY + metrics.topMargin,
+                width: max(1, pageFrame.width - metrics.leftMargin - metrics.rightMargin),
+                height: max(1, pageFrame.height - metrics.topMargin - metrics.bottomMargin)
+            )
+        }
+
+        let verticalClipPadding = max(12, metrics.staffSpace * 3)
+        contentFrame = contentFrame.insetBy(dx: 0, dy: -verticalClipPadding)
+        let minY = max(pageFrame.minY, contentFrame.minY)
+        let maxY = min(pageFrame.maxY, contentFrame.maxY)
+        return CGRect(
+            x: metrics.leftMargin,
+            y: minY,
+            width: max(1, pageFrame.width - metrics.leftMargin - metrics.rightMargin),
+            height: max(1, maxY - minY)
+        )
+    }
+
+    private func printSourceWindowPages(
+        for layout: ScoreLayout,
+        fallbackPages: [ScoreLayoutPage],
+        pageWidth: CGFloat,
+        pageHeight: CGFloat,
+        metrics: LayoutMetrics,
+        maxRowsPerPage: Int
+    ) -> [ScoreLayoutPage] {
+        let rows = printVisualRows(for: layout, metrics: metrics)
+        guard !rows.isEmpty else {
+            return fallbackPages
+        }
+
+        var pages: [ScoreLayoutPage] = []
+        var rowCursor = 0
+        while rowCursor < rows.count {
+            let pageIndex = pages.count
+            let firstRow = rows[rowCursor]
+            let sourceStartY: CGFloat = pageIndex == 0
+                ? 0
+                : max(0, firstRow.frame.minY - metrics.topMargin)
+            let bottomGuard = maxRowsPerPage < 6
+                ? max(metrics.bottomMargin, metrics.staffSpace * 30)
+                : metrics.bottomMargin
+            let sourceEndY = sourceStartY + pageHeight
+
+            var endCursor = rowCursor
+            while endCursor < rows.count,
+                  endCursor - rowCursor < maxRowsPerPage,
+                  rows[endCursor].frame.maxY + bottomGuard <= sourceEndY {
+                endCursor += 1
+            }
+            if endCursor == rowCursor {
+                endCursor += 1
+            }
+
+            let pageRows = rows[rowCursor..<endCursor]
+            let systemIndices = Array(Set(pageRows.flatMap(\.systemIndices))).sorted()
+            var rowContentFrame = pageRows.reduce(CGRect.null) { partial, row in
+                partial.union(row.frame)
+            }
+            if pageIndex == 0, let title = layout.title {
+                rowContentFrame = rowContentFrame.union(title.frame)
+            }
+            if rowContentFrame.isNull || rowContentFrame.isEmpty {
+                rowContentFrame = CGRect(
+                    x: metrics.leftMargin,
+                    y: pageIndex == 0 ? sourceStartY : sourceStartY + metrics.topMargin,
+                    width: max(1, pageWidth - metrics.leftMargin - metrics.rightMargin),
+                    height: max(1, pageHeight - (pageIndex == 0 ? 0 : metrics.topMargin) - bottomGuard)
+                )
+            } else {
+                let contentMinY = max(sourceStartY, rowContentFrame.minY)
+                let contentMaxY = min(sourceStartY + pageHeight - bottomGuard, rowContentFrame.maxY)
+                rowContentFrame = CGRect(
+                    x: metrics.leftMargin,
+                    y: contentMinY,
+                    width: max(1, pageWidth - metrics.leftMargin - metrics.rightMargin),
+                    height: max(1, contentMaxY - contentMinY)
+                )
+            }
+            pages.append(
+                ScoreLayoutPage(
+                    index: pageIndex,
+                    frame: CGRect(x: 0, y: sourceStartY, width: pageWidth, height: pageHeight),
+                    contentFrame: rowContentFrame,
+                    systemIndices: systemIndices
+                )
+            )
+            rowCursor = endCursor
+        }
+        return pages
+    }
+
+    private func printVisualRows(for layout: ScoreLayout, metrics: LayoutMetrics) -> [PrintVisualRow] {
+        let measureSystemByID = Dictionary(
+            layout.measures.map { ($0.measureID, $0.systemIndex) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let sortedStaffLines = layout.staffLines.sorted { $0.frame.midY < $1.frame.midY }
+        guard !sortedStaffLines.isEmpty else {
+            return layout.systems.map { PrintVisualRow(frame: $0.frame, systemIndices: [$0.index]) }
+        }
+
+        let lineClusterTolerance = max(1.5, metrics.staffLineSpacing * 0.4)
+        var lineClusters: [CGRect] = []
+        for staffLine in sortedStaffLines {
+            if var current = lineClusters.popLast() {
+                if abs(staffLine.frame.midY - current.midY) <= lineClusterTolerance {
+                    current = current.union(staffLine.frame)
+                    lineClusters.append(current)
+                } else {
+                    lineClusters.append(current)
+                    lineClusters.append(staffLine.frame)
+                }
+            } else {
+                lineClusters.append(staffLine.frame)
+            }
+        }
+
+        let staffGapThreshold = max(metrics.staffLineSpacing * 1.8, metrics.staffSpace * 1.8)
+        var staffFrames: [CGRect] = []
+        for line in lineClusters {
+            if var current = staffFrames.popLast() {
+                if line.minY - current.maxY <= staffGapThreshold {
+                    current = current.union(line)
+                    staffFrames.append(current)
+                } else {
+                    staffFrames.append(current)
+                    staffFrames.append(line)
+                }
+            } else {
+                staffFrames.append(line)
+            }
+        }
+
+        var rowFrames: [CGRect] = []
+        let usesGrandStaff = Set(layout.staves.map(\.staffID)).count >= 2
+        if usesGrandStaff {
+            var index = 0
+            while index < staffFrames.count {
+                var frame = staffFrames[index]
+                if index + 1 < staffFrames.count {
+                    frame = frame.union(staffFrames[index + 1])
+                }
+                rowFrames.append(frame)
+                index += 2
+            }
+        } else {
+            let rowGapThreshold = max(48, metrics.staffSpace * 8)
+            for staff in staffFrames {
+                if var current = rowFrames.popLast() {
+                    if staff.minY - current.maxY <= rowGapThreshold {
+                        current = current.union(staff)
+                        rowFrames.append(current)
+                    } else {
+                        rowFrames.append(current)
+                        rowFrames.append(staff)
+                    }
+                } else {
+                    rowFrames.append(staff)
+                }
+            }
+        }
+
+        let allFrames = printDrawableFramesBySystem(layout: layout, measureSystemByID: measureSystemByID)
+        return rowFrames.map { rowFrame in
+            var frame = rowFrame.insetBy(dx: 0, dy: -max(40, metrics.staffSpace * 8))
+            var systemIndices: Set<Int> = []
+            for staffLine in sortedStaffLines where staffLine.frame.midY >= frame.minY && staffLine.frame.midY <= frame.maxY {
+                if let systemIndex = measureSystemByID[staffLine.measureID] {
+                    systemIndices.insert(systemIndex)
+                }
+            }
+            for drawable in allFrames {
+                let centerY = drawable.frame.midY
+                if centerY >= frame.minY && centerY <= frame.maxY {
+                    frame = frame.union(drawable.frame)
+                    systemIndices.insert(drawable.systemIndex)
+                }
+            }
+            return PrintVisualRow(frame: frame, systemIndices: Array(systemIndices).sorted())
+        }
+    }
+
+    private func printDrawableFramesBySystem(
+        layout: ScoreLayout,
+        measureSystemByID: [MeasureID: Int]
+    ) -> [(frame: CGRect, systemIndex: Int)] {
+        var result: [(CGRect, Int)] = []
+        for measure in layout.measures {
+            result.append((measure.frame, measure.systemIndex))
+        }
+        for element in layout.elements where !element.frame.isNull && !element.frame.isEmpty {
+            let systemIndex: Int? = element.measureID.flatMap { measureSystemByID[$0] }
+                ?? element.noteID.flatMap { layout.noteByID[$0]?.measureID }.flatMap { measureSystemByID[$0] }
+            if let systemIndex {
+                result.append((element.frame, systemIndex))
+            }
+        }
+        for note in layout.noteByID.values where !note.noteheadFrame.isNull && !note.noteheadFrame.isEmpty {
+            if let measureID = note.measureID,
+               let systemIndex = measureSystemByID[measureID] {
+                result.append((note.noteheadFrame, systemIndex))
+            }
+        }
+        for ledgerLine in layout.ledgerLines where !ledgerLine.frame.isNull && !ledgerLine.frame.isEmpty {
+            let systemIndex: Int? = ledgerLine.measureID.flatMap { measureSystemByID[$0] }
+                ?? ledgerLine.noteID.flatMap { layout.noteByID[$0]?.measureID }.flatMap { measureSystemByID[$0] }
+            if let systemIndex {
+                result.append((ledgerLine.frame, systemIndex))
+            }
+        }
+        return result
+    }
+
     private func drawingBounds(
         elements: [ElementLayout],
         staffLines: [StaffLineLayout],
@@ -2421,6 +2994,7 @@ struct ScoreLayoutEngine: Sendable {
 public struct ScoreLayout: Sendable {
     public let canvasSize: CGSize
     public let title: ScoreTitleLayout?
+    public let pages: [ScoreLayoutPage]
     public let systems: [SystemLayout]
     public let staves: [StaffLayout]
     public let measures: [MeasureLayout]
@@ -2434,6 +3008,7 @@ public struct ScoreLayout: Sendable {
     init(
         canvasSize: CGSize = .zero,
         title: ScoreTitleLayout? = nil,
+        pages: [ScoreLayoutPage] = [],
         systems: [SystemLayout] = [],
         staves: [StaffLayout] = [],
         measures: [MeasureLayout] = [],
@@ -2446,6 +3021,7 @@ public struct ScoreLayout: Sendable {
     ) {
         self.canvasSize = canvasSize
         self.title = title
+        self.pages = pages
         self.systems = systems
         self.staves = staves
         self.measures = measures
@@ -2469,6 +3045,70 @@ public struct ScoreLayout: Sendable {
         elementByID[id]
     }
 
+    public func pageLayout(for page: ScoreLayoutPage) -> ScoreLayout {
+        let pageSystemIndices = Set(page.systemIndices)
+        guard !pageSystemIndices.isEmpty else {
+            return self
+        }
+
+        let pageSystems = systems.filter { pageSystemIndices.contains($0.index) }
+        let pageStaves = staves.filter { pageSystemIndices.contains($0.systemIndex) }
+        let pageMeasures = measures.filter { pageSystemIndices.contains($0.systemIndex) }
+        let pageMeasureIDs = Set(pageMeasures.map(\.measureID))
+        let pageStaffLines = staffLines.filter { pageMeasureIDs.contains($0.measureID) }
+        let pageLedgerLines = ledgerLines.filter { ledgerLine in
+            if let measureID = ledgerLine.measureID {
+                return pageMeasureIDs.contains(measureID)
+            }
+            if let noteID = ledgerLine.noteID,
+               let measureID = noteByID[noteID]?.measureID {
+                return pageMeasureIDs.contains(measureID)
+            }
+            return false
+        }
+        let pageNoteByID = noteByID.filter { _, note in
+            guard let measureID = note.measureID else { return false }
+            return pageMeasureIDs.contains(measureID)
+        }
+        let pageNoteIDs = Set(pageNoteByID.keys)
+        let pageElements = elements.filter { element in
+            element.belongsToPage(measureIDs: pageMeasureIDs, noteIDs: pageNoteIDs)
+        }
+        let pageElementByID = Dictionary(
+            pageElements.map { ($0.id, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+
+        return ScoreLayout(
+            canvasSize: canvasSize,
+            title: page.index == 0 ? title : nil,
+            pages: [page],
+            systems: pageSystems,
+            staves: pageStaves,
+            measures: pageMeasures,
+            elements: pageElements,
+            staffLines: pageStaffLines,
+            ledgerLines: pageLedgerLines,
+            noteByID: pageNoteByID,
+            scoreNoteByID: scoreNoteByID,
+            elementByID: pageElementByID
+        )
+    }
+
+}
+
+public struct ScoreLayoutPage: Equatable, Sendable {
+    public let index: Int
+    public let frame: CGRect
+    public let contentFrame: CGRect
+    public let systemIndices: [Int]
+
+    init(index: Int, frame: CGRect, contentFrame: CGRect, systemIndices: [Int]) {
+        self.index = index
+        self.frame = frame
+        self.contentFrame = contentFrame
+        self.systemIndices = systemIndices
+    }
 }
 
 public struct ScoreTitleLayout: Sendable {
@@ -2750,6 +3390,40 @@ public struct ElementLayout: Sendable {
             measureRepeat: measureRepeat,
             playbackJumpMarker: playbackJumpMarker?.offsetBy(dx: dx, dy: dy)
         )
+    }
+
+    fileprivate func belongsToPage(measureIDs: Set<MeasureID>, noteIDs: Set<NoteID>) -> Bool {
+        if let measureID {
+            return measureIDs.contains(measureID)
+        }
+        if let noteID {
+            return noteIDs.contains(noteID)
+        }
+        if let noteLayoutMeasureID = noteLayout?.measureID {
+            return measureIDs.contains(noteLayoutMeasureID)
+        }
+        if let staffLineMeasureID = staffLine?.measureID {
+            return measureIDs.contains(staffLineMeasureID)
+        }
+        if let ledgerLineMeasureID = ledgerLine?.measureID {
+            return measureIDs.contains(ledgerLineMeasureID)
+        }
+        if let ledgerLineNoteID = ledgerLine?.noteID {
+            return noteIDs.contains(ledgerLineNoteID)
+        }
+        if let annotationNoteID = annotation?.noteID {
+            return noteIDs.contains(annotationNoteID)
+        }
+        if let beam {
+            return beam.noteIDs.contains { noteIDs.contains($0) }
+        }
+        if let curve {
+            return noteIDs.contains(curve.startNoteID) || noteIDs.contains(curve.endNoteID)
+        }
+        if let tuplet {
+            return tuplet.noteIDs.contains { noteIDs.contains($0) }
+        }
+        return false
     }
 }
 
@@ -3229,6 +3903,8 @@ private struct LayoutMetrics {
     let staffHeight: CGFloat
     let staffGap: CGFloat
     let noteheadSize: CGSize
+    let staffLineSpacing: CGFloat
+    let notationSpace: CGFloat
     let noteInset: CGFloat
     let rhythmicSpacingUnitWidth: CGFloat
     let minimumMeasureWidth: CGFloat
@@ -3254,9 +3930,19 @@ private struct LayoutMetrics {
             topMargin = options.showPageMargins ? 48 : 32
             bottomMargin = options.showPageMargins ? 48 : 32
         }
-        staffHeight = options.staffSpace * 4
-        staffGap = max(options.systemSpacing, options.staffSpace * 8) + GrandStaffLayoutConstants.additionalStaffSeparation
-        noteheadSize = CGSize(width: options.staffSpace * 1.95, height: options.staffSpace * 1.55)
+        staffLineSpacing = options.staffSpace * 0.76
+        notationSpace = staffLineSpacing / 0.88
+        staffHeight = staffLineSpacing * 4
+        let interStaffWhitespace = if options.displayMode == .print, options.showPageMargins {
+            GrandStaffLayoutConstants.printInterStaffWhitespace
+        } else {
+            GrandStaffLayoutConstants.interStaffWhitespace
+        }
+        staffGap = staffHeight + interStaffWhitespace
+        noteheadSize = CGSize(
+            width: max(4, options.staffSpace * 1.45 - 1),
+            height: max(4, options.staffSpace * 1.05 - 1)
+        )
         if options.displayMode == .print, options.showPageMargins {
             noteInset = options.staffSpace * 2
             rhythmicSpacingUnitWidth = options.staffSpace * 1.5
@@ -3272,7 +3958,7 @@ private struct LayoutMetrics {
         }
         pickupMeasureMinRatio = 0.75
         staffLineHitHalfWidth = max(1, options.staffSpace * 0.08)
-        ledgerLineWidth = options.staffSpace * 2.1
+        ledgerLineWidth = noteheadSize.width + options.staffSpace * 0.45
         staffSpace = options.staffSpace
     }
 
@@ -3523,6 +4209,17 @@ private struct MeasureLayoutPlan {
     let width: CGFloat
 }
 
+private struct PrintPageAssignment {
+    let pageIndex: Int
+    let systemIndices: [Int]
+    let targetTopBySystemIndex: [Int: CGFloat]
+}
+
+private struct PrintVisualRow {
+    let frame: CGRect
+    let systemIndices: [Int]
+}
+
 private struct PendingWedgeLayout {
     let direction: ScoreDirection
     let startX: CGFloat
@@ -3554,9 +4251,10 @@ private func width(
 ) -> CGFloat {
     let spacingUnits = spacingUnitCount(for: measure)
     let trailingInset = trailingNotationInsetWidth(for: measure, metrics: metrics)
-    let rhythmicSpacingWidth = CGFloat(max(spacingUnits, 1)) * metrics.rhythmicSpacingUnitWidth
-        + metrics.noteInset
-        + trailingInset
+    let rhythmicSpacingWidth = max(
+        CGFloat(max(spacingUnits, 1)) * metrics.rhythmicSpacingUnitWidth,
+        readableRhythmicSpacingWidth(for: measure, metrics: metrics)
+    ) + metrics.noteInset + trailingInset
     let midMeasureClefWidth = midMeasureClefSpacingWidth(for: measure, metrics: metrics)
     let noteStartOffset = prefixNoteStartOffset(
         for: measure,
@@ -3687,7 +4385,9 @@ private func printSystemGroups(
     shouldWrapSystems: Bool,
     contentWidth: CGFloat,
     measureSpacing: CGFloat,
-    maximumMeasuresPerSystem: Int
+    maximumMeasuresPerSystem: Int,
+    perMeasureMaximumMeasuresPerSystem: [Int]? = nil,
+    manualBreakBeforeIndices: Set<Int> = []
 ) -> [[Int]] {
     guard shouldWrapSystems, !baseWidths.isEmpty else {
         return [Array(baseWidths.indices)]
@@ -3698,8 +4398,19 @@ private func printSystemGroups(
     var current: [Int] = []
     var occupied: CGFloat = 0
     for (index, width) in baseWidths.enumerated() {
+        if manualBreakBeforeIndices.contains(index), !current.isEmpty {
+            systems.append(current)
+            current = []
+            occupied = 0
+        }
         let candidate = current.isEmpty ? width : occupied + measureSpacing + width
-        if !current.isEmpty, (current.count >= maximumCount || candidate > contentWidth) {
+        let densityLimit = current
+            .map { perMeasureMaximumMeasuresPerSystem?.indices.contains($0) == true ? perMeasureMaximumMeasuresPerSystem?[$0] ?? maximumCount : maximumCount }
+            .min() ?? maximumCount
+        let candidateLimit = perMeasureMaximumMeasuresPerSystem?.indices.contains(index) == true
+            ? min(densityLimit, perMeasureMaximumMeasuresPerSystem?[index] ?? maximumCount)
+            : densityLimit
+        if !current.isEmpty, (current.count >= candidateLimit || candidate > contentWidth) {
             systems.append(current)
             current = [index]
             occupied = width
@@ -3712,6 +4423,38 @@ private func printSystemGroups(
         systems.append(current)
     }
     return systems
+}
+
+private func maximumMeasuresPerSystemForPrintDensity(_ measure: Measure) -> Int {
+    let pitchedNotes = measure.notes.filter { $0.pitch != nil }
+    let noteCount = pitchedNotes.count
+    let onsetCount = Set(measure.notes.map(\.onset)).count
+    let chordOnsetCount = Dictionary(grouping: pitchedNotes, by: \.onset)
+        .values
+        .filter { $0.count >= 3 }
+        .count
+    let shortNoteCount = pitchedNotes.filter { $0.noteValueKind.flagCount > 1 }.count
+    let veryShortNoteCount = pitchedNotes.filter { $0.noteValueKind.flagCount > 2 }.count
+    let articulationCount = pitchedNotes.reduce(0) { $0 + $1.articulations.count }
+    let accidentalCount = pitchedNotes.filter { $0.accidental != nil }.count
+    let densityScore = noteCount
+        + shortNoteCount
+        + veryShortNoteCount * 2
+        + chordOnsetCount * 3
+        + articulationCount
+        + accidentalCount
+        + max(0, onsetCount - 4)
+
+    if densityScore >= 38 {
+        return 1
+    }
+    if densityScore >= 22 {
+        return 2
+    }
+    if densityScore >= 14 {
+        return 3
+    }
+    return 4
 }
 
 private func systemIndexLookup(for groups: [[Int]]) -> [Int: Int] {
@@ -3767,9 +4510,9 @@ private func prefixNoteSeparationWidth(
     }
     let baseSeparation = metrics.noteheadSize.width / 2
     guard timeSignatureWidth > 0 else {
-        return metrics.staffSpace * 0.15
+        return metrics.notationSpace * 0.15
     }
-    return baseSeparation + metrics.staffSpace * 0.35
+    return baseSeparation + metrics.notationSpace * 0.35
 }
 
 private func prefixNoteStartOffset(
@@ -3806,8 +4549,8 @@ private func prefixNoteStartOffset(
     )
     let hasVisibleKeySignature = (displayedKeySignature?.fifths ?? 0) != 0
     let desiredGap = hasVisibleKeySignature
-        ? max(3, metrics.staffSpace * 0.45)
-        : max(8, metrics.staffSpace * 0.95)
+        ? max(3, metrics.notationSpace * 0.45)
+        : max(8, metrics.notationSpace * 0.70)
     return max(metrics.noteInset, visualPrefixEnd + desiredGap + metrics.noteheadSize.width / 2)
 }
 
@@ -3819,15 +4562,20 @@ private func visualPrefixEndWidth(
 ) -> CGFloat {
     var maxX: CGFloat = 0
     if forceClefPrefix || measure.clef != nil || !measure.clefsByStaff.isEmpty {
-        maxX = max(maxX, metrics.staffSpace * 0.65 + metrics.staffSpace * 2.0)
+        maxX = max(
+            maxX,
+            metrics.notationSpace * 0.65
+                + ClefLayoutConstants.horizontalOffset
+                + metrics.notationSpace * 2.0 * ClefLayoutConstants.compactScale
+        )
     }
     if let displayedKeySignature, displayedKeySignature.fifths != 0 {
         let count = min(abs(displayedKeySignature.fifths), 7)
         maxX = max(
             maxX,
-            metrics.staffSpace * 4.0
+            metrics.notationSpace * 4.0
                 + CGFloat(max(count - 1, 0)) * keySignatureAccidentalSpacing(metrics: metrics)
-                + metrics.noteheadSize.width * 0.5
+                + keySignatureAccidentalFrameWidth(metrics: metrics) * 0.5
         )
     }
     return maxX
@@ -3895,6 +4643,31 @@ private func spacingUnitCount(for measure: Measure) -> Int {
         return max(eighthGridUnits, 1)
     }
     return uniqueOnsets
+}
+
+private func readableRhythmicSpacingWidth(for measure: Measure, metrics: LayoutMetrics) -> CGFloat {
+    let onsets = Set(measure.notes.map(\.onset)).sorted()
+    guard onsets.count > 1 else {
+        return metrics.rhythmicSpacingUnitWidth
+    }
+
+    let pitchedNotes = measure.notes.filter { $0.pitch != nil }
+    let containsShortNotes = pitchedNotes.contains { $0.noteValueKind.flagCount > 1 }
+    let containsVeryShortNotes = pitchedNotes.contains { $0.noteValueKind.flagCount > 2 }
+    let hasDenseChords = Dictionary(grouping: pitchedNotes, by: \.onset).values.contains { $0.count >= 3 }
+    guard containsShortNotes || containsVeryShortNotes || hasDenseChords else {
+        return metrics.rhythmicSpacingUnitWidth
+    }
+
+    let minimumGap = if containsVeryShortNotes {
+        metrics.staffSpace * 2.25
+    } else if containsShortNotes {
+        metrics.staffSpace * 2.45
+    } else {
+        metrics.staffSpace * 2.0
+    }
+    let chordAllowance = hasDenseChords ? metrics.staffSpace * 2.5 : 0
+    return CGFloat(onsets.count - 1) * minimumGap + chordAllowance
 }
 
 private func xCoordinatesByOnset(
@@ -3983,7 +4756,7 @@ private func midMeasureClefSpacingWidth(for measure: Measure, metrics: LayoutMet
 }
 
 private func midMeasureClefAdvanceWidth(metrics: LayoutMetrics) -> CGFloat {
-    metrics.staffSpace * 2.65
+    metrics.staffSpace * 2.65 + ClefLayoutConstants.horizontalOffset
 }
 
 private func applyMidMeasureClefOffsets(
@@ -4062,11 +4835,11 @@ private func keySignaturePrefixWidth(for keySignature: KeySignature?, metrics: L
 }
 
 private func clefPrefixWidth(for measure: Measure, forceClef: Bool = false, metrics: LayoutMetrics) -> CGFloat {
-    (!forceClef && measure.clef == nil && measure.clefsByStaff.isEmpty) ? 0 : metrics.staffSpace * 2.9
+    (!forceClef && measure.clef == nil && measure.clefsByStaff.isEmpty) ? 0 : metrics.notationSpace * 2.9 + ClefLayoutConstants.horizontalOffset
 }
 
 private func timeSignaturePrefixWidth(for measure: Measure, metrics: LayoutMetrics) -> CGFloat {
-    measure.timeSignature == nil ? 0 : metrics.staffSpace * 2.2
+    measure.timeSignature == nil ? 0 : metrics.notationSpace * 2.2
 }
 
 private func forwardRepeatPrefixWidth(for measure: Measure, metrics: LayoutMetrics) -> CGFloat {
@@ -4074,15 +4847,15 @@ private func forwardRepeatPrefixWidth(for measure: Measure, metrics: LayoutMetri
 }
 
 private func repeatBarlineFrameWidth(metrics: LayoutMetrics) -> CGFloat {
-    max(metrics.staffSpace * 2.1, 18)
+    max(metrics.notationSpace * 2.1, 18)
 }
 
 private func keySignatureAccidentalSpacing(metrics: LayoutMetrics) -> CGFloat {
-    metrics.staffSpace * 0.65
+    metrics.notationSpace * 0.65
 }
 
 private func keySignatureAccidentalFrameWidth(metrics: LayoutMetrics) -> CGFloat {
-    metrics.noteheadSize.width * 0.95
+    metrics.notationSpace * 1.38
 }
 
 private func prefixElements(
@@ -4097,21 +4870,21 @@ private func prefixElements(
 ) -> [ElementLayout] {
     var elements: [ElementLayout] = []
     if forceClef || measure.clef != nil || measure.clefsByStaff[staffID] != nil {
-        let clefYOffset: CGFloat = switch clef.kind {
+        let clefMidYOffset: CGFloat = switch clef.kind {
         case .treble:
-            metrics.staffSpace * 0.8 - 9
+            metrics.staffSpace * 0.075
         case .bass:
-            -metrics.staffSpace * 1.2 + 6
+            -metrics.staffSpace * 0.425 + ClefLayoutConstants.bassVerticalOffset
         case .alto, .tenor, .unknown:
             0
         }
-        let clefScale: CGFloat = clef.kind == .bass ? 0.9 : 1
-        let baseClefHeight = metrics.staffSpace * 4.55
-        let clefWidth = metrics.staffSpace * 2.0 * clefScale
+        let clefScale: CGFloat = (clef.kind == .bass ? 0.9 : 1) * ClefLayoutConstants.compactScale
+        let baseClefHeight = metrics.notationSpace * 4.55
+        let clefWidth = metrics.notationSpace * 2.0 * clefScale
         let clefHeight = baseClefHeight * clefScale
         let frame = CGRect(
-            x: measureX + metrics.staffSpace * 0.65,
-            y: middleY - metrics.staffSpace * 2.1 + clefYOffset + (baseClefHeight - clefHeight) / 2,
+            x: measureX + metrics.notationSpace * 0.65 + ClefLayoutConstants.horizontalOffset,
+            y: middleY + clefMidYOffset - clefHeight / 2,
             width: clefWidth,
             height: clefHeight
         )
@@ -4127,12 +4900,18 @@ private func prefixElements(
 
     if let timeSignature = measure.timeSignature {
         let keyWidth = keySignaturePrefixWidth(for: displayedKeySignature, metrics: metrics)
-        let keyGap = keyWidth > 0 ? metrics.staffSpace * 0.9 : 0
+        let keyGap = keyWidth > 0 ? metrics.notationSpace * 0.9 : 0
+        let baseFrame = CGRect(
+            x: measureX + metrics.notationSpace * 3.85 + keyWidth + keyGap,
+            y: middleY - metrics.notationSpace * 1.85,
+            width: metrics.notationSpace * 1.85,
+            height: metrics.notationSpace * 3.95
+        )
         let frame = CGRect(
-            x: measureX + metrics.staffSpace * 3.85 + keyWidth + keyGap,
-            y: middleY - metrics.staffSpace * 1.85,
-            width: metrics.staffSpace * 1.85,
-            height: metrics.staffSpace * 3.95
+            x: baseFrame.midX - baseFrame.width * TimeSignatureLayoutConstants.compactScale / 2,
+            y: baseFrame.midY - baseFrame.height * TimeSignatureLayoutConstants.compactScale / 2,
+            width: baseFrame.width * TimeSignatureLayoutConstants.compactScale,
+            height: baseFrame.height * TimeSignatureLayoutConstants.compactScale
         )
         elements.append(ElementLayout(
             id: ScoreElementID(rawValue: "\(staffID.rawValue).\(measure.id.rawValue).timeSignature"),
@@ -4160,15 +4939,15 @@ private func midMeasureClefElements(
         .filter { $0.staffID == staffID }
         .enumerated()
         .map { index, change in
-            let clefScale: CGFloat = 0.72
-            let baseClefHeight = metrics.staffSpace * 4.55
-            let clefWidth = metrics.staffSpace * 2.0 * clefScale
+            let clefScale: CGFloat = 0.72 * ClefLayoutConstants.compactScale
+            let baseClefHeight = metrics.notationSpace * 4.55
+            let clefWidth = metrics.notationSpace * 2.0 * clefScale
             let clefHeight = baseClefHeight * clefScale
-            let clefYOffset: CGFloat = switch change.clef.kind {
+            let clefMidYOffset: CGFloat = switch change.clef.kind {
             case .treble:
-                metrics.staffSpace * 0.8 - 9
+                metrics.staffSpace * 0.075
             case .bass:
-                -metrics.staffSpace * 1.2 + 6
+                -metrics.staffSpace * 0.425 + ClefLayoutConstants.bassVerticalOffset
             case .alto, .tenor, .unknown:
                 0
             }
@@ -4176,8 +4955,8 @@ private func midMeasureClefElements(
                 ?? (onsetX.values.sorted().first ?? metrics.leftMargin) + midMeasureClefAdvanceWidth(metrics: metrics)
             let noteheadLeadingEdge = noteX - metrics.noteheadSize.width / 2
             let frame = CGRect(
-                x: noteheadLeadingEdge - metrics.staffSpace * 0.35 - clefWidth,
-                y: middleY - metrics.staffSpace * 2.1 + clefYOffset + (baseClefHeight - clefHeight) / 2,
+                x: noteheadLeadingEdge - metrics.notationSpace * 0.35 - clefWidth,
+                y: middleY + clefMidYOffset - clefHeight / 2,
                 width: clefWidth,
                 height: clefHeight
             )
@@ -4519,18 +5298,20 @@ private func keySignatureElements(
 
     let accidental = keySignature.fifths > 0 ? "sharp" : "flat"
     let pitches = keySignaturePitches(fifths: keySignature.fifths, clef: clef)
-    let firstKeyX = measureX + metrics.staffSpace * 4.0
+    let firstKeyX = measureX + metrics.notationSpace * 4.0
     return pitches.enumerated().map { index, pitch in
         let position = staffPosition(pitch: pitch, clef: clef)
         let center = CGPoint(
             x: firstKeyX + CGFloat(index) * keySignatureAccidentalSpacing(metrics: metrics),
-            y: middleY - CGFloat(position.stepsFromMiddleLine) * metrics.staffSpace / 2
+            y: middleY - CGFloat(position.stepsFromMiddleLine) * metrics.staffLineSpacing / 2
         )
+        let accidentalWidth = keySignatureAccidentalFrameWidth(metrics: metrics)
+        let accidentalHeight = metrics.notationSpace * 1.95
         let frame = CGRect(
-            x: center.x - metrics.noteheadSize.width * 0.45,
-            y: center.y - metrics.noteheadSize.height * 0.70,
-            width: metrics.noteheadSize.width * 0.95,
-            height: metrics.noteheadSize.height * 1.6
+            x: center.x - accidentalWidth * 0.47,
+            y: center.y - accidentalHeight * 0.5,
+            width: accidentalWidth,
+            height: accidentalHeight
         )
         return ElementLayout(
             id: ScoreElementID(rawValue: "\(staffID.rawValue).\(measure.id.rawValue).keySignature.\(index)"),
@@ -4645,7 +5426,7 @@ private func ledgerLinesForNote(
     }
 
     return ledgerSteps.map { lineStep in
-        let y = center.y + CGFloat(steps - lineStep) * metrics.staffSpace / 2
+        let y = center.y + CGFloat(steps - lineStep) * metrics.staffLineSpacing / 2
         let start = CGPoint(x: center.x - metrics.ledgerLineWidth / 2, y: y)
         let end = CGPoint(x: center.x + metrics.ledgerLineWidth / 2, y: y)
         let frame = CGRect(x: start.x, y: y - metrics.staffLineHitHalfWidth, width: metrics.ledgerLineWidth, height: metrics.staffLineHitHalfWidth * 2)

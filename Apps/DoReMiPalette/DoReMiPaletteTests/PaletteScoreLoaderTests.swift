@@ -50,41 +50,16 @@ struct PaletteScoreLoaderTests {
         #expect(loaded.a4Layout.title?.text == "Ode to Joy Easy Variation")
     }
 
-    @Test func printPageLayoutKeepsA4WidthAndSplitsTallScores() {
-        let pageSize = PalettePrintPageLayout.pageSize(forContentWidth: 595)
-        let defaultSlices = PalettePrintPageLayout.pageSlices(
-            forContentHeight: 843,
-            pageHeight: pageSize.height,
-            systemFrames: []
-        )
-        let systemAwareSlices = PalettePrintPageLayout.pageSlices(
-            forContentHeight: 1_100,
-            pageHeight: pageSize.height,
-            systemFrames: [
-                CGRect(x: 24, y: 100, width: 540, height: 660),
-                CGRect(x: 24, y: 800, width: 540, height: 120),
-            ]
-        )
+    @Test func printLayoutUsesSDKPagesSeparateFromScreenA4Layout() throws {
+        let loaded = try PaletteScoreLoader().load(data: Self.validMusicXML, sourceName: "unit.musicxml")
+        let firstPage = try #require(loaded.printLayout.pages.first)
 
-        #expect(abs(pageSize.width - 595) < 0.001)
-        #expect(abs(pageSize.height - 842) < 0.001)
-        #expect(defaultSlices.map(\.offsetY) == [0, 842])
-        #expect(systemAwareSlices.map(\.offsetY) == [0, 700])
-        #expect(systemAwareSlices.first?.sourceEndY == 760)
-        #expect(systemAwareSlices.first?.visibleHeight == 760)
-        #expect(systemAwareSlices.last?.sourceStartY == 800)
-        #expect(systemAwareSlices.last?.destinationY == 100)
-        for slice in systemAwareSlices {
-            for frame in [
-                CGRect(x: 24, y: 100, width: 540, height: 660),
-                CGRect(x: 24, y: 800, width: 540, height: 120),
-            ] {
-                let cutsTop = slice.sourceStartY > frame.minY && slice.sourceStartY < frame.maxY
-                let cutsBottom = slice.sourceEndY > frame.minY && slice.sourceEndY < frame.maxY
-                #expect(!cutsTop)
-                #expect(!cutsBottom)
-            }
-        }
+        #expect(loaded.printLayout.canvasSize.width == 595)
+        #expect(firstPage.frame.width == 595)
+        #expect(firstPage.frame.height == 842)
+        #expect(loaded.a4Layout.pages.isEmpty)
+        #expect(!loaded.printLayout.pages.isEmpty)
+        #expect(Set(loaded.printLayout.noteByID.keys) == Set(loaded.a4Layout.noteByID.keys))
     }
 
     @Test func parseFailureThrows() {
@@ -325,11 +300,13 @@ struct PaletteScoreLoaderTests {
 
         #expect(loaded.layoutMode == .a4)
         #expect(loaded.layout.canvasSize == loaded.a4Layout.canvasSize)
-        #expect(loaded.printLayout.canvasSize == loaded.a4Layout.canvasSize)
+        #expect(!loaded.printLayout.pages.isEmpty)
+        #expect(loaded.printLayout.canvasSize.width == loaded.a4Layout.canvasSize.width)
         #expect(loaded.horizontalLayout.canvasSize.width != loaded.a4Layout.canvasSize.width)
-        #expect(loaded.a4Layout.staves.first?.frame.height == 32)
+        #expect(loaded.a4Layout.staves.first?.frame.height == 24.32)
         #expect(abs((loaded.a4Layout.systems.first?.frame.width ?? 0) - 547) < 0.001)
         #expect(Set(loaded.horizontalLayout.noteByID.keys) == Set(loaded.a4Layout.noteByID.keys))
+        #expect(Set(loaded.printLayout.noteByID.keys) == Set(loaded.a4Layout.noteByID.keys))
         let horizontalElementIDs = Set(loaded.horizontalLayout.elementByID.keys)
         let a4ElementIDs = Set(loaded.a4Layout.elementByID.keys.filter { !$0.rawValue.hasSuffix(".barline.left") })
         #expect(horizontalElementIDs == a4ElementIDs)
@@ -393,8 +370,9 @@ struct PaletteScoreLoaderTests {
 
         #expect(a4.layoutMode == .a4)
         #expect(a4.layout.canvasSize == a4.a4Layout.canvasSize)
-        #expect(a4.printLayout.canvasSize == a4.a4Layout.canvasSize)
+        #expect(!a4.printLayout.pages.isEmpty)
         #expect(Set(a4.layout.noteByID.keys) == noteIDs)
+        #expect(Set(a4.printLayout.noteByID.keys) == noteIDs)
         #expect(a4.playbackEvents.map {
             "\($0.noteIDs.map(\.rawValue).joined(separator: ","))|\($0.onset.ticks)|\($0.nominalDuration.ticks)"
         } == playbackIdentity)
@@ -404,14 +382,14 @@ struct PaletteScoreLoaderTests {
 
         #expect(horizontal.layoutMode == .horizontal)
         #expect(horizontal.layout.canvasSize == horizontal.horizontalLayout.canvasSize)
-        #expect(horizontal.printLayout.canvasSize == horizontal.a4Layout.canvasSize)
+        #expect(!horizontal.printLayout.pages.isEmpty)
 
         session.setScoreLayoutMode(.track)
         let track = try #require(session.loadedScore)
 
         #expect(track.layoutMode == .track)
         #expect(track.layout.canvasSize == track.a4Layout.canvasSize)
-        #expect(track.printLayout.canvasSize == track.a4Layout.canvasSize)
+        #expect(!track.printLayout.pages.isEmpty)
         #expect(track.playbackEvents.map {
             "\($0.noteIDs.map(\.rawValue).joined(separator: ","))|\($0.onset.ticks)|\($0.nominalDuration.ticks)"
         } == playbackIdentity)
@@ -1083,27 +1061,38 @@ struct PaletteScoreLoaderTests {
         #expect(session.errorMessage == nil)
     }
 
-    @Test func sampleCatalogContainsOnlyBundledReleaseSamples() throws {
+    @Test func sampleCatalogContainsBundledSimulatorSamples() throws {
         let catalog = SampleScoreCatalog.default
         let bundledSampleNames = Set([
             "Ode_to_Joy_Easy_variation",
             "Fur_Elise_-_Beethoven_-_for_beginner_piano",
+            "Canon_in_D",
+            "Mozart_-_Piano_Sonata_No._16_-_Allegro",
+            "The_Entertainer_-_Scott_Joplin",
         ])
 
-        #expect(catalog.samples.count == 2)
-        #expect(catalog.samples.map(\.resourceName) == [
+        #expect(catalog.samples.count == 60)
+        #expect(catalog.samples.prefix(2).map(\.resourceName) == [
             "Ode_to_Joy_Easy_variation",
             "Fur_Elise_-_Beethoven_-_for_beginner_piano",
         ])
-        #expect(catalog.samples.map(\.fileExtension) == ["mxl", "mxl"])
+        #expect(catalog.samples.allSatisfy { $0.fileExtension == "mxl" })
         #expect(bundledSampleNames.isSubset(of: Set(catalog.samples.map(\.resourceName))))
     }
 
     @Test func bundledMXLReplacementSamplesLoadFromBundle() throws {
         let catalog = SampleScoreCatalog.default
         let loader = PaletteScoreLoader()
+        let representativeNames = Set([
+            "Ode_to_Joy_Easy_variation",
+            "Fur_Elise_-_Beethoven_-_for_beginner_piano",
+            "Canon_in_D",
+            "Mozart_-_Piano_Sonata_No._16_-_Allegro",
+            "The_Entertainer_-_Scott_Joplin",
+            "12_Variations_of_Twinkle_Twinkle_Little_Star",
+        ])
 
-        for sample in catalog.samples {
+        for sample in catalog.samples where representativeNames.contains(sample.resourceName) {
             let url = try #require(sample.url(in: Bundle.main))
             let loaded = try loader.load(data: Data(contentsOf: url), sourceName: url.lastPathComponent)
 

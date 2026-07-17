@@ -157,6 +157,38 @@ let layout = try renderer.layout(
 Apps can inspect layout records and lookup tables, but should not construct
 layout records directly.
 
+## Browser Canvas Bridge
+
+DoReMiRendererKit can export an already-resolved `ScoreLayout` as a
+JSON-encodable `ScoreWebRenderPlan`. A Web client renders this command stream in
+Canvas and uses `noteAnchors` for playback cursors and selection, without
+re-parsing MusicXML or recalculating positions.
+
+```swift
+let renderer = DoReMiRenderer()
+let options = renderer.webLayoutOptions(containerWidth: 1024)
+let layout = try renderer.layout(score: score, options: options)
+let plan = renderer.makeWebRenderPlan(score: score, layout: layout)
+let json = try JSONEncoder().encode(plan)
+```
+
+`ScoreWebLayoutProfile.responsive` wraps at up to four measures per system with
+compact reading spacing. It is an independent DoReMiRenderer layout profile;
+the public MuseTrainer library is used only as a MusicXML compatibility corpus,
+not as a source of UI or code. See
+[WebCanvasViewer](Examples/WebCanvasViewer/README.md) for a static Canvas
+consumer and `DoReMiRendererWebExport` for a command-line JSON export.
+
+The viewer must load the Bravura web font before it issues its first Canvas text
+draw. SMuFL uses private-use Unicode code points, so browser fallback fonts cannot
+render notation glyphs. `ScoreWebRenderCommand.fontRole` provides stable browser
+font semantics (`smufl`, serif, italic, bold, or sans-serif) in addition to the
+native font name.
+
+The exported command format is browser-transport compatible. A direct
+client-side Swift/Wasm build remains future work because the current SDK target
+still contains Apple-specific CoreGraphics/CoreText/SwiftUI adapters.
+
 ## Render With ScoreCanvasView
 
 ```swift
@@ -375,6 +407,13 @@ the PDF from the A4 layout, even when the on-screen view is in horizontal or
 track mode. The SDK provides `ScoreGraphicsRenderer` for drawing an existing
 layout into a `CGContext`; the app does not reparse MusicXML or recalculate
 score coordinates for printing.
+
+Print output now uses a separate compact A4 layout and SDK page read models
+instead of fitting the full canvas to page height. The print layout targets six
+grand-staff systems per page by default, uses a fixed 40pt inter-system gap,
+and falls back to fewer systems when rendered bounds would otherwise exceed the
+page. It keeps grand-staff systems from being cut across page boundaries and
+uses visual-row pagination for unusually tall imported systems.
 
 ## Snapshot Tests
 

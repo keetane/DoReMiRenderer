@@ -1090,28 +1090,28 @@ struct ScorePracticeView: View {
             measureNumbersVisible: measureNumbersVisible
         )
         let printLayout = loaded.printLayout
-        let pageSize = PalettePrintPageLayout.pageSize(forContentWidth: printLayout.canvasSize.width)
+        let pages: [PalettePrintablePage] = printLayout.pages.isEmpty
+            ? [PalettePrintablePage(frame: CGRect(origin: .zero, size: printLayout.canvasSize))]
+            : printLayout.pages.map { PalettePrintablePage(frame: $0.frame, sourcePage: $0) }
+        let pageSize = pages.first?.frame.size ?? CGSize(width: printLayout.canvasSize.width, height: printLayout.canvasSize.width * 842.0 / 595.0)
         let pageRect = CGRect(origin: .zero, size: pageSize)
-        let pageSlices = PalettePrintPageLayout.pageSlices(
-            forContentHeight: printLayout.canvasSize.height,
-            pageHeight: pageSize.height,
-            systemFrames: printLayout.printSystemContentFrames()
-        )
         let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
         let data = renderer.pdfData { context in
-            for pageSlice in pageSlices {
+            for page in pages {
                 context.beginPage()
                 let cgContext = context.cgContext
                 cgContext.saveGState()
-                cgContext.clip(to: CGRect(
-                    x: pageRect.minX,
-                    y: pageSlice.destinationY,
-                    width: pageRect.width,
-                    height: pageSlice.visibleHeight
-                ))
-                cgContext.translateBy(x: 0, y: pageSlice.destinationY - pageSlice.sourceStartY)
+                cgContext.clip(to: pageRect)
+                cgContext.translateBy(x: -page.frame.minX, y: -page.frame.minY)
+                let pageLayout = page.sourcePage.map { printLayout.pageLayout(for: $0) } ?? printLayout
+                if let sourcePage = page.sourcePage {
+                    let clipFrame = sourcePage.index == 0
+                        ? sourcePage.contentFrame.union(printLayout.title?.frame ?? sourcePage.contentFrame)
+                        : sourcePage.contentFrame
+                    cgContext.clip(to: clipFrame)
+                }
                 ScoreGraphicsRenderer().draw(
-                    layout: printLayout,
+                    layout: pageLayout,
                     score: loaded.score,
                     style: style,
                     in: cgContext
@@ -1180,134 +1180,9 @@ private struct PalettePrintJob: Identifiable, Equatable {
     let data: Data
 }
 
-struct PalettePrintPageSlice: Equatable {
-    let sourceStartY: CGFloat
-    let sourceEndY: CGFloat
-    let destinationY: CGFloat
-
-    var visibleHeight: CGFloat {
-        max(1, sourceEndY - sourceStartY)
-    }
-
-    var offsetY: CGFloat {
-        sourceStartY - destinationY
-    }
-}
-
-enum PalettePrintPageLayout {
-    static let a4AspectRatio: CGFloat = 842.0 / 595.0
-
-    static func pageSize(forContentWidth contentWidth: CGFloat) -> CGSize {
-        let width = max(contentWidth, 1)
-        return CGSize(width: width, height: width * a4AspectRatio)
-    }
-
-    static func pageSlices(
-        forContentHeight contentHeight: CGFloat,
-        pageHeight: CGFloat,
-        systemFrames: [CGRect]
-    ) -> [PalettePrintPageSlice] {
-        guard contentHeight.isFinite, pageHeight.isFinite, pageHeight > 0 else {
-            return [PalettePrintPageSlice(sourceStartY: 0, sourceEndY: 1, destinationY: 0)]
-        }
-        let safeContentHeight = max(contentHeight, 1)
-        let sortedSystemFrames = systemFrames
-            .filter { !$0.isNull && !$0.isEmpty && $0.minY.isFinite && $0.maxY.isFinite }
-            .sorted { $0.minY < $1.minY }
-        guard !sortedSystemFrames.isEmpty else {
-            return contiguousPageSlices(forContentHeight: safeContentHeight, pageHeight: pageHeight)
-        }
-
-        let repeatedPageTopInset = min(max(0, sortedSystemFrames.first?.minY ?? 0), pageHeight * 0.25)
-        let epsilon: CGFloat = 0.5
-        var slices: [PalettePrintPageSlice] = []
-        var systemIndex = 0
-
-        while systemIndex < sortedSystemFrames.count {
-            let isFirstPage = slices.isEmpty
-            let destinationY: CGFloat = isFirstPage ? 0 : repeatedPageTopInset
-            let availableHeight = max(1, pageHeight - destinationY)
-            let sourceStartY: CGFloat = isFirstPage ? 0 : sortedSystemFrames[systemIndex].minY
-            var sourceEndY = sortedSystemFrames[systemIndex].maxY
-            var nextIndex = systemIndex + 1
-
-            while nextIndex < sortedSystemFrames.count {
-                let candidateEndY = sortedSystemFrames[nextIndex].maxY
-                if candidateEndY - sourceStartY > availableHeight + epsilon {
-                    break
-                }
-                sourceEndY = candidateEndY
-                nextIndex += 1
-            }
-
-            if sourceEndY - sourceStartY > availableHeight + epsilon,
-               nextIndex == systemIndex + 1 {
-                sourceEndY = min(sourceStartY + availableHeight, safeContentHeight)
-            }
-
-            slices.append(PalettePrintPageSlice(
-                sourceStartY: sourceStartY,
-                sourceEndY: max(sourceEndY, sourceStartY + 1),
-                destinationY: destinationY
-            ))
-            systemIndex = max(nextIndex, systemIndex + 1)
-        }
-
-        return slices.isEmpty ? contiguousPageSlices(forContentHeight: safeContentHeight, pageHeight: pageHeight) : slices
-    }
-
-    private static func contiguousPageSlices(forContentHeight contentHeight: CGFloat, pageHeight: CGFloat) -> [PalettePrintPageSlice] {
-        var slices: [PalettePrintPageSlice] = []
-        var sourceStartY: CGFloat = 0
-        let epsilon: CGFloat = 0.5
-        while sourceStartY < contentHeight - epsilon {
-            let sourceEndY = min(sourceStartY + pageHeight, contentHeight)
-            slices.append(PalettePrintPageSlice(
-                sourceStartY: sourceStartY,
-                sourceEndY: max(sourceEndY, sourceStartY + 1),
-                destinationY: 0
-            ))
-            sourceStartY = sourceEndY
-        }
-        return slices.isEmpty ? [PalettePrintPageSlice(sourceStartY: 0, sourceEndY: pageHeight, destinationY: 0)] : slices
-    }
-}
-
-private extension ScoreLayout {
-    func printSystemContentFrames() -> [CGRect] {
-        let measureSystemByID = Dictionary(uniqueKeysWithValues: measures.map { ($0.measureID, $0.systemIndex) })
-        var framesBySystem = Dictionary(uniqueKeysWithValues: systems.map { ($0.index, $0.frame) })
-
-        for staff in staves {
-            framesBySystem[staff.systemIndex] = framesBySystem[staff.systemIndex]?.union(staff.frame) ?? staff.frame
-        }
-        for measure in measures {
-            framesBySystem[measure.systemIndex] = framesBySystem[measure.systemIndex]?.union(measure.frame) ?? measure.frame
-        }
-        for element in elements {
-            guard let measureID = element.measureID,
-                  let systemIndex = measureSystemByID[measureID],
-                  !element.frame.isNull,
-                  !element.frame.isEmpty else { continue }
-            framesBySystem[systemIndex] = framesBySystem[systemIndex]?.union(element.frame) ?? element.frame
-        }
-        for note in noteByID.values {
-            guard let measureID = note.measureID,
-                  let systemIndex = measureSystemByID[measureID],
-                  !note.noteheadFrame.isNull,
-                  !note.noteheadFrame.isEmpty else { continue }
-            framesBySystem[systemIndex] = framesBySystem[systemIndex]?.union(note.noteheadFrame) ?? note.noteheadFrame
-        }
-        for ledgerLine in ledgerLines {
-            guard let measureID = ledgerLine.measureID,
-                  let systemIndex = measureSystemByID[measureID],
-                  !ledgerLine.frame.isNull,
-                  !ledgerLine.frame.isEmpty else { continue }
-            framesBySystem[systemIndex] = framesBySystem[systemIndex]?.union(ledgerLine.frame) ?? ledgerLine.frame
-        }
-
-        return systems.compactMap { framesBySystem[$0.index] }
-    }
+private struct PalettePrintablePage: Equatable {
+    let frame: CGRect
+    var sourcePage: ScoreLayoutPage?
 }
 
 private struct PalettePrintPresenter: UIViewControllerRepresentable {
