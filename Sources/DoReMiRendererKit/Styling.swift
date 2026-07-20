@@ -219,6 +219,7 @@ public struct GlyphStyle: Hashable, Codable, Sendable {
 public enum MeasureNumberDisplayMode: String, Hashable, Codable, Sendable {
     case hidden
     case evenMeasures
+    case systemLeading
 }
 
 public struct ScoreStyle: Sendable {

@@ -7,6 +7,102 @@ Initial experimental MVP0 release.
 This version is intended for integration review and early adopter testing. Public
 APIs may change before `1.0`.
 
+### Browser notation / print-quality hardening
+
+- Added note-linked ledger-line palette metadata to the SDK Web Render Plan so
+  coloured staff mode also colours C4 and other ledger lines with the written
+  note's pitch-class family. Web score zoom now uses an editable 50–200%
+  numeric field with 10% controls, and Previous/Next use hollow navigation
+  icons distinct from the filled Play icon. Black and white keyboard colour
+  bands now share the same 8pt inset geometry.
+
+- Replaced the Web transport's percentage tempo cycle with an editable 30–300
+  BPM field seeded from the SDK-exported event tempo, moved Previous/Next beside
+  Reset, and normalized black-key palette bands to the same inset edge rendering
+  used by white keys. The Web-only time-signature profile now adds one more point
+  of numerator/denominator separation toward the staff centre; iOS/PDF defaults
+  remain unchanged. MXL import now posts a fixed byte payload to the loopback
+  SDK converter, avoiding browser-specific streamed-upload behavior.
+
+- Added loopback-only MusicXML/MXL upload support to DoReMi Palette Web through
+  `Examples/WebCanvasViewer/server.py`. The server delegates every import to
+  `DoReMiRendererWebExport`, returns only the SDK-built Web Render Bundle, and
+  discards the temporary upload after the response; browser JavaScript still
+  does not parse MusicXML or generate notation geometry.
+- Refined Web keyboard guidance: the next pitch is now a pale circular marker
+  with a darker pitch-colour outline, while the current pitch remains filled.
+  Black-key scale colouring uses a flat top/bottom band equal to roughly 5% of
+  key height. The later BPM control scales both event timing and exported
+  written sound windows; Previous/Next now sit immediately after Reset, and
+  the toolbar adopts the iOS app icon.
+- Matched DoReMi Palette Web generated audio to the iOS `SimpleToneAudioEngine`:
+  the browser now uses the same three-harmonic wave, 80% velocity mapping,
+  low-pitch boost, and 10ms fade envelope. The SDK exports per-pitch sound
+  windows, so quarter, half, whole, dotted, and unequal chord tones retain their
+  written durations instead of sharing one event-length sound.
+- Moved the Web note-colour control into the palette as a check control, added a
+  visually distinct dashed next-note keyboard guide, made black-key colour
+  markers flat at both top and bottom positions, and reduced original-scale
+  reset to a natural-sign control. Web plans now label only the leftmost measure
+  of each grand staff/system.
+- Reworked the SDK-owned Web Canvas reading profile without changing the iOS or
+  PDF defaults: notation now uses a 12pt shared scale, compact measure joins,
+  readable grand-staff spacing, rhythmic placement for dense short-note groups,
+  repeated context prefixes at wrapped starts, and separate expression lanes.
+- Reduced Web title emphasis relative to body notation and tightened closing
+  repeat bars so they no longer dominate the staff at reader scale.
+- Overlapped stems slightly into their notehead frames and strengthened their
+  stroke width to prevent visible Canvas/SMuFL seams while retaining the same
+  layout coordinate source for Web, iOS, and PDF rendering.
+- Hid `Ped.` labels and enlarged Web-reader noteheads by 2pt without changing
+  iOS/PDF defaults. Explicitly beamed chords now suppress sibling flags and
+  extend every simultaneous stem to the shared beam. Same-measure 1./2. volta
+  endings now draw closed brackets at both hooks.
+- Set the Web reader to a 90pt upper/lower-staff gap, while retaining 20pt
+  additional horizontal content margins and a 120pt title-to-first-system
+  reservation. Web-only time-signature digits use a fixed 36pt size and inset
+  each numerator/denominator digit 4pt toward the staff centre; iOS/PDF
+  defaults remain unchanged.
+- Expanded the Web Canvas example into DoReMi Palette Web: its toolbar opens
+  SDK-generated Web Render Plan JSON, the pitch-class palette recolours stable
+  note anchors, staff-line colour metadata comes directly from ScoreLayout, and
+  the on-screen piano keyboard selects the same exported MIDI-backed note IDs.
+  The browser still never parses MusicXML or recomputes score coordinates.
+- Aligned the Web palette with iOS `defaultEducationalPalette`: noteheads,
+  clef-aware staff lines, and keyboard keys now share the C/C#, D/D#, E, F/F#,
+  G/G#, A/A#, and B colour groups and one 12-pitch-class enable state. Web
+  defaults now match the app: note and keyboard colour on, staff-line colour
+  off.
+- Added iOS-parity Web transport and controls: `ScoreWebRenderBundle` carries
+  SDK-generated display-transpose layouts (-12...+12) and an expanded playback
+  timeline. DoReMi Palette Web now provides display/playback transpose,
+  Web-Audio Play/Stop, current-note anchor following, Previous/Next, and direct
+  measure Jump without MusicXML parsing or browser-side layout calculation.
+- Updated the Web-only time-signature glyph size to 36pt. iOS and PDF defaults
+  remain unchanged.
+- Refined DoReMi Palette Web palette and transport behavior: staff-line colour
+  guides now draw over ordinary staff ink but below notation, existing SMuFL notehead glyph commands are
+  recoloured instead of receiving substitute ellipse overlays, and a cyan guide
+  spans the current SDK-defined grand staff. Web vertical follow now changes
+  only when playback enters another system.
+- Updated Web scale labels to `C / Am` form, added an original-scale reset
+  button, iOS-like keyboard/palette/open icons, palette check controls, a
+  top/bottom keyboard colour position switch, and an optional dashed next-note
+  guide. Browser anchors now carry their written diatonic pitch class, keeping
+  B-flat in F major in the B colour family while the physical keyboard still
+  uses the actual B-flat/A-sharp key.
+- Replaced the browser's separate "transpose score" switch with one
+  scale-name selector. It always selects an SDK-generated transposed layout,
+  including the original major/minor key label, and staff/keyboard colouring is
+  limited to that scale while out-of-scale played notes keep their pitch-class
+  guide colour. Added score-only zoom controls and icon-led toolbar actions.
+- Centered half and whole rests within their measure for the Web profile and
+  placed whole rests against the second staff line. Browser stems overlap
+  noteheads by an additional 2pt, adjacent chord seconds reflect the lower
+  notehead around the shared stem axis, and repeat-barline thin/thick strokes
+  now use a fixed 4pt separation. Volta brackets consistently draw both closing
+  hooks, including start-only MusicXML endings.
+
 ### Playback timing hardening
 
 - Changed DoReMi Palette playback scheduling to use a monotonic absolute
@@ -604,13 +700,13 @@ added.
 - Fixed bottom-system clipping in six-system A4 print pages by separating
   unpadded fit checks from padded page clip frames and deriving page
   `contentFrame` values from relocated rendered system bounds.
-- Set the print page vertical margins to 36pt, print grand-staff upper/lower
-  staff whitespace to 36pt, and print grand-staff system gaps to 40pt.
-- Tightened A4 PDF grand-staff system spacing from 68pt to 40pt after visual
-  review of Ode to Joy, Fur Elise, Canon in D, Mozart, and The Entertainer.
-  The SDK uses the same fixed value for page-fit calculation and placement, so
-  shorter pages leave unused area at the bottom rather than vertically
-  stretching systems apart.
+- Kept iOS/PDF print page vertical margins at 36pt, print grand-staff
+  upper/lower staff whitespace at 36pt, and restored the established 68pt
+  fixed print-system gap. The gap is now a `LayoutOptions` presentation value,
+  so Web tuning cannot change iOS/PDF output.
+- Tuned the Web Canvas profile independently to use a 10pt staff space, 64pt
+  system spacing, and 8pt measure spacing. Notes, clefs, flags, accidentals,
+  and staff geometry continue to scale from the same `staffSpace` source.
 - Reserved the first print page's first grand-staff slot for title/composer
   space when a score title is present, so the first page carries five systems
   by default and falls back if rendered bounds require more vertical room.

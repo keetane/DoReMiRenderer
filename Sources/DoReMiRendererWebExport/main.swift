@@ -5,6 +5,7 @@ private struct Arguments {
     var inputPath: String?
     var outputPath = "score-web.json"
     var width = 1024.0
+    var transposeRange = 12
 
     init(_ values: [String]) {
         var iterator = values.dropFirst().makeIterator()
@@ -16,6 +17,8 @@ private struct Arguments {
                 if let value = iterator.next() { outputPath = value }
             case "--width":
                 if let value = iterator.next(), let parsed = Double(value) { width = parsed }
+            case "--transpose-range":
+                if let value = iterator.next(), let parsed = Int(value) { transposeRange = min(max(parsed, 0), 12) }
             default:
                 continue
             }
@@ -29,7 +32,7 @@ struct DoReMiRendererWebExportCommand {
         let arguments = Arguments(CommandLine.arguments)
         guard let inputPath = arguments.inputPath else {
             throw NSError(domain: "DoReMiRendererWebExport", code: 64, userInfo: [
-                NSLocalizedDescriptionKey: "Usage: DoReMiRendererWebExport --input <score.musicxml|score.mxl> [--output score-web.json] [--width 1024]"
+                NSLocalizedDescriptionKey: "Usage: DoReMiRendererWebExport --input <score.musicxml|score.mxl> [--output score-web.json] [--width 1024] [--transpose-range 12]"
             ])
         }
 
@@ -38,13 +41,16 @@ struct DoReMiRendererWebExportCommand {
         let renderer = DoReMiRenderer()
         let input: ScoreInput = inputURL.pathExtension.lowercased() == "mxl" ? .mxlData(data) : .musicXMLData(data)
         let score = try renderer.parse(input: input)
-        let layout = try renderer.layout(score: score, options: renderer.webLayoutOptions(containerWidth: arguments.width))
-        let plan = renderer.makeWebRenderPlan(score: score, layout: layout)
+        let bundle = try renderer.makeWebRenderBundle(
+            score: score,
+            containerWidth: arguments.width,
+            displayTransposeRange: -arguments.transposeRange...arguments.transposeRange
+        )
 
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         let outputURL = URL(fileURLWithPath: arguments.outputPath)
-        try encoder.encode(plan).write(to: outputURL, options: .atomic)
-        print("Wrote \(outputURL.path) commands=\(plan.commands.count) noteAnchors=\(plan.noteAnchors.count)")
+        try encoder.encode(bundle).write(to: outputURL, options: .atomic)
+        print("Wrote \(outputURL.path) commands=\(bundle.primaryPlan.commands.count) noteAnchors=\(bundle.primaryPlan.noteAnchors.count) transposeVariants=\(bundle.transposeVariants.count)")
     }
 }

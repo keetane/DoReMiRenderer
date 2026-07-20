@@ -99,6 +99,73 @@ import Testing
     #expect(secondNumberPoint.y > bottomStaffMaxY)
 }
 
+@Test func scorePainterDrawsOnlyTheLeadingMeasureNumberForEachSystem() throws {
+    let staffID = StaffID(rawValue: "1")
+    let measures = (1...5).map { number in
+        Measure(
+            id: MeasureID(partIndex: 0, measureNumber: "\(number)"),
+            number: "\(number)",
+            notes: [
+                ScoreNote(
+                    id: NoteID(rawValue: "system-number.\(number)"),
+                    pitch: Pitch(step: .c, octave: 4),
+                    onset: MusicalTime(ticks: 0, ticksPerQuarterNote: 4),
+                    duration: MusicalTime(ticks: 4, ticksPerQuarterNote: 4),
+                    voiceID: VoiceID(rawValue: "1"),
+                    staffID: staffID
+                ),
+            ],
+            clef: number == 1 ? Clef(kind: .treble) : nil
+        )
+    }
+    let score = ScoreDocument(parts: [ScorePart(id: "p1", measures: measures)])
+    let layout = try ScoreLayoutEngine().layout(
+        score: score,
+        options: LayoutOptions(
+            pageWidth: 360,
+            pageHeight: 900,
+            staffSpace: 10,
+            displayMode: .print,
+            maximumMeasuresPerSystem: 2
+        )
+    )
+    var context = RecordingDrawingContext()
+
+    ScorePainter(smuflFontName: nil).draw(
+        layout: layout,
+        score: score,
+        style: ScoreStyle(measureNumberDisplayMode: .systemLeading),
+        into: &context
+    )
+
+    let expectedNumbers = Set(layout.measures.compactMap { measure -> String? in
+        let leadingX = layout.measures
+            .filter { $0.systemIndex == measure.systemIndex && $0.partIndex == 0 }
+            .map(\.frame.minX)
+            .min()
+        guard measure.partIndex == 0,
+              let leadingX,
+              abs(measure.frame.minX - leadingX) < 0.5
+        else {
+            return nil
+        }
+        return measure.measureID.rawValue.split(separator: ".").last.map(String.init)
+    })
+    let drawnNumbers = Set(context.commands.compactMap { command -> String? in
+        guard command.kind == .drawText,
+              command.fontName == nil,
+              let text = command.text,
+              Int(text) != nil
+        else {
+            return nil
+        }
+        return text
+    })
+
+    #expect(drawnNumbers == expectedNumbers)
+    #expect(drawnNumbers.count == Set(layout.measures.map(\.systemIndex)).count)
+}
+
 @Test func scorePainterDrawsArticulationsDynamicsAndHairpins() throws {
     let staffID = StaffID(rawValue: "1")
     let measure = Measure(
@@ -785,8 +852,7 @@ import Testing
     #expect(repeatLines.count == 2)
     #expect((thickRepeatLine.lineWidth ?? 0) > (thinRepeatLine.lineWidth ?? 0))
     let repeatLineGap = (repeatLineXs.last ?? 0) - (repeatLineXs.first ?? 0)
-    #expect(repeatLineGap >= 3.5)
-    #expect(repeatLineGap <= 4)
+    #expect(abs(repeatLineGap - 4) < 0.001)
 }
 
 @Test func furEliseA4Measure8RepeatEndDrawsSeparatedThinAndThickLines() throws {
@@ -828,8 +894,7 @@ import Testing
     #expect(repeatLines.count == 2)
     #expect((thickRepeatLine.lineWidth ?? 0) > (thinRepeatLine.lineWidth ?? 0))
     let repeatLineGap = (repeatLineXs.last ?? 0) - (repeatLineXs.first ?? 0)
-    #expect(repeatLineGap >= 3.5)
-    #expect(repeatLineGap <= 4)
+    #expect(abs(repeatLineGap - 4) < 0.001)
     #expect(!layout.elements.contains { $0.id.rawValue == "0.8.barline.right" })
 }
 
@@ -873,7 +938,12 @@ import Testing
             && $0.lineStart == ending.lineStart
             && $0.lineEnd == ending.lineEnd
     })
-    #expect(ending.startHookEnd == nil)
+    #expect(ending.startHookEnd != nil)
+    #expect(context.commands.contains {
+        $0.kind == .strokeLine
+            && $0.lineStart == ending.lineStart
+            && $0.lineEnd == ending.startHookEnd
+    })
     #expect(context.commands.contains {
         $0.kind == .strokeLine
             && $0.lineStart == ending.lineEnd
@@ -925,6 +995,49 @@ import Testing
         .max { ($0.lineWidth ?? 0) < ($1.lineWidth ?? 0) })
     #expect(abs((thickRepeatLine.lineStart?.y ?? 0) - 40) < 0.1)
     #expect(abs((thickRepeatLine.lineEnd?.y ?? 0) - 160) < 0.1)
+}
+
+@Test func timeSignatureDigitInsetMovesBothDigitsTowardStaffCenter() throws {
+    let measureID = MeasureID(partIndex: 0, measureNumber: "1")
+    let baseElement = ElementLayout(
+        id: ScoreElementID(rawValue: "time.base"),
+        kind: .timeSignature,
+        measureID: measureID,
+        timeSignature: TimeSignature(beats: 4, beatType: 4),
+        frame: CGRect(x: 40, y: 40, width: 28, height: 60)
+    )
+    let insetElement = ElementLayout(
+        id: ScoreElementID(rawValue: "time.inset"),
+        kind: .timeSignature,
+        measureID: measureID,
+        timeSignature: TimeSignature(beats: 4, beatType: 4),
+        timeSignatureDigitInset: 3,
+        frame: CGRect(x: 40, y: 40, width: 28, height: 60)
+    )
+    let baseLayout = ScoreLayout(
+        canvasSize: CGSize(width: 120, height: 140),
+        elements: [baseElement],
+        elementByID: [baseElement.id: baseElement]
+    )
+    let insetLayout = ScoreLayout(
+        canvasSize: CGSize(width: 120, height: 140),
+        elements: [insetElement],
+        elementByID: [insetElement.id: insetElement]
+    )
+    var baseContext = RecordingDrawingContext()
+    var insetContext = RecordingDrawingContext()
+
+    ScorePainter(smuflFontName: "Bravura").draw(layout: baseLayout, style: renderingStyle(), into: &baseContext)
+    ScorePainter(smuflFontName: "Bravura").draw(layout: insetLayout, style: renderingStyle(), into: &insetContext)
+
+    let digit = SMuFLGlyph.timeSignatureDigit(4).string
+    let baseYs = baseContext.commands.filter { $0.text == digit }.compactMap { $0.point?.y }.sorted()
+    let insetYs = insetContext.commands.filter { $0.text == digit }.compactMap { $0.point?.y }.sorted()
+
+    #expect(baseYs.count == 2)
+    #expect(insetYs.count == 2)
+    #expect(abs((insetYs[0] - baseYs[0]) - 3) < 0.001)
+    #expect(abs((insetYs[1] - baseYs[1]) + 3) < 0.001)
 }
 
 @Test func styledDoubleBarlineUsesSingleStaffSpacingInGrandStaff() throws {

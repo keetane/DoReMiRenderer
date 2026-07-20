@@ -1,52 +1,118 @@
 <!doctype html>
-<html lang="en">
+<html lang="ja">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>DoReMiRenderer Web Canvas Viewer</title>
+    <title>DoReMi Palette Web</title>
     <style>
       @font-face { font-family: Bravura; src: url("Bravura.otf") format("opentype"); font-display: block; }
-      body { margin: 0; background: #f4f5f7; color: #181a1f; font-family: system-ui, sans-serif; }
-      main { max-width: 1100px; margin: 24px auto; padding: 0 16px; }
-      canvas { display: block; width: 100%; background: #fff; box-shadow: 0 1px 4px #0002; }
-      #status { margin: 16px 0; padding: 12px; border-radius: 6px; background: #fff3cd; color: #5f4600; }
-      #status[hidden] { display: none; }
+      :root { color-scheme: light; --ink:#1d2028; --muted:#69707d; --blue:#1677e8; --panel:#fff; --surface:#f1f3f7; --line:#dfe3ea; }
+      * { box-sizing: border-box; }
+      body { margin:0; min-width:320px; background:var(--surface); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+      button,input { font:inherit; }
+      button { cursor:pointer; }
+      .app-shell { min-height:100vh; display:grid; grid-template-rows:auto 1fr auto; }
+      .toolbar { position:sticky; top:0; z-index:10; display:flex; align-items:center; gap:12px; min-height:66px; padding:10px clamp(16px,3vw,38px); background:color-mix(in srgb,var(--panel) 94%,transparent); border-bottom:1px solid var(--line); backdrop-filter:blur(16px); }
+      .brand { display:flex; align-items:center; gap:9px; margin-right:auto; font-family:Georgia,"Times New Roman",serif; font-size:21px; font-weight:700; white-space:nowrap; }
+      .brand-icon { width:34px; height:34px; border-radius:8px; object-fit:cover; box-shadow:0 1px 3px #17294f40; }
+      .toolbar button,.toolbar label { min-height:36px; border:1px solid #d5dbe5; border-radius:7px; padding:7px 11px; background:#fff; color:#273243; font-weight:600; white-space:nowrap; }
+      .toolbar button:hover,.toolbar label:hover { border-color:#8fb9ec; background:#f6faff; }
+      .toolbar .primary { border-color:#1677e8; background:#1677e8; color:#fff; }
+      .toolbar .active { border-color:#1677e8; background:#eaf4ff; color:#075ebc; }
+      .toolbar select { min-height:36px; border:1px solid #d5dbe5; border-radius:7px; padding:6px 9px; background:#fff; color:#273243; font-weight:600; }
+      .tempo-control,.zoom-control { display:inline-flex; align-items:center; gap:5px; }
+      .tempo-control input,.zoom-control input { width:58px; min-height:24px; padding:2px 3px; border:0; outline:0; background:transparent; color:#273243; font-weight:700; text-align:center; font-variant-numeric:tabular-nums; }
+      .tempo-control input:disabled,.zoom-control input:disabled { opacity:.45; cursor:not-allowed; }
+      .transport { display:flex; flex-wrap:wrap; align-items:center; gap:7px; width:100%; padding-top:8px; border-top:1px solid #edf0f4; }
+      .transport button,.transport label { min-height:32px; border:1px solid #d5dbe5; border-radius:6px; padding:5px 9px; background:#fff; color:#273243; font-size:13px; font-weight:650; }
+      .transport button.primary { border-color:#1677e8; background:#1677e8; color:#fff; }
+      .transport button:disabled,.transport input:disabled { opacity:.45; cursor:not-allowed; }
+      .transport input { width:54px; min-height:32px; border:1px solid #d5dbe5; border-radius:6px; padding:4px 7px; text-align:center; }
+      .transport .measure-status { color:var(--muted); font-size:13px; font-variant-numeric:tabular-nums; }
+      #file-input { display:none; }
+      .workspace { display:grid; grid-template-columns:minmax(0,1fr); gap:18px; max-width:1540px; width:100%; margin:0 auto; padding:20px clamp(14px,3vw,38px) 28px; }
+      .palette { display:none; grid-template-columns:minmax(0,1fr); gap:14px; padding:16px; border:1px solid var(--line); border-radius:8px; background:var(--panel); box-shadow:0 5px 22px #1a31420c; }
+      .palette.is-open { display:grid; }
+      .palette-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+      .palette h2 { margin:0; font-size:16px; }
+      .palette p { margin:4px 0 0; color:var(--muted); font-size:13px; }
+      .palette-controls { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+      .palette-controls button { min-width:47px; min-height:35px; border:1px solid #d9dee6; border-radius:18px; padding:6px 12px; background:#fff; color:#333d4b; font-weight:700; }
+      .palette-controls button.is-active { color:#fff; border-color:transparent; }
+      .palette-controls .c.is-active { background:#e51f28; }.palette-controls .d.is-active { background:#f78b16; }.palette-controls .e.is-active { background:#cfaa00; }.palette-controls .f.is-active { background:#22a746; }.palette-controls .g.is-active { background:#2563e9; }.palette-controls .a.is-active { background:#5a37c8; }.palette-controls .b.is-active { background:#b328af; }
+      .palette-options { display:flex; flex-wrap:wrap; gap:8px; border-top:1px solid #edf0f4; padding-top:12px; }
+      .palette-options button { min-height:34px; border:1px solid #d9dee6; border-radius:17px; padding:6px 11px; background:#fff; color:#3b4351; font-size:13px; font-weight:650; }
+      .palette-options .check-toggle::before { content:"✓"; display:inline-grid; place-items:center; width:15px; height:15px; margin-right:6px; border:1px solid #aeb7c5; border-radius:4px; color:transparent; font-size:11px; line-height:1; vertical-align:-1px; }
+      .palette-options .check-toggle.is-active { border-color:#8dbce9; background:#eef7ff; color:#075ebc; }
+      .palette-options .check-toggle.is-active::before { border-color:#1677e8; background:#1677e8; color:#fff; }
+      .score-card { overflow:hidden; border:1px solid var(--line); border-radius:8px; background:var(--panel); box-shadow:0 6px 25px #1a31420d; }
+      .score-header { display:flex; align-items:center; justify-content:space-between; gap:16px; min-height:45px; padding:9px 14px; border-bottom:1px solid #e7ebf0; }
+      .score-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; font-weight:700; }
+      .score-meta { color:var(--muted); font-size:12px; white-space:nowrap; }
+      .current-note { margin-left:auto; color:#1f4f91; font-size:13px; font-weight:700; white-space:nowrap; }
+      .score-scroll { overflow:auto; max-height:calc(100vh - 238px); background:#e7eaf0; }
+      .canvas-wrap { position:relative; min-width:680px; background:#fff; }
+      canvas { display:block; width:100%; background:#fff; }
+      #status { margin:0; padding:12px 14px; border-radius:0; background:#fff3cd; color:#5f4600; }
+      #status[hidden] { display:none; }
+      .keyboard-dock { position:sticky; bottom:0; z-index:9; padding:10px clamp(14px,3vw,38px) 14px; border-top:1px solid var(--line); background:color-mix(in srgb,var(--panel) 96%,transparent); backdrop-filter:blur(16px); }
+      .keyboard { position:relative; max-width:1480px; height:136px; margin:0 auto; border:1px solid #aeb5bf; border-radius:6px; overflow:hidden; background:#fff; }
+      .white-key { position:absolute; top:0; bottom:0; border:0; border-right:1px solid #aeb5bf; background:#fff; color:#737985; font-size:11px; text-align:left; padding:8px 5px; }
+      .keyboard { --key-color-edge:8px; }
+      .keyboard.color-bottom { --key-color-edge:-8px; }
+      .white-key.is-colored { box-shadow:inset 0 var(--key-color-edge) 0 var(--key-color); }.white-key.is-selected { background:color-mix(in srgb,var(--key-color) 26%,#fff); box-shadow:inset 0 var(--key-color-edge) 0 var(--key-color), inset 0 0 0 2px var(--key-color); }
+      .black-key { position:absolute; z-index:2; top:0; height:78px; border:1px solid #0c0d10; border-radius:0 0 5px 5px; background:#111318; color:transparent; }.black-key.is-colored { box-shadow:inset 0 var(--key-color-edge) 0 var(--key-color); }.black-key.is-selected { box-shadow:inset 0 var(--key-color-edge) 0 var(--key-color), inset 0 0 0 2px #fff,0 0 0 2px var(--key-color); }
+      .white-key.is-next-guide::after,.black-key.is-next-guide::after { content:""; position:absolute; z-index:4; left:50%; width:25px; height:25px; transform:translate(-50%,-50%); border:2px solid color-mix(in srgb,var(--key-color) 78%,#182230); border-radius:50%; background:color-mix(in srgb,var(--key-color) 22%,#fff); box-shadow:0 1px 2px #17294f30; pointer-events:none; }.white-key.is-next-guide::after { top:78%; }.black-key.is-next-guide { z-index:3; }.black-key.is-next-guide::after { top:58%; width:19px; height:19px; background:color-mix(in srgb,var(--key-color) 32%,#fff); }
+      .keyboard-caption { display:flex; justify-content:space-between; max-width:1480px; margin:0 auto 7px; color:var(--muted); font-size:12px; }
+      @media (max-width:780px) { .toolbar { flex-wrap:wrap; gap:7px; }.brand { width:100%; }.toolbar button,.toolbar label { min-height:34px; padding:6px 9px; font-size:13px; }.workspace { padding-top:12px; }.score-scroll { max-height:calc(100vh - 354px); }.keyboard { height:104px; }.black-key { height:60px; }.keyboard-dock { padding-bottom:8px; } }
     </style>
   </head>
   <body>
-    <main>
-      <p id="status" role="status">Loading notation font and score…</p>
-      <canvas aria-label="Rendered music score"></canvas>
-    </main>
-    <script type="module">
-      import { drawScoreCanvas, ensureSMuFLFont } from "./score-canvas.js";
-
-      const canvas = document.querySelector("canvas");
-      const status = document.querySelector("#status");
-      let plan;
-      try {
-        const [response] = await Promise.all([
-          fetch("./score-web.json"),
-          ensureSMuFLFont(),
-        ]);
-        if (!response.ok) throw new Error(`Could not load score-web.json (${response.status}).`);
-        plan = await response.json();
-        drawScoreCanvas(canvas, plan);
-        status.hidden = true;
-
-        let pending = false;
-        addEventListener("resize", () => {
-          if (pending) return;
-          pending = true;
-          requestAnimationFrame(() => {
-            pending = false;
-            drawScoreCanvas(canvas, plan);
-          });
-        });
-      } catch (error) {
-        canvas.hidden = true;
-        status.textContent = `Score viewer could not start: ${error.message}`;
-      }
-    </script>
+    <div class="app-shell">
+      <header class="toolbar" aria-label="DoReMi Palette tools">
+        <div class="brand"><img class="brand-icon" src="./DoReMi_icon.png" alt="">DoReMi Palette <small>Web</small></div>
+        <label for="file-input" class="primary" title="スコアを開く" aria-label="スコアを開く">&#10548;</label>
+        <input id="file-input" type="file" accept="application/json,.json,application/vnd.recordare.musicxml,application/xml,text/xml,.musicxml,.xml,.mxl" aria-label="MusicXML、MXL、またはWeb Render Planを開く">
+        <button id="palette-button" type="button" aria-expanded="false" title="カラーパレット" aria-label="カラーパレット">&#127912;</button>
+        <button id="keyboard-button" type="button" class="active" aria-pressed="true" title="鍵盤を表示" aria-label="鍵盤を表示">&#127929;</button>
+        <button id="original-scale-button" type="button" title="原曲のスケールへ戻す" aria-label="原曲のスケールへ戻す">&#9838;</button>
+        <select id="transpose-select" aria-label="移調"></select>
+        <label class="tempo-control" title="再生テンポ" aria-label="再生テンポ"><span>&#9833;</span><input id="tempo-input" type="number" min="30" max="300" step="1" inputmode="numeric" aria-label="テンポ BPM"><span>BPM</span></label>
+        <button id="zoom-down" type="button" title="譜面を10%縮小" aria-label="譜面を10%縮小">&#9660;</button>
+        <label class="zoom-control" title="譜面の拡大率" aria-label="譜面の拡大率"><span>&#128269;</span><input id="zoom-input" type="number" min="50" max="200" step="10" inputmode="numeric" aria-label="譜面の拡大率"><span>%</span></label>
+        <button id="zoom-up" type="button" title="譜面を10%拡大" aria-label="譜面を10%拡大">&#9650;</button>
+        <div class="transport" aria-label="再生と小節移動">
+          <button id="reset-button" type="button" disabled title="先頭へ戻る" aria-label="先頭へ戻る">&#8634;</button>
+          <button id="previous-button" type="button" disabled title="前の音" aria-label="前の音">&#9665;</button>
+          <button id="next-button" type="button" disabled title="次の音" aria-label="次の音">&#9655;</button>
+          <button id="play-button" type="button" class="primary" disabled title="再生" aria-label="再生">&#9654;</button>
+          <button id="stop-button" type="button" disabled title="停止" aria-label="停止">&#9632;</button>
+          <input id="measure-input" type="number" min="1" inputmode="numeric" aria-label="移動先の小節">
+          <button id="jump-button" type="button" disabled title="小節へ移動" aria-label="小節へ移動">&#8627;</button>
+          <span id="measure-status" class="measure-status">-/ -</span>
+        </div>
+      </header>
+      <main class="workspace">
+        <section id="palette" class="palette" aria-label="カラーパレット">
+          <div class="palette-heading"><div><h2>カラーパレット</h2><p>音符と鍵盤の色は同じピッチクラスに連動します。</p></div><button id="palette-reset" type="button">リセット</button></div>
+          <div id="pitch-controls" class="palette-controls" aria-label="ピッチクラスの色"></div>
+          <div class="palette-options">
+            <button id="note-colors" type="button" class="check-toggle is-active" aria-pressed="true">音符の色</button>
+            <button id="staff-colors" type="button" class="check-toggle" aria-pressed="false">五線の色</button>
+            <button id="keyboard-colors" type="button" class="check-toggle is-active" aria-pressed="true">鍵盤の色</button>
+            <button id="keyboard-color-position" type="button" aria-pressed="false">鍵盤色: 上</button>
+            <button id="next-note-guide" type="button" class="check-toggle is-active" aria-pressed="true">次の音</button>
+            <button id="all-pitches" type="button" class="check-toggle is-active" aria-pressed="true">全音を有効</button>
+          </div>
+        </section>
+        <section class="score-card" aria-label="楽譜">
+          <div class="score-header"><span id="score-name" class="score-name">Loading score…</span><span id="score-meta" class="score-meta"></span><span id="current-note" class="current-note">-</span></div>
+          <p id="status" role="status">Notation font and score are loading…</p>
+          <div id="score-scroll" class="score-scroll"><div id="canvas-wrap" class="canvas-wrap"><canvas aria-label="Rendered music score"></canvas></div></div>
+        </section>
+      </main>
+      <section id="keyboard-dock" class="keyboard-dock" aria-label="ピアノ鍵盤"><div class="keyboard-caption"><span>鍵盤</span><span id="selected-note">音符を選択してください</span></div><div id="keyboard" class="keyboard"></div></section>
+    </div>
+    <script type="module" src="./palette-app.js?v=palette-13"></script>
   </body>
 </html>

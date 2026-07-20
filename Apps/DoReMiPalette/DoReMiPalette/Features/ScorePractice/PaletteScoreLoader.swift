@@ -195,7 +195,9 @@ struct PaletteScoreLoader {
                 measureSpacing: 0,
                 displayMode: .print,
                 showPageMargins: true,
-                displayTransposeSemitones: displayTransposeSemitones
+                displayTransposeSemitones: displayTransposeSemitones,
+                // Keep the app's established PDF reading rhythm independent from Web.
+                printSystemGap: 68
             )
         )
         let printLayoutResult = try renderer.layoutWithDiagnostics(
