@@ -30,12 +30,23 @@ extension ScoreDrawingContext {
 struct ScorePainter: Sendable {
     private let smuflFontName: String?
     private let visibleRect: CGRect?
-    private let smuflSizePolicy = SMuFLGlyphSizePolicy()
+    private let smuflSizePolicy: SMuFLGlyphSizePolicy
+    private let notationScale: CGFloat
     private let repeatTextFontName = "Georgia-Italic"
 
-    init(smuflFontName: String? = SMuFLFont.registeredFontName(), visibleRect: CGRect? = nil) {
+    init(
+        smuflFontName: String? = SMuFLFont.registeredFontName(),
+        visibleRect: CGRect? = nil,
+        notationScale: CGFloat = 1
+    ) {
         self.smuflFontName = smuflFontName
         self.visibleRect = visibleRect
+        self.notationScale = max(0.25, min(1.5, notationScale))
+        self.smuflSizePolicy = SMuFLGlyphSizePolicy(minimumScale: notationScale)
+    }
+
+    private func scaled(_ value: CGFloat) -> CGFloat {
+        value * notationScale
     }
 
     func draw<Context: ScoreDrawingContext>(
@@ -94,7 +105,7 @@ struct ScorePainter: Sendable {
             return
         }
         let staffSpace = layout.staves.first.map { max(1, $0.frame.height / 4) } ?? 10
-        let fontSize: CGFloat = max(7, min(11, staffSpace * 1.15))
+        let fontSize: CGFloat = max(scaled(7), min(scaled(11), staffSpace * 1.15))
         for measure in layout.measures where shouldDrawMeasureNumber(
             measure,
             in: layout,
@@ -213,22 +224,22 @@ struct ScorePainter: Sendable {
             let staffFrames = repeatStaffFrames(for: element, in: layout)
             let lineFrame = repeatLineFrame(for: frame, staffFrames: staffFrames)
             let staffSpace = max(1, staffFrames.first.map { $0.height / 4 } ?? frame.height / 4)
-            let thickLineWidth = max(2, staffSpace * 0.30)
-            let thinLineWidth = max(1, staffSpace * 0.12)
+            let thickLineWidth = max(scaled(2), staffSpace * 0.30)
+            let thinLineWidth = max(scaled(1), staffSpace * 0.12)
             // Keep a fixed four-point separation between the repeat's thick
             // and thin strokes so both remain distinct in the Web reader and
             // its exported print plan.
-            let lineGap: CGFloat = 4
+            let lineGap = scaled(4)
             let thickInset = thickLineWidth / 2
             let thickX = repeatBarline.direction == .forward ? frame.minX + thickInset : frame.maxX - thickInset
             let thinX = repeatBarline.direction == .forward ? thickX + lineGap : thickX - lineGap
             context.strokeLine(from: CGPoint(x: thickX, y: lineFrame.minY), to: CGPoint(x: thickX, y: lineFrame.maxY), color: color, lineWidth: thickLineWidth)
             context.strokeLine(from: CGPoint(x: thinX, y: lineFrame.minY), to: CGPoint(x: thinX, y: lineFrame.maxY), color: color, lineWidth: thinLineWidth)
-            let dotGap = max(staffSpace * 0.7, 5)
+            let dotGap = max(staffSpace * 0.7, scaled(5))
             let dotX = repeatBarline.direction == .forward ? thinX + dotGap : thinX - dotGap
             for staffFrame in staffFrames {
                 let staffSpace = max(1, staffFrame.height / 4)
-                let dotSize = max(3, staffSpace * 0.5)
+                let dotSize = max(scaled(3), staffSpace * 0.5)
                 let glyphSize = smuflSizePolicy.repeatDotSize(for: staffFrame)
                 for dotY in [staffFrame.midY - staffSpace * 0.5, staffFrame.midY + staffSpace * 0.5] {
                     if !drawSMuFLGlyph(
@@ -264,9 +275,9 @@ struct ScorePainter: Sendable {
     ) {
         guard style != .none else { return }
         let staffSpace = max(1, staffFrames.first.map { $0.height / 4 } ?? frame.height / 8)
-        let thinWidth = max(1, staffSpace * 0.12)
-        let heavyWidth = max(3, staffSpace * 0.48)
-        let gap = max(3, staffSpace * 0.55)
+        let thinWidth = max(scaled(1), staffSpace * 0.12)
+        let heavyWidth = max(scaled(3), staffSpace * 0.48)
+        let gap = max(scaled(3), staffSpace * 0.55)
         let primaryX = anchor.primaryX(fallback: frame.midX)
         let pairXs = anchor.pairXs(gap: gap, fallback: frame.midX)
         func stroke(_ x: CGFloat, width: CGFloat) {
@@ -376,7 +387,7 @@ struct ScorePainter: Sendable {
         guard let repeatEnding = element.repeatEnding else {
             return
         }
-        let lineWidth: CGFloat = max(1.2, element.frame.height * 0.045)
+        let lineWidth = max(scaled(1.2), element.frame.height * 0.045)
         context.strokeLine(from: repeatEnding.lineStart, to: repeatEnding.lineEnd, color: color, lineWidth: lineWidth)
         if let startHookEnd = repeatEnding.startHookEnd {
             context.strokeLine(from: repeatEnding.lineStart, to: startHookEnd, color: color, lineWidth: lineWidth)
@@ -399,7 +410,7 @@ struct ScorePainter: Sendable {
         into context: inout Context
     ) {
         let point = CGPoint(x: element.frame.midX, y: element.frame.midY)
-        let size = max(28, element.frame.height * 1.05)
+        let size = max(scaled(28), element.frame.height * 1.05)
         if !drawSMuFLGlyph(.repeatOneBar, at: point, color: color, size: size, into: &context) {
             context.drawText(SMuFLGlyph.repeatOneBar.fallback, at: point, color: color, size: size, fontName: nil)
         }
@@ -447,11 +458,11 @@ struct ScorePainter: Sendable {
     }
 
     private func repeatTextSize(for element: ElementLayout) -> CGFloat {
-        max(9, element.frame.height * 0.72)
+        max(scaled(9), element.frame.height * 0.72)
     }
 
     private func repeatSymbolSize(for element: ElementLayout) -> CGFloat {
-        max(13, element.frame.height * 1.05)
+        max(scaled(13), element.frame.height * 1.05)
     }
 
     private func drawStaffLines<Context: ScoreDrawingContext>(
@@ -528,7 +539,7 @@ struct ScorePainter: Sendable {
                     .frame
             }
             let referenceFrame = staffFrame ?? noteLayout.noteheadFrame
-            let width = max(3, noteLayout.noteheadFrame.width * 0.16)
+            let width = max(scaled(3), noteLayout.noteheadFrame.width * 0.16)
             let x = noteLayout.noteheadFrame.minX - noteLayout.noteheadFrame.width * 0.05
             let y = referenceFrame.minY - width
             let height = referenceFrame.height + width * 2
@@ -671,8 +682,8 @@ struct ScorePainter: Sendable {
             let color = resolved.strokeColor ?? resolved.fillColor ?? style.defaultInkColor
             let left = CGPoint(x: tuplet.frame.minX, y: tuplet.frame.midY)
             let right = CGPoint(x: tuplet.frame.maxX, y: tuplet.frame.midY)
-            let tick: CGFloat = max(4, tuplet.frame.height * 0.35)
-            let numberSize = max(10, tuplet.frame.height * 0.75)
+            let tick = max(scaled(4), tuplet.frame.height * 0.35)
+            let numberSize = max(scaled(10), tuplet.frame.height * 0.75)
             // Leave a text-sized opening in the bracket. The previous fixed gap
             // allowed the bracket to pass through the numeral at A4 staff sizes.
             let numberClearance = max(numberSize * 0.45, tuplet.frame.height * 0.65)
@@ -705,7 +716,7 @@ struct ScorePainter: Sendable {
         switch noteValue {
         case .whole, .half:
             context.fillEllipse(in: element.frame, color: style.backgroundColor)
-            context.strokeEllipse(in: element.frame, color: fillColor, lineWidth: max(0.9, element.frame.width * 0.09))
+            context.strokeEllipse(in: element.frame, color: fillColor, lineWidth: max(scaled(0.9), element.frame.width * 0.09))
         case .quarter, .eighth, .sixteenth, .thirtySecond, .other:
             context.fillEllipse(in: element.frame, color: fillColor)
             if let strokeColor = resolved.strokeColor {
@@ -729,7 +740,7 @@ struct ScorePainter: Sendable {
         let start = CGPoint(x: element.frame.midX, y: startY)
         let endY = drawsDown ? element.frame.maxY : element.frame.minY
         let end = CGPoint(x: element.frame.midX, y: endY)
-        context.strokeLine(from: start, to: end, color: color, lineWidth: max(0.9, noteLayout.noteheadFrame.width * 0.085))
+        context.strokeLine(from: start, to: end, color: color, lineWidth: max(scaled(0.9), noteLayout.noteheadFrame.width * 0.085))
     }
 
     private func drawBeam<Context: ScoreDrawingContext>(
@@ -745,7 +756,7 @@ struct ScorePainter: Sendable {
                 context.strokeLine(from: segment.start, to: segment.end, color: color, lineWidth: beam.thickness)
             }
         } else {
-            let thickness = min(6, max(3, element.frame.height * 0.18))
+            let thickness = min(scaled(6), max(scaled(3), element.frame.height * 0.18))
             let frame = CGRect(
                 x: element.frame.minX,
                 y: element.frame.minY,
@@ -766,7 +777,7 @@ struct ScorePainter: Sendable {
             return
         }
         let color = resolved.strokeColor ?? resolved.fillColor ?? style.defaultInkColor
-        let lineWidth = max(0.9, noteLayout.noteheadFrame.width * 0.085)
+        let lineWidth = max(scaled(0.9), noteLayout.noteheadFrame.width * 0.085)
         let drawsDown = element.frame.midY > noteLayout.noteheadCenter.y
         if let glyph = flagGlyph(for: noteLayout.noteValueKind),
            drawSMuFLGlyph(
@@ -830,19 +841,19 @@ struct ScorePainter: Sendable {
 
         switch noteValue {
         case .whole:
-            let restRect = CGRect(x: frame.minX, y: frame.midY, width: frame.width, height: max(2, frame.height * 0.22))
+            let restRect = CGRect(x: frame.minX, y: frame.midY, width: frame.width, height: max(scaled(2), frame.height * 0.22))
             context.fill(restRect, color: color)
         case .half:
-            let restRect = CGRect(x: frame.minX, y: frame.midY - frame.height * 0.22, width: frame.width, height: max(2, frame.height * 0.22))
+            let restRect = CGRect(x: frame.minX, y: frame.midY - frame.height * 0.22, width: frame.width, height: max(scaled(2), frame.height * 0.22))
             context.fill(restRect, color: color)
         case .quarter:
-            context.strokeLine(from: CGPoint(x: frame.midX, y: frame.minY), to: CGPoint(x: frame.minX, y: frame.midY), color: color, lineWidth: max(1, frame.width * 0.1))
-            context.strokeLine(from: CGPoint(x: frame.minX, y: frame.midY), to: CGPoint(x: frame.maxX, y: frame.midY), color: color, lineWidth: max(1, frame.width * 0.1))
-            context.strokeLine(from: CGPoint(x: frame.maxX, y: frame.midY), to: CGPoint(x: frame.midX, y: frame.maxY), color: color, lineWidth: max(1, frame.width * 0.1))
+            context.strokeLine(from: CGPoint(x: frame.midX, y: frame.minY), to: CGPoint(x: frame.minX, y: frame.midY), color: color, lineWidth: max(scaled(1), frame.width * 0.1))
+            context.strokeLine(from: CGPoint(x: frame.minX, y: frame.midY), to: CGPoint(x: frame.maxX, y: frame.midY), color: color, lineWidth: max(scaled(1), frame.width * 0.1))
+            context.strokeLine(from: CGPoint(x: frame.maxX, y: frame.midY), to: CGPoint(x: frame.midX, y: frame.maxY), color: color, lineWidth: max(scaled(1), frame.width * 0.1))
         case .eighth, .sixteenth, .thirtySecond, .other:
             context.fillEllipse(in: CGRect(x: frame.minX, y: frame.midY, width: frame.width * 0.35, height: frame.height * 0.35), color: color)
-            context.strokeLine(from: CGPoint(x: frame.midX, y: frame.minY), to: CGPoint(x: frame.midX, y: frame.maxY), color: color, lineWidth: max(1, frame.width * 0.08))
-            context.strokeLine(from: CGPoint(x: frame.midX, y: frame.minY), to: CGPoint(x: frame.maxX, y: frame.minY + frame.height * 0.35), color: color, lineWidth: max(1, frame.width * 0.08))
+            context.strokeLine(from: CGPoint(x: frame.midX, y: frame.minY), to: CGPoint(x: frame.midX, y: frame.maxY), color: color, lineWidth: max(scaled(1), frame.width * 0.08))
+            context.strokeLine(from: CGPoint(x: frame.midX, y: frame.minY), to: CGPoint(x: frame.maxX, y: frame.minY + frame.height * 0.35), color: color, lineWidth: max(scaled(1), frame.width * 0.08))
         }
     }
 
@@ -924,7 +935,7 @@ struct ScorePainter: Sendable {
                 annotation.text,
                 at: annotation.origin,
                 color: resolved.fillColor ?? resolved.strokeColor ?? style.glyphStyle.color,
-                size: element.kind == .fingering ? max(8, annotation.frame.height * 0.8) : max(9, annotation.frame.height * 0.75)
+                size: element.kind == .fingering ? max(scaled(8), annotation.frame.height * 0.8) : max(scaled(9), annotation.frame.height * 0.75)
             )
         }
     }
@@ -951,7 +962,7 @@ struct ScorePainter: Sendable {
                 drawArticulation(articulation, color: color, into: &context)
             case .dynamic:
                 guard let dynamic = element.dynamic else { continue }
-                let size = max(9, dynamic.frame.height * 0.75)
+                let size = max(scaled(9), dynamic.frame.height * 0.75)
                 context.drawText(
                     dynamic.mark.rawValue,
                     at: dynamic.origin,
@@ -961,15 +972,15 @@ struct ScorePainter: Sendable {
                 )
             case .hairpin:
                 guard let hairpin = element.hairpin else { continue }
-                context.strokeLine(from: hairpin.start, to: hairpin.upperEnd, color: color, lineWidth: max(0.9, hairpin.frame.height * 0.12))
-                context.strokeLine(from: hairpin.start, to: hairpin.lowerEnd, color: color, lineWidth: max(0.9, hairpin.frame.height * 0.12))
+                context.strokeLine(from: hairpin.start, to: hairpin.upperEnd, color: color, lineWidth: max(scaled(0.9), hairpin.frame.height * 0.12))
+                context.strokeLine(from: hairpin.start, to: hairpin.lowerEnd, color: color, lineWidth: max(scaled(0.9), hairpin.frame.height * 0.12))
             case .pedal:
                 guard let pedal = element.pedal else { continue }
                 context.drawText(
                     pedal.label,
                     at: pedal.origin,
                     color: color,
-                    size: max(9, pedal.frame.height * 0.92),
+                    size: max(scaled(9), pedal.frame.height * 0.92),
                     fontName: "Georgia-Italic"
                 )
             default:
@@ -986,7 +997,7 @@ struct ScorePainter: Sendable {
         let size = min(articulation.frame.width, articulation.frame.height)
         switch articulation.kind {
         case .staccato:
-            let dotSize = max(2, size * 0.38)
+            let dotSize = max(scaled(2), size * 0.38)
             context.fillEllipse(
                 in: CGRect(
                     x: articulation.point.x - dotSize / 2,
@@ -997,20 +1008,20 @@ struct ScorePainter: Sendable {
                 color: color
             )
         case .tenuto:
-            let halfWidth = max(3, size * 0.45)
+            let halfWidth = max(scaled(3), size * 0.45)
             context.strokeLine(
                 from: CGPoint(x: articulation.point.x - halfWidth, y: articulation.point.y),
                 to: CGPoint(x: articulation.point.x + halfWidth, y: articulation.point.y),
                 color: color,
-                lineWidth: max(0.9, size * 0.13)
+                lineWidth: max(scaled(0.9), size * 0.13)
             )
         case .accent:
-            context.drawText(">", at: articulation.point, color: color, size: max(9, size), fontName: "Georgia-Italic")
+            context.drawText(">", at: articulation.point, color: color, size: max(scaled(9), size), fontName: "Georgia-Italic")
         case .marcato:
-            context.drawText("^", at: articulation.point, color: color, size: max(9, size), fontName: "Georgia-Italic")
+            context.drawText("^", at: articulation.point, color: color, size: max(scaled(9), size), fontName: "Georgia-Italic")
         case .fermata:
             let glyph = articulation.placement == .below ? "\u{1D111}" : "\u{1D110}"
-            context.drawText(glyph, at: articulation.point, color: color, size: max(10, size * 1.05), fontName: smuflFontName)
+            context.drawText(glyph, at: articulation.point, color: color, size: max(scaled(10), size * 1.05), fontName: smuflFontName)
         }
     }
 

@@ -193,6 +193,7 @@ enum SMuFLFont {
 }
 
 struct SMuFLGlyphSizePolicy: Sendable {
+    let minimumScale: CGFloat
     // Clefs and time signatures must follow the compact staff scale used by
     // print layout. A fixed 20pt floor made these prefix glyphs dominate a
     // 6pt print staff even though their layout frames had been reduced.
@@ -206,12 +207,20 @@ struct SMuFLGlyphSizePolicy: Sendable {
     let flagScale: CGFloat = 1.00
     let repeatDotScale: CGFloat = 0.70
 
+    init(minimumScale: CGFloat = 1) {
+        self.minimumScale = max(0.25, min(1.5, minimumScale))
+    }
+
+    private func scaledMinimum(_ value: CGFloat) -> CGFloat {
+        value * minimumScale
+    }
+
     func clefSize(for frame: CGRect) -> CGFloat {
-        max(12, frame.height * clefScale)
+        max(scaledMinimum(12), frame.height * clefScale)
     }
 
     func timeSignatureSize(for frame: CGRect) -> CGFloat {
-        max(12, frame.height * timeSignatureScale)
+        max(scaledMinimum(12), frame.height * timeSignatureScale)
     }
 
     func noteheadSize(for frame: CGRect, noteValue: NoteValueKind) -> CGFloat {
@@ -222,34 +231,34 @@ struct SMuFLGlyphSizePolicy: Sendable {
         case .quarter, .eighth, .sixteenth, .thirtySecond, .other:
             scale = blackNoteheadScale
         }
-        return max(20, frame.height * scale)
+        return max(scaledMinimum(20), frame.height * scale)
     }
 
     func accidentalSize(for frame: CGRect) -> CGFloat {
-        max(12, frame.height * accidentalScale)
+        max(scaledMinimum(12), frame.height * accidentalScale)
     }
 
     func keySignatureAccidentalSize(for frame: CGRect) -> CGFloat {
-        max(12, frame.height * keySignatureAccidentalScale)
+        max(scaledMinimum(12), frame.height * keySignatureAccidentalScale)
     }
 
     func restSize(for frame: CGRect, noteValue: NoteValueKind) -> CGFloat {
         let baselineMinimum: CGFloat = switch noteValue {
         case .whole, .half:
-            34
+            scaledMinimum(34)
         case .quarter, .eighth, .sixteenth, .thirtySecond, .other:
-            38
+            scaledMinimum(38)
         }
         let scaledMinimum = min(baselineMinimum, frame.height * 2.46)
         return max(scaledMinimum, frame.height * restScale)
     }
 
     func flagSize(for frame: CGRect) -> CGFloat {
-        max(14, frame.height * flagScale)
+        max(scaledMinimum(14), frame.height * flagScale)
     }
 
     func repeatDotSize(for frame: CGRect) -> CGFloat {
-        max(4, frame.height * repeatDotScale)
+        max(scaledMinimum(4), frame.height * repeatDotScale)
     }
 }
 
