@@ -13,7 +13,7 @@ public struct ScoreGraphicsRenderer: Sendable {
         in context: CGContext
     ) {
         var drawingContext = CoreGraphicsScoreDrawingContext(context)
-        ScorePainter().draw(
+        ScorePainter(notationScale: layout.notationScale).draw(
             layout: layout,
             score: score,
             style: style,

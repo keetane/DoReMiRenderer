@@ -111,6 +111,9 @@ public struct LayoutOptions: Sendable {
     /// Insets the numerator and denominator toward the staff centre without
     /// changing their glyph size. The default preserves iOS and PDF output.
     public var timeSignatureDigitInset: CGFloat
+    /// Scales fixed notation floors used by layout and rendering. The default
+    /// preserves native and PDF output; compact coordinate spaces can opt in.
+    public var notationScale: CGFloat
 
     public init(
         pageWidth: CGFloat = 800,
@@ -142,8 +145,10 @@ public struct LayoutOptions: Sendable {
         stemAttachmentInset: CGFloat = 0,
         timeSignatureScale: CGFloat = 1,
         timeSignatureFontSize: CGFloat? = nil,
-        timeSignatureDigitInset: CGFloat = 0
+        timeSignatureDigitInset: CGFloat = 0,
+        notationScale: CGFloat = 1
     ) {
+        let resolvedNotationScale = max(0.25, min(1.5, notationScale))
         self.pageWidth = pageWidth
         self.pageHeight = pageHeight
         self.staffSpace = staffSpace
@@ -171,8 +176,11 @@ public struct LayoutOptions: Sendable {
         self.noteheadSizeAdjustment = max(0, noteheadSizeAdjustment)
         self.horizontalMarginAdjustment = max(0, horizontalMarginAdjustment)
         self.stemAttachmentInset = max(0, stemAttachmentInset)
+        self.notationScale = resolvedNotationScale
         self.timeSignatureScale = max(0.5, min(2, timeSignatureScale))
-        self.timeSignatureFontSize = timeSignatureFontSize.map { max(8, min(72, $0)) }
+        self.timeSignatureFontSize = timeSignatureFontSize.map {
+            max(8 * resolvedNotationScale, min(72 * resolvedNotationScale, $0))
+        }
         self.timeSignatureDigitInset = max(0, timeSignatureDigitInset)
     }
 
@@ -611,6 +619,7 @@ struct ScoreLayoutEngine: Sendable {
                     noteFrame: noteFrame,
                     measureID: item.measure.id,
                     clef: clef,
+                    notationScale: metrics.notationScale,
                     elements: &elements
                 )
 
@@ -956,6 +965,7 @@ struct ScoreLayoutEngine: Sendable {
 
         let layout = ScoreLayout(
             canvasSize: CGSize(width: canvasWidth, height: contentHeight),
+            notationScale: options.notationScale,
             title: titleLayout,
             pages: [],
             systems: systems,
@@ -1052,6 +1062,7 @@ struct ScoreLayoutEngine: Sendable {
         )
         let relocatedDraftForPages = ScoreLayout(
             canvasSize: layout.canvasSize,
+            notationScale: layout.notationScale,
             title: layout.title,
             pages: [],
             systems: relocatedSystems,
@@ -1082,6 +1093,7 @@ struct ScoreLayoutEngine: Sendable {
         }
         let relocatedDraft = ScoreLayout(
             canvasSize: layout.canvasSize,
+            notationScale: layout.notationScale,
             title: layout.title,
             pages: assignmentPages,
             systems: relocatedSystems,
@@ -1115,6 +1127,7 @@ struct ScoreLayoutEngine: Sendable {
 
         return ScoreLayout(
             canvasSize: CGSize(width: layout.canvasSize.width, height: max(pageCanvasHeight, contentMaxY)),
+            notationScale: layout.notationScale,
             title: layout.title,
             pages: pages,
             systems: relocatedSystems,
@@ -1142,7 +1155,7 @@ struct ScoreLayoutEngine: Sendable {
             .trimmingCharacters(in: .whitespacesAndNewlines)
         guard let title, !title.isEmpty else { return nil }
 
-        let fontSize = max(14, options.staffSpace * 1.9)
+        let fontSize = max(14 * options.notationScale, options.staffSpace * 1.9)
             * ScoreTitleLayoutConstants.fontScale
             * options.titleScale
         let frame = CGRect(
@@ -1379,12 +1392,13 @@ struct ScoreLayoutEngine: Sendable {
                     ?? chordStemDirections[key]
                     ?? explicitStemDirection(for: lower)
                     ?? stemDirection(for: lowerPosition)
-                let stemWidth = max(1.2, metrics.noteheadSize.width * 0.13)
+                let stemWidth = max(1.2 * metrics.notationScale, metrics.noteheadSize.width * 0.13)
                 let stemOffset = stemHorizontalOffset(
                     direction: direction,
                     noteheadWidth: metrics.noteheadSize.width,
                     stemWidth: stemWidth,
-                    attachmentInset: metrics.stemAttachmentInset
+                    attachmentInset: metrics.stemAttachmentInset,
+                    notationScale: metrics.notationScale
                 )
                 offsets[lower.id] = stemOffset * 2
                 // Treat a pair as one collision unit so dense three-note chords
@@ -1963,13 +1977,13 @@ struct ScoreLayoutEngine: Sendable {
     private func articulationSize(kind: ScoreArticulationKind, metrics: LayoutMetrics) -> CGFloat {
         switch kind {
         case .fermata:
-            max(10, metrics.staffSpace * 1.65)
+            max(10 * metrics.notationScale, metrics.staffSpace * 1.65)
         case .accent, .marcato:
-            max(9, metrics.staffSpace * 1.35)
+            max(9 * metrics.notationScale, metrics.staffSpace * 1.35)
         case .tenuto:
-            max(7, metrics.staffSpace * 1.15)
+            max(7 * metrics.notationScale, metrics.staffSpace * 1.15)
         case .staccato:
-            max(5, metrics.staffSpace * 0.82)
+            max(5 * metrics.notationScale, metrics.staffSpace * 0.82)
         }
     }
 
@@ -2016,7 +2030,7 @@ struct ScoreLayoutEngine: Sendable {
         metrics: LayoutMetrics,
         existingElements: [ElementLayout]
     ) -> ArticulationLayout {
-        let clearance = max(3, metrics.staffSpace * 0.35)
+        let clearance = max(3 * metrics.notationScale, metrics.staffSpace * 0.35)
         let searchFrame = layout.frame.insetBy(dx: -metrics.staffSpace * 0.8, dy: -metrics.staffSpace * 3.0)
         let collisionFrames = existingElements.compactMap { element -> CGRect? in
             guard isArticulationCollisionCandidate(element.kind) else {
@@ -2031,7 +2045,7 @@ struct ScoreLayoutEngine: Sendable {
         }
 
         let side: CGFloat = layout.placement == .below ? 1 : -1
-        let laneStep = max(6, metrics.staffSpace * 0.75)
+        let laneStep = max(6 * metrics.notationScale, metrics.staffSpace * 0.75)
         var bestLayout = layout
         var bestScore = originalScore
         for multiplier in [1, 1.5, 2, 2.5, 3, 3.5, 4] as [CGFloat] {
@@ -2086,7 +2100,7 @@ struct ScoreLayoutEngine: Sendable {
             let y = directionY(direction: direction, staffID: staffID, staffIndexByID: staffIndexByID, systemTop: systemTop, metrics: metrics)
             switch direction.kind {
             case .dynamic(let mark):
-                let fontSize = max(9, metrics.staffSpace * 1.65)
+                let fontSize = max(9 * metrics.notationScale, metrics.staffSpace * 1.65)
                 let text = mark.rawValue
                 let width = max(metrics.staffSpace * 1.8, CGFloat(text.count) * fontSize * 0.62)
                 let height = fontSize * 1.2
@@ -2112,7 +2126,7 @@ struct ScoreLayoutEngine: Sendable {
                     dynamic: layout
                 ))
             case .pedal(let pedalKind):
-                let fontSize = max(9, metrics.staffSpace * 1.45)
+                let fontSize = max(9 * metrics.notationScale, metrics.staffSpace * 1.45)
                 let label = pedalLabel(for: pedalKind)
                 let width = max(metrics.staffSpace * 1.6, CGFloat(label.count) * fontSize * 0.54)
                 let height = fontSize * 1.15
@@ -2201,7 +2215,7 @@ struct ScoreLayoutEngine: Sendable {
             else {
                 return nil
             }
-            let clearance = max(4, metrics.staffSpace * 0.5)
+            let clearance = max(4 * metrics.notationScale, metrics.staffSpace * 0.5)
             return element.frame.insetBy(dx: -clearance, dy: -clearance)
         }
         guard dynamicFrame(frame, collidesWith: collisionFrames) else {
@@ -2209,7 +2223,7 @@ struct ScoreLayoutEngine: Sendable {
         }
 
         let minimumX = measureX - metrics.staffSpace
-        let maximumShift = max(0, min(max(32, metrics.staffSpace * 2), frame.minX - minimumX))
+        let maximumShift = max(0, min(max(32 * metrics.notationScale, metrics.staffSpace * 2), frame.minX - minimumX))
         guard maximumShift > 0 else {
             return frame
         }
@@ -2229,7 +2243,7 @@ struct ScoreLayoutEngine: Sendable {
                 return shifted
             }
         }
-        let verticalStep = max(8, metrics.staffSpace)
+        let verticalStep = max(8 * metrics.notationScale, metrics.staffSpace)
         let horizontalCandidates: [CGFloat] = [0] + candidateShifts.map { -$0 }
         let verticalCandidates: [CGFloat] = [
             -verticalStep,
@@ -2385,7 +2399,7 @@ struct ScoreLayoutEngine: Sendable {
             return layout
         }
 
-        let laneStep = max(8, metrics.staffSpace * 0.8)
+        let laneStep = max(8 * metrics.notationScale, metrics.staffSpace * 0.8)
         let preferredOffsetDirection = preferredHairpinCollisionAvoidanceDirection(
             for: layout.frame,
             collisionFrames: collisionFrames
@@ -2419,7 +2433,8 @@ struct ScoreLayoutEngine: Sendable {
         var bestCollisionScore = adjustedHairpinCollisionScore(
             originalCollisionScore,
             offset: 0,
-            preferredOffsetDirection: preferredOffsetDirection
+            preferredOffsetDirection: preferredOffsetDirection,
+            notationScale: metrics.notationScale
         )
         for offset in candidateOffsets {
             let shifted = layout.offsetBy(dx: 0, dy: offset)
@@ -2430,7 +2445,8 @@ struct ScoreLayoutEngine: Sendable {
             let adjustedScore = adjustedHairpinCollisionScore(
                 collisionScore,
                 offset: offset,
-                preferredOffsetDirection: preferredOffsetDirection
+                preferredOffsetDirection: preferredOffsetDirection,
+                notationScale: metrics.notationScale
             )
             if adjustedScore < bestCollisionScore {
                 bestCollisionScore = adjustedScore
@@ -2495,19 +2511,20 @@ struct ScoreLayoutEngine: Sendable {
     private func adjustedHairpinCollisionScore(
         _ score: CGFloat,
         offset: CGFloat,
-        preferredOffsetDirection: CGFloat
+        preferredOffsetDirection: CGFloat,
+        notationScale: CGFloat
     ) -> CGFloat {
         guard preferredOffsetDirection != 0, offset != 0 else {
             return score
         }
         let movesAwayFromCollision = offset.sign == preferredOffsetDirection.sign
-        let minimumEscape: CGFloat = 12
+        let minimumEscape = 12 * notationScale
         let insufficientEscapePenalty: CGFloat = abs(offset) < minimumEscape ? 1_000 : 0
         return movesAwayFromCollision ? score + insufficientEscapePenalty : score + 10_000
     }
 
     private func hairpinCollisionClearance(metrics: LayoutMetrics) -> CGFloat {
-        max(6, metrics.staffSpace * 0.75)
+        max(6 * metrics.notationScale, metrics.staffSpace * 0.75)
     }
 
     private func isHairpinCollisionCandidate(_ kind: ScoreElementKind) -> Bool {
@@ -2750,7 +2767,7 @@ struct ScoreLayoutEngine: Sendable {
         noteheadCenter center: CGPoint,
         metrics: LayoutMetrics
     ) -> CGRect {
-        let width = max(1.2, noteFrame.width * 0.13)
+        let width = max(1.2 * metrics.notationScale, noteFrame.width * 0.13)
         let length = noteFrame.height * 2.2 + width * 0.25
         // SMuFL noteheads have a slightly narrower visual ink box than their
         // layout frame. Overlap the stem into that box rather than centering it
@@ -2760,7 +2777,8 @@ struct ScoreLayoutEngine: Sendable {
             direction: direction,
             noteheadWidth: noteFrame.width,
             stemWidth: width,
-            attachmentInset: metrics.stemAttachmentInset
+            attachmentInset: metrics.stemAttachmentInset,
+            notationScale: metrics.notationScale
         )
         switch direction {
         case .up:
@@ -2784,9 +2802,10 @@ struct ScoreLayoutEngine: Sendable {
         direction: StemDirection,
         noteheadWidth: CGFloat,
         stemWidth: CGFloat,
-        attachmentInset: CGFloat
+        attachmentInset: CGFloat,
+        notationScale: CGFloat
     ) -> CGFloat {
-        let visualInset = max(0.65, noteheadWidth * 0.075) + attachmentInset
+        let visualInset = max(0.65 * notationScale, noteheadWidth * 0.075) + attachmentInset
         return switch direction {
         case .up:
             noteheadWidth / 2 - stemWidth / 2 - visualInset
@@ -2867,13 +2886,14 @@ struct ScoreLayoutEngine: Sendable {
         noteFrame: CGRect,
         measureID: MeasureID,
         clef: Clef,
+        notationScale: CGFloat,
         elements: inout [ElementLayout]
     ) {
         guard note.dotCount > 0 else {
             return
         }
 
-        let dotSize = max(2, noteFrame.height * 0.28)
+        let dotSize = max(2 * notationScale, noteFrame.height * 0.28)
         let firstDotOffset = note.pitch == nil ? -noteFrame.width * 0.06 : noteFrame.width * 0.12
         for index in 0..<note.dotCount {
             let dotFrame = CGRect(
@@ -3055,7 +3075,7 @@ struct ScoreLayoutEngine: Sendable {
             )
         }
 
-        let verticalClipPadding = max(12, metrics.staffSpace * 3)
+        let verticalClipPadding = max(12 * metrics.notationScale, metrics.staffSpace * 3)
         contentFrame = contentFrame.insetBy(dx: 0, dy: -verticalClipPadding)
         let minY = max(pageFrame.minY, contentFrame.minY)
         let maxY = min(pageFrame.maxY, contentFrame.maxY)
@@ -3214,7 +3234,7 @@ struct ScoreLayoutEngine: Sendable {
 
         let allFrames = printDrawableFramesBySystem(layout: layout, measureSystemByID: measureSystemByID)
         return rowFrames.map { rowFrame in
-            var frame = rowFrame.insetBy(dx: 0, dy: -max(40, metrics.staffSpace * 8))
+            var frame = rowFrame.insetBy(dx: 0, dy: -max(40 * metrics.notationScale, metrics.staffSpace * 8))
             var systemIndices: Set<Int> = []
             for staffLine in sortedStaffLines where staffLine.frame.midY >= frame.minY && staffLine.frame.midY <= frame.maxY {
                 if let systemIndex = measureSystemByID[staffLine.measureID] {
@@ -3297,6 +3317,8 @@ struct ScoreLayoutEngine: Sendable {
 
 public struct ScoreLayout: Sendable {
     public let canvasSize: CGSize
+    /// Rendering scale for fixed notation floors in this coordinate system.
+    public let notationScale: CGFloat
     public let title: ScoreTitleLayout?
     public let pages: [ScoreLayoutPage]
     public let systems: [SystemLayout]
@@ -3311,6 +3333,7 @@ public struct ScoreLayout: Sendable {
 
     init(
         canvasSize: CGSize = .zero,
+        notationScale: CGFloat = 1,
         title: ScoreTitleLayout? = nil,
         pages: [ScoreLayoutPage] = [],
         systems: [SystemLayout] = [],
@@ -3324,6 +3347,7 @@ public struct ScoreLayout: Sendable {
         elementByID: [ScoreElementID: ElementLayout] = [:]
     ) {
         self.canvasSize = canvasSize
+        self.notationScale = max(0.25, min(1.5, notationScale))
         self.title = title
         self.pages = pages
         self.systems = systems
@@ -3385,6 +3409,7 @@ public struct ScoreLayout: Sendable {
 
         return ScoreLayout(
             canvasSize: canvasSize,
+            notationScale: notationScale,
             title: page.index == 0 ? title : nil,
             pages: [page],
             systems: pageSystems,
@@ -3646,7 +3671,9 @@ public struct ElementLayout: Sendable {
         self.clef = clef
         self.keySignature = keySignature
         self.timeSignature = timeSignature
-        self.timeSignatureFontSize = timeSignatureFontSize.map { max(8, $0) }
+        // The profile has already validated this value. Keep compact Web
+        // coordinate systems from being raised back to an unscaled 8pt floor.
+        self.timeSignatureFontSize = timeSignatureFontSize.map { max(2, $0) }
         self.timeSignatureDigitInset = max(0, timeSignatureDigitInset)
         self.pitchClassHint = pitchClassHint
         self.frame = frame
@@ -4229,6 +4256,7 @@ private struct LayoutMetrics {
     let staffLineHitHalfWidth: CGFloat
     let ledgerLineWidth: CGFloat
     let staffSpace: CGFloat
+    let notationScale: CGFloat
     let usesExpandedExpressionLanes: Bool
     let usesDurationSensitiveShortNoteSpacing: Bool
     let stemAttachmentInset: CGFloat
@@ -4248,10 +4276,10 @@ private struct LayoutMetrics {
             topMargin = verticalMargin
             bottomMargin = verticalMargin
         } else {
-            baseLeftMargin = options.showPageMargins ? 48 : 24
-            baseRightMargin = options.showPageMargins ? 48 : 24
-            topMargin = options.showPageMargins ? 48 : 32
-            bottomMargin = options.showPageMargins ? 48 : 32
+            baseLeftMargin = (options.showPageMargins ? 48 : 24) * options.notationScale
+            baseRightMargin = (options.showPageMargins ? 48 : 24) * options.notationScale
+            topMargin = (options.showPageMargins ? 48 : 32) * options.notationScale
+            bottomMargin = (options.showPageMargins ? 48 : 32) * options.notationScale
         }
         leftMargin = baseLeftMargin + options.horizontalMarginAdjustment
         rightMargin = baseRightMargin + options.horizontalMarginAdjustment
@@ -4266,27 +4294,28 @@ private struct LayoutMetrics {
         let interStaffWhitespace = options.interStaffWhitespace ?? defaultInterStaffWhitespace
         staffGap = staffHeight + interStaffWhitespace
         noteheadSize = CGSize(
-            width: max(4, options.staffSpace * 1.45 - 1 + options.noteheadSizeAdjustment),
-            height: max(4, options.staffSpace * 1.05 - 1 + options.noteheadSizeAdjustment)
+            width: max(4 * options.notationScale, options.staffSpace * 1.45 - options.notationScale + options.noteheadSizeAdjustment),
+            height: max(4 * options.notationScale, options.staffSpace * 1.05 - options.notationScale + options.noteheadSizeAdjustment)
         )
         if options.displayMode == .print,
            (options.showPageMargins || options.usesCompactMeasureSpacing) {
             noteInset = options.staffSpace * 2
             rhythmicSpacingUnitWidth = options.staffSpace * 1.5
-            minimumMeasureWidth = max(options.staffSpace * 7, 84)
-            absoluteMinimumMeasureWidth = max(options.staffSpace * 7, 84)
-            normalMeasureMinimumWidth = max(options.staffSpace * 7.5, 90)
+            minimumMeasureWidth = max(options.staffSpace * 7, 84 * options.notationScale)
+            absoluteMinimumMeasureWidth = max(options.staffSpace * 7, 84 * options.notationScale)
+            normalMeasureMinimumWidth = max(options.staffSpace * 7.5, 90 * options.notationScale)
         } else {
             noteInset = options.staffSpace * 3
             rhythmicSpacingUnitWidth = options.staffSpace * 4.5
             minimumMeasureWidth = options.staffSpace * 12
-            absoluteMinimumMeasureWidth = max(options.staffSpace * 18, 180)
-            normalMeasureMinimumWidth = max(options.staffSpace * 22, 220)
+            absoluteMinimumMeasureWidth = max(options.staffSpace * 18, 180 * options.notationScale)
+            normalMeasureMinimumWidth = max(options.staffSpace * 22, 220 * options.notationScale)
         }
         pickupMeasureMinRatio = 0.75
-        staffLineHitHalfWidth = max(1, options.staffSpace * 0.08)
+        staffLineHitHalfWidth = max(options.notationScale, options.staffSpace * 0.08)
         ledgerLineWidth = noteheadSize.width + options.staffSpace * 0.45
         staffSpace = options.staffSpace
+        notationScale = options.notationScale
         usesExpandedExpressionLanes = options.usesExpandedExpressionLanes
         usesDurationSensitiveShortNoteSpacing = options.usesDurationSensitiveShortNoteSpacing
         stemAttachmentInset = options.stemAttachmentInset
@@ -4909,8 +4938,8 @@ private func prefixNoteStartOffset(
     )
     let hasVisibleKeySignature = (displayedKeySignature?.fifths ?? 0) != 0
     let desiredGap = hasVisibleKeySignature
-        ? max(3, metrics.notationSpace * 0.45)
-        : max(8, metrics.notationSpace * 0.70)
+        ? max(3 * metrics.notationScale, metrics.notationSpace * 0.45)
+        : max(8 * metrics.notationScale, metrics.notationSpace * 0.70)
     return max(metrics.noteInset, visualPrefixEnd + desiredGap + metrics.noteheadSize.width / 2)
 }
 

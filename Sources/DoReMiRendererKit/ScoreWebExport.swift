@@ -379,17 +379,24 @@ public struct ScoreWebLayoutProfile: Hashable, Codable, Sendable {
     public static let responsive = ScoreWebLayoutProfile()
 
     public func layoutOptions(containerWidth: Double) -> LayoutOptions {
-        LayoutOptions(
-            // A four-measure reader row is composed in a stable logical width
-            // and then scaled by the Canvas to the available browser width.
-            pageWidth: CGFloat(max(1_800, containerWidth)),
-            staffSpace: CGFloat(staffSpace),
-            systemSpacing: CGFloat(systemSpacing),
-            measureSpacing: CGFloat(measureSpacing),
+        // The original Web coordinate space was 1,800pt wide. Scale all
+        // notation metrics with the page width so this A4 coordinate system
+        // retains the same visual density when Canvas fits it to the viewport.
+        let a4LandscapeWidth: CGFloat = 842
+        let notationScale = a4LandscapeWidth / 1_800
+
+        return LayoutOptions(
+            // Keep the Web score on an A4 landscape-width coordinate system.
+            // The browser Canvas is responsible for fitting this fixed logical
+            // page to its available viewport.
+            pageWidth: a4LandscapeWidth,
+            staffSpace: CGFloat(staffSpace) * notationScale,
+            systemSpacing: CGFloat(systemSpacing) * notationScale,
+            measureSpacing: CGFloat(measureSpacing) * notationScale,
             displayMode: .print,
             showPageMargins: false,
             maximumMeasuresPerSystem: maximumMeasuresPerSystem,
-            interStaffWhitespace: CGFloat(interStaffWhitespace ?? 90),
+            interStaffWhitespace: CGFloat(interStaffWhitespace ?? 90) * notationScale,
             repeatsSystemPrefixAtLineBreaks: true,
             anchorsShortNoteGroupsRhythmically: true,
             usesExpandedExpressionLanes: true,
@@ -400,16 +407,17 @@ public struct ScoreWebLayoutProfile: Hashable, Codable, Sendable {
             fullyJustifiesFinalSystem: true,
             usesDurationSensitiveShortNoteSpacing: true,
             titleScale: 0.82,
-            titleGapAboveFirstStaff: 120,
+            titleGapAboveFirstStaff: 120 * notationScale,
             showsPedalMarkings: false,
-            noteheadSizeAdjustment: 2,
-            horizontalMarginAdjustment: 20,
-            stemAttachmentInset: 2,
+            noteheadSizeAdjustment: 2 * notationScale,
+            horizontalMarginAdjustment: 20 * notationScale,
+            stemAttachmentInset: 2 * notationScale,
             timeSignatureScale: 1.5,
-            timeSignatureFontSize: 36,
+            timeSignatureFontSize: 36 * notationScale,
             // Bring the numerator 1pt lower and denominator 1pt higher than
             // the former Web profile without changing native app layout.
-            timeSignatureDigitInset: 4
+            timeSignatureDigitInset: 4 * notationScale,
+            notationScale: notationScale
         )
     }
 }
@@ -425,7 +433,7 @@ struct ScoreWebRenderPlanBuilder {
         playbackEvents: [ScoreWebPlaybackEvent]? = nil
     ) -> ScoreWebRenderPlan {
         var context = WebCanvasRecordingContext()
-        ScorePainter().draw(
+        ScorePainter(notationScale: layout.notationScale).draw(
             layout: layout,
             score: score,
             style: style,

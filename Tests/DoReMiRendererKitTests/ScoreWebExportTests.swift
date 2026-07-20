@@ -92,12 +92,13 @@ import Testing
         maximumMeasuresPerSystem: 4
     )
     let options = profile.layoutOptions(containerWidth: 240)
+    let a4Scale: CGFloat = 842 / 1_800
 
-    #expect(options.pageWidth == 1_800)
-    #expect(options.staffSpace == 12)
-    #expect(options.systemSpacing == 82)
+    #expect(options.pageWidth == 842)
+    #expect(options.staffSpace == 12 * a4Scale)
+    #expect(options.systemSpacing == 82 * a4Scale)
     #expect(options.measureSpacing == 0)
-    #expect(options.interStaffWhitespace == 90)
+    #expect(options.interStaffWhitespace == 90 * a4Scale)
     #expect(options.maximumMeasuresPerSystem == 4)
     #expect(options.displayMode == .print)
     #expect(!options.showPageMargins)
@@ -109,14 +110,29 @@ import Testing
     #expect(options.fullyJustifiesFinalSystem)
     #expect(options.usesDurationSensitiveShortNoteSpacing)
     #expect(options.titleScale == 0.82)
-    #expect(options.titleGapAboveFirstStaff == 120)
+    #expect(options.titleGapAboveFirstStaff == 120 * a4Scale)
     #expect(!options.showsPedalMarkings)
-    #expect(options.noteheadSizeAdjustment == 2)
-    #expect(options.horizontalMarginAdjustment == 20)
-    #expect(options.stemAttachmentInset == 2)
+    #expect(options.noteheadSizeAdjustment == 2 * a4Scale)
+    #expect(options.horizontalMarginAdjustment == 20 * a4Scale)
+    #expect(options.stemAttachmentInset == 2 * a4Scale)
     #expect(options.timeSignatureScale == 1.5)
-    #expect(options.timeSignatureFontSize == 36)
-    #expect(options.timeSignatureDigitInset == 4)
+    #expect(options.timeSignatureFontSize == 36 * a4Scale)
+    #expect(options.timeSignatureDigitInset == 4 * a4Scale)
+    #expect(options.notationScale == a4Scale)
+}
+
+@Test func webA4NotationScaleReducesFixedSMuFLGlyphFloors() {
+    let a4Scale: CGFloat = 842 / 1_800
+    let frame = CGRect(x: 0, y: 0, width: 8, height: 4)
+    let nativePolicy = SMuFLGlyphSizePolicy()
+    let webPolicy = SMuFLGlyphSizePolicy(minimumScale: a4Scale)
+
+    #expect(nativePolicy.noteheadSize(for: frame, noteValue: .quarter) == 20)
+    #expect(webPolicy.noteheadSize(for: frame, noteValue: .quarter) < nativePolicy.noteheadSize(for: frame, noteValue: .quarter))
+    #expect(webPolicy.clefSize(for: frame) < nativePolicy.clefSize(for: frame))
+    #expect(webPolicy.accidentalSize(for: frame) < nativePolicy.accidentalSize(for: frame))
+    #expect(webPolicy.flagSize(for: frame) < nativePolicy.flagSize(for: frame))
+    #expect(webPolicy.repeatDotSize(for: frame) < nativePolicy.repeatDotSize(for: frame))
 }
 
 @Test func webCompactProfileKeepsFourRhythmCoverageMeasuresInOneSystem() throws {

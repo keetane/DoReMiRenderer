@@ -1046,7 +1046,7 @@ private struct ScoreStaticCanvasLayer: View, Equatable {
             context.translateBy(x: padding, y: padding)
             context.scaleBy(x: scale, y: scale)
             var drawingContext = SwiftUICanvasScoreDrawingContext(context: context)
-            ScorePainter().draw(
+            ScorePainter(notationScale: layout.notationScale).draw(
                 layout: layout,
                 score: score,
                 style: style,
@@ -1162,7 +1162,7 @@ private final class ScoreStaticCanvasUIView: UIView {
         cgContext.translateBy(x: padding, y: padding)
         cgContext.scaleBy(x: safeScale, y: safeScale)
         var drawingContext = CoreGraphicsScoreDrawingContext(cgContext)
-        ScorePainter(visibleRect: visibleRect).draw(
+        ScorePainter(visibleRect: visibleRect, notationScale: layout.notationScale).draw(
             layout: layout,
             score: score,
             style: style,
