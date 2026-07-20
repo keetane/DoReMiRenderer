@@ -95,7 +95,11 @@ struct ScorePainter: Sendable {
         }
         let staffSpace = layout.staves.first.map { max(1, $0.frame.height / 4) } ?? 10
         let fontSize: CGFloat = max(7, min(11, staffSpace * 1.15))
-        for measure in layout.measures where shouldDrawMeasureNumber(measure) && isVisible(measure.frame) {
+        for measure in layout.measures where shouldDrawMeasureNumber(
+            measure,
+            in: layout,
+            displayMode: style.measureNumberDisplayMode
+        ) && isVisible(measure.frame) {
             let bottomStaffFrame = bottomStaffFrame(for: measure, in: layout) ?? measure.frame
             let point = CGPoint(
                 x: measure.frame.minX + fontSize * 0.45,
@@ -123,7 +127,22 @@ struct ScorePainter: Sendable {
             .frame
     }
 
-    private func shouldDrawMeasureNumber(_ measure: MeasureLayout) -> Bool {
+    private func shouldDrawMeasureNumber(
+        _ measure: MeasureLayout,
+        in layout: ScoreLayout,
+        displayMode: MeasureNumberDisplayMode
+    ) -> Bool {
+        if displayMode == .systemLeading {
+            let primaryMeasures = layout.measures.filter {
+                $0.systemIndex == measure.systemIndex && $0.partIndex == 0
+            }
+            guard measure.partIndex == 0,
+                  let leadingX = primaryMeasures.map(\.frame.minX).min()
+            else {
+                return false
+            }
+            return abs(measure.frame.minX - leadingX) < 0.5
+        }
         guard let number = Int(measureNumberText(for: measure).trimmingCharacters(in: .whitespacesAndNewlines)) else {
             return false
         }
@@ -194,12 +213,12 @@ struct ScorePainter: Sendable {
             let staffFrames = repeatStaffFrames(for: element, in: layout)
             let lineFrame = repeatLineFrame(for: frame, staffFrames: staffFrames)
             let staffSpace = max(1, staffFrames.first.map { $0.height / 4 } ?? frame.height / 4)
-            let thickLineWidth = max(3, staffSpace * 0.55)
+            let thickLineWidth = max(2, staffSpace * 0.30)
             let thinLineWidth = max(1, staffSpace * 0.12)
-            // The historical gap was intentionally generous for small screens, but
-            // was visually twice as wide as a conventional repeat barline.  Retain
-            // enough clearance for the two strokes while halving the visible gap.
-            let lineGap = max(3.5, staffSpace * 0.375)
+            // Keep a fixed four-point separation between the repeat's thick
+            // and thin strokes so both remain distinct in the Web reader and
+            // its exported print plan.
+            let lineGap: CGFloat = 4
             let thickInset = thickLineWidth / 2
             let thickX = repeatBarline.direction == .forward ? frame.minX + thickInset : frame.maxX - thickInset
             let thinX = repeatBarline.direction == .forward ? thickX + lineGap : thickX - lineGap
@@ -710,7 +729,7 @@ struct ScorePainter: Sendable {
         let start = CGPoint(x: element.frame.midX, y: startY)
         let endY = drawsDown ? element.frame.maxY : element.frame.minY
         let end = CGPoint(x: element.frame.midX, y: endY)
-        context.strokeLine(from: start, to: end, color: color, lineWidth: max(0.8, noteLayout.noteheadFrame.width * 0.07))
+        context.strokeLine(from: start, to: end, color: color, lineWidth: max(0.9, noteLayout.noteheadFrame.width * 0.085))
     }
 
     private func drawBeam<Context: ScoreDrawingContext>(
@@ -747,7 +766,7 @@ struct ScorePainter: Sendable {
             return
         }
         let color = resolved.strokeColor ?? resolved.fillColor ?? style.defaultInkColor
-        let lineWidth = max(0.8, noteLayout.noteheadFrame.width * 0.07)
+        let lineWidth = max(0.9, noteLayout.noteheadFrame.width * 0.085)
         let drawsDown = element.frame.midY > noteLayout.noteheadCenter.y
         if let glyph = flagGlyph(for: noteLayout.noteValueKind),
            drawSMuFLGlyph(
@@ -1021,20 +1040,21 @@ struct ScorePainter: Sendable {
             return
         }
 
-        let size = smuflSizePolicy.timeSignatureSize(for: element.frame)
+        let size = element.timeSignatureFontSize ?? smuflSizePolicy.timeSignatureSize(for: element.frame)
+        let digitInset = element.timeSignatureDigitInset
         if smuflFontName != nil {
             let beats = smuflDigits(timeSignature.beats)
             let beatType = smuflDigits(timeSignature.beatType)
             context.drawText(
                 beats,
-                at: CGPoint(x: element.frame.midX, y: element.frame.minY + element.frame.height * 0.23),
+                at: CGPoint(x: element.frame.midX, y: element.frame.minY + element.frame.height * 0.23 + digitInset),
                 color: color,
                 size: size,
                 fontName: smuflFontName
             )
             context.drawText(
                 beatType,
-                at: CGPoint(x: element.frame.midX, y: element.frame.minY + element.frame.height * 0.72),
+                at: CGPoint(x: element.frame.midX, y: element.frame.minY + element.frame.height * 0.72 - digitInset),
                 color: color,
                 size: size,
                 fontName: smuflFontName
@@ -1042,7 +1062,28 @@ struct ScorePainter: Sendable {
             return
         }
 
-        context.drawText("\(timeSignature.beats)\n\(timeSignature.beatType)", at: CGPoint(x: element.frame.midX, y: element.frame.midY), color: color, size: size)
+        guard digitInset > 0 else {
+            context.drawText(
+                "\(timeSignature.beats)\n\(timeSignature.beatType)",
+                at: CGPoint(x: element.frame.midX, y: element.frame.midY),
+                color: color,
+                size: size
+            )
+            return
+        }
+
+        context.drawText(
+            "\(timeSignature.beats)",
+            at: CGPoint(x: element.frame.midX, y: element.frame.minY + element.frame.height * 0.23 + digitInset),
+            color: color,
+            size: size
+        )
+        context.drawText(
+            "\(timeSignature.beatType)",
+            at: CGPoint(x: element.frame.midX, y: element.frame.minY + element.frame.height * 0.72 - digitInset),
+            color: color,
+            size: size
+        )
     }
 
     private func isVisible(_ frame: CGRect, padding: CGFloat = 72) -> Bool {

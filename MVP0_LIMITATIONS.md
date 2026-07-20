@@ -121,6 +121,11 @@ This document records the known limitations of DoReMiRendererKit after Phase 0 t
   package target still contains CoreGraphics, CoreText, and SwiftUI adapters.
   Browser consumers must render the supplied commands and `NoteID` anchors
   rather than re-parsing MusicXML or recomputing score coordinates.
+- The browser profile now provides readable grand-staff spacing, rhythmic
+  short-note anchoring, basic expression lanes, and compact repeat bars, but it
+  remains a reading profile rather than publishing-quality engraving. Advanced
+  collision avoidance, automatic system justification, and browser-native
+  interactive editing remain future work.
 
 ## Interaction
 

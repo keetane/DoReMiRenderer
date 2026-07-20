@@ -34,6 +34,23 @@ import Testing
     #expect(root.noteheadCenter.x != next.noteheadCenter.x)
 }
 
+@Test func adjacentChordSecondReflectsLowerNoteheadAcrossSharedStem() throws {
+    let score = makeScore(notes: [
+        makeNote(id: "low-second", pitch: Pitch(step: .c, octave: 4), onsetTicks: 0, noteValueKind: .quarter),
+        makeNote(id: "high-second", pitch: Pitch(step: .d, octave: 4), onsetTicks: 0, noteValueKind: .quarter, isChordTone: true, chordOrdinal: 1),
+    ])
+
+    let layout = try ScoreLayoutEngine().layout(score: score, options: LayoutOptions(staffSpace: 10))
+    let low = try #require(layout.noteLayout(for: NoteID(rawValue: "low-second")))
+    let high = try #require(layout.noteLayout(for: NoteID(rawValue: "high-second")))
+    let lowStem = try #require(layout.elementLayout(for: ScoreElementID(rawValue: "low-second.stem")))
+    let highStem = try #require(layout.elementLayout(for: ScoreElementID(rawValue: "high-second.stem")))
+
+    #expect(lowStem.frame.midX == highStem.frame.midX)
+    #expect(low.noteheadCenter.x != high.noteheadCenter.x)
+    #expect((low.noteheadCenter.x - lowStem.frame.midX) * (high.noteheadCenter.x - lowStem.frame.midX) < 0)
+}
+
 @Test func midMeasureClefChangeIsDrawnAtOnsetAndAffectsFollowingNotes() throws {
     let staff2 = StaffID(rawValue: "2")
     let beforeID = NoteID(rawValue: "before-clef-change")
@@ -152,8 +169,24 @@ import Testing
     let layout = try ScoreLayoutEngine().layout(score: score)
     let measure = try #require(layout.measures.first)
     let rest = try #require(layout.noteLayout(for: NoteID(rawValue: "whole-rest")))
+    let staff = try #require(layout.staves.first)
 
     #expect(abs(rest.noteheadCenter.x - measure.frame.midX) < 0.001)
+    #expect(abs(rest.noteheadCenter.y - (staff.frame.minY + staff.frame.height / 4)) < 0.001)
+}
+
+@Test func halfRestIsCenteredWithinMeasure() throws {
+    let score = makeScore(notes: [
+        makeNote(id: "half-rest", pitch: nil, onsetTicks: 0, durationTicks: 8, noteValueKind: .half),
+    ])
+
+    let layout = try ScoreLayoutEngine().layout(score: score)
+    let measure = try #require(layout.measures.first)
+    let rest = try #require(layout.noteLayout(for: NoteID(rawValue: "half-rest")))
+    let staff = try #require(layout.staves.first)
+
+    #expect(abs(rest.noteheadCenter.x - measure.frame.midX) < 0.001)
+    #expect(abs(rest.noteheadCenter.y - (staff.frame.minY + staff.frame.height / 2)) < 0.001)
 }
 
 @Test func normalMeasureWidthUsesReadableMinimum() throws {
@@ -683,6 +716,46 @@ import Testing
     #expect(layout.elementLayout(for: ScoreElementID(rawValue: "next-low.flag")) == nil)
 }
 
+@Test func explicitlyBeamedChordSuppressesSiblingFlagAndConnectsEveryStem() throws {
+    let score = makeScore(notes: [
+        makeNote(
+            id: "beam-root",
+            pitch: Pitch(step: .c, octave: 4),
+            onsetTicks: 0,
+            durationTicks: 2,
+            noteValueKind: .eighth,
+            beams: [MusicXMLBeam(number: 1, value: .begin)]
+        ),
+        makeNote(
+            id: "beam-chord-sibling",
+            pitch: Pitch(step: .g, octave: 4),
+            onsetTicks: 0,
+            durationTicks: 2,
+            noteValueKind: .eighth,
+            isChordTone: true,
+            chordOrdinal: 1
+        ),
+        makeNote(
+            id: "beam-end",
+            pitch: Pitch(step: .d, octave: 4),
+            onsetTicks: 2,
+            durationTicks: 2,
+            noteValueKind: .eighth,
+            beams: [MusicXMLBeam(number: 1, value: .end)]
+        ),
+    ])
+
+    let layout = try ScoreLayoutEngine().layout(score: score)
+    let beam = try #require(layout.elements.first { $0.kind == .beam }?.beam)
+    let siblingID = NoteID(rawValue: "beam-chord-sibling")
+
+    #expect(beam.noteIDs.contains(siblingID))
+    #expect(layout.elementLayout(for: ScoreElementID(rawValue: "beam-chord-sibling.flag")) == nil)
+    let siblingStem = try #require(layout.elementLayout(for: ScoreElementID(rawValue: "beam-chord-sibling.stem")))
+    let siblingNote = try #require(layout.noteLayout(for: siblingID))
+    #expect(abs(stemTipY(stem: siblingStem, note: siblingNote) - primaryBeamY(beam, at: siblingStem.frame.midX)) < 0.001)
+}
+
 @Test func singleSixteenthAtEndOfMixedBeamUsesBackwardSecondaryHook() throws {
     let score = makeScore(notes: [
         makeNote(id: "eighth-a", pitch: Pitch(step: .g, octave: 4), onsetTicks: 0, durationTicks: 2, noteValueKind: .eighth),
@@ -1083,7 +1156,7 @@ import Testing
     #expect(downStem.frame.height <= layout.noteLayout(for: NoteID(rawValue: "down-eighth"))!.noteheadFrame.height * 2.3)
 }
 
-@Test func stemsAlignWithTheOuterEdgesOfTheirNoteheads() throws {
+@Test func stemsOverlapNoteheadEdgesToAvoidVisibleSMuFLSeams() throws {
     let score = makeScore(notes: [
         makeNote(id: "up-quarter", pitch: Pitch(step: .c, octave: 4), onsetTicks: 0, durationTicks: 4, noteValueKind: .quarter),
         makeNote(id: "down-quarter", pitch: Pitch(step: .b, octave: 4), onsetTicks: 4, durationTicks: 4, noteValueKind: .quarter),
@@ -1095,8 +1168,10 @@ import Testing
     let upStem = try #require(layout.elementLayout(for: ScoreElementID(rawValue: "up-quarter.stem")))
     let downStem = try #require(layout.elementLayout(for: ScoreElementID(rawValue: "down-quarter.stem")))
 
-    #expect(abs(upStem.frame.midX - upNote.noteheadFrame.maxX) < 0.001)
-    #expect(abs(downStem.frame.midX - downNote.noteheadFrame.minX) < 0.001)
+    #expect(upStem.frame.midX < upNote.noteheadFrame.maxX)
+    #expect(upStem.frame.midX > upNote.noteheadFrame.midX)
+    #expect(downStem.frame.midX > downNote.noteheadFrame.minX)
+    #expect(downStem.frame.midX < downNote.noteheadFrame.midX)
 }
 
 @Test func stemDirectionUsesMiddleLineRuleForMVP() throws {
@@ -1249,6 +1324,36 @@ import Testing
     #expect(measureRepeat.frame.midX > clef.frame.minX)
     #expect(measureRepeat.frame.midX < backwardRepeat.frame.midX)
     #expect(time.frame.maxX < firstNote.noteheadFrame.minX)
+}
+
+@Test func timeSignatureScaleExpandsTheGlyphFrameAndReservesPrefixSpace() throws {
+    let measureID = MeasureID(partIndex: 0, measureNumber: "1")
+    let staffID = StaffID(rawValue: "1")
+    let score = ScoreDocument(parts: [
+        ScorePart(id: "p1", measures: [
+            Measure(
+                id: measureID,
+                number: "1",
+                notes: [makeNote(id: "n0", pitch: Pitch(step: .c, octave: 4), onsetTicks: 0, staffID: staffID)],
+                clef: Clef(kind: .treble),
+                timeSignature: TimeSignature(beats: 4, beatType: 4)
+            ),
+        ]),
+    ])
+
+    let normal = try ScoreLayoutEngine().layout(score: score, options: LayoutOptions(staffSpace: 12))
+    let enlarged = try ScoreLayoutEngine().layout(
+        score: score,
+        options: LayoutOptions(staffSpace: 12, timeSignatureScale: 1.5)
+    )
+
+    let normalTime = try #require(normal.elements.first { $0.kind == .timeSignature })
+    let enlargedTime = try #require(enlarged.elements.first { $0.kind == .timeSignature })
+    let enlargedNote = try #require(enlarged.noteLayout(for: NoteID(rawValue: "n0")))
+
+    #expect(abs(enlargedTime.frame.width / normalTime.frame.width - 1.5) < 0.001)
+    #expect(abs(enlargedTime.frame.height / normalTime.frame.height - 1.5) < 0.001)
+    #expect(enlargedTime.frame.maxX < enlargedNote.noteheadFrame.minX)
 }
 
 @Test func layoutUsesRepeatStructureFromNonPrimaryPart() throws {
@@ -1493,7 +1598,7 @@ import Testing
     #expect(firstEnding.repeatEnding?.label == "1.")
     #expect(firstEnding.repeatEnding?.startsHere == true)
     #expect(firstEnding.repeatEnding?.stopsHere == true)
-    #expect(firstEnding.repeatEnding?.startHookEnd == nil)
+    #expect(firstEnding.repeatEnding?.startHookEnd != nil)
     #expect(firstEnding.repeatEnding?.endHookEnd != nil)
     #expect(secondEnding.repeatEnding?.label == "2.")
     #expect(firstEnding.frame.maxY < staff.frame.minY + staff.frame.height * 0.05)
@@ -1503,7 +1608,7 @@ import Testing
     #expect((firstEnding.repeatEnding?.lineStart.y ?? 0) < (firstEnding.repeatEnding?.labelPoint.y ?? 0))
 }
 
-@Test func furEliseRepeatEndingHooksMatchOpenBracketEdges() throws {
+@Test func furEliseRepeatEndingHooksCloseBracketEdges() throws {
     let sampleURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
         .appendingPathComponent("Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl")
     let score = try DoReMiRenderer().parse(input: .mxlData(Data(contentsOf: sampleURL)))
@@ -1524,11 +1629,35 @@ import Testing
     let secondEnding = try #require(layout.elementLayout(for: ScoreElementID(rawValue: "0.9.repeatEnding.2.start"))?.repeatEnding)
 
     #expect(firstEnding.label == "1.")
-    #expect(firstEnding.startHookEnd == nil)
+    #expect(firstEnding.startHookEnd != nil)
     #expect(firstEnding.endHookEnd != nil)
     #expect(secondEnding.label == "2.")
     #expect(secondEnding.startHookEnd != nil)
-    #expect(secondEnding.endHookEnd == nil)
+    #expect(secondEnding.endHookEnd != nil)
+}
+
+@Test func startOnlyRepeatEndingStillUsesAClosedBracket() throws {
+    let measureID = MeasureID(partIndex: 0, measureNumber: "1")
+    let staffID = StaffID(rawValue: "1")
+    let score = ScoreDocument(parts: [
+        ScorePart(id: "p1", measures: [
+            Measure(
+                id: measureID,
+                number: "1",
+                notes: [makeNote(id: "start-only-ending-note", pitch: Pitch(step: .c, octave: 4), onsetTicks: 0, staffID: staffID)],
+                clef: Clef(kind: .treble),
+                repeatEndings: [RepeatEnding(numbers: [1], kind: .start)]
+            ),
+        ]),
+    ])
+
+    let layout = try ScoreLayoutEngine().layout(score: score, options: LayoutOptions(staffSpace: 10))
+    let ending = try #require(layout.elementLayout(for: ScoreElementID(rawValue: "0.1.repeatEnding.1.start"))?.repeatEnding)
+
+    #expect(ending.startsHere)
+    #expect(!ending.stopsHere)
+    #expect(ending.startHookEnd != nil)
+    #expect(ending.endHookEnd != nil)
 }
 
 @Test func furEliseRepeatEndingsAvoidSystemPrefixSymbols() throws {
@@ -2349,7 +2478,7 @@ import Testing
     }
 
     #expect(firstPage.systemIndices.count == 4)
-    #expect(gaps.allSatisfy { $0 >= 36 && $0 <= 44 })
+    #expect(gaps.allSatisfy { $0 >= 64 && $0 <= 72 })
 }
 
 @Test func a4PrintLayoutHonorsManualPageBreakBeforeMeasure() throws {

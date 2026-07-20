@@ -79,14 +79,54 @@ public struct DoReMiRenderer: Sendable {
         currentNoteIDs: Set<NoteID> = [],
         continuationNoteIDs: Set<NoteID> = []
     ) -> ScoreWebRenderPlan {
-        ScoreWebRenderPlanBuilder().build(
+        let playbackEvents = ScoreWebPlaybackTimelineBuilder().build(score: score)
+        return ScoreWebRenderPlanBuilder().build(
             score: score,
             layout: layout,
             style: style,
             selection: selection,
             currentNoteIDs: currentNoteIDs,
-            continuationNoteIDs: continuationNoteIDs
+            continuationNoteIDs: continuationNoteIDs,
+            playbackEvents: playbackEvents
         )
+    }
+
+    /// Produces the browser transport used by DoReMi Palette Web. Every display
+    /// transpose option is laid out by the SDK; the browser only selects one of
+    /// these plans and never changes score coordinates itself.
+    public func makeWebRenderBundle(
+        score: ScoreDocument,
+        containerWidth: Double,
+        displayTransposeRange: ClosedRange<Int> = -12...12,
+        style: ScoreStyle = ScoreStyle()
+    ) throws -> ScoreWebRenderBundle {
+        let clampedLower = max(-12, displayTransposeRange.lowerBound)
+        let clampedUpper = min(12, displayTransposeRange.upperBound)
+        let transposeValues = clampedLower <= clampedUpper ? Array(clampedLower...clampedUpper) : [0]
+        let playbackEvents = ScoreWebPlaybackTimelineBuilder().build(score: score)
+        var webStyle = style
+        webStyle.measureNumberDisplayMode = .systemLeading
+
+        func plan(for semitones: Int, includesPlayback: Bool) throws -> ScoreWebRenderPlan {
+            var options = webLayoutOptions(containerWidth: containerWidth)
+            options.displayTransposeSemitones = semitones
+            let layout = try self.layout(score: score, options: options)
+            return ScoreWebRenderPlanBuilder().build(
+                score: score,
+                layout: layout,
+                style: webStyle,
+                selection: nil,
+                currentNoteIDs: [],
+                continuationNoteIDs: [],
+                playbackEvents: includesPlayback ? playbackEvents : nil
+            )
+        }
+
+        let primaryPlan = try plan(for: 0, includesPlayback: true)
+        let variants = try transposeValues
+            .filter { $0 != 0 }
+            .map { ScoreWebTransposeVariant(semitones: $0, plan: try plan(for: $0, includesPlayback: false)) }
+        return ScoreWebRenderBundle(primaryPlan: primaryPlan, transposeVariants: variants)
     }
 
     /// Returns the standard responsive reading layout used by the Web Canvas bridge.

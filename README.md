@@ -173,7 +173,24 @@ let json = try JSONEncoder().encode(plan)
 ```
 
 `ScoreWebLayoutProfile.responsive` wraps at up to four measures per system with
-compact reading spacing. It is an independent DoReMiRenderer layout profile;
+a 12pt `staffSpace`, 82pt system spacing, no artificial measure gutter, and a
+44pt grand-staff interline whitespace. It adds 20pt to each horizontal content
+margin, repeats the prefix at wrapped system
+starts, anchors dense short-note groups to their rhythmic onset rather than
+centering the whole group, and uses separate below-staff expression lanes for
+dynamics and hairpins. Pedal labels are intentionally omitted from this compact
+reader, and noteheads receive a 2pt readability adjustment without rescaling
+the staff. Stems overlap their notehead ink boxes by an additional 2pt, while
+adjacent chord seconds reflect only the lower notehead across their shared stem
+axis to avoid collisions. It reserves 120pt between the title and the first
+grand staff. Web time signatures are enlarged 1.5x and their numerator and
+denominator are each inset 3pt toward the staff centre without changing the iOS
+or PDF defaults. Half and whole rests are centered within their measure; whole rests
+hang from the second staff line. The title is intentionally smaller than the body notation in this
+reading profile. Noteheads, stems, clefs, flags, rests,
+accidentals, and staff lines are all derived from that one scale, so browser
+tuning preserves notation proportions. It is an independent DoReMiRenderer
+layout profile;
 the public MuseTrainer library is used only as a MusicXML compatibility corpus,
 not as a source of UI or code. See
 [WebCanvasViewer](Examples/WebCanvasViewer/README.md) for a static Canvas
@@ -410,7 +427,7 @@ score coordinates for printing.
 
 Print output now uses a separate compact A4 layout and SDK page read models
 instead of fitting the full canvas to page height. The print layout targets six
-grand-staff systems per page by default, uses a fixed 40pt inter-system gap,
+grand-staff systems per page by default, uses a fixed 68pt inter-system gap,
 and falls back to fewer systems when rendered bounds would otherwise exceed the
 page. It keeps grand-staff systems from being cut across page boundaries and
 uses visual-row pagination for unusually tall imported systems.

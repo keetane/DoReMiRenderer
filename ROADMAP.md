@@ -18,8 +18,11 @@ and the DoReMi Palette app.
 
 Implemented foundation:
 
-- `ScoreWebLayoutProfile.responsive` provides a compact browser reading profile
-  with a maximum of four measures per system.
+- `ScoreWebLayoutProfile.responsive` provides a browser reading profile with a
+  12pt shared notation scale, 52pt system spacing, zero artificial measure
+  gutter, 44pt grand-staff whitespace, and a maximum of four measures per
+  system. It retains rhythmic onset anchors for dense short-note groups,
+  repeats context prefixes at wrapped starts, and reserves expression lanes.
 - `ScoreWebRenderPlan` exports the SDK's rendered Canvas primitives, colors,
   glyph orientation flags, and stable `NoteID` anchors as JSON.
 - `DoReMiRendererWebExport` and `Examples/WebCanvasViewer` demonstrate a

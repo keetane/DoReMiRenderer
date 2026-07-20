@@ -18,10 +18,6 @@ private enum PrintPageMarginConstants {
 private enum GrandStaffLayoutConstants {
     static let interStaffWhitespace: CGFloat = 100
     static let printInterStaffWhitespace: CGFloat = 36
-    // Keep print systems visually related without using page-height
-    // justification. A fixed 40pt gap preserves predictable reading rhythm
-    // for short final pages and leaves the remaining area as bottom margin.
-    static let printSystemGap: CGFloat = 40
 }
 
 private enum ClefLayoutConstants {
@@ -53,6 +49,68 @@ public struct LayoutOptions: Sendable {
     public var maximumMeasuresPerSystem: Int
     public var manualSystemBreakBeforeMeasureIDs: Set<MeasureID>
     public var manualPageBreakBeforeMeasureIDs: Set<MeasureID>
+    /// Fixed vertical spacing between printed grand-staff systems when page
+    /// pagination is active. It intentionally is not used by screen layouts.
+    public var printSystemGap: CGFloat
+    /// Optional whitespace between adjacent staves in the same system.
+    ///
+    /// `nil` preserves the established display-mode defaults. Consumers such as
+    /// the Web bridge can opt into a denser grand-staff reading profile without
+    /// changing the iOS screen or printed A4 defaults.
+    public var interStaffWhitespace: CGFloat?
+    /// Repeats clef/key prefixes at wrapped system starts even when the layout
+    /// is not paginated. This is useful for scrollable readers.
+    public var repeatsSystemPrefixAtLineBreaks: Bool
+    /// Keeps dense short-note groups anchored to their rhythmic position in a
+    /// measure instead of compacting the entire group against the left edge.
+    public var anchorsShortNoteGroupsRhythmically: Bool
+    /// Uses dedicated below-staff lanes for dynamics, hairpins, and pedal
+    /// markings. The default preserves the existing compact app layout.
+    public var usesExpandedExpressionLanes: Bool
+    /// Uses compact print-style measure metrics without enabling page-only
+    /// density restrictions. Scrollable clients can use this to fit a readable
+    /// multi-measure phrase into one responsive system.
+    public var usesCompactMeasureSpacing: Bool
+    /// Allows a scrollable layout profile to distribute remaining width across
+    /// its final system. Default `false` preserves the native score layout.
+    public var justifiesFinalSystem: Bool
+    /// Distributes all remaining width in a final system. This is useful for
+    /// fixed-width readers that require matching left and right canvas insets;
+    /// native and PDF layouts retain their partial final justification by
+    /// default.
+    public var fullyJustifiesFinalSystem: Bool
+    /// Applies duration-sensitive spacing to short-note passages and the
+    /// trailing inset before a barline. This is intended for compact reading
+    /// profiles; the default preserves the native app and PDF engraving.
+    public var usesDurationSensitiveShortNoteSpacing: Bool
+    /// Relative title size for print-like layouts. `1` preserves the existing
+    /// app and PDF typography; reading profiles can reduce title emphasis.
+    public var titleScale: CGFloat
+    /// Optional title-to-first-system clearance for reading profiles. `nil`
+    /// retains the established print-page reservation.
+    public var titleGapAboveFirstStaff: CGFloat?
+    /// Whether pedal direction labels such as `Ped.` are emitted into the
+    /// resolved layout. The default preserves app and PDF output.
+    public var showsPedalMarkings: Bool
+    /// Additive notehead width and height adjustment in layout points. This
+    /// lets a reading profile improve notehead legibility without rescaling the
+    /// staff, clefs, or app/PDF defaults.
+    public var noteheadSizeAdjustment: CGFloat
+    /// Extra horizontal inset applied symmetrically to a profile's content.
+    /// It leaves app and PDF margins unchanged unless explicitly requested.
+    public var horizontalMarginAdjustment: CGFloat
+    /// Additional overlap between a stem and its notehead ink box. This is
+    /// useful for Canvas readers that need a stronger visual attachment.
+    public var stemAttachmentInset: CGFloat
+    /// Relative scale applied to time-signature glyph frames. The default
+    /// preserves the established iOS and PDF engraving proportions.
+    public var timeSignatureScale: CGFloat
+    /// Optional explicit point size for time-signature digits. `nil` retains
+    /// the staff-relative SMuFL sizing used by iOS and PDF output.
+    public var timeSignatureFontSize: CGFloat?
+    /// Insets the numerator and denominator toward the staff centre without
+    /// changing their glyph size. The default preserves iOS and PDF output.
+    public var timeSignatureDigitInset: CGFloat
 
     public init(
         pageWidth: CGFloat = 800,
@@ -66,7 +124,25 @@ public struct LayoutOptions: Sendable {
         displayTransposeSemitones: Int = 0,
         maximumMeasuresPerSystem: Int = 4,
         manualSystemBreakBeforeMeasureIDs: Set<MeasureID> = [],
-        manualPageBreakBeforeMeasureIDs: Set<MeasureID> = []
+        manualPageBreakBeforeMeasureIDs: Set<MeasureID> = [],
+        printSystemGap: CGFloat = 68,
+        interStaffWhitespace: CGFloat? = nil,
+        repeatsSystemPrefixAtLineBreaks: Bool = false,
+        anchorsShortNoteGroupsRhythmically: Bool = false,
+        usesExpandedExpressionLanes: Bool = false,
+        usesCompactMeasureSpacing: Bool = false,
+        justifiesFinalSystem: Bool = false,
+        fullyJustifiesFinalSystem: Bool = false,
+        usesDurationSensitiveShortNoteSpacing: Bool = false,
+        titleScale: CGFloat = 1,
+        titleGapAboveFirstStaff: CGFloat? = nil,
+        showsPedalMarkings: Bool = true,
+        noteheadSizeAdjustment: CGFloat = 0,
+        horizontalMarginAdjustment: CGFloat = 0,
+        stemAttachmentInset: CGFloat = 0,
+        timeSignatureScale: CGFloat = 1,
+        timeSignatureFontSize: CGFloat? = nil,
+        timeSignatureDigitInset: CGFloat = 0
     ) {
         self.pageWidth = pageWidth
         self.pageHeight = pageHeight
@@ -80,6 +156,24 @@ public struct LayoutOptions: Sendable {
         self.maximumMeasuresPerSystem = max(1, maximumMeasuresPerSystem)
         self.manualSystemBreakBeforeMeasureIDs = manualSystemBreakBeforeMeasureIDs
         self.manualPageBreakBeforeMeasureIDs = manualPageBreakBeforeMeasureIDs
+        self.printSystemGap = max(0, printSystemGap)
+        self.interStaffWhitespace = interStaffWhitespace.map { max(0, $0) }
+        self.repeatsSystemPrefixAtLineBreaks = repeatsSystemPrefixAtLineBreaks
+        self.anchorsShortNoteGroupsRhythmically = anchorsShortNoteGroupsRhythmically
+        self.usesExpandedExpressionLanes = usesExpandedExpressionLanes
+        self.usesCompactMeasureSpacing = usesCompactMeasureSpacing
+        self.justifiesFinalSystem = justifiesFinalSystem
+        self.fullyJustifiesFinalSystem = fullyJustifiesFinalSystem
+        self.usesDurationSensitiveShortNoteSpacing = usesDurationSensitiveShortNoteSpacing
+        self.titleScale = max(0.5, min(1.5, titleScale))
+        self.titleGapAboveFirstStaff = titleGapAboveFirstStaff.map { max(0, $0) }
+        self.showsPedalMarkings = showsPedalMarkings
+        self.noteheadSizeAdjustment = max(0, noteheadSizeAdjustment)
+        self.horizontalMarginAdjustment = max(0, horizontalMarginAdjustment)
+        self.stemAttachmentInset = max(0, stemAttachmentInset)
+        self.timeSignatureScale = max(0.5, min(2, timeSignatureScale))
+        self.timeSignatureFontSize = timeSignatureFontSize.map { max(8, min(72, $0)) }
+        self.timeSignatureDigitInset = max(0, timeSignatureDigitInset)
     }
 
     public static let `default` = LayoutOptions()
@@ -155,9 +249,12 @@ struct ScoreLayoutEngine: Sendable {
         let contentWidth = max(metrics.minimumMeasureWidth, options.pageWidth - metrics.leftMargin - metrics.rightMargin)
         let systemHeight = CGFloat(max(staffIDs.count, 1) - 1) * metrics.staffGap + metrics.staffHeight
         let shouldWrapSystems = options.displayMode == .print
-        let shouldRepeatSystemPrefix = options.displayMode == .print && options.showPageMargins
+        let shouldRepeatSystemPrefix = options.displayMode == .print
+            && (options.showPageMargins || options.repeatsSystemPrefixAtLineBreaks)
         var titleLayout = scoreTitleLayout(for: score, options: options, metrics: metrics, contentWidth: contentWidth)
-        let titleReservedHeight = titleLayout.map { $0.frame.maxY + ScoreTitleLayoutConstants.gapAboveFirstStaff } ?? 0
+        let titleReservedHeight = titleLayout.map {
+            $0.frame.maxY + (options.titleGapAboveFirstStaff ?? ScoreTitleLayoutConstants.gapAboveFirstStaff)
+        } ?? 0
 
         func appendSystem(index: Int, top: CGFloat) {
             systems.append(
@@ -272,11 +369,20 @@ struct ScoreLayoutEngine: Sendable {
         }
         let systemStartPlanIndices = Set(systemGroups.compactMap(\.first))
         let systemIndexByPlanIndex = systemIndexLookup(for: systemGroups)
+        // A full-width Web system should not undo duration-sensitive compact
+        // spacing by stretching a dense sixteenth-note measure as much as a
+        // spacious quarter-note measure. The remaining width is still fully
+        // consumed, but it is preferentially distributed to the latter.
+        let finalSystemJustificationWeights: [CGFloat]? = options.usesDurationSensitiveShortNoteSpacing
+            ? measurePlans.map { measureContainsCompactShortNotes($0.measure) ? 0.58 : 1 }
+            : nil
         var justifiedWidths = justifiedMeasureWidths(
             layoutMeasureWidths,
             systemGroups: systemGroups,
             shouldWrapSystems: shouldWrapSystems,
-            allowsFinalSystemJustification: options.showPageMargins,
+            allowsFinalSystemJustification: options.showPageMargins || options.justifiesFinalSystem,
+            fullyJustifiesFinalSystem: options.fullyJustifiesFinalSystem,
+            finalSystemJustificationWeights: finalSystemJustificationWeights,
             contentWidth: contentWidth,
             measureSpacing: options.measureSpacing
         )
@@ -284,7 +390,8 @@ struct ScoreLayoutEngine: Sendable {
             to: &justifiedWidths,
             baseWidths: layoutMeasureWidths,
             systemGroups: systemGroups,
-            allowsFinalSystemJustification: options.showPageMargins,
+            allowsFinalSystemJustification: options.showPageMargins || options.justifiesFinalSystem,
+            fullyJustifiesFinalSystem: options.fullyJustifiesFinalSystem,
             contentWidth: contentWidth
         )
 
@@ -397,7 +504,8 @@ struct ScoreLayoutEngine: Sendable {
                 measureWidth: measureWidth,
                 metrics: metrics,
                 displayedKeySignature: prefixDisplayedKeySignature,
-                forceClefPrefix: repeatsSystemPrefix
+                forceClefPrefix: repeatsSystemPrefix,
+                anchorsShortNoteGroupsRhythmically: options.anchorsShortNoteGroupsRhythmically
             )
             for staffID in staffIDs {
                 let middleY = metrics.staffMiddleY(systemTop: systemTop, staffIndex: staffIndexByID[staffID] ?? 0)
@@ -416,6 +524,13 @@ struct ScoreLayoutEngine: Sendable {
                 groups: beamGroups,
                 options: options
             )
+            let chordSecondNoteheadOffsets = chordSecondNoteheadOffsets(
+                for: item.measure,
+                options: options,
+                chordStemDirections: chordStemDirections,
+                beamStemDirections: beamStemDirections,
+                metrics: metrics
+            )
             let beamedNoteIDs = Set(beamGroups.flatMap(\.noteIDs))
             var pendingArticulations: [PendingArticulationLayout] = []
             for note in item.measure.notes {
@@ -424,19 +539,34 @@ struct ScoreLayoutEngine: Sendable {
                 let middleY = metrics.staffMiddleY(systemTop: systemTop, staffIndex: staffIndex)
                 let displayedPitch = displayPitch(for: note.pitch, options: options)
                 let position = displayedPitch.map { staffPosition(pitch: $0, clef: clef) }
-                let noteCenterX = wholeRestCenterX(
+                let noteCenterX = sustainedRestCenterX(
                     for: note,
                     measureX: measureX,
                     measureWidth: measureWidth,
                     fallbackX: onsetX[note.onset] ?? (measureX + metrics.noteInset)
                 )
-                let center = CGPoint(
-                    x: noteCenterX,
-                    y: middleY - CGFloat(position?.stepsFromMiddleLine ?? 0) * metrics.staffLineSpacing / 2
+                let noteCenterY = restCenterY(
+                    for: note,
+                    middleY: middleY,
+                    staffLineSpacing: metrics.staffLineSpacing
                 )
+                let center = CGPoint(
+                    x: noteCenterX + (chordSecondNoteheadOffsets[note.id] ?? 0),
+                    y: noteCenterY - CGFloat(position?.stepsFromMiddleLine ?? 0) * metrics.staffLineSpacing / 2
+                )
+                // A second in a chord moves only its lower notehead. Keep the
+                // shared stem on the rhythmic onset axis so beam geometry and
+                // flags remain attached to the same chord event.
+                let stemReferenceCenter = CGPoint(x: noteCenterX, y: center.y)
                 let noteFrame = CGRect(
                     x: center.x - metrics.noteheadSize.width / 2,
                     y: center.y - metrics.noteheadSize.height / 2,
+                    width: metrics.noteheadSize.width,
+                    height: metrics.noteheadSize.height
+                )
+                let stemReferenceFrame = CGRect(
+                    x: stemReferenceCenter.x - metrics.noteheadSize.width / 2,
+                    y: stemReferenceCenter.y - metrics.noteheadSize.height / 2,
                     width: metrics.noteheadSize.width,
                     height: metrics.noteheadSize.height
                 )
@@ -496,8 +626,9 @@ struct ScoreLayoutEngine: Sendable {
                         ?? stemDirection(for: position)
                     let stemFrame = stemFrame(
                         direction: stemDirection,
-                        noteFrame: noteFrame,
-                        noteheadCenter: center
+                        noteFrame: stemReferenceFrame,
+                        noteheadCenter: stemReferenceCenter,
+                        metrics: metrics
                     )
                     elements.append(
                         ElementLayout(
@@ -737,6 +868,7 @@ struct ScoreLayoutEngine: Sendable {
                 systemTop: systemTop,
                 systemIndex: currentSystemIndex,
                 metrics: metrics,
+                showsPedalMarkings: options.showsPedalMarkings,
                 pendingWedges: &pendingWedges
             ))
             elements.append(contentsOf: repeatEndingElements(
@@ -866,10 +998,10 @@ struct ScoreLayoutEngine: Sendable {
             topMargin: metrics.topMargin,
             bottomMargin: metrics.bottomMargin,
             reservesFirstPageTitleSlot: layout.title != nil,
-            firstPageTitleSlotHeight: metrics.staffHeight * 2 + GrandStaffLayoutConstants.printInterStaffWhitespace + GrandStaffLayoutConstants.printSystemGap,
+            firstPageTitleSlotHeight: metrics.staffHeight * 2 + GrandStaffLayoutConstants.printInterStaffWhitespace + options.printSystemGap,
             targetSystemsPerPage: 6,
             minimumPreferredSystemsPerPage: 4,
-            systemGap: GrandStaffLayoutConstants.printSystemGap
+            systemGap: options.printSystemGap
         )
         guard !assignments.isEmpty else {
             return layout
@@ -1010,7 +1142,9 @@ struct ScoreLayoutEngine: Sendable {
             .trimmingCharacters(in: .whitespacesAndNewlines)
         guard let title, !title.isEmpty else { return nil }
 
-        let fontSize = max(14, options.staffSpace * 1.9) * ScoreTitleLayoutConstants.fontScale
+        let fontSize = max(14, options.staffSpace * 1.9)
+            * ScoreTitleLayoutConstants.fontScale
+            * options.titleScale
         let frame = CGRect(
             x: metrics.leftMargin,
             y: max(0, metrics.topMargin - fontSize * 1.15),
@@ -1204,12 +1338,69 @@ struct ScoreLayoutEngine: Sendable {
         return directions
     }
 
+    /// Separates adjacent chord seconds by reflecting the lower notehead across
+    /// the shared stem axis.  The stem itself deliberately remains on the
+    /// onset axis, which preserves flag and beam attachment for the chord.
+    private func chordSecondNoteheadOffsets(
+        for measure: Measure,
+        options: LayoutOptions,
+        chordStemDirections: [ChordStemKey: StemDirection],
+        beamStemDirections: [NoteID: StemDirection],
+        metrics: LayoutMetrics
+    ) -> [NoteID: CGFloat] {
+        let candidates = measure.notes.filter { $0.pitch != nil && $0.noteValueKind.drawsStem }
+        let grouped = Dictionary(grouping: candidates, by: ChordStemKey.init)
+        var offsets: [NoteID: CGFloat] = [:]
+
+        for (key, chordNotes) in grouped where chordNotes.count > 1 {
+            let ordered = chordNotes.sorted {
+                diatonicPitchValue(displayPitch(for: $0.pitch, options: options))
+                    < diatonicPitchValue(displayPitch(for: $1.pitch, options: options))
+            }
+            var index = 0
+            while index + 1 < ordered.count {
+                let lower = ordered[index]
+                let upper = ordered[index + 1]
+                let lowerPitch = displayPitch(for: lower.pitch, options: options)
+                let upperPitch = displayPitch(for: upper.pitch, options: options)
+                guard diatonicPitchValue(upperPitch) - diatonicPitchValue(lowerPitch) == 1 else {
+                    index += 1
+                    continue
+                }
+
+                let lowerPosition = lowerPitch.map {
+                    staffPosition(pitch: $0, clef: clef(for: lower.staffID, in: measure, at: lower.onset))
+                }
+                guard let lowerPosition else {
+                    index += 1
+                    continue
+                }
+                let direction = beamStemDirections[lower.id]
+                    ?? chordStemDirections[key]
+                    ?? explicitStemDirection(for: lower)
+                    ?? stemDirection(for: lowerPosition)
+                let stemWidth = max(1.2, metrics.noteheadSize.width * 0.13)
+                let stemOffset = stemHorizontalOffset(
+                    direction: direction,
+                    noteheadWidth: metrics.noteheadSize.width,
+                    stemWidth: stemWidth,
+                    attachmentInset: metrics.stemAttachmentInset
+                )
+                offsets[lower.id] = stemOffset * 2
+                // Treat a pair as one collision unit so dense three-note chords
+                // do not alternately flip every notehead.
+                index += 2
+            }
+        }
+        return offsets
+    }
+
     private func beamGroups(for measure: Measure) -> [BeamGroup] {
         let candidates = measure.notes.filter { $0.pitch != nil && $0.noteValueKind.flagCount > 0 }
         let grouped = Dictionary(grouping: candidates) { note in
             BeamGroupKey(measureID: measure.id, staffID: note.staffID, voiceID: note.voiceID)
         }
-        return grouped.flatMap { key, notes -> [BeamGroup] in
+        let groups = grouped.flatMap { key, notes -> [BeamGroup] in
             let explicitlyBeamed = notes.filter { $0.beams.contains { $0.number == 1 } }
             if !explicitlyBeamed.isEmpty {
                 let unmarkedNotes = notes.filter { note in
@@ -1219,6 +1410,35 @@ struct ScoreLayoutEngine: Sendable {
                     + automaticBeamGroups(key: key, notes: unmarkedNotes, measure: measure)
             }
             return automaticBeamGroups(key: key, notes: notes, measure: measure)
+        }
+        return expandingChordMembers(in: groups, measure: measure)
+    }
+
+    /// MusicXML often marks a beam only once for a simultaneous chord event.
+    /// Treat all flagged notes at that onset/staff/voice as beam members so no
+    /// sibling flag is drawn beside the shared beam and every stem meets it.
+    private func expandingChordMembers(in groups: [BeamGroup], measure: Measure) -> [BeamGroup] {
+        let flaggedNotes = measure.notes.filter { $0.pitch != nil && $0.noteValueKind.flagCount > 0 }
+        return groups.map { group in
+            BeamGroup(
+                key: group.key,
+                events: group.events.map { event in
+                    let chordIDs = flaggedNotes.compactMap { note -> NoteID? in
+                        guard note.onset == event.onset,
+                              note.staffID == group.key.staffID,
+                              note.voiceID == group.key.voiceID
+                        else {
+                            return nil
+                        }
+                        return note.id
+                    }
+                    return BeamEvent(
+                        onset: event.onset,
+                        noteIDs: uniquePreservingOrder(event.noteIDs + chordIDs),
+                        representativeNoteID: event.representativeNoteID
+                    )
+                }
+            )
         }
     }
 
@@ -1231,7 +1451,11 @@ struct ScoreLayoutEngine: Sendable {
             let notesByID = Dictionary(uniqueKeysWithValues: notes.map { ($0.id, $0) })
             let events = Dictionary(grouping: notes, by: \.onset)
                 .map { onset, onsetNotes in
-                    BeamEvent(onset: onset, noteIDs: onsetNotes.map(\.id))
+                    BeamEvent(
+                        onset: onset,
+                        noteIDs: onsetNotes.map(\.id),
+                        representativeNoteID: onsetNotes[0].id
+                    )
                 }
                 .sorted { $0.onset < $1.onset }
             var result: [BeamGroup] = []
@@ -1242,7 +1466,7 @@ struct ScoreLayoutEngine: Sendable {
             let measureStart = measure.notes.map(\.onset).min() ?? MusicalTime(ticks: 0, ticksPerQuarterNote: 4)
             let beatDuration = beamBeatDuration(for: measure, fallbackOnset: measureStart)
             for event in events {
-                let representativeNote = notes.first { $0.id == event.noteIDs.first }
+                let representativeNote = notes.first { $0.id == event.representativeNoteID }
                 let duration = representativeNote?.duration ?? MusicalTime(ticks: 0, ticksPerQuarterNote: event.onset.ticksPerQuarterNote)
                 let eventBeatIndex = beamBeatIndex(onset: event.onset, measureStart: measureStart, beatDuration: beatDuration)
                 let eventEnd = event.onset + duration
@@ -1294,7 +1518,11 @@ struct ScoreLayoutEngine: Sendable {
         let notesByID = Dictionary(uniqueKeysWithValues: notes.map { ($0.id, $0) })
         let events = Dictionary(grouping: notes, by: \.onset)
             .map { onset, onsetNotes in
-                BeamEvent(onset: onset, noteIDs: onsetNotes.map(\.id))
+                BeamEvent(
+                    onset: onset,
+                    noteIDs: onsetNotes.map(\.id),
+                    representativeNoteID: onsetNotes[0].id
+                )
             }
             .sorted { $0.onset < $1.onset }
         var result: [BeamGroup] = []
@@ -1302,7 +1530,7 @@ struct ScoreLayoutEngine: Sendable {
         var previousNote: ScoreNote?
 
         for event in events {
-            let representativeNote = notes.first { $0.id == event.noteIDs.first }
+            let representativeNote = notes.first { $0.id == event.representativeNoteID }
             let primaryBeamValue = representativeNote?.beams.first { $0.number == 1 }?.value
             let stemDirectionChanged = previousNote.flatMap { previous in
                 representativeNote.map { current in
@@ -1372,10 +1600,7 @@ struct ScoreLayoutEngine: Sendable {
 
     private func beamContourIsSimple(events: [BeamEvent], notesByID: [NoteID: ScoreNote]) -> Bool {
         let values = events.compactMap { event -> Int? in
-            guard let firstID = event.noteIDs.first else {
-                return nil
-            }
-            return diatonicPitchValue(notesByID[firstID]?.pitch)
+            diatonicPitchValue(notesByID[event.representativeNoteID]?.pitch)
         }
         guard values.count == events.count else {
             return false
@@ -1638,7 +1863,7 @@ struct ScoreLayoutEngine: Sendable {
         primaryEnd: CGPoint,
         thickness: CGFloat
     ) -> [BeamSegmentLayout] {
-        let representativeIDs = group.events.compactMap(\.noteIDs.first)
+        let representativeIDs = group.events.map(\.representativeNoteID)
         let maxFlagCount = representativeIDs
             .map { noteByID[$0]?.noteValueKind.flagCount ?? 0 }
             .max() ?? 0
@@ -1843,6 +2068,7 @@ struct ScoreLayoutEngine: Sendable {
         systemTop: CGFloat,
         systemIndex: Int,
         metrics: LayoutMetrics,
+        showsPedalMarkings: Bool,
         pendingWedges: inout [PendingWedgeLayout]
     ) -> [ElementLayout] {
         var result: [ElementLayout] = []
@@ -1852,6 +2078,9 @@ struct ScoreLayoutEngine: Sendable {
         }
 
         for (index, direction) in sorted.enumerated() {
+            if case .pedal = direction.kind, !showsPedalMarkings {
+                continue
+            }
             let staffID = direction.staffID ?? staffIDs.first ?? StaffID(rawValue: "1")
             let x = onsetX[direction.onset] ?? measureX + metrics.noteInset
             let y = directionY(direction: direction, staffID: staffID, staffIndexByID: staffIndexByID, systemTop: systemTop, metrics: metrics)
@@ -1869,7 +2098,11 @@ struct ScoreLayoutEngine: Sendable {
                     metrics: metrics,
                     existingElements: existingElements
                 )
-                let layout = DynamicLayout(mark: mark, origin: CGPoint(x: frame.minX, y: y), frame: frame)
+                let layout = DynamicLayout(
+                    mark: mark,
+                    origin: CGPoint(x: frame.minX, y: frame.minY + frame.height * 0.75),
+                    frame: frame
+                )
                 result.append(ElementLayout(
                     id: ScoreElementID(rawValue: "\(measure.id.rawValue).dynamic.\(index).\(mark.rawValue)"),
                     kind: .dynamic,
@@ -1891,7 +2124,12 @@ struct ScoreLayoutEngine: Sendable {
                     metrics: metrics,
                     existingElements: existingElements + result
                 )
-                let layout = PedalLayout(kind: pedalKind, label: label, origin: CGPoint(x: frame.minX, y: y), frame: frame)
+                let layout = PedalLayout(
+                    kind: pedalKind,
+                    label: label,
+                    origin: CGPoint(x: frame.minX, y: frame.minY + frame.height * 0.75),
+                    frame: frame
+                )
                 result.append(ElementLayout(
                     id: ScoreElementID(rawValue: "\(measure.id.rawValue).pedal.\(index).\(pedalKind.rawValue)"),
                     kind: .pedal,
@@ -2033,9 +2271,9 @@ struct ScoreLayoutEngine: Sendable {
 
     private func isNotationCollisionCandidate(_ kind: ScoreElementKind) -> Bool {
         switch kind {
-        case .notehead, .rest, .stem, .flag, .beam, .accidental, .dot, .ledgerLine, .lyric, .fingering, .articulation:
+        case .notehead, .rest, .stem, .flag, .beam, .accidental, .dot, .ledgerLine, .dynamic, .hairpin, .pedal, .lyric, .fingering, .articulation:
             true
-        case .staffLine, .clef, .timeSignature, .keySignature, .barline, .dynamic, .hairpin, .pedal, .tie, .slur, .tuplet, .repeatEnding, .measureRepeat, .playbackJumpMarker:
+        case .staffLine, .clef, .timeSignature, .keySignature, .barline, .tie, .slur, .tuplet, .repeatEnding, .measureRepeat, .playbackJumpMarker:
             false
         }
     }
@@ -2301,19 +2539,30 @@ struct ScoreLayoutEngine: Sendable {
     ) -> CGFloat {
         let staffIndex = staffIndexByID[staffID] ?? 0
         let middleY = metrics.staffMiddleY(systemTop: systemTop, staffIndex: staffIndex)
+        let lane: CGFloat
+        if metrics.usesExpandedExpressionLanes {
+            switch direction.kind {
+            case .dynamic:
+                lane = 2.25
+            case .wedge:
+                lane = 3.85
+            case .pedal:
+                lane = 5.45
+            }
+        } else {
+            switch direction.kind {
+            case .dynamic, .pedal:
+                lane = 2.25
+            case .wedge:
+                lane = 3.30
+            }
+        }
         switch direction.placement {
         case .above:
-            return middleY - metrics.staffHeight / 2 - metrics.staffSpace * (1.65 + directionLaneOffset(for: direction))
+            return middleY - metrics.staffHeight / 2 - metrics.staffSpace * max(1.65, lane - 0.55)
         case .below, .unspecified:
-            return middleY + metrics.staffHeight / 2 + metrics.staffSpace * (2.25 + directionLaneOffset(for: direction))
+            return middleY + metrics.staffHeight / 2 + metrics.staffSpace * lane
         }
-    }
-
-    private func directionLaneOffset(for direction: ScoreDirection) -> CGFloat {
-        if case .wedge = direction.kind {
-            return 1.05
-        }
-        return 0
     }
 
     private func pedalLabel(for kind: PedalMarkKind) -> String {
@@ -2498,27 +2747,51 @@ struct ScoreLayoutEngine: Sendable {
     private func stemFrame(
         direction: StemDirection,
         noteFrame: CGRect,
-        noteheadCenter center: CGPoint
+        noteheadCenter center: CGPoint,
+        metrics: LayoutMetrics
     ) -> CGRect {
         let width = max(1.2, noteFrame.width * 0.13)
         let length = noteFrame.height * 2.2 + width * 0.25
+        // SMuFL noteheads have a slightly narrower visual ink box than their
+        // layout frame. Overlap the stem into that box rather than centering it
+        // exactly on the frame edge; otherwise Canvas/CoreText renderers expose
+        // a visible one-pixel seam between stem and notehead.
+        let horizontalOffset = stemHorizontalOffset(
+            direction: direction,
+            noteheadWidth: noteFrame.width,
+            stemWidth: width,
+            attachmentInset: metrics.stemAttachmentInset
+        )
         switch direction {
         case .up:
             return CGRect(
-                // Stem center aligns with the visual right edge of an up-stem
-                // notehead.  The down-stem counterpart uses the left edge.
-                x: noteFrame.maxX - width / 2,
+                x: center.x + horizontalOffset - width / 2,
                 y: center.y - length - width * 0.4,
                 width: width,
                 height: length
             )
         case .down:
             return CGRect(
-                x: noteFrame.minX - width / 2,
+                x: center.x + horizontalOffset - width / 2,
                 y: center.y + width * 0.4,
                 width: width,
                 height: length
             )
+        }
+    }
+
+    private func stemHorizontalOffset(
+        direction: StemDirection,
+        noteheadWidth: CGFloat,
+        stemWidth: CGFloat,
+        attachmentInset: CGFloat
+    ) -> CGFloat {
+        let visualInset = max(0.65, noteheadWidth * 0.075) + attachmentInset
+        return switch direction {
+        case .up:
+            noteheadWidth / 2 - stemWidth / 2 - visualInset
+        case .down:
+            -noteheadWidth / 2 + stemWidth / 2 + visualInset
         }
     }
 
@@ -2545,16 +2818,47 @@ struct ScoreLayoutEngine: Sendable {
         }
     }
 
-    private func wholeRestCenterX(
+    /// Long rests are read as a block rather than as a notehead at their onset.
+    /// Keep half and whole rests centred in their measure's visual mass so they
+    /// do not appear pinned to the left edge of a normalized measure.
+    private func sustainedRestCenterX(
         for note: ScoreNote,
         measureX: CGFloat,
         measureWidth: CGFloat,
         fallbackX: CGFloat
     ) -> CGFloat {
-        guard note.pitch == nil, note.noteValueKind == .whole else {
+        guard note.pitch == nil else {
             return fallbackX
         }
-        return measureX + measureWidth / 2
+        return switch note.noteValueKind {
+        case .whole, .half:
+            measureX + measureWidth / 2
+        case .quarter, .eighth, .sixteenth, .thirtySecond, .other:
+            fallbackX
+        }
+    }
+
+    /// Long-rest anchors use the contact line, not the generic notehead centre.
+    /// A whole rest hangs from line two and a half rest sits on line three.
+    /// The fallback rectangles and SMuFL glyph anchors share these contacts.
+    private func restCenterY(
+        for note: ScoreNote,
+        middleY: CGFloat,
+        staffLineSpacing: CGFloat
+    ) -> CGFloat {
+        guard note.pitch == nil else {
+            return middleY
+        }
+        switch note.noteValueKind {
+        case .whole:
+            // Second line from the top.
+            return middleY - staffLineSpacing
+        case .half:
+            // Third line from the top (the middle line).
+            return middleY
+        case .quarter, .eighth, .sixteenth, .thirtySecond, .other:
+            return middleY
+        }
     }
 
     private func appendDotsIfNeeded(
@@ -3279,6 +3583,8 @@ public struct ElementLayout: Sendable {
     public let clef: Clef?
     public let keySignature: KeySignature?
     public let timeSignature: TimeSignature?
+    public let timeSignatureFontSize: CGFloat?
+    public let timeSignatureDigitInset: CGFloat
     public let pitchClassHint: PitchClass?
     public let frame: CGRect
     public let noteLayout: NoteLayout?
@@ -3309,6 +3615,8 @@ public struct ElementLayout: Sendable {
         clef: Clef? = nil,
         keySignature: KeySignature? = nil,
         timeSignature: TimeSignature? = nil,
+        timeSignatureFontSize: CGFloat? = nil,
+        timeSignatureDigitInset: CGFloat = 0,
         pitchClassHint: PitchClass? = nil,
         frame: CGRect = .zero,
         noteLayout: NoteLayout? = nil,
@@ -3338,6 +3646,8 @@ public struct ElementLayout: Sendable {
         self.clef = clef
         self.keySignature = keySignature
         self.timeSignature = timeSignature
+        self.timeSignatureFontSize = timeSignatureFontSize.map { max(8, $0) }
+        self.timeSignatureDigitInset = max(0, timeSignatureDigitInset)
         self.pitchClassHint = pitchClassHint
         self.frame = frame
         self.noteLayout = noteLayout
@@ -3370,6 +3680,8 @@ public struct ElementLayout: Sendable {
             clef: clef,
             keySignature: keySignature,
             timeSignature: timeSignature,
+            timeSignatureFontSize: timeSignatureFontSize,
+            timeSignatureDigitInset: timeSignatureDigitInset,
             pitchClassHint: pitchClassHint,
             frame: frame.offsetBy(dx: dx, dy: dy),
             noteLayout: noteLayout?.offsetBy(dx: dx, dy: dy),
@@ -3863,6 +4175,9 @@ private struct BeamGroupKey: Hashable {
 private struct BeamEvent {
     let onset: MusicalTime
     let noteIDs: [NoteID]
+    /// The explicitly/inferred beamed note that defines beam levels and contour
+    /// when a chord event also contributes sibling stems.
+    let representativeNoteID: NoteID
 }
 
 private struct BeamGroup {
@@ -3914,36 +4229,48 @@ private struct LayoutMetrics {
     let staffLineHitHalfWidth: CGFloat
     let ledgerLineWidth: CGFloat
     let staffSpace: CGFloat
+    let usesExpandedExpressionLanes: Bool
+    let usesDurationSensitiveShortNoteSpacing: Bool
+    let stemAttachmentInset: CGFloat
+    let timeSignatureScale: CGFloat
+    let timeSignatureFontSize: CGFloat?
+    let timeSignatureDigitInset: CGFloat
 
     init(options: LayoutOptions) {
+        let baseLeftMargin: CGFloat
+        let baseRightMargin: CGFloat
         if options.displayMode == .print, options.showPageMargins {
             let printPageHeight = options.pageHeight ?? options.pageWidth * PrintPageMarginConstants.a4AspectRatio
             let horizontalMargin = Self.standardPrintHorizontalMargin(forPageWidth: options.pageWidth)
             let verticalMargin = Self.standardPrintVerticalMargin(forPageHeight: printPageHeight)
-            leftMargin = horizontalMargin
-            rightMargin = horizontalMargin
+            baseLeftMargin = horizontalMargin
+            baseRightMargin = horizontalMargin
             topMargin = verticalMargin
             bottomMargin = verticalMargin
         } else {
-            leftMargin = options.showPageMargins ? 48 : 24
-            rightMargin = options.showPageMargins ? 48 : 24
+            baseLeftMargin = options.showPageMargins ? 48 : 24
+            baseRightMargin = options.showPageMargins ? 48 : 24
             topMargin = options.showPageMargins ? 48 : 32
             bottomMargin = options.showPageMargins ? 48 : 32
         }
+        leftMargin = baseLeftMargin + options.horizontalMarginAdjustment
+        rightMargin = baseRightMargin + options.horizontalMarginAdjustment
         staffLineSpacing = options.staffSpace * 0.76
         notationSpace = staffLineSpacing / 0.88
         staffHeight = staffLineSpacing * 4
-        let interStaffWhitespace = if options.displayMode == .print, options.showPageMargins {
+        let defaultInterStaffWhitespace = if options.displayMode == .print, options.showPageMargins {
             GrandStaffLayoutConstants.printInterStaffWhitespace
         } else {
             GrandStaffLayoutConstants.interStaffWhitespace
         }
+        let interStaffWhitespace = options.interStaffWhitespace ?? defaultInterStaffWhitespace
         staffGap = staffHeight + interStaffWhitespace
         noteheadSize = CGSize(
-            width: max(4, options.staffSpace * 1.45 - 1),
-            height: max(4, options.staffSpace * 1.05 - 1)
+            width: max(4, options.staffSpace * 1.45 - 1 + options.noteheadSizeAdjustment),
+            height: max(4, options.staffSpace * 1.05 - 1 + options.noteheadSizeAdjustment)
         )
-        if options.displayMode == .print, options.showPageMargins {
+        if options.displayMode == .print,
+           (options.showPageMargins || options.usesCompactMeasureSpacing) {
             noteInset = options.staffSpace * 2
             rhythmicSpacingUnitWidth = options.staffSpace * 1.5
             minimumMeasureWidth = max(options.staffSpace * 7, 84)
@@ -3960,6 +4287,12 @@ private struct LayoutMetrics {
         staffLineHitHalfWidth = max(1, options.staffSpace * 0.08)
         ledgerLineWidth = noteheadSize.width + options.staffSpace * 0.45
         staffSpace = options.staffSpace
+        usesExpandedExpressionLanes = options.usesExpandedExpressionLanes
+        usesDurationSensitiveShortNoteSpacing = options.usesDurationSensitiveShortNoteSpacing
+        stemAttachmentInset = options.stemAttachmentInset
+        timeSignatureScale = options.timeSignatureScale
+        timeSignatureFontSize = options.timeSignatureFontSize
+        timeSignatureDigitInset = options.timeSignatureDigitInset
     }
 
     private static func standardPrintHorizontalMargin(forPageWidth pageWidth: CGFloat) -> CGFloat {
@@ -4299,6 +4632,8 @@ private func justifiedMeasureWidths(
     systemGroups: [[Int]],
     shouldWrapSystems: Bool,
     allowsFinalSystemJustification: Bool,
+    fullyJustifiesFinalSystem: Bool,
+    finalSystemJustificationWeights: [CGFloat]?,
     contentWidth: CGFloat,
     measureSpacing: CGFloat
 ) -> [CGFloat] {
@@ -4328,12 +4663,27 @@ private func justifiedMeasureWidths(
         let extra = contentWidth - occupiedWidth
         guard extra > 0 else { continue }
         let distributableExtra = isFinalSystem
-            ? finalSystemJustificationExtra(extra: extra, indices: indices, baseWidths: baseWidths)
+            ? finalSystemJustificationExtra(
+                extra: extra,
+                indices: indices,
+                baseWidths: baseWidths,
+                fullyJustifies: fullyJustifiesFinalSystem
+            )
             : extra
         guard distributableExtra > 0 else { continue }
-        let perMeasureExtra = distributableExtra / CGFloat(indices.count)
-        for index in indices {
-            widths[index] += perMeasureExtra
+        let weights: [CGFloat]
+        if isFinalSystem,
+           fullyJustifiesFinalSystem,
+           let finalSystemJustificationWeights,
+           finalSystemJustificationWeights.count == baseWidths.count {
+            weights = indices.map { max(0.1, finalSystemJustificationWeights[$0]) }
+        } else {
+            weights = Array(repeating: 1, count: indices.count)
+        }
+        let totalWeight = weights.reduce(0, +)
+        guard totalWeight > 0 else { continue }
+        for (offset, index) in indices.enumerated() {
+            widths[index] += distributableExtra * weights[offset] / totalWeight
         }
     }
     return widths
@@ -4342,10 +4692,14 @@ private func justifiedMeasureWidths(
 private func finalSystemJustificationExtra(
     extra: CGFloat,
     indices: [Int],
-    baseWidths: [CGFloat]
+    baseWidths: [CGFloat],
+    fullyJustifies: Bool = false
 ) -> CGFloat {
     guard !indices.isEmpty else {
         return 0
+    }
+    if fullyJustifies {
+        return extra
     }
     if indices.count == 1 {
         return extra * 0.45
@@ -4358,6 +4712,7 @@ private func applyFinalSingleMeasureWidthGuard(
     baseWidths: [CGFloat],
     systemGroups: [[Int]],
     allowsFinalSystemJustification: Bool,
+    fullyJustifiesFinalSystem: Bool,
     contentWidth: CGFloat
 ) {
     guard allowsFinalSystemJustification,
@@ -4376,7 +4731,12 @@ private func applyFinalSingleMeasureWidthGuard(
     }
     widths[index] = max(
         widths[index],
-        baseWidth + finalSystemJustificationExtra(extra: extra, indices: [index], baseWidths: baseWidths)
+        baseWidth + finalSystemJustificationExtra(
+            extra: extra,
+            indices: [index],
+            baseWidths: baseWidths,
+            fullyJustifies: fullyJustifiesFinalSystem
+        )
     )
 }
 
@@ -4660,9 +5020,12 @@ private func readableRhythmicSpacingWidth(for measure: Measure, metrics: LayoutM
     }
 
     let minimumGap = if containsVeryShortNotes {
-        metrics.staffSpace * 2.25
+        metrics.staffSpace * (metrics.usesDurationSensitiveShortNoteSpacing ? 1.65 : 2.25)
     } else if containsShortNotes {
-        metrics.staffSpace * 2.45
+        // Sixteenth-note groups need less horizontal space than the legacy
+        // eighth-grid fallback, but still retain more than one notehead width
+        // so stems, accidentals, and beams remain legible.
+        metrics.staffSpace * (metrics.usesDurationSensitiveShortNoteSpacing ? 1.85 : 2.45)
     } else {
         metrics.staffSpace * 2.0
     }
@@ -4676,7 +5039,8 @@ private func xCoordinatesByOnset(
     measureWidth: CGFloat,
     metrics: LayoutMetrics,
     displayedKeySignature: KeySignature? = nil,
-    forceClefPrefix: Bool = false
+    forceClefPrefix: Bool = false,
+    anchorsShortNoteGroupsRhythmically: Bool = false
 ) -> [MusicalTime: CGFloat] {
     let onsets = Array(Set(measure.notes.map(\.onset))).sorted()
     guard !onsets.isEmpty else {
@@ -4706,7 +5070,7 @@ private func xCoordinatesByOnset(
             - trailingNotationInsetWidth(for: measure, metrics: metrics)
             - midMeasureClefSpacingWidth(for: measure, metrics: metrics)
     )
-    if measureContainsCompactShortNotes(measure) {
+    if measureContainsCompactShortNotes(measure), !anchorsShortNoteGroupsRhythmically {
         return applyMidMeasureClefOffsets(
             to: compactShortNoteXCoordinates(
                 onsets: onsets,
@@ -4724,7 +5088,19 @@ private func xCoordinatesByOnset(
         .map { $0.onset + $0.duration }
         .max() ?? onsets.last ?? measureStart
     let measureDuration = measureEnd - measureStart
-    let measureDurationValue = musicalTimeValue(measureDuration)
+    let actualMeasureDurationValue = musicalTimeValue(measureDuration)
+    // Scrollable readers should retain the beat location of compact groups.
+    // A complete measure therefore uses its written meter as the rhythmic
+    // denominator, while a genuine pickup/final incomplete measure keeps its
+    // actual duration and is not stretched as if it were complete.
+    let nominalMeasureDurationValue = fullMeasureDuration(for: measure)
+    let measureDurationValue: CGFloat
+    if anchorsShortNoteGroupsRhythmically,
+       actualMeasureDurationValue >= nominalMeasureDurationValue * 0.75 {
+        measureDurationValue = max(actualMeasureDurationValue, nominalMeasureDurationValue)
+    } else {
+        measureDurationValue = actualMeasureDurationValue
+    }
 
     guard measureDurationValue > 0 else {
         let stepWidth = usableWidth / CGFloat(onsets.count - 1)
@@ -4740,11 +5116,44 @@ private func xCoordinatesByOnset(
 }
 
 private func trailingNotationInsetWidth(for measure: Measure, metrics: LayoutMetrics) -> CGFloat {
-    let hasFlaggedNote = measure.notes.contains { $0.pitch != nil && $0.noteValueKind.flagCount > 0 }
-    guard hasFlaggedNote else {
+    let finalRhythmicEvent = measure.notes
+        .max { lhs, rhs in
+            let lhsEnd = lhs.onset + lhs.duration
+            let rhsEnd = rhs.onset + rhs.duration
+            return lhsEnd == rhsEnd ? lhs.onset < rhs.onset : lhsEnd < rhsEnd
+        }
+    guard let finalRhythmicEvent else {
         return metrics.noteInset
     }
-    return max(metrics.noteInset, metrics.noteheadSize.width * 1.55)
+
+    let flaggedInset = max(metrics.noteInset, metrics.noteheadSize.width * 1.55)
+    guard metrics.usesDurationSensitiveShortNoteSpacing else {
+        return finalRhythmicEvent.noteValueKind.flagCount > 0 ? flaggedInset : metrics.noteInset
+    }
+
+    // Ending repeats need their full notation-safe clearance. A dotted final
+    // event receives a small additional allowance for its visible dot.
+    guard !measure.repeatBarlines.contains(where: { $0.direction == .backward }) else {
+        return flaggedInset
+    }
+    let dotAllowance = finalRhythmicEvent.dotCount > 0 ? metrics.staffSpace * 0.35 : 0
+    let shortNoteMinimum = max(
+        metrics.noteheadSize.width * 0.5 + metrics.staffSpace * 0.9,
+        metrics.staffSpace * 1.1
+    ) + dotAllowance
+
+    // Quarter notes and longer preserve the existing terminal whitespace.
+    // Shorter values deliberately use a tighter, but collision-safe, inset.
+    switch finalRhythmicEvent.noteValueKind {
+    case .eighth:
+        return max(shortNoteMinimum, flaggedInset * 0.82)
+    case .sixteenth:
+        return max(shortNoteMinimum, flaggedInset * 0.70)
+    case .thirtySecond:
+        return max(shortNoteMinimum, flaggedInset * 0.58)
+    case .whole, .half, .quarter, .other:
+        return metrics.noteInset
+    }
 }
 
 private func midMeasureClefSpacingWidth(for measure: Measure, metrics: LayoutMetrics) -> CGFloat {
@@ -4839,7 +5248,7 @@ private func clefPrefixWidth(for measure: Measure, forceClef: Bool = false, metr
 }
 
 private func timeSignaturePrefixWidth(for measure: Measure, metrics: LayoutMetrics) -> CGFloat {
-    measure.timeSignature == nil ? 0 : metrics.notationSpace * 2.2
+    measure.timeSignature == nil ? 0 : metrics.notationSpace * 2.2 * metrics.timeSignatureScale
 }
 
 private func forwardRepeatPrefixWidth(for measure: Measure, metrics: LayoutMetrics) -> CGFloat {
@@ -4907,11 +5316,12 @@ private func prefixElements(
             width: metrics.notationSpace * 1.85,
             height: metrics.notationSpace * 3.95
         )
+        let timeSignatureScale = TimeSignatureLayoutConstants.compactScale * metrics.timeSignatureScale
         let frame = CGRect(
-            x: baseFrame.midX - baseFrame.width * TimeSignatureLayoutConstants.compactScale / 2,
-            y: baseFrame.midY - baseFrame.height * TimeSignatureLayoutConstants.compactScale / 2,
-            width: baseFrame.width * TimeSignatureLayoutConstants.compactScale,
-            height: baseFrame.height * TimeSignatureLayoutConstants.compactScale
+            x: baseFrame.midX - baseFrame.width * timeSignatureScale / 2,
+            y: baseFrame.midY - baseFrame.height * timeSignatureScale / 2,
+            width: baseFrame.width * timeSignatureScale,
+            height: baseFrame.height * timeSignatureScale
         )
         elements.append(ElementLayout(
             id: ScoreElementID(rawValue: "\(staffID.rawValue).\(measure.id.rawValue).timeSignature"),
@@ -4921,6 +5331,8 @@ private func prefixElements(
             clef: clef,
             keySignature: displayedKeySignature,
             timeSignature: timeSignature,
+            timeSignatureFontSize: metrics.timeSignatureFontSize,
+            timeSignatureDigitInset: metrics.timeSignatureDigitInset,
             frame: frame
         ))
     }
@@ -5081,13 +5493,11 @@ private func repeatEndingElements(
                 candidate.numbers.contains(number)
                     && (candidate.kind == .stop || candidate.kind == .discontinue)
             }
-            let drawsEndHook = measure.repeatEndings.contains { candidate in
-                candidate.numbers.contains(number) && candidate.kind == .stop
-            }
-            let closesAtBackwardRepeat = drawsEndHook && measure.repeatBarlines.contains { $0.direction == .backward }
             let label = "\(number)."
-            let startHookEnd = closesAtBackwardRepeat ? nil : CGPoint(x: lineStart.x, y: lineStart.y + hookLength)
-            let endHookEnd = drawsEndHook ? CGPoint(x: lineEnd.x, y: lineEnd.y + hookLength) : nil
+            // Keep every volta visibly closed, including MusicXML start-only
+            // ranges whose close marker occurs later or is omitted by source.
+            let startHookEnd = CGPoint(x: lineStart.x, y: lineStart.y + hookLength)
+            let endHookEnd = CGPoint(x: lineEnd.x, y: lineEnd.y + hookLength)
             let labelPoint = CGPoint(x: lineStart.x + metrics.staffSpace * 0.75, y: lineStart.y + labelHeight * 0.65)
             let frame = CGRect(
                 x: lineStart.x - metrics.staffLineHitHalfWidth * 2,
