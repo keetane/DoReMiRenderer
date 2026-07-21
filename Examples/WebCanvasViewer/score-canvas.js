@@ -15,19 +15,22 @@ export async function ensureSMuFLFont() {
 }
 
 export function drawScoreCanvas(canvas, plan, options = {}) {
+  const pageFrame = options.pageFrame ?? plan.canvas;
   const pixelRatio = Math.max(1, window.devicePixelRatio || 1);
-  const cssWidth = canvas.clientWidth || plan.canvas.width;
-  const layoutScale = cssWidth / plan.canvas.width;
-  const cssHeight = plan.canvas.height * layoutScale;
+  const cssWidth = canvas.clientWidth || pageFrame.width;
+  const layoutScale = cssWidth / pageFrame.width;
+  const cssHeight = pageFrame.height * layoutScale;
   canvas.width = Math.round(cssWidth * pixelRatio);
   canvas.height = Math.round(cssHeight * pixelRatio);
   canvas.style.height = `${cssHeight}px`;
 
   const context = canvas.getContext("2d");
-  context.setTransform(pixelRatio * layoutScale, 0, 0, pixelRatio * layoutScale, 0, 0);
-  context.clearRect(0, 0, plan.canvas.width, plan.canvas.height);
+  const scale = pixelRatio * layoutScale;
+  context.setTransform(scale, 0, 0, scale, -pageFrame.x * scale, -pageFrame.y * scale);
+  context.clearRect(pageFrame.x, pageFrame.y, pageFrame.width, pageFrame.height);
   context.lineCap = "butt";
   context.lineJoin = "miter";
+  canvas.dataset.pageIndex = String(options.pageIndex ?? 0);
 
   // Keep page background behind the staff layer. The plan's background fill
   // otherwise covers staff rules if they are pulled out of command order.

@@ -89,6 +89,10 @@ public struct LayoutOptions: Sendable {
     /// Optional title-to-first-system clearance for reading profiles. `nil`
     /// retains the established print-page reservation.
     public var titleGapAboveFirstStaff: CGFloat?
+    /// Visual vertical offset for the title. This changes only the title's
+    /// position; the first system continues to use the unoffset title frame
+    /// for its reserved space.
+    public var titleVerticalOffset: CGFloat
     /// Whether pedal direction labels such as `Ped.` are emitted into the
     /// resolved layout. The default preserves app and PDF output.
     public var showsPedalMarkings: Bool
@@ -139,6 +143,7 @@ public struct LayoutOptions: Sendable {
         usesDurationSensitiveShortNoteSpacing: Bool = false,
         titleScale: CGFloat = 1,
         titleGapAboveFirstStaff: CGFloat? = nil,
+        titleVerticalOffset: CGFloat = 0,
         showsPedalMarkings: Bool = true,
         noteheadSizeAdjustment: CGFloat = 0,
         horizontalMarginAdjustment: CGFloat = 0,
@@ -172,6 +177,7 @@ public struct LayoutOptions: Sendable {
         self.usesDurationSensitiveShortNoteSpacing = usesDurationSensitiveShortNoteSpacing
         self.titleScale = max(0.5, min(1.5, titleScale))
         self.titleGapAboveFirstStaff = titleGapAboveFirstStaff.map { max(0, $0) }
+        self.titleVerticalOffset = titleVerticalOffset
         self.showsPedalMarkings = showsPedalMarkings
         self.noteheadSizeAdjustment = max(0, noteheadSizeAdjustment)
         self.horizontalMarginAdjustment = max(0, horizontalMarginAdjustment)
@@ -261,7 +267,8 @@ struct ScoreLayoutEngine: Sendable {
             && (options.showPageMargins || options.repeatsSystemPrefixAtLineBreaks)
         var titleLayout = scoreTitleLayout(for: score, options: options, metrics: metrics, contentWidth: contentWidth)
         let titleReservedHeight = titleLayout.map {
-            $0.frame.maxY + (options.titleGapAboveFirstStaff ?? ScoreTitleLayoutConstants.gapAboveFirstStaff)
+            ($0.frame.maxY - options.titleVerticalOffset)
+                + (options.titleGapAboveFirstStaff ?? ScoreTitleLayoutConstants.gapAboveFirstStaff)
         } ?? 0
 
         func appendSystem(index: Int, top: CGFloat) {
@@ -984,7 +991,6 @@ struct ScoreLayoutEngine: Sendable {
 
     private func pageJustifiedLayoutIfNeeded(_ layout: ScoreLayout, options: LayoutOptions, metrics: LayoutMetrics) -> ScoreLayout {
         guard options.displayMode == .print,
-              options.showPageMargins,
               let pageHeight = options.pageHeight,
               pageHeight > 0,
               !layout.systems.isEmpty
@@ -1160,7 +1166,7 @@ struct ScoreLayoutEngine: Sendable {
             * options.titleScale
         let frame = CGRect(
             x: metrics.leftMargin,
-            y: max(0, metrics.topMargin - fontSize * 1.15),
+            y: max(0, metrics.topMargin - fontSize * 1.15 + options.titleVerticalOffset),
             width: contentWidth,
             height: fontSize * 1.35
         )
@@ -5138,6 +5144,44 @@ private func xCoordinatesByOnset(
         }), for: measure, metrics: metrics)
     }
 
+    // For measures ending in an eighth note or shorter, avoid leaving the
+    // final rhythmic subdivision as an oversized visual tail. A clef/key/time
+    // prefix remains protected at the start of the measure, then the first and
+    // final notehead centres are pinned to the usable start/end insets. This
+    // keeps the compact terminal clearance without sacrificing prefix spacing.
+    if usesSymmetricShortTerminalInsets(measure, metrics: metrics),
+       let firstOnset = onsets.first,
+       let lastOnset = onsets.last {
+        let onsetSpan = musicalTimeValue(lastOnset - firstOnset)
+        if onsetSpan > 0 {
+            // `terminalInset` positions a notehead centre. Reserve its
+            // half-width plus two staff spaces so the visible ink-to-barline
+            // gap stays compact while remaining readable. `startX` already
+            // contains any clef/key/time/repeat clearance, so that extra
+            // prefix width is not mirrored as unnecessary tail whitespace.
+            let terminalInset = max(
+                trailingNotationInsetWidth(for: measure, metrics: metrics),
+                metrics.noteheadSize.width / 2 + max(metrics.staffSpace * 2, 6 * metrics.notationScale)
+            )
+            let hasPrefix = measurePrefixContentWidth(
+                for: measure,
+                displayedKeySignature: displayedKeySignature ?? measure.keySignature,
+                forceClefPrefix: forceClefPrefix,
+                metrics: metrics
+            ) > 0
+            // Prefix-free measures remain physically symmetric to both
+            // barlines. Prefix-bearing measures retain their established
+            // start clearance and use the same compact terminal inset.
+            let leadingX = hasPrefix ? startX : measureX + terminalInset
+            let terminalX = measureX + measureWidth - terminalInset
+            let symmetricWidth = max(0, terminalX - leadingX)
+            return applyMidMeasureClefOffsets(to: Dictionary(uniqueKeysWithValues: onsets.map { onset in
+                let offset = musicalTimeValue(onset - firstOnset) / onsetSpan
+                return (onset, leadingX + symmetricWidth * offset)
+            }), for: measure, metrics: metrics)
+        }
+    }
+
     return applyMidMeasureClefOffsets(to: Dictionary(uniqueKeysWithValues: onsets.map { onset in
         let offset = musicalTimeValue(onset - measureStart) / measureDurationValue
         return (onset, startX + usableWidth * offset)
@@ -5182,6 +5226,29 @@ private func trailingNotationInsetWidth(for measure: Measure, metrics: LayoutMet
         return max(shortNoteMinimum, flaggedInset * 0.58)
     case .whole, .half, .quarter, .other:
         return metrics.noteInset
+    }
+}
+
+private func usesSymmetricShortTerminalInsets(
+    _ measure: Measure,
+    metrics: LayoutMetrics
+) -> Bool {
+    guard metrics.usesDurationSensitiveShortNoteSpacing,
+          !measure.repeatBarlines.contains(where: { $0.direction == .backward }),
+          let finalEvent = measure.notes.max(by: { lhs, rhs in
+              let lhsEnd = lhs.onset + lhs.duration
+              let rhsEnd = rhs.onset + rhs.duration
+              return lhsEnd == rhsEnd ? lhs.onset < rhs.onset : lhsEnd < rhsEnd
+          })
+    else {
+        return false
+    }
+
+    switch finalEvent.noteValueKind {
+    case .eighth, .sixteenth, .thirtySecond:
+        return true
+    case .whole, .half, .quarter, .other:
+        return false
     }
 }
 

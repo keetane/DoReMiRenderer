@@ -203,6 +203,25 @@ public struct ScoreWebSystemGuide: Hashable, Codable, Sendable {
     }
 }
 
+/// One fixed-size print page resolved by `ScoreLayoutEngine`.
+///
+/// Frames remain in the global `ScoreLayout` coordinate space. Browser
+/// consumers use this metadata to create one Canvas per physical page without
+/// inferring pagination or moving notation independently.
+public struct ScoreWebPage: Hashable, Codable, Sendable {
+    public let index: Int
+    public let frame: ScoreWebRect
+    public let contentFrame: ScoreWebRect
+    public let systemIndices: [Int]
+
+    init(layout: ScoreLayoutPage) {
+        index = layout.index
+        frame = ScoreWebRect(layout.frame)
+        contentFrame = ScoreWebRect(layout.contentFrame)
+        systemIndices = layout.systemIndices
+    }
+}
+
 /// Initial score key information for scale-aware browser palette controls.
 /// It is copied from the parsed domain model; browser consumers do not infer a
 /// key from accidentals or Canvas commands.
@@ -303,7 +322,7 @@ public struct ScoreWebRenderBundle: Hashable, Codable, Sendable {
 
 /// JSON transport produced by the SDK for browser Canvas rendering.
 public struct ScoreWebRenderPlan: Hashable, Codable, Sendable {
-    public static let formatVersion = 6
+    public static let formatVersion = 7
 
     public let formatVersion: Int
     public let canvas: ScoreWebRect
@@ -320,6 +339,9 @@ public struct ScoreWebRenderPlan: Hashable, Codable, Sendable {
     /// Optional for backwards-compatible decoding of plans generated before
     /// system-level browser following was added.
     public let systems: [ScoreWebSystemGuide]?
+    /// Fixed A4 page boundaries resolved by the SDK. Optional so plans
+    /// generated before page-aware browser rendering remain decodable.
+    public let pages: [ScoreWebPage]?
     /// The first declared key signature, used for the browser palette's scale
     /// mode. Mid-score key changes remain represented by the score commands.
     public let initialKeySignature: ScoreWebKeySignature?
@@ -332,6 +354,7 @@ public struct ScoreWebRenderPlan: Hashable, Codable, Sendable {
         ledgerLines: [ScoreWebLedgerLine]? = nil,
         playbackEvents: [ScoreWebPlaybackEvent]? = nil,
         systems: [ScoreWebSystemGuide]? = nil,
+        pages: [ScoreWebPage]? = nil,
         initialKeySignature: ScoreWebKeySignature? = nil
     ) {
         formatVersion = Self.formatVersion
@@ -342,6 +365,7 @@ public struct ScoreWebRenderPlan: Hashable, Codable, Sendable {
         self.ledgerLines = ledgerLines
         self.playbackEvents = playbackEvents
         self.systems = systems
+        self.pages = pages
         self.initialKeySignature = initialKeySignature
     }
 }
@@ -349,9 +373,9 @@ public struct ScoreWebRenderPlan: Hashable, Codable, Sendable {
 /// Responsive layout defaults for browser score readers.
 ///
 /// This profile uses the existing print/wrapped score layout: up to four measures per
-/// system, proportional notation derived from `staffSpace`, and no page-only margin
-/// reservation. It is an independent DoReMiRenderer profile, not a reproduction of
-/// another product's UI or source implementation.
+/// system, proportional notation derived from `staffSpace`, and fixed A4 portrait
+/// pages. It is an independent DoReMiRenderer profile, not a reproduction of another
+/// product's UI or source implementation.
 public struct ScoreWebLayoutProfile: Hashable, Codable, Sendable {
     public var staffSpace: Double
     public var systemSpacing: Double
@@ -378,24 +402,34 @@ public struct ScoreWebLayoutProfile: Hashable, Codable, Sendable {
 
     public static let responsive = ScoreWebLayoutProfile()
 
+    public static let a4PortraitWidth: CGFloat = 595
+    public static let a4PortraitHeight: CGFloat = 842
+    /// Browser A4 notation is sized from a 10pt default notehead width rather
+    /// than directly from the page width. All notation metrics use this same
+    /// scale so clefs, stems, flags, rests, accidentals, and spacing remain
+    /// proportional to the enlarged notehead.
+    public static let a4NotationScale: CGFloat = 10 / 18.4
+
     public func layoutOptions(containerWidth: Double) -> LayoutOptions {
-        // The original Web coordinate space was 1,800pt wide. Scale all
-        // notation metrics with the page width so this A4 coordinate system
-        // retains the same visual density when Canvas fits it to the viewport.
-        let a4LandscapeWidth: CGFloat = 842
-        let notationScale = a4LandscapeWidth / 1_800
+        // `12 * 1.45 - 1 + 2 == 18.4` is the default notehead-width factor
+        // used by LayoutMetrics. Deriving the scale from it keeps the Web
+        // profile's default notehead at 10pt and scales all adjacent notation
+        // as one system.
+        let notationScale = Self.a4NotationScale
 
         return LayoutOptions(
-            // Keep the Web score on an A4 landscape-width coordinate system.
+            // Keep the Web score on an A4 portrait coordinate system.
             // The browser Canvas is responsible for fitting this fixed logical
             // page to its available viewport.
-            pageWidth: a4LandscapeWidth,
+            pageWidth: Self.a4PortraitWidth,
+            pageHeight: Self.a4PortraitHeight,
             staffSpace: CGFloat(staffSpace) * notationScale,
             systemSpacing: CGFloat(systemSpacing) * notationScale,
             measureSpacing: CGFloat(measureSpacing) * notationScale,
             displayMode: .print,
             showPageMargins: false,
             maximumMeasuresPerSystem: maximumMeasuresPerSystem,
+            printSystemGap: 68 * notationScale,
             interStaffWhitespace: CGFloat(interStaffWhitespace ?? 90) * notationScale,
             repeatsSystemPrefixAtLineBreaks: true,
             anchorsShortNoteGroupsRhythmically: true,
@@ -403,11 +437,17 @@ public struct ScoreWebLayoutProfile: Hashable, Codable, Sendable {
             // Use compact note spacing without activating print's dense-score
             // system-break guard; the browser can scale the finished canvas.
             usesCompactMeasureSpacing: true,
-            justifiesFinalSystem: true,
-            fullyJustifiesFinalSystem: true,
+            // Preserve the natural width of a short final line. Filling an
+            // A4 row containing one compact measure makes its note spacing
+            // look disproportionately wide; unused width remains at right.
+            justifiesFinalSystem: false,
+            fullyJustifiesFinalSystem: false,
             usesDurationSensitiveShortNoteSpacing: true,
             titleScale: 0.82,
             titleGapAboveFirstStaff: 120 * notationScale,
+            // Move only the title closer to the first system. Reservation for
+            // the first staff remains unchanged so the score does not shift.
+            titleVerticalOffset: 60 * notationScale,
             showsPedalMarkings: false,
             noteheadSizeAdjustment: 2 * notationScale,
             horizontalMarginAdjustment: 20 * notationScale,
@@ -461,6 +501,7 @@ struct ScoreWebRenderPlanBuilder {
             )
         }
         let systems = layout.systems.map(ScoreWebSystemGuide.init(layout:))
+        let pages = layout.pages.map(ScoreWebPage.init(layout:))
         let initialKeySignature = layout.elements
             .first(where: { $0.kind == .keySignature })?
             .keySignature
@@ -480,6 +521,7 @@ struct ScoreWebRenderPlanBuilder {
             ledgerLines: ledgerLines,
             playbackEvents: playbackEvents,
             systems: systems,
+            pages: pages,
             initialKeySignature: initialKeySignature
         )
     }
@@ -513,18 +555,18 @@ struct ScoreWebPlaybackTimelineBuilder {
             let tempo = tempoBPM(for: event, order: measureOrder[event.measureID] ?? 0, tempos: tempos)
             let interval = schedulingInterval(at: index, in: sequence, tempo: tempo)
             let defaultSoundDuration = soundDuration(for: event.nominalDuration, event: event, tempo: tempo)
-            let perPitchSoundDuration = Dictionary(
-                uniqueKeysWithValues: event.midiPitches.map { midiPitch in
-                    (
-                        midiPitch,
-                        soundDuration(
-                            for: event.midiPitchDurations[midiPitch] ?? event.nominalDuration,
-                            event: event,
-                            tempo: tempo
-                        )
-                    )
-                }
-            )
+            // Several written voices can attack the same MIDI pitch at one
+            // onset. Browser metadata is keyed by sounding pitch, so retain
+            // the longest gate rather than assuming that pitch keys are
+            // unique and crashing during JSON export.
+            let perPitchSoundDuration = event.midiPitches.reduce(into: [Int: Double]()) { durations, midiPitch in
+                let duration = soundDuration(
+                    for: event.midiPitchDurations[midiPitch] ?? event.nominalDuration,
+                    event: event,
+                    tempo: tempo
+                )
+                durations[midiPitch] = max(durations[midiPitch] ?? 0, duration)
+            }
             defer { elapsed += interval }
             return ScoreWebPlaybackEvent(
                 event: event,

@@ -1,4 +1,4 @@
-import { drawScoreCanvas, ensureSMuFLFont } from "./score-canvas.js?v=palette-9";
+import { drawScoreCanvas, ensureSMuFLFont } from "./score-canvas.js?v=palette-14";
 
 // Same defaultEducationalPalette and basic pitch-class grouping as iOS.
 const PITCHES = [
@@ -13,16 +13,16 @@ const state = {
   noteColors: true, staffColors: false, keyboardColors: true, keyboardColorPosition: "top", nextNoteGuide: true, keyboardVisible: true, enabled: allPitchClasses(),
   selectedNoteID: null, selectedMidi: null, currentIndex: 0, activeMIDIs: new Set(), nextMIDIs: new Set(), playing: false,
   context: null, nodes: new Set(), nextScheduledIndex: 0, contextStart: 0, timelineStart: 0, baseTempoBPM: 120, tempoBPM: 120, animationFrame: null,
-  lastFollowedSystemIndex: null,
+  lastFollowedSystemIndex: null, pageCanvases: new Map(),
 };
 const $ = (selector) => document.querySelector(selector);
-const canvas = $("canvas");
+const pageStack = $("#page-stack");
 const controls = {
   status: $("#status"), palette: $("#palette"), paletteButton: $("#palette-button"), noteColors: $("#note-colors"),
   keyboard: $("#keyboard-button"), dock: $("#keyboard-dock"), file: $("#file-input"), sourceName: $("#score-name"),
   sourceMeta: $("#score-meta"), selected: $("#selected-note"), current: $("#current-note"), transpose: $("#transpose-select"), originalScale: $("#original-scale-button"), keyboardElement: $("#keyboard"),
   staffColors: $("#staff-colors"), keyboardColors: $("#keyboard-colors"), keyboardColorPosition: $("#keyboard-color-position"), nextNoteGuide: $("#next-note-guide"), allPitches: $("#all-pitches"),
-  tempo: $("#tempo-input"), zoom: $("#zoom-input"), zoomDown: $("#zoom-down"), zoomUp: $("#zoom-up"), reset: $("#reset-button"), previous: $("#previous-button"), play: $("#play-button"),
+  tempo: $("#tempo-input"), zoom: $("#zoom-input"), reset: $("#reset-button"), previous: $("#previous-button"), play: $("#play-button"),
   stop: $("#stop-button"), next: $("#next-button"), jump: $("#jump-button"), measure: $("#measure-input"), measureStatus: $("#measure-status"),
 };
 
@@ -45,8 +45,6 @@ controls.tempo.addEventListener("change", updateTempoFromInput);
 controls.tempo.addEventListener("keydown", (event) => { if (event.key === "Enter") { event.preventDefault(); updateTempoFromInput(); controls.tempo.blur(); } });
 controls.zoom.addEventListener("change", updateZoomFromInput);
 controls.zoom.addEventListener("keydown", (event) => { if (event.key === "Enter") { event.preventDefault(); updateZoomFromInput(); controls.zoom.blur(); } });
-controls.zoomDown.addEventListener("click", () => setScoreZoom(state.scoreZoom - 0.1));
-controls.zoomUp.addEventListener("click", () => setScoreZoom(state.scoreZoom + 0.1));
 controls.reset.addEventListener("click", () => setEvent(0, true));
 controls.previous.addEventListener("click", () => move(-1));
 controls.next.addEventListener("click", () => move(1));
@@ -54,7 +52,6 @@ controls.jump.addEventListener("click", jumpToMeasure);
 controls.measure.addEventListener("keydown", (event) => { if (event.key === "Enter") jumpToMeasure(); });
 controls.play.addEventListener("click", play);
 controls.stop.addEventListener("click", stop);
-canvas.addEventListener("click", selectAnchor);
 addEventListener("resize", () => requestAnimationFrame(redraw));
 
 try {
@@ -73,7 +70,8 @@ function load(document, sourceName) {
   state.scoreZoom = 1;
   state.baseTempoBPM = sourceTempoBPM(source.events);
   state.tempoBPM = state.baseTempoBPM;
-  canvas.style.width = "100%";
+  state.pageCanvases.clear();
+  pageStack.replaceChildren();
   state.currentIndex = 0;
   state.lastFollowedSystemIndex = null;
   state.selectedNoteID = null;
@@ -140,15 +138,51 @@ function redraw() {
   if (!state.plan) return;
   const event = events()[state.currentIndex];
   const nextEvent = state.nextNoteGuide ? events()[state.currentIndex + 1] : null;
-  drawScoreCanvas(canvas, state.plan, {
-    noteColors: state.noteColors, staffColors: state.staffColors, enabledPitchClasses: state.enabled,
-    noteColorForPitchClass: (pitchClass) => COLORS.get(pitchClass),
-    staffColorForPitchClass: (pitchClass) => COLORS.get(pitchClass),
-    selectedNoteIDs: new Set(state.selectedNoteID ? [state.selectedNoteID] : []),
-    currentNoteIDs: new Set(event?.noteIDs ?? []),
-    nextNoteIDs: new Set(nextEvent?.noteIDs ?? []),
-  });
+  const pages = pageFrames(state.plan);
+  preparePageCanvases(pages);
+  applyPageStackWidth(pages);
+  for (const page of pages) {
+    drawScoreCanvas(state.pageCanvases.get(page.index), state.plan, {
+      pageFrame: page.frame, pageIndex: page.index,
+      noteColors: state.noteColors, staffColors: state.staffColors, enabledPitchClasses: state.enabled,
+      noteColorForPitchClass: (pitchClass) => COLORS.get(pitchClass),
+      staffColorForPitchClass: (pitchClass) => COLORS.get(pitchClass),
+      selectedNoteIDs: new Set(state.selectedNoteID ? [state.selectedNoteID] : []),
+      currentNoteIDs: new Set(event?.noteIDs ?? []),
+      nextNoteIDs: new Set(nextEvent?.noteIDs ?? []),
+    });
+  }
   updateKeyboard();
+}
+
+function pageFrames(plan) {
+  if (Array.isArray(plan?.pages) && plan.pages.length > 0) return plan.pages;
+  return [{ index: 0, frame: plan.canvas, contentFrame: plan.canvas, systemIndices: (plan.systems ?? []).map((system) => system.index) }];
+}
+
+function preparePageCanvases(pages) {
+  const wanted = new Set(pages.map((page) => page.index));
+  for (const [index, pageCanvas] of state.pageCanvases) {
+    if (!wanted.has(index)) { pageCanvas.remove(); state.pageCanvases.delete(index); }
+  }
+  for (const page of pages) {
+    let pageCanvas = state.pageCanvases.get(page.index);
+    if (!pageCanvas) {
+      pageCanvas = document.createElement("canvas");
+      pageCanvas.className = "score-page";
+      pageCanvas.dataset.pageIndex = String(page.index);
+      pageCanvas.setAttribute("aria-label", `Rendered music score page ${page.index + 1}`);
+      pageCanvas.addEventListener("click", selectAnchor);
+      state.pageCanvases.set(page.index, pageCanvas);
+    }
+    pageStack.append(pageCanvas);
+  }
+}
+
+function applyPageStackWidth(pages = pageFrames(state.plan)) {
+  const firstPage = pages[0];
+  if (!firstPage) return;
+  pageStack.style.width = `${firstPage.frame.width * state.scoreZoom}px`;
 }
 
 function sync() {
@@ -170,8 +204,6 @@ function sync() {
   controls.tempo.disabled = !hasTimeline;
   controls.zoom.value = String(Math.round(state.scoreZoom * 100));
   controls.zoom.disabled = !state.plan;
-  controls.zoomDown.disabled = state.scoreZoom <= 0.5;
-  controls.zoomUp.disabled = state.scoreZoom >= 2;
   for (const button of document.querySelectorAll("#pitch-controls button")) {
     const classes = button.dataset.classes.split(",").map(Number);
     button.classList.toggle("is-active", classes.every((pitchClass) => state.enabled.has(pitchClass)));
@@ -201,7 +233,13 @@ function buildTranspose() {
   const signature = state.source?.primaryPlan?.initialKeySignature ?? { fifths: 0, mode: "major" };
   const tonic = tonicForKeySignature(signature);
   const mode = keyMode(signature);
-  for (let value = -12; value <= 12; value += 1) {
+  // One representative for every chromatic pitch class. The written key is
+  // near the middle; octave-equivalent +/-12 choices are intentionally absent.
+  const variantValues = state.source ? [...state.source.variants.keys()] : [];
+  const values = [...new Set([0, ...variantValues])]
+    .filter((value) => value >= -6 && value <= 5)
+    .sort((left, right) => left - right);
+  for (const value of values) {
     const option = document.createElement("option");
     option.value = String(value);
     option.textContent = scaleName(mod(tonic + value, 12), mode, value === 0);
@@ -259,10 +297,13 @@ function updateKeyboard() {
 
 function selectAnchor(event) {
   if (!state.plan) return;
-  const bounds = canvas.getBoundingClientRect();
-  const scale = state.plan.canvas.width / bounds.width;
-  const x = (event.clientX - bounds.left) * scale;
-  const y = (event.clientY - bounds.top) * scale;
+  const pageCanvas = event.currentTarget;
+  const page = pageFrames(state.plan).find((item) => item.index === Number(pageCanvas.dataset.pageIndex));
+  if (!page) return;
+  const bounds = pageCanvas.getBoundingClientRect();
+  const scale = page.frame.width / bounds.width;
+  const x = page.frame.x + (event.clientX - bounds.left) * scale;
+  const y = page.frame.y + (event.clientY - bounds.top) * scale;
   const nearest = state.plan.noteAnchors.reduce((result, anchor) => {
     const distance = (anchor.center.x - x) ** 2 + (anchor.center.y - y) ** 2;
     return distance < result.distance ? { anchor, distance } : result;
@@ -423,10 +464,13 @@ function follow(event) {
   if (!anchor || systemIndex == null || state.lastFollowedSystemIndex === systemIndex) return;
   const system = (state.plan?.systems ?? []).find((item) => item.index === systemIndex);
   if (!system) return;
+  const page = pageFrames(state.plan).find((item) => item.systemIndices?.includes(systemIndex));
+  const pageCanvas = page ? state.pageCanvases.get(page.index) : null;
+  if (!page || !pageCanvas) return;
   const scroll = $("#score-scroll");
-  const canvasBounds = canvas.getBoundingClientRect();
+  const canvasBounds = pageCanvas.getBoundingClientRect();
   const scrollBounds = scroll.getBoundingClientRect();
-  const localY = system.frame.y / state.plan.canvas.height * canvasBounds.height;
+  const localY = (system.frame.y - page.frame.y) / page.frame.height * canvasBounds.height;
   const position = canvasBounds.top + localY - scrollBounds.top;
   state.lastFollowedSystemIndex = systemIndex;
   scroll.scrollTo({ top: Math.max(0, scroll.scrollTop + position - scrollBounds.height * 0.18), behavior: "smooth" });
@@ -434,7 +478,7 @@ function follow(event) {
 
 function setScoreZoom(value) {
   state.scoreZoom = Math.min(2, Math.max(0.5, Math.round(value * 10) / 10));
-  canvas.style.width = `${state.scoreZoom * 100}%`;
+  applyPageStackWidth();
   redraw();
   sync();
 }
@@ -487,7 +531,7 @@ function scaleName(tonic, mode, original) {
 
 function transposedPitches(event) { return event.midiPitches.map((midi) => midi + state.transpose).filter((midi) => midi >= 0 && midi <= 127); }
 function togglePalette() { controls.palette.classList.toggle("is-open"); controls.paletteButton.classList.toggle("active", controls.palette.classList.contains("is-open")); controls.paletteButton.setAttribute("aria-expanded", String(controls.palette.classList.contains("is-open"))); }
-function info(message) { canvas.hidden = false; controls.status.hidden = false; controls.status.textContent = message; }
-function fail(message) { canvas.hidden = true; controls.status.hidden = false; controls.status.textContent = message; }
+function info(message) { pageStack.hidden = false; controls.status.hidden = false; controls.status.textContent = message; }
+function fail(message) { pageStack.hidden = true; controls.status.hidden = false; controls.status.textContent = message; }
 function midiLabel(midi) { const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]; return `${names[mod(midi, 12)]}${Math.floor(midi / 12) - 1}`; }
 function mod(value, divisor) { return ((value % divisor) + divisor) % divisor; }

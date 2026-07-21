@@ -76,6 +76,7 @@ import Testing
     #expect(plan.ledgerLines?.count == layout.ledgerLines.count)
     #expect(plan.ledgerLines?.contains { $0.noteID == ledgerNoteID && $0.colorPitchClass == 0 } == true)
     #expect(plan.systems?.map(\.index) == layout.systems.map(\.index))
+    #expect(plan.pages?.map(\.systemIndices) == layout.pages.map(\.systemIndices))
     #expect(plan.initialKeySignature == ScoreWebKeySignature(KeySignature(fifths: 0, mode: "major")))
 
     let encoded = try JSONEncoder().encode(plan)
@@ -92,9 +93,10 @@ import Testing
         maximumMeasuresPerSystem: 4
     )
     let options = profile.layoutOptions(containerWidth: 240)
-    let a4Scale: CGFloat = 842 / 1_800
+    let a4Scale = ScoreWebLayoutProfile.a4NotationScale
 
-    #expect(options.pageWidth == 842)
+    #expect(options.pageWidth == 595)
+    #expect(options.pageHeight == 842)
     #expect(options.staffSpace == 12 * a4Scale)
     #expect(options.systemSpacing == 82 * a4Scale)
     #expect(options.measureSpacing == 0)
@@ -102,15 +104,17 @@ import Testing
     #expect(options.maximumMeasuresPerSystem == 4)
     #expect(options.displayMode == .print)
     #expect(!options.showPageMargins)
+    #expect(options.printSystemGap == 68 * a4Scale)
     #expect(options.repeatsSystemPrefixAtLineBreaks)
     #expect(options.anchorsShortNoteGroupsRhythmically)
     #expect(options.usesExpandedExpressionLanes)
     #expect(options.usesCompactMeasureSpacing)
-    #expect(options.justifiesFinalSystem)
-    #expect(options.fullyJustifiesFinalSystem)
+    #expect(!options.justifiesFinalSystem)
+    #expect(!options.fullyJustifiesFinalSystem)
     #expect(options.usesDurationSensitiveShortNoteSpacing)
     #expect(options.titleScale == 0.82)
     #expect(options.titleGapAboveFirstStaff == 120 * a4Scale)
+    #expect(options.titleVerticalOffset == 60 * a4Scale)
     #expect(!options.showsPedalMarkings)
     #expect(options.noteheadSizeAdjustment == 2 * a4Scale)
     #expect(options.horizontalMarginAdjustment == 20 * a4Scale)
@@ -119,10 +123,52 @@ import Testing
     #expect(options.timeSignatureFontSize == 36 * a4Scale)
     #expect(options.timeSignatureDigitInset == 4 * a4Scale)
     #expect(options.notationScale == a4Scale)
+    let noteheadWidth = options.staffSpace * 1.45
+        - options.notationScale
+        + options.noteheadSizeAdjustment
+    #expect(abs(noteheadWidth - 10) < 0.001)
+}
+
+@Test func webTitleOffsetMovesOnlyTheTitleAndPreservesFirstSystemPosition() throws {
+    let staffID = StaffID(rawValue: "1")
+    let measure = Measure(
+        id: MeasureID(partIndex: 0, measureNumber: "1"),
+        number: "1",
+        notes: [
+            ScoreNote(
+                id: NoteID(rawValue: "title-offset-note"),
+                pitch: Pitch(step: .c, octave: 4),
+                onset: MusicalTime(ticks: 0, ticksPerQuarterNote: 4),
+                duration: MusicalTime(ticks: 4, ticksPerQuarterNote: 4),
+                noteValueKind: .quarter,
+                voiceID: VoiceID(rawValue: "1"),
+                staffID: staffID
+            ),
+        ],
+        clef: Clef(kind: .treble),
+        timeSignature: TimeSignature(beats: 4, beatType: 4)
+    )
+    let score = ScoreDocument(parts: [ScorePart(id: "P1", measures: [measure])], title: "Title Offset")
+    let renderer = DoReMiRenderer()
+    var baselineOptions = renderer.webLayoutOptions(containerWidth: 1_024)
+    baselineOptions.titleVerticalOffset = 0
+    let shiftedOptions = renderer.webLayoutOptions(containerWidth: 1_024)
+
+    let baseline = try renderer.layout(score: score, options: baselineOptions)
+    let shifted = try renderer.layout(score: score, options: shiftedOptions)
+    let baselineTitle = try #require(baseline.title)
+    let shiftedTitle = try #require(shifted.title)
+    let baselineFirstSystem = try #require(baseline.systems.first)
+    let shiftedFirstSystem = try #require(shifted.systems.first)
+
+    // Page normalization can retain a sub-point top inset; the title offset
+    // remains visually exact while the first staff stays fixed.
+    #expect(abs((shiftedTitle.frame.minY - baselineTitle.frame.minY) - shiftedOptions.titleVerticalOffset) < 0.2)
+    #expect(abs(shiftedFirstSystem.frame.minY - baselineFirstSystem.frame.minY) < 0.001)
 }
 
 @Test func webA4NotationScaleReducesFixedSMuFLGlyphFloors() {
-    let a4Scale: CGFloat = 842 / 1_800
+    let a4Scale = ScoreWebLayoutProfile.a4NotationScale
     let frame = CGRect(x: 0, y: 0, width: 8, height: 4)
     let nativePolicy = SMuFLGlyphSizePolicy()
     let webPolicy = SMuFLGlyphSizePolicy(minimumScale: a4Scale)
@@ -135,7 +181,7 @@ import Testing
     #expect(webPolicy.repeatDotSize(for: frame) < nativePolicy.repeatDotSize(for: frame))
 }
 
-@Test func webCompactProfileKeepsFourRhythmCoverageMeasuresInOneSystem() throws {
+@Test func webCompactProfileReflowsDenseCoverageAtTenPointNoteheadScale() throws {
     let staffID = StaffID(rawValue: "1")
     let quarter = MusicalTime(ticks: 12, ticksPerQuarterNote: 12)
     let eighth = MusicalTime(ticks: 6, ticksPerQuarterNote: 12)
@@ -171,10 +217,57 @@ import Testing
     let renderer = DoReMiRenderer()
     let layout = try renderer.layout(score: score, options: renderer.webLayoutOptions(containerWidth: 1_024))
 
-    #expect(layout.systems.count == 1)
-    #expect(Set(layout.measures.map(\.systemIndex)) == Set([0]))
-    let system = try #require(layout.systems.first)
-    #expect(abs(system.frame.minX - (layout.canvasSize.width - system.frame.maxX)) < 0.01)
+    // The enlarged 10pt Web notehead keeps all notation proportional. This
+    // dense four-measure coverage fixture therefore reflows rather than
+    // compressing symbols below their readable size.
+    #expect(layout.systems.count > 1)
+    #expect(layout.systems.allSatisfy { system in
+        layout.measures.filter { $0.systemIndex == system.index }.count <= 4
+    })
+    #expect(Set(layout.measures.map(\.systemIndex)).count == layout.systems.count)
+    #expect(layout.systems.allSatisfy {
+        abs($0.frame.minX - (layout.canvasSize.width - $0.frame.maxX)) < 0.01
+    })
+    let finalSystem = try #require(layout.systems.last)
+    let finalMeasures = layout.measures.filter { $0.systemIndex == finalSystem.index }
+    #expect(finalMeasures.count == 1)
+    #expect((try #require(finalMeasures.first)).frame.width < finalSystem.frame.width * 0.5)
+}
+
+@Test func webRenderPlanUsesFixedA4PagesAndMovesOverflowToLaterPages() throws {
+    let staffID = StaffID(rawValue: "1")
+    let duration = MusicalTime(ticks: 4, ticksPerQuarterNote: 4)
+    let measures = (1...32).map { number in
+        Measure(
+            id: MeasureID(partIndex: 0, measureNumber: "\(number)"),
+            number: "\(number)",
+            notes: [
+                ScoreNote(
+                    id: NoteID(rawValue: "a4-page-\(number)"),
+                    pitch: Pitch(step: .c, octave: 4),
+                    onset: MusicalTime(ticks: 0, ticksPerQuarterNote: 4),
+                    duration: duration,
+                    noteValueKind: .quarter,
+                    voiceID: VoiceID(rawValue: "1"),
+                    staffID: staffID
+                ),
+            ],
+            clef: Clef(kind: .treble),
+            timeSignature: TimeSignature(beats: 4, beatType: 4)
+        )
+    }
+    let score = ScoreDocument(parts: [ScorePart(id: "P1", measures: measures)])
+    let renderer = DoReMiRenderer()
+    var options = renderer.webLayoutOptions(containerWidth: 1_024)
+    options.maximumMeasuresPerSystem = 1
+    let layout = try renderer.layout(score: score, options: options)
+    let plan = renderer.makeWebRenderPlan(score: score, layout: layout)
+    let pages = try #require(plan.pages)
+
+    #expect(pages.count > 1)
+    #expect(pages.allSatisfy { $0.frame.width == 595 && $0.frame.height == 842 })
+    #expect(pages.flatMap { $0.systemIndices } == layout.systems.map { $0.index })
+    #expect(plan.canvas.height == Double(pages.count * 842))
 }
 
 @Test func webDurationSensitiveSpacingTightensShortNotesAndTerminalInsets() throws {
@@ -214,19 +307,23 @@ import Testing
         number: "2",
         notes: notes(prefix: "eighth", count: 8, duration: eighth, kind: .eighth),
         clef: Clef(kind: .treble),
-        timeSignature: TimeSignature(beats: 4, beatType: 4)
+        timeSignature: nil
     )
     let measure3 = Measure(
         id: MeasureID(partIndex: 0, measureNumber: "3"),
         number: "3",
         notes: notes(prefix: "sixteenth", count: 16, duration: sixteenth, kind: .sixteenth),
-        clef: Clef(kind: .treble),
-        timeSignature: TimeSignature(beats: 4, beatType: 4)
+        clef: nil,
+        timeSignature: nil
     )
     let score = ScoreDocument(parts: [ScorePart(id: "P1", measures: [measure1, measure2, measure3])])
     let renderer = DoReMiRenderer()
 
     var legacyOptions = renderer.webLayoutOptions(containerWidth: 1_024)
+    legacyOptions.pageWidth = 2_000
+    legacyOptions.pageHeight = nil
+    legacyOptions.maximumMeasuresPerSystem = 3
+    legacyOptions.repeatsSystemPrefixAtLineBreaks = false
     legacyOptions.justifiesFinalSystem = false
     legacyOptions.usesDurationSensitiveShortNoteSpacing = false
     var compactOptions = legacyOptions
@@ -242,20 +339,31 @@ import Testing
     let legacySixteenthSecond = try #require(legacy.noteByID[NoteID(rawValue: "sixteenth-1")])
     let compactSixteenthFirst = try #require(compact.noteByID[NoteID(rawValue: "sixteenth-0")])
     let compactSixteenthSecond = try #require(compact.noteByID[NoteID(rawValue: "sixteenth-1")])
+    let compactEighthFirst = try #require(compact.noteByID[NoteID(rawValue: "eighth-0")])
+    let compactEighthLast = try #require(compact.noteByID[NoteID(rawValue: "eighth-7")])
     let legacyLast = try #require(legacy.noteByID[NoteID(rawValue: "sixteenth-15")])
     let compactLast = try #require(compact.noteByID[NoteID(rawValue: "sixteenth-15")])
-    let legacyBarline = try #require(legacy.elementByID[ScoreElementID(rawValue: "0.3.barline.right")])
-    let compactBarline = try #require(compact.elementByID[ScoreElementID(rawValue: "0.3.barline.right")])
 
     #expect(compactEighthMeasure.frame.width < legacyEighthMeasure.frame.width)
     #expect(compactSixteenthMeasure.frame.width < legacySixteenthMeasure.frame.width)
     #expect(compactSixteenthSecond.noteheadCenter.x - compactSixteenthFirst.noteheadCenter.x
         < legacySixteenthSecond.noteheadCenter.x - legacySixteenthFirst.noteheadCenter.x)
     #expect(compactSixteenthSecond.noteheadCenter.x - compactSixteenthFirst.noteheadCenter.x
-        >= compactSixteenthFirst.noteheadFrame.width * 1.1)
-    #expect(compactBarline.frame.minX - compactLast.noteheadFrame.maxX
-        < legacyBarline.frame.minX - legacyLast.noteheadFrame.maxX)
-    #expect(compactBarline.frame.minX - compactLast.noteheadFrame.maxX >= 10)
+        >= compactSixteenthFirst.noteheadFrame.width)
+    #expect(compactSixteenthMeasure.frame.maxX - compactLast.noteheadFrame.maxX
+        < legacySixteenthMeasure.frame.maxX - legacyLast.noteheadFrame.maxX)
+    // Short-value terminal insets are deliberately compact, while retaining a
+    // visible barline clearance at A4 notation scale.
+    #expect(compactSixteenthMeasure.frame.maxX - compactLast.noteheadFrame.maxX >= 7)
+    let compactEighthLeadingGap = compactEighthFirst.noteheadFrame.minX - compactEighthMeasure.frame.minX
+    let compactEighthTrailingGap = compactEighthMeasure.frame.maxX - compactEighthLast.noteheadFrame.maxX
+    // A system/measure prefix keeps its own clearance at the start, while the
+    // final short note still receives the compact terminal inset.
+    #expect(compactEighthTrailingGap < compactEighthLeadingGap)
+    #expect(compactEighthTrailingGap >= 7)
+    let compactSixteenthLeadingGap = compactSixteenthFirst.noteheadFrame.minX - compactSixteenthMeasure.frame.minX
+    let compactSixteenthTrailingGap = compactSixteenthMeasure.frame.maxX - compactLast.noteheadFrame.maxX
+    #expect(abs(compactSixteenthLeadingGap - compactSixteenthTrailingGap) < 0.6)
 }
 
 @Test func webRenderBundleKeepsPlaybackIdentityAndUsesSDKTransposeLayouts() throws {
@@ -295,6 +403,11 @@ import Testing
     #expect(raisedPlan.noteAnchors.first?.noteID == noteID)
     #expect(raisedPlan.noteAnchors.first?.midiNumber == 61)
     #expect(raisedPlan.playbackEvents == nil)
+
+    let defaultBundle = try renderer.makeWebRenderBundle(score: score, containerWidth: 960)
+    let defaultSemitoneChoices = Set(defaultBundle.transposeVariants.map(\.semitones) + [0])
+    #expect(defaultSemitoneChoices == Set(-6...5))
+    #expect(defaultSemitoneChoices.count == 12)
 }
 
 @Test func webPlaybackTimelineKeepsWrittenPitchDurationsForBrowserAudio() throws {
@@ -344,6 +457,31 @@ import Testing
     #expect(abs((half.midiSoundDurationSeconds?[62, default: 0] ?? 0) - 1.0) < 0.001)
 }
 
+@Test func webPlaybackTimelineMergesDuplicateSoundingPitchDurations() {
+    let measureID = MeasureID(partIndex: 0, measureNumber: "1")
+    let staffID = StaffID(rawValue: "1")
+    let onset = MusicalTime(ticks: 0, ticksPerQuarterNote: 4)
+    let score = ScoreDocument(parts: [
+        ScorePart(id: "p1", measures: [
+            Measure(
+                id: measureID,
+                number: "1",
+                notes: [
+                    ScoreNote(id: NoteID(rawValue: "unison-short"), pitch: Pitch(step: .c, octave: 4), onset: onset, duration: MusicalTime(ticks: 4, ticksPerQuarterNote: 4), noteValueKind: .quarter, voiceID: VoiceID(rawValue: "1"), staffID: staffID),
+                    ScoreNote(id: NoteID(rawValue: "unison-long"), pitch: Pitch(step: .c, octave: 4), onset: onset, duration: MusicalTime(ticks: 8, ticksPerQuarterNote: 4), noteValueKind: .half, voiceID: VoiceID(rawValue: "2"), staffID: staffID),
+                ],
+                clef: Clef(kind: .treble),
+                timeSignature: TimeSignature(beats: 4, beatType: 4),
+                tempoEvents: [TempoEvent(bpm: 120, onset: onset, source: .sound, measureID: measureID)]
+            ),
+        ]),
+    ])
+
+    let event = ScoreWebPlaybackTimelineBuilder().build(score: score).first
+    #expect(event?.midiSoundDurationSeconds?.count == 1)
+    #expect(abs((event?.midiSoundDurationSeconds?[60] ?? 0) - 1.0) < 0.001)
+}
+
 @Test func printSystemGapDefaultsToTheIOSPDFReadingRhythmAndCanBeOverridden() {
     #expect(LayoutOptions().printSystemGap == 68)
     #expect(LayoutOptions(printSystemGap: 44).printSystemGap == 44)
@@ -362,6 +500,7 @@ import Testing
     #expect(!defaults.usesDurationSensitiveShortNoteSpacing)
     #expect(defaults.titleScale == 1)
     #expect(defaults.titleGapAboveFirstStaff == nil)
+    #expect(defaults.titleVerticalOffset == 0)
     #expect(defaults.showsPedalMarkings)
     #expect(defaults.noteheadSizeAdjustment == 0)
     #expect(defaults.horizontalMarginAdjustment == 0)

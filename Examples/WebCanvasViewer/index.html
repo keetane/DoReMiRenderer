@@ -51,8 +51,9 @@
       .score-meta { color:var(--muted); font-size:12px; white-space:nowrap; }
       .current-note { margin-left:auto; color:#1f4f91; font-size:13px; font-weight:700; white-space:nowrap; }
       .score-scroll { overflow:auto; max-height:calc(100vh - 238px); background:#e7eaf0; }
-      .canvas-wrap { position:relative; min-width:680px; background:#fff; }
-      canvas { display:block; width:100%; background:#fff; }
+      .canvas-wrap { position:relative; min-width:680px; min-height:100%; background:#e7eaf0; }
+      .page-stack { display:grid; gap:24px; width:595px; margin:0 auto; padding:24px 0; }
+      .score-page { display:block; width:100%; background:#fff; box-shadow:0 2px 10px #1a31422e; }
       #status { margin:0; padding:12px 14px; border-radius:0; background:#fff3cd; color:#5f4600; }
       #status[hidden] { display:none; }
       .keyboard-dock { position:sticky; bottom:0; z-index:9; padding:10px clamp(14px,3vw,38px) 14px; border-top:1px solid var(--line); background:color-mix(in srgb,var(--panel) 96%,transparent); backdrop-filter:blur(16px); }
@@ -78,9 +79,7 @@
         <button id="original-scale-button" type="button" title="原曲のスケールへ戻す" aria-label="原曲のスケールへ戻す">&#9838;</button>
         <select id="transpose-select" aria-label="移調"></select>
         <label class="tempo-control" title="再生テンポ" aria-label="再生テンポ"><span>&#9833;</span><input id="tempo-input" type="number" min="30" max="300" step="1" inputmode="numeric" aria-label="テンポ BPM"><span>BPM</span></label>
-        <button id="zoom-down" type="button" title="譜面を10%縮小" aria-label="譜面を10%縮小">&#9660;</button>
         <label class="zoom-control" title="譜面の拡大率" aria-label="譜面の拡大率"><span>&#128269;</span><input id="zoom-input" type="number" min="50" max="200" step="10" inputmode="numeric" aria-label="譜面の拡大率"><span>%</span></label>
-        <button id="zoom-up" type="button" title="譜面を10%拡大" aria-label="譜面を10%拡大">&#9650;</button>
         <div class="transport" aria-label="再生と小節移動">
           <button id="reset-button" type="button" disabled title="先頭へ戻る" aria-label="先頭へ戻る">&#8634;</button>
           <button id="previous-button" type="button" disabled title="前の音" aria-label="前の音">&#9665;</button>
@@ -108,11 +107,11 @@
         <section class="score-card" aria-label="楽譜">
           <div class="score-header"><span id="score-name" class="score-name">Loading score…</span><span id="score-meta" class="score-meta"></span><span id="current-note" class="current-note">-</span></div>
           <p id="status" role="status">Notation font and score are loading…</p>
-          <div id="score-scroll" class="score-scroll"><div id="canvas-wrap" class="canvas-wrap"><canvas aria-label="Rendered music score"></canvas></div></div>
+          <div id="score-scroll" class="score-scroll"><div id="canvas-wrap" class="canvas-wrap"><div id="page-stack" class="page-stack" aria-label="Rendered music score"></div></div></div>
         </section>
       </main>
       <section id="keyboard-dock" class="keyboard-dock" aria-label="ピアノ鍵盤"><div class="keyboard-caption"><span>鍵盤</span><span id="selected-note">音符を選択してください</span></div><div id="keyboard" class="keyboard"></div></section>
     </div>
-    <script type="module" src="./palette-app.js?v=palette-13"></script>
+    <script type="module" src="./palette-app.js?v=palette-14"></script>
   </body>
 </html>
