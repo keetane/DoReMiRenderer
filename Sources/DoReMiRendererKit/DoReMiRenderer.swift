@@ -97,7 +97,10 @@ public struct DoReMiRenderer: Sendable {
     public func makeWebRenderBundle(
         score: ScoreDocument,
         containerWidth: Double,
-        displayTransposeRange: ClosedRange<Int> = -12...12,
+        // One chromatic octave, with the written key near the centre. Keeping
+        // a single representative per pitch class avoids duplicate octave
+        // choices such as a second C one octave below the source score.
+        displayTransposeRange: ClosedRange<Int> = -6...5,
         style: ScoreStyle = ScoreStyle()
     ) throws -> ScoreWebRenderBundle {
         let clampedLower = max(-12, displayTransposeRange.lowerBound)
