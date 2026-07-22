@@ -13,7 +13,7 @@ const state = {
   noteColors: true, staffColors: false, keyboardColors: true, keyboardColorPosition: "top", nextNoteGuide: true, keyboardVisible: true, enabled: allPitchClasses(),
   selectedNoteID: null, selectedMidi: null, currentIndex: 0, activeMIDIs: new Set(), nextMIDIs: new Set(), playing: false,
   context: null, nodes: new Set(), nextScheduledIndex: 0, contextStart: 0, timelineStart: 0, baseTempoBPM: 120, tempoBPM: 120, animationFrame: null,
-  lastFollowedSystemIndex: null, pageCanvases: new Map(),
+  lastFollowedSystemIndex: null, pageCanvases: new Map(), transposeRequestID: 0,
 };
 const $ = (selector) => document.querySelector(selector);
 const pageStack = $("#page-stack");
@@ -39,8 +39,8 @@ controls.keyboardColorPosition.addEventListener("click", () => { state.keyboardC
 controls.nextNoteGuide.addEventListener("click", () => { state.nextNoteGuide = !state.nextNoteGuide; sync(); redraw(); });
 controls.allPitches.addEventListener("click", () => { state.enabled = state.enabled.size === 12 ? new Set() : allPitchClasses(); sync(); redraw(); });
 controls.file.addEventListener("change", async (event) => { const file = event.target.files?.[0]; if (!file) return; try { await loadFile(file); } catch (error) { fail(`スコアを開けません: ${error.message}`); } finally { controls.file.value = ""; } });
-controls.transpose.addEventListener("change", () => { state.transpose = Number(controls.transpose.value); applyTranspose(); });
-controls.originalScale.addEventListener("click", () => { state.transpose = 0; applyTranspose(); });
+controls.transpose.addEventListener("change", () => { state.transpose = Number(controls.transpose.value); void applyTranspose(); });
+controls.originalScale.addEventListener("click", () => { state.transpose = 0; void applyTranspose(); });
 controls.tempo.addEventListener("change", updateTempoFromInput);
 controls.tempo.addEventListener("keydown", (event) => { if (event.key === "Enter") { event.preventDefault(); updateTempoFromInput(); controls.tempo.blur(); } });
 controls.zoom.addEventListener("change", updateZoomFromInput);
@@ -81,7 +81,7 @@ function load(document, sourceName) {
   controls.sourceMeta.textContent = `${source.primaryPlan.noteAnchors.length} notes`;
   controls.status.hidden = true;
   buildTranspose();
-  applyTranspose(true);
+  void applyTranspose(true);
 }
 
 async function loadFile(file) {
@@ -105,7 +105,7 @@ async function loadFile(file) {
     body: payload,
   });
   if (!response.ok) {
-    const detail = await response.text();
+    const detail = await responseDetail(response);
     throw new Error(detail || "MusicXML/MXL変換サーバーに接続できません。Examples/WebCanvasViewer/server.pyで起動してください。");
   }
   load(await response.json(), file.name);
@@ -113,23 +113,62 @@ async function loadFile(file) {
 
 function normalize(document) {
   if (document?.primaryPlan && Array.isArray(document.transposeVariants)) {
-    return { primaryPlan: document.primaryPlan, variants: new Map(document.transposeVariants.map((item) => [Number(item.semitones), item.plan])), events: document.primaryPlan.playbackEvents ?? [] };
+    return {
+      primaryPlan: document.primaryPlan,
+      variants: new Map(document.transposeVariants.map((item) => [Number(item.semitones), item.plan])),
+      events: document.primaryPlan.playbackEvents ?? [],
+      sourceToken: document.sourceToken ?? null,
+      availableTransposeSemitones: document.availableTransposeSemitones ?? document.transposeVariants.map((item) => Number(item.semitones)).concat(0),
+    };
   }
-  return { primaryPlan: document, variants: new Map(), events: document?.playbackEvents ?? [] };
+  return {
+    primaryPlan: document,
+    variants: new Map(),
+    events: document?.playbackEvents ?? [],
+    sourceToken: document?.sourceToken ?? null,
+    availableTransposeSemitones: document?.availableTransposeSemitones ?? [0],
+  };
 }
 
 function validate(plan) {
   if (!plan?.canvas || !Array.isArray(plan.commands) || !Array.isArray(plan.noteAnchors)) throw new Error("DoReMiRenderer Web Render Plan JSON を選択してください。");
 }
 
-function applyTranspose(silent = false) {
+async function applyTranspose(silent = false) {
   if (!state.source) return;
-  const variant = state.transpose !== 0 ? state.source.variants.get(state.transpose) : state.source.primaryPlan;
+  const requestedTranspose = state.transpose;
+  const requestID = ++state.transposeRequestID;
+  let variant = requestedTranspose !== 0 ? state.source.variants.get(requestedTranspose) : state.source.primaryPlan;
+  if (!variant && requestedTranspose !== 0 && state.source.sourceToken) {
+    try {
+      info("移調レイアウトをSDKで生成しています…");
+      const response = await fetch(`./api/transpose?token=${encodeURIComponent(state.source.sourceToken)}&semitones=${requestedTranspose}`);
+      if (!response.ok) throw new Error(await responseDetail(response));
+      variant = await response.json();
+      validate(variant);
+      if (requestID !== state.transposeRequestID || requestedTranspose !== state.transpose) return;
+      state.source.variants.set(requestedTranspose, variant);
+    } catch (error) {
+      if (requestID !== state.transposeRequestID || requestedTranspose !== state.transpose) return;
+      if (!silent) fail(`移調レイアウトを生成できません: ${error.message}`);
+      return;
+    }
+  }
+  if (requestID !== state.transposeRequestID || requestedTranspose !== state.transpose) return;
   state.plan = variant ?? state.source.primaryPlan;
   state.lastFollowedSystemIndex = null;
   if (!variant && state.transpose !== 0 && !silent) info("このファイルには選択した移調レイアウトが含まれていません。");
   else controls.status.hidden = true;
   setEvent(state.currentIndex, false);
+}
+
+async function responseDetail(response) {
+  const body = await response.text();
+  try {
+    return JSON.parse(body).error ?? body;
+  } catch {
+    return body;
+  }
 }
 
 function events() { return state.source?.events ?? []; }
@@ -198,7 +237,7 @@ function sync() {
   controls.keyboardColorPosition.textContent = state.keyboardColorPosition === "top" ? "鍵盤色: 上" : "鍵盤色: 下";
   controls.keyboardElement.classList.toggle("color-bottom", state.keyboardColorPosition === "bottom");
   controls.transpose.value = String(state.transpose);
-  controls.transpose.disabled = state.source != null && state.source.variants.size === 0;
+  controls.transpose.disabled = state.source == null || (state.source.variants.size === 0 && !state.source.sourceToken);
   controls.originalScale.disabled = state.transpose === 0;
   controls.tempo.value = String(Math.round(state.tempoBPM));
   controls.tempo.disabled = !hasTimeline;
@@ -235,7 +274,7 @@ function buildTranspose() {
   const mode = keyMode(signature);
   // One representative for every chromatic pitch class. The written key is
   // near the middle; octave-equivalent +/-12 choices are intentionally absent.
-  const variantValues = state.source ? [...state.source.variants.keys()] : [];
+  const variantValues = state.source?.availableTransposeSemitones ?? [...(state.source?.variants.keys() ?? [])];
   const values = [...new Set([0, ...variantValues])]
     .filter((value) => value >= -6 && value <= 5)
     .sort((left, right) => left - right);

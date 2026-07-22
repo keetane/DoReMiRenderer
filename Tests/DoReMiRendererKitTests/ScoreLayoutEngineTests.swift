@@ -102,6 +102,98 @@ import Testing
     #expect(clefChange.frame.maxX < after.noteheadFrame.minX)
 }
 
+@Test func webLayoutReservesMidMeasureClefAdvanceBeforeShortTail() throws {
+    let staff2 = StaffID(rawValue: "2")
+    let measureID = MeasureID(partIndex: 0, measureNumber: "1")
+    let score = ScoreDocument(parts: [
+        ScorePart(id: "p1", measures: [
+            Measure(
+                id: measureID,
+                number: "1",
+                notes: [
+                    makeNote(id: "clef-before", pitch: Pitch(step: .c, octave: 3), onsetTicks: 0, durationTicks: 8, noteValueKind: .half, staffID: staff2),
+                    makeNote(id: "clef-rest", pitch: nil, onsetTicks: 8, durationTicks: 4, noteValueKind: .quarter, staffID: staff2),
+                    makeNote(id: "clef-tail-a", pitch: Pitch(step: .e, octave: 4), onsetTicks: 12, durationTicks: 2, noteValueKind: .eighth, staffID: staff2),
+                    makeNote(id: "clef-tail-b", pitch: Pitch(step: .f, octave: 4), onsetTicks: 14, durationTicks: 2, noteValueKind: .eighth, staffID: staff2),
+                ],
+                clefsByStaff: [staff2: Clef(kind: .bass)],
+                effectiveClefsByStaff: [staff2: Clef(kind: .bass)],
+                clefChanges: [
+                    ClefChange(staffID: staff2, clef: Clef(kind: .treble), onset: MusicalTime(ticks: 12, ticksPerQuarterNote: 4)),
+                ],
+                timeSignature: TimeSignature(beats: 4, beatType: 4)
+            ),
+        ]),
+    ])
+
+    let renderer = DoReMiRenderer()
+    let layout = try renderer.layout(score: score, options: renderer.webLayoutOptions(containerWidth: 1_024))
+    let measure = try #require(layout.measures.first { $0.measureID == measureID })
+    let kinds: Set<ScoreElementKind> = [.notehead, .rest, .stem, .flag, .beam, .clef, .dot, .accidental]
+    let content = layout.elements.filter { $0.measureID == measureID && kinds.contains($0.kind) }
+
+    #expect(try #require(content.map(\.frame.maxX).max()) <= measure.frame.maxX + 0.001)
+}
+
+@Test func explicitBeamedShortRunsStayMoreCompactThanFlaggedRunsWithRests() throws {
+    func score(explicitBeams: Bool) -> ScoreDocument {
+        let beamValues: [[MusicXMLBeam]] = [
+            [MusicXMLBeam(number: 1, value: .begin), MusicXMLBeam(number: 2, value: .begin)],
+            [MusicXMLBeam(number: 1, value: .continue), MusicXMLBeam(number: 2, value: .continue)],
+            [MusicXMLBeam(number: 1, value: .continue), MusicXMLBeam(number: 2, value: .continue)],
+            [MusicXMLBeam(number: 1, value: .end), MusicXMLBeam(number: 2, value: .end)],
+        ]
+        let pitches: [Pitch] = [
+            Pitch(step: .c, octave: 5), Pitch(step: .d, octave: 5),
+            Pitch(step: .e, octave: 5), Pitch(step: .f, octave: 5),
+        ]
+        var notes: [ScoreNote] = [
+            makeNote(id: "leading-rest", pitch: nil, onsetTicks: 0, durationTicks: 1, noteValueKind: .sixteenth),
+        ]
+        notes += pitches.enumerated().map { index, pitch in
+            makeNote(
+                id: "run-\(index)",
+                pitch: pitch,
+                onsetTicks: index + 1,
+                durationTicks: 1,
+                noteValueKind: .sixteenth,
+                beams: explicitBeams ? beamValues[index] : []
+            )
+        }
+        notes += [
+            makeNote(id: "middle-rest", pitch: nil, onsetTicks: 5, durationTicks: 8, noteValueKind: .half),
+            makeNote(id: "tail-rest", pitch: nil, onsetTicks: 13, durationTicks: 3, noteValueKind: .eighth),
+        ]
+        return ScoreDocument(parts: [
+            ScorePart(id: "p1", measures: [
+                Measure(
+                    id: MeasureID(partIndex: 0, measureNumber: "1"),
+                    number: "1",
+                    notes: notes,
+                    clef: Clef(kind: .treble),
+                    timeSignature: TimeSignature(beats: 4, beatType: 4)
+                ),
+            ]),
+        ])
+    }
+
+    let renderer = DoReMiRenderer()
+    let beamedLayout = try renderer.layout(score: score(explicitBeams: true), options: renderer.webLayoutOptions(containerWidth: 1_024))
+    let flaggedLayout = try renderer.layout(score: score(explicitBeams: false), options: renderer.webLayoutOptions(containerWidth: 1_024))
+    let beamedFirst = try #require(beamedLayout.noteLayout(for: NoteID(rawValue: "run-0")))
+    let beamedSecond = try #require(beamedLayout.noteLayout(for: NoteID(rawValue: "run-1")))
+    let flaggedFirst = try #require(flaggedLayout.noteLayout(for: NoteID(rawValue: "run-0")))
+    let flaggedSecond = try #require(flaggedLayout.noteLayout(for: NoteID(rawValue: "run-1")))
+    let beamedMeasure = try #require(beamedLayout.measures.first)
+    let flaggedMeasure = try #require(flaggedLayout.measures.first)
+
+    let beamedGap = beamedSecond.noteheadCenter.x - beamedFirst.noteheadCenter.x
+    let flaggedGap = flaggedSecond.noteheadCenter.x - flaggedFirst.noteheadCenter.x
+    #expect(beamedGap < flaggedGap)
+    #expect(beamedGap > beamedFirst.noteheadFrame.width)
+    #expect(beamedMeasure.frame.width < flaggedMeasure.frame.width)
+}
+
 @Test func restsReceiveStableLayoutElements() throws {
     let restID = NoteID(rawValue: "rest")
     let score = makeScore(notes: [
@@ -187,6 +279,135 @@ import Testing
 
     #expect(abs(rest.noteheadCenter.x - measure.frame.midX) < 0.001)
     #expect(abs(rest.noteheadCenter.y - (staff.frame.minY + staff.frame.height / 2)) < 0.001)
+}
+
+@Test func multipleLongRestsKeepTheirRhythmicPositions() throws {
+    let measureID = MeasureID(partIndex: 0, measureNumber: "1")
+    let score = ScoreDocument(parts: [
+        ScorePart(id: "p1", measures: [
+            Measure(
+                id: measureID,
+                number: "1",
+                notes: [
+                    makeNote(id: "first-half-rest", pitch: nil, onsetTicks: 0, durationTicks: 8, noteValueKind: .half),
+                    makeNote(id: "second-half-rest", pitch: nil, onsetTicks: 8, durationTicks: 8, noteValueKind: .half),
+                ],
+                clef: Clef(kind: .treble),
+                timeSignature: TimeSignature(beats: 4, beatType: 4)
+            ),
+        ]),
+    ])
+
+    let layout = try ScoreLayoutEngine().layout(score: score, options: LayoutOptions(pageWidth: 360, staffSpace: 10))
+    let measure = try #require(layout.measures.first { $0.measureID == measureID })
+    let first = try #require(layout.noteLayout(for: NoteID(rawValue: "first-half-rest")))
+    let second = try #require(layout.noteLayout(for: NoteID(rawValue: "second-half-rest")))
+
+    #expect(first.noteheadCenter.x < measure.frame.midX)
+    #expect(second.noteheadCenter.x > measure.frame.midX)
+    #expect(second.noteheadCenter.x - first.noteheadCenter.x > first.noteheadFrame.width)
+}
+
+@Test func durationSensitiveRestSpacingPreservesShortValueRatiosAndMeasureBounds() throws {
+    let staffID = StaffID(rawValue: "1")
+    let measureID = MeasureID(partIndex: 0, measureNumber: "1")
+    let notes: [ScoreNote] = (0..<16).map { index in
+        ScoreNote(
+            id: NoteID(rawValue: "dense-rest-spacing-\(index)"),
+            pitch: index.isMultiple(of: 3) ? Pitch(step: .c, octave: 4) : nil,
+            onset: MusicalTime(ticks: index, ticksPerQuarterNote: 4),
+            duration: MusicalTime(ticks: 1, ticksPerQuarterNote: 4),
+            noteValueKind: .sixteenth,
+            voiceID: VoiceID(rawValue: "1"),
+            staffID: staffID,
+            accidental: index == 12 ? "sharp" : nil
+        )
+    }
+    let score = ScoreDocument(parts: [
+        ScorePart(id: "p1", measures: [
+            Measure(
+                id: measureID,
+                number: "1",
+                notes: notes,
+                clef: Clef(kind: .treble),
+                timeSignature: TimeSignature(beats: 4, beatType: 4)
+            ),
+        ]),
+    ])
+    let renderer = DoReMiRenderer()
+    let layout = try renderer.layout(score: score, options: renderer.webLayoutOptions(containerWidth: 1_024))
+    let measure = try #require(layout.measures.first { $0.measureID == measureID })
+    let ordered = try notes.map { note in try #require(layout.noteLayout(for: note.id)) }
+
+    for note in ordered {
+        #expect(note.noteheadFrame.minX >= measure.frame.minX)
+        #expect(note.noteheadFrame.maxX <= measure.frame.maxX)
+    }
+    for (left, right) in zip(ordered, ordered.dropFirst()) {
+        #expect(right.noteheadCenter.x > left.noteheadCenter.x)
+    }
+}
+
+@Test func durationSensitiveMixedRestSpacingFollowsRhythmicOnsets() throws {
+    let measureID = MeasureID(partIndex: 0, measureNumber: "1")
+    let score = ScoreDocument(parts: [
+        ScorePart(id: "p1", measures: [
+            Measure(
+                id: measureID,
+                number: "1",
+                notes: [
+                    makeNote(id: "eighth-rest", pitch: nil, onsetTicks: 0, durationTicks: 2, noteValueKind: .eighth),
+                    makeNote(id: "sixteenth-rest", pitch: nil, onsetTicks: 2, durationTicks: 1, noteValueKind: .sixteenth),
+                    makeNote(id: "eighth-note", pitch: Pitch(step: .c, octave: 4), onsetTicks: 3, durationTicks: 2, noteValueKind: .eighth),
+                    makeNote(id: "quarter-rest", pitch: nil, onsetTicks: 5, durationTicks: 4, noteValueKind: .quarter),
+                    makeNote(id: "quarter-note", pitch: Pitch(step: .d, octave: 4), onsetTicks: 9, durationTicks: 4, noteValueKind: .quarter),
+                    makeNote(id: "tail-rest", pitch: nil, onsetTicks: 13, durationTicks: 3, noteValueKind: .eighth),
+                ],
+                clef: Clef(kind: .treble),
+                timeSignature: TimeSignature(beats: 4, beatType: 4)
+            ),
+        ]),
+    ])
+    let renderer = DoReMiRenderer()
+    let layout = try renderer.layout(score: score, options: renderer.webLayoutOptions(containerWidth: 1_024))
+    let eighthRest = try #require(layout.noteLayout(for: NoteID(rawValue: "eighth-rest")))
+    let sixteenthRest = try #require(layout.noteLayout(for: NoteID(rawValue: "sixteenth-rest")))
+    let eighthNote = try #require(layout.noteLayout(for: NoteID(rawValue: "eighth-note")))
+    let quarterRest = try #require(layout.noteLayout(for: NoteID(rawValue: "quarter-rest")))
+    let quarterNote = try #require(layout.noteLayout(for: NoteID(rawValue: "quarter-note")))
+
+    let eighthGap = sixteenthRest.noteheadCenter.x - eighthRest.noteheadCenter.x
+    let sixteenthGap = eighthNote.noteheadCenter.x - sixteenthRest.noteheadCenter.x
+    let quarterGap = quarterNote.noteheadCenter.x - quarterRest.noteheadCenter.x
+    #expect(eighthGap > sixteenthGap)
+    #expect(quarterGap > eighthGap)
+}
+
+@Test func restGlyphFramesStayInsideTheirMeasureAndUseFullVisualWidth() throws {
+    let score = makeScore(notes: [
+        makeNote(id: "leading-rest", pitch: nil, onsetTicks: 0, durationTicks: 1, noteValueKind: .sixtyFourth),
+        makeNote(id: "middle-note", pitch: Pitch(step: .c, octave: 5), onsetTicks: 1, durationTicks: 1, noteValueKind: .sixtyFourth),
+        makeNote(id: "trailing-rest", pitch: nil, onsetTicks: 2, durationTicks: 1, noteValueKind: .sixtyFourth, dotCount: 1),
+    ])
+
+    let options = LayoutOptions(
+        pageWidth: 595,
+        staffSpace: 12,
+        displayMode: .print,
+        anchorsShortNoteGroupsRhythmically: true,
+        usesDurationSensitiveShortNoteSpacing: true,
+        notationScale: 10 / 18.4
+    )
+    let layout = try ScoreLayoutEngine().layout(score: score, options: options)
+    let measure = try #require(layout.measures.first)
+    let leadingRest = try #require(layout.elementLayout(for: ScoreElementID(rawValue: "leading-rest.rest")))
+    let trailingRest = try #require(layout.elementLayout(for: ScoreElementID(rawValue: "trailing-rest.rest")))
+    let trailingDot = try #require(layout.elementLayout(for: ScoreElementID(rawValue: "trailing-rest.dot.0")))
+
+    #expect(leadingRest.frame.minX >= measure.frame.minX)
+    #expect(trailingRest.frame.maxX <= measure.frame.maxX)
+    #expect(trailingDot.frame.maxX <= measure.frame.maxX)
+    #expect(leadingRest.frame.width > 10)
 }
 
 @Test func normalMeasureWidthUsesReadableMinimum() throws {
@@ -633,6 +854,22 @@ import Testing
     #expect(layout.elementLayout(for: ScoreElementID(rawValue: "sixteenth-a.flag")) == nil)
     #expect(layout.elementLayout(for: ScoreElementID(rawValue: "sixteenth-b.flag")) == nil)
     #expect(layout.elementLayout(for: ScoreElementID(rawValue: "eighth-a.flag")) == nil)
+}
+
+@Test func sixtyFourthNotesDrawFourBeamLevelsAndKeepTheRestGlyph() throws {
+    let score = makeScore(notes: [
+        makeNote(id: "sixty-fourth-a", pitch: Pitch(step: .c, octave: 5), onsetTicks: 0, durationTicks: 1, noteValueKind: .sixtyFourth),
+        makeNote(id: "sixty-fourth-b", pitch: Pitch(step: .d, octave: 5), onsetTicks: 1, durationTicks: 1, noteValueKind: .sixtyFourth),
+        makeNote(id: "sixty-fourth-c", pitch: Pitch(step: .e, octave: 5), onsetTicks: 2, durationTicks: 1, noteValueKind: .sixtyFourth),
+        makeNote(id: "sixty-fourth-rest", pitch: nil, onsetTicks: 3, durationTicks: 1, noteValueKind: .sixtyFourth),
+    ])
+
+    let layout = try ScoreLayoutEngine().layout(score: score)
+    let beam = try #require(layout.elements.first { $0.kind == .beam }?.beam)
+
+    #expect(beam.secondarySegments.count == 3)
+    #expect(layout.elementLayout(for: ScoreElementID(rawValue: "sixty-fourth-a.flag")) == nil)
+    #expect(layout.elementLayout(for: ScoreElementID(rawValue: "sixty-fourth-rest.rest"))?.noteLayout?.noteValueKind == .sixtyFourth)
 }
 
 @Test func intermediateBeamedStemTipsMeetSlopedPrimaryBeam() throws {
@@ -2436,6 +2673,60 @@ import Testing
     }
 }
 
+@Test func a4PrintLayoutKeepsPageStartNotationBoundsOutOfThePreviousPage() throws {
+    let measures = (1...12).map { index in
+        Measure(
+            id: MeasureID(partIndex: 0, measureNumber: "\(index)"),
+            number: "\(index)",
+            notes: [
+                makeNote(
+                    id: "page-overhang-\(index)",
+                    pitch: Pitch(step: .c, octave: 8),
+                    onsetTicks: 0,
+                    noteValueKind: .eighth,
+                    articulations: [.accent],
+                    tuplet: TupletInfo(kind: .start, actualNotes: 3, normalNotes: 2)
+                ),
+                makeNote(
+                    id: "page-overhang-middle-\(index)",
+                    pitch: Pitch(step: .d, octave: 8),
+                    onsetTicks: 1,
+                    noteValueKind: .eighth,
+                    tuplet: TupletInfo(actualNotes: 3, normalNotes: 2)
+                ),
+                makeNote(
+                    id: "page-overhang-end-\(index)",
+                    pitch: Pitch(step: .e, octave: 8),
+                    onsetTicks: 2,
+                    noteValueKind: .eighth,
+                    tuplet: TupletInfo(kind: .stop, actualNotes: 3, normalNotes: 2)
+                ),
+            ],
+            clef: index == 1 ? Clef(kind: .treble) : nil,
+            timeSignature: index == 1 ? TimeSignature(beats: 4, beatType: 4) : nil
+        )
+    }
+    let score = ScoreDocument(parts: [ScorePart(id: "p1", measures: measures)])
+    let layout = try ScoreLayoutEngine().layout(score: score, options: LayoutOptions(
+        pageWidth: 220,
+        pageHeight: 300,
+        staffSpace: 8,
+        systemSpacing: 96,
+        measureSpacing: 0,
+        displayMode: .print,
+        showPageMargins: true
+    ))
+
+    #expect(layout.pages.count > 1)
+    for page in layout.pages {
+        for systemIndex in page.systemIndices {
+            let contentFrame = try #require(renderedContentFrame(forSystemIndex: systemIndex, in: layout))
+            #expect(contentFrame.minY >= page.frame.minY - 0.5)
+            #expect(contentFrame.maxY <= page.frame.maxY + 0.5)
+        }
+    }
+}
+
 @Test func a4PrintLayoutKeepsGrandStaffGapsStableWhenPageHasFewerThanSixSystems() throws {
     let trebleStaff = StaffID(rawValue: "1")
     let bassStaff = StaffID(rawValue: "2")
@@ -2740,6 +3031,9 @@ private func renderedContentFrame(forSystemIndex systemIndex: Int, in layout: Sc
     for staff in layout.staves where staff.systemIndex == systemIndex {
         include(staff.frame)
     }
+    for bracket in layout.grandStaffBrackets where bracket.systemIndex == systemIndex {
+        include(bracket.frame)
+    }
     for staffLine in layout.staffLines where systemMeasureIDs.contains(staffLine.measureID) {
         include(staffLine.frame)
     }
@@ -2784,6 +3078,7 @@ private func makeNote(
     ties: [MusicXMLTieKind] = [],
     slurs: [MusicXMLSlurKind] = [],
     beams: [MusicXMLBeam] = [],
+    articulations: [ScoreArticulationKind] = [],
     tuplet: TupletInfo? = nil,
     staffID: StaffID = StaffID(rawValue: "1"),
     isChordTone: Bool = false,
@@ -2804,6 +3099,7 @@ private func makeNote(
         ties: ties,
         slurs: slurs,
         beams: beams,
+        articulations: articulations,
         hasTimeModification: tuplet != nil,
         hasTupletNotation: tuplet?.kind != nil,
         tuplet: tuplet

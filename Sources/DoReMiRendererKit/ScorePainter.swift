@@ -63,6 +63,8 @@ struct ScorePainter: Sendable {
 
         context.fill(CGRect(origin: .zero, size: layout.canvasSize), color: style.backgroundColor)
         drawScoreTitle(layout: layout, style: style, into: &context)
+        drawScoreComposer(layout: layout, style: style, into: &context)
+        drawGrandStaffBrackets(layout: layout, style: style, into: &context)
         drawStaffLines(layout: layout, score: score, style: style, selection: effectiveSelection, into: &context)
         drawLedgerLines(layout: layout, score: score, style: style, selection: effectiveSelection, into: &context)
         drawContinuationNoteHighlights(layout: layout, noteIDs: secondaryNoteIDs, style: style, into: &context)
@@ -94,6 +96,89 @@ struct ScorePainter: Sendable {
             size: title.fontSize,
             fontName: title.fontName
         )
+    }
+
+    private func drawScoreComposer<Context: ScoreDrawingContext>(
+        layout: ScoreLayout,
+        style: ScoreStyle,
+        into context: inout Context
+    ) {
+        guard let composer = layout.composer, isVisible(composer.frame) else {
+            return
+        }
+        context.drawText(
+            composer.text,
+            at: CGPoint(x: composer.frame.midX, y: composer.frame.midY),
+            color: style.defaultInkColor,
+            size: composer.fontSize,
+            fontName: composer.fontName
+        )
+    }
+
+    private func drawGrandStaffBrackets<Context: ScoreDrawingContext>(
+        layout: ScoreLayout,
+        style: ScoreStyle,
+        into context: inout Context
+    ) {
+        for bracket in layout.grandStaffBrackets where isVisible(bracket.frame) {
+            let frame = bracket.frame
+            let middleY = frame.midY
+            let innerX = frame.maxX
+            let outerX = frame.minX
+            let upperControl = CGPoint(x: outerX, y: frame.minY + frame.height * 0.24)
+            let lowerControl = CGPoint(x: outerX, y: frame.maxY - frame.height * 0.24)
+            let lineWidth = max(scaled(0.9), frame.width * 0.18)
+            context.strokeQuadCurve(
+                from: CGPoint(x: innerX, y: frame.minY),
+                control: upperControl,
+                to: CGPoint(x: innerX, y: middleY),
+                color: style.defaultInkColor,
+                lineWidth: lineWidth
+            )
+            context.strokeQuadCurve(
+                from: CGPoint(x: innerX, y: middleY),
+                control: lowerControl,
+                to: CGPoint(x: innerX, y: frame.maxY),
+                color: style.defaultInkColor,
+                lineWidth: lineWidth
+            )
+
+            // A brace alone does not make piano staves read as a single
+            // instrument. Join the already-laid-out measure boundaries across
+            // the inter-staff gap while leaving both staff systems untouched.
+            let systemStaves = layout.staves
+                .filter { $0.systemIndex == bracket.systemIndex }
+                .sorted { $0.frame.minY < $1.frame.minY }
+            guard let topStaff = systemStaves.first,
+                  let bottomStaff = systemStaves.last,
+                  topStaff.staffID != bottomStaff.staffID else {
+                continue
+            }
+            let connectorStart = CGPoint(x: 0, y: topStaff.frame.maxY)
+            let connectorEnd = CGPoint(x: 0, y: bottomStaff.frame.minY)
+            let boundaries = layout.measures
+                .filter { $0.systemIndex == bracket.systemIndex }
+                .flatMap { [$0.frame.minX, $0.frame.maxX] }
+                .sorted()
+                .reduce(into: [CGFloat]()) { unique, x in
+                    if unique.last.map({ abs($0 - x) > 0.1 }) ?? true {
+                        unique.append(x)
+                    }
+                }
+            for x in boundaries {
+                let start = CGPoint(x: x, y: connectorStart.y)
+                let end = CGPoint(x: x, y: connectorEnd.y)
+                guard isVisible(CGRect(x: x - lineWidth / 2, y: start.y, width: lineWidth, height: max(1, end.y - start.y))) else {
+                    continue
+                }
+                context.strokeLine(
+                    from: start,
+                    to: end,
+                    color: style.defaultInkColor,
+                    lineWidth: max(scaled(0.65), lineWidth * 0.6)
+                )
+            }
+        }
     }
 
     private func drawMeasureNumbers<Context: ScoreDrawingContext>(
@@ -717,7 +802,7 @@ struct ScorePainter: Sendable {
         case .whole, .half:
             context.fillEllipse(in: element.frame, color: style.backgroundColor)
             context.strokeEllipse(in: element.frame, color: fillColor, lineWidth: max(scaled(0.9), element.frame.width * 0.09))
-        case .quarter, .eighth, .sixteenth, .thirtySecond, .other:
+        case .quarter, .eighth, .sixteenth, .thirtySecond, .sixtyFourth, .other:
             context.fillEllipse(in: element.frame, color: fillColor)
             if let strokeColor = resolved.strokeColor {
                 context.strokeEllipse(in: element.frame, color: strokeColor, lineWidth: CGFloat(resolved.lineWidth ?? 1))
@@ -833,7 +918,7 @@ struct ScorePainter: Sendable {
             .rest(for: noteValue),
             at: CGPoint(x: frame.midX, y: frame.midY),
             color: color,
-            size: smuflSizePolicy.restSize(for: frame, noteValue: noteValue),
+            size: RestVisualMetrics.glyphSize(forVisualFrame: frame, noteValue: noteValue),
             into: &context
         ) {
             return
@@ -850,7 +935,7 @@ struct ScorePainter: Sendable {
             context.strokeLine(from: CGPoint(x: frame.midX, y: frame.minY), to: CGPoint(x: frame.minX, y: frame.midY), color: color, lineWidth: max(scaled(1), frame.width * 0.1))
             context.strokeLine(from: CGPoint(x: frame.minX, y: frame.midY), to: CGPoint(x: frame.maxX, y: frame.midY), color: color, lineWidth: max(scaled(1), frame.width * 0.1))
             context.strokeLine(from: CGPoint(x: frame.maxX, y: frame.midY), to: CGPoint(x: frame.midX, y: frame.maxY), color: color, lineWidth: max(scaled(1), frame.width * 0.1))
-        case .eighth, .sixteenth, .thirtySecond, .other:
+        case .eighth, .sixteenth, .thirtySecond, .sixtyFourth, .other:
             context.fillEllipse(in: CGRect(x: frame.minX, y: frame.midY, width: frame.width * 0.35, height: frame.height * 0.35), color: color)
             context.strokeLine(from: CGPoint(x: frame.midX, y: frame.minY), to: CGPoint(x: frame.midX, y: frame.maxY), color: color, lineWidth: max(scaled(1), frame.width * 0.08))
             context.strokeLine(from: CGPoint(x: frame.midX, y: frame.minY), to: CGPoint(x: frame.maxX, y: frame.minY + frame.height * 0.35), color: color, lineWidth: max(scaled(1), frame.width * 0.08))
@@ -1133,6 +1218,8 @@ struct ScorePainter: Sendable {
             .flagSixteenthUp
         case .thirtySecond:
             .flagThirtySecondUp
+        case .sixtyFourth:
+            .flagSixtyFourthUp
         case .whole, .half, .quarter, .other:
             nil
         }
@@ -1186,6 +1273,8 @@ private extension NoteValueKind {
             2
         case .thirtySecond:
             3
+        case .sixtyFourth:
+            4
         case .whole, .half, .quarter, .other:
             0
         }

@@ -14,7 +14,7 @@ Status meanings:
 | Whole notehead | Supported | Supported | Supported | Yes | partial | Rendered with Bravura SMuFL notehead glyph; size is balanced against half/black noteheads, but spacing remains MVP quality. |
 | Half notehead | Supported | Supported | Supported | Yes | partial | Rendered with Bravura SMuFL half-notehead glyph and Core Graphics stem; stem attachment is MVP-aligned to the notehead edge. |
 | Quarter notehead | Supported | Supported | Supported | Yes | partial | Rendered with Bravura SMuFL black notehead glyph and Core Graphics stem; size is balanced against hollow noteheads and tuned larger for learning readability. |
-| Eighth note / flag | Supported | Supported | Supported | Yes | partial | Bravura SMuFL notehead and direction-specific flag glyphs are rendered; single eighth notes keep flags, while safe adjacent groups can be rendered with MVP beams. |
+| Eighth through 64th note / flag | Supported | Supported | Supported | Yes | partial | Bravura SMuFL black noteheads and direction-specific eighth, sixteenth, 32nd, and 64th flag glyphs are rendered. Safe adjacent groups retain the matching one through four beam levels. |
 | Note dots | Supported | Supported | Supported | Yes | supported | Dot count is retained and rendered at MVP quality. |
 | Ledger lines | Supported | Supported | Supported | Yes | supported | Layout bounds include ledger lines; collision quality remains limited. |
 | Treble clef | Supported | Supported | Supported | Yes | partial | Rendered with Bravura SMuFL glyph from layout. Mid-measure clef changes are parsed with onset timing, drawn before the following notes, and reserve extra measure width when needed. Grand staff brace/grouping is not rendered. |

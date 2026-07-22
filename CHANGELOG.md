@@ -9,6 +9,41 @@ APIs may change before `1.0`.
 
 ### Browser notation / print-quality hardening
 
+- Added MusicXML `64th` note and rest support through the SDK parser, layout,
+  SMuFL glyph selection, standalone flags, and four-level beams. Previously
+  these values fell back to generic black noteheads without flags; Toccata and
+  Fugue in D Minor now retains its written 64th-note rhythm in Web A4 output.
+
+- Made rest glyph footprints part of SDK layout geometry. SMuFL rest size now
+  drives its `ElementLayout` frame, onset envelopes, dotted-rest clearance,
+  and measure-edge insets, preventing short rests in Toccata from painting
+  outside their start or end barlines.
+
+- Fixed Web A4 spacing for rest-containing measures. Measure-width planning and
+  note/rest onset placement now share a duration-sensitive visual envelope, so
+  rest glyphs follow their written rhythmic values, remain inside the barline,
+  and no longer collapse multiple half/whole rests onto a single measure
+  centre. Existing compact spacing for pure beamed short-note groups is
+  unchanged.
+
+- Hardened SDK print pagination to assign systems from their full notation
+  bounds rather than only their staff frames. Tuplet brackets, articulations,
+  fermatas, lyrics, dynamics, hairpins, ledger lines, and grand-staff braces
+  now reserve their actual vertical overhang at a page boundary; a conflicting
+  system moves intact to the following page instead of painting into the prior
+  page.
+
+- Improved the Web A4 engraving profile for large piano scores: MusicXML
+  composer credits render beneath the centered title, two-staff systems receive
+  a brace plus inter-staff barline connectors, and below-staff expression lanes
+  reserve additional vertical clearance. The Web-only profile leaves iOS and
+  PDF defaults untouched.
+
+- Reworked loopback Web import so a large MusicXML/MXL score returns only its
+  original SDK layout initially. The local service keeps the upload in memory
+  for ten minutes and renders a selected `-6...+5` transposition on demand,
+  preventing a full set of duplicate score plans from delaying first display.
+
 - Added note-linked ledger-line palette metadata to the SDK Web Render Plan so
   coloured staff mode also colours C4 and other ledger lines with the written
   note's pitch-class family. Web score zoom now uses an editable 50–200%
