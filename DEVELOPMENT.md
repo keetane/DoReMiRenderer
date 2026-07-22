@@ -29,10 +29,13 @@ The Web palette mirrors iOS `defaultEducationalPalette`: C/C#, D/D#, E, F/F#,
 G/G#, A/A#, and B share the same seven educational colours and the same
 12-pitch-class enabled state. Defaults are note colours on, keyboard colours
 on, and staff-line colours off.
-`DoReMiRendererWebExport` writes a `ScoreWebRenderBundle` with an SDK-built
-playback timeline and the requested -12...+12 display-transpose variants. Web
-Play/Stop, current-note following, Previous/Next, and Jump consume those values
-directly; JavaScript does not reparse MusicXML or alter ScoreLayout coordinates.
+`DoReMiRendererWebExport` writes either an SDK-built playback plan or, for
+static exports, a complete `ScoreWebRenderBundle`. The loopback importer returns
+only the original plan and retains the source in process memory for ten minutes;
+the selected one-octave transposition (`-6...+5`) is generated on demand and
+cached by the browser session. Web Play/Stop, current-note following,
+Previous/Next, and Jump consume SDK values directly; JavaScript does not reparse
+MusicXML or alter ScoreLayout coordinates.
 The current Web transport additionally exports system frames, per-pitch playback
 durations, and initial key metadata. Canvas recolours the original SMuFL notehead commands rather than
 drawing substitute ellipses, staff and note-linked ledger colour guides render beneath notation ink,
@@ -80,6 +83,13 @@ stretching those groups across the full justified bar. Compact short-note
 groups use a Fur Elise-style readable minimum visual gap and stay anchored near
 their rhythmic onset instead of becoming either left-flush or artificially
 centered in the normalized measure.
+
+For the Web A4 profile, mixed rest/note measures and dense chord onsets use a
+shared duration-sensitive onset envelope for both the measure-width budget and
+the final x coordinates. This keeps rests on the same rhythmic grid as notes
+without allowing their glyphs, dots, accidentals, or chord offsets to overrun a
+barline. A lone whole or half rest remains centred as a measure-wide block;
+multiple long rests in one staff retain their individual rhythmic positions.
 
 ## Playback Timing QA
 
@@ -1011,10 +1021,13 @@ Implementation boundaries:
   physically extreme cases. Very tall single systems use a source-window
   fallback that groups visual grand-staff rows without cutting through staff
   lines.
-- Fit checks use unpadded rendered system bounds so normal pages can still hit
-  the six-system target, while page `contentFrame` values use relocated
+- Fit checks use complete, unpadded rendered system bounds, including vertical
+  notation overhang above and below the staff. This keeps tuplets,
+  articulations, fermatas, lyrics, repeat/jump markings, and other page-start
+  notation from painting into the preceding page; a system that does not fit
+  moves intact to the next page. Page `contentFrame` values then use relocated
   rendered bounds plus clip padding so noteheads, stems, beams, ledger lines,
-  dynamics, and hairpins are not clipped at the bottom page edge.
+  dynamics, and hairpins are not clipped at either page edge.
 - Pages with fewer than six print systems keep the same fixed grand-staff
   system gap used by full pages. Extra vertical space is left after the final
   system instead of being distributed between systems, which keeps short final
@@ -1325,6 +1338,12 @@ across the common stem axis without moving the stem, flag, or beam. Closing-repe
 thin/thick barlines use a fixed 4pt line separation. Explicit beam markings now expand to simultaneous
 chord tones in the same staff/voice so flags cannot coexist beside a shared
 beam; same-measure volta endings close both bracket hooks.
+
+Web duration-sensitive spacing uses a shared onset envelope only for mixed
+rest/note measures and dense chord onsets. Pure beamed short-note groups retain
+their established compact spacing. A single whole/half rest stays centred, but
+multiple long rests in the same staff remain at their written onsets so they do
+not overlap at the measure centre.
 
 Web consumers must await the Bravura font before their first Canvas draw and show
 a visible load failure rather than drawing SMuFL private-use glyphs through a

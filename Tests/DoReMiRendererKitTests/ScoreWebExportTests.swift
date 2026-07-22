@@ -115,6 +115,7 @@ import Testing
     #expect(options.titleScale == 0.82)
     #expect(options.titleGapAboveFirstStaff == 120 * a4Scale)
     #expect(options.titleVerticalOffset == 60 * a4Scale)
+    #expect(options.showsGrandStaffBrace)
     #expect(!options.showsPedalMarkings)
     #expect(options.noteheadSizeAdjustment == 2 * a4Scale)
     #expect(options.horizontalMarginAdjustment == 20 * a4Scale)
@@ -148,7 +149,7 @@ import Testing
         clef: Clef(kind: .treble),
         timeSignature: TimeSignature(beats: 4, beatType: 4)
     )
-    let score = ScoreDocument(parts: [ScorePart(id: "P1", measures: [measure])], title: "Title Offset")
+    let score = ScoreDocument(parts: [ScorePart(id: "P1", measures: [measure])], title: "Title Offset", composer: "Layout Composer")
     let renderer = DoReMiRenderer()
     var baselineOptions = renderer.webLayoutOptions(containerWidth: 1_024)
     baselineOptions.titleVerticalOffset = 0
@@ -158,6 +159,7 @@ import Testing
     let shifted = try renderer.layout(score: score, options: shiftedOptions)
     let baselineTitle = try #require(baseline.title)
     let shiftedTitle = try #require(shifted.title)
+    let composer = try #require(shifted.composer)
     let baselineFirstSystem = try #require(baseline.systems.first)
     let shiftedFirstSystem = try #require(shifted.systems.first)
 
@@ -165,6 +167,75 @@ import Testing
     // remains visually exact while the first staff stays fixed.
     #expect(abs((shiftedTitle.frame.minY - baselineTitle.frame.minY) - shiftedOptions.titleVerticalOffset) < 0.2)
     #expect(abs(shiftedFirstSystem.frame.minY - baselineFirstSystem.frame.minY) < 0.001)
+    #expect(composer.frame.minY > shiftedTitle.frame.maxY)
+    #expect(composer.frame.maxX <= shifted.canvasSize.width)
+}
+
+@Test func webProfileDrawsGrandStaffBraceForTwoStaffScore() throws {
+    let upperStaff = StaffID(rawValue: "1")
+    let lowerStaff = StaffID(rawValue: "2")
+    let measureID = MeasureID(partIndex: 0, measureNumber: "1")
+    let onset = MusicalTime(ticks: 0, ticksPerQuarterNote: 4)
+    let duration = MusicalTime(ticks: 4, ticksPerQuarterNote: 4)
+    let measure = Measure(
+        id: measureID,
+        number: "1",
+        notes: [
+            ScoreNote(id: NoteID(rawValue: "brace-upper"), pitch: Pitch(step: .c, octave: 4), onset: onset, duration: duration, noteValueKind: .quarter, voiceID: VoiceID(rawValue: "1"), staffID: upperStaff),
+            ScoreNote(id: NoteID(rawValue: "brace-lower"), pitch: Pitch(step: .c, octave: 3), onset: onset, duration: duration, noteValueKind: .quarter, voiceID: VoiceID(rawValue: "1"), staffID: lowerStaff),
+        ],
+        clefsByStaff: [upperStaff: Clef(kind: .treble), lowerStaff: Clef(kind: .bass)],
+        timeSignature: TimeSignature(beats: 4, beatType: 4)
+    )
+    let score = ScoreDocument(parts: [ScorePart(id: "P1", measures: [measure])])
+    let renderer = DoReMiRenderer()
+    let layout = try renderer.layout(score: score, options: renderer.webLayoutOptions(containerWidth: 1_024))
+    let plan = renderer.makeWebRenderPlan(score: score, layout: layout)
+
+    #expect(layout.grandStaffBrackets.count == layout.systems.count)
+    #expect(layout.grandStaffBrackets.allSatisfy { $0.frame.height > 0 })
+    let braceCurves = plan.commands.filter { $0.kind == .strokeQuadraticCurve }.count
+    #expect(braceCurves >= layout.grandStaffBrackets.count * 2)
+    let staves = layout.staves.sorted { $0.frame.minY < $1.frame.minY }
+    let connectorLines = plan.commands.filter { command in
+        guard command.kind == .strokeLine,
+              let start = command.start,
+              let end = command.end
+        else {
+            return false
+        }
+        return abs(start.y - Double(staves[0].frame.maxY)) < 0.01
+            && abs(end.y - Double(staves[1].frame.minY)) < 0.01
+    }
+    #expect(connectorLines.count >= 2)
+}
+
+@Test func webComposerWithoutTitleReservesHeaderSpaceAboveFirstSystem() throws {
+    let staffID = StaffID(rawValue: "1")
+    let measure = Measure(
+        id: MeasureID(partIndex: 0, measureNumber: "1"),
+        number: "1",
+        notes: [
+            ScoreNote(
+                id: NoteID(rawValue: "credit-only-note"),
+                pitch: Pitch(step: .c, octave: 4),
+                onset: MusicalTime(ticks: 0, ticksPerQuarterNote: 4),
+                duration: MusicalTime(ticks: 4, ticksPerQuarterNote: 4),
+                noteValueKind: .quarter,
+                voiceID: VoiceID(rawValue: "1"),
+                staffID: staffID
+            ),
+        ],
+        clef: Clef(kind: .treble),
+        timeSignature: TimeSignature(beats: 4, beatType: 4)
+    )
+    let score = ScoreDocument(parts: [ScorePart(id: "P1", measures: [measure])], composer: "Credit Only")
+    let renderer = DoReMiRenderer()
+    let layout = try renderer.layout(score: score, options: renderer.webLayoutOptions(containerWidth: 1_024))
+
+    let composer = try #require(layout.composer)
+    let firstSystem = try #require(layout.systems.first)
+    #expect(composer.frame.maxY < firstSystem.frame.minY)
 }
 
 @Test func webA4NotationScaleReducesFixedSMuFLGlyphFloors() {

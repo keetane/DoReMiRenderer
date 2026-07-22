@@ -448,6 +448,7 @@ public struct ScoreWebLayoutProfile: Hashable, Codable, Sendable {
             // Move only the title closer to the first system. Reservation for
             // the first staff remains unchanged so the score does not shift.
             titleVerticalOffset: 60 * notationScale,
+            showsGrandStaffBrace: true,
             showsPedalMarkings: false,
             noteheadSizeAdjustment: 2 * notationScale,
             horizontalMarginAdjustment: 20 * notationScale,

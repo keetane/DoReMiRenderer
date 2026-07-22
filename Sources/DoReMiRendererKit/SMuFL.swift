@@ -16,6 +16,7 @@ enum SMuFLGlyph: Hashable, Sendable {
     case restEighth
     case restSixteenth
     case restThirtySecond
+    case restSixtyFourth
     case repeatDot
     case repeatOneBar
     case timeSignatureDigit(Int)
@@ -28,6 +29,8 @@ enum SMuFLGlyph: Hashable, Sendable {
     case flagSixteenthDown
     case flagThirtySecondUp
     case flagThirtySecondDown
+    case flagSixtyFourthUp
+    case flagSixtyFourthDown
     case segno
     case coda
 
@@ -59,7 +62,7 @@ enum SMuFLGlyph: Hashable, Sendable {
             "𝄽"
         case .restEighth:
             "𝄾"
-        case .restSixteenth, .restThirtySecond:
+        case .restSixteenth, .restThirtySecond, .restSixtyFourth:
             "𝄿"
         case .repeatDot:
             "•"
@@ -71,7 +74,7 @@ enum SMuFLGlyph: Hashable, Sendable {
             "○"
         case .noteheadBlack:
             "●"
-        case .flagEighthUp, .flagEighthDown, .flagSixteenthUp, .flagSixteenthDown, .flagThirtySecondUp, .flagThirtySecondDown:
+        case .flagEighthUp, .flagEighthDown, .flagSixteenthUp, .flagSixteenthDown, .flagThirtySecondUp, .flagThirtySecondDown, .flagSixtyFourthUp, .flagSixtyFourthDown:
             "♪"
         case .segno:
             "𝄋"
@@ -108,6 +111,8 @@ enum SMuFLGlyph: Hashable, Sendable {
             0xE4E7
         case .restThirtySecond:
             0xE4E8
+        case .restSixtyFourth:
+            0xE4E9
         case .repeatDot:
             0xE044
         case .repeatOneBar:
@@ -132,6 +137,10 @@ enum SMuFLGlyph: Hashable, Sendable {
             0xE244
         case .flagThirtySecondDown:
             0xE245
+        case .flagSixtyFourthUp:
+            0xE246
+        case .flagSixtyFourthDown:
+            0xE247
         case .segno:
             0xE047
         case .coda:
@@ -228,7 +237,7 @@ struct SMuFLGlyphSizePolicy: Sendable {
         switch noteValue {
         case .whole, .half:
             scale = hollowNoteheadScale
-        case .quarter, .eighth, .sixteenth, .thirtySecond, .other:
+        case .quarter, .eighth, .sixteenth, .thirtySecond, .sixtyFourth, .other:
             scale = blackNoteheadScale
         }
         return max(scaledMinimum(20), frame.height * scale)
@@ -246,7 +255,7 @@ struct SMuFLGlyphSizePolicy: Sendable {
         let baselineMinimum: CGFloat = switch noteValue {
         case .whole, .half:
             scaledMinimum(34)
-        case .quarter, .eighth, .sixteenth, .thirtySecond, .other:
+        case .quarter, .eighth, .sixteenth, .thirtySecond, .sixtyFourth, .other:
             scaledMinimum(38)
         }
         let scaledMinimum = min(baselineMinimum, frame.height * 2.46)
@@ -259,6 +268,63 @@ struct SMuFLGlyphSizePolicy: Sendable {
 
     func repeatDotSize(for frame: CGRect) -> CGFloat {
         max(scaledMinimum(4), frame.height * repeatDotScale)
+    }
+}
+
+/// Shared geometry for rest glyphs. The layout engine reserves this visual
+/// footprint before the painter draws the SMuFL text glyph, so rests cannot
+/// extend past an onset gap or a measure barline merely because their glyph is
+/// larger than a notehead frame.
+struct RestVisualMetrics {
+    private static func widthScale(for noteValue: NoteValueKind) -> CGFloat {
+        switch noteValue {
+        case .whole, .half:
+            0.88
+        case .quarter:
+            0.82
+        case .eighth, .sixteenth, .thirtySecond, .sixtyFourth, .other:
+            0.92
+        }
+    }
+
+    static func glyphSize(
+        noteValue: NoteValueKind,
+        noteheadSize: CGSize,
+        notationScale: CGFloat
+    ) -> CGFloat {
+        let baseFrame = CGRect(origin: .zero, size: noteheadSize)
+        return SMuFLGlyphSizePolicy(minimumScale: notationScale)
+            .restSize(for: baseFrame, noteValue: noteValue)
+    }
+
+    static func visualFrame(
+        centeredAt center: CGPoint,
+        noteValue: NoteValueKind,
+        noteheadSize: CGSize,
+        notationScale: CGFloat
+    ) -> CGRect {
+        let glyphSize = glyphSize(
+            noteValue: noteValue,
+            noteheadSize: noteheadSize,
+            notationScale: notationScale
+        )
+        let size = CGSize(
+            width: glyphSize * widthScale(for: noteValue),
+            height: glyphSize * 1.10
+        )
+        return CGRect(
+            x: center.x - size.width / 2,
+            y: center.y - size.height / 2,
+            width: size.width,
+            height: size.height
+        )
+    }
+
+    static func glyphSize(forVisualFrame frame: CGRect, noteValue: NoteValueKind) -> CGFloat {
+        guard frame.width > 0 else {
+            return 0
+        }
+        return frame.width / widthScale(for: noteValue)
     }
 }
 
@@ -277,6 +343,8 @@ extension SMuFLGlyph {
             .restSixteenth
         case .thirtySecond:
             .restThirtySecond
+        case .sixtyFourth:
+            .restSixtyFourth
         case .other:
             .restQuarter
         }
@@ -288,7 +356,7 @@ extension SMuFLGlyph {
             .noteheadWhole
         case .half:
             .noteheadHalf
-        case .quarter, .eighth, .sixteenth, .thirtySecond, .other:
+        case .quarter, .eighth, .sixteenth, .thirtySecond, .sixtyFourth, .other:
             .noteheadBlack
         }
     }

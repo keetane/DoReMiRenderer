@@ -42,6 +42,7 @@ import Testing
     let result = try parseMusicXML(creditTitleOnlyXML)
 
     #expect(result.score.title == "Credit Title")
+    #expect(result.score.composer == "Credit Composer")
     #expect(!result.diagnostics.contains { $0.code == "unsupported.credit" || $0.code == "unsupported.credit-words" })
 }
 
@@ -105,10 +106,12 @@ import Testing
 @Test func parserReadsNoteValueKindsAndDots() throws {
     let notes = try parseMusicXML(noteValuesAndDotsXML).score.parts.flatMap(\.measures).flatMap(\.notes)
 
-    #expect(notes.map(\.noteValueKind) == [.whole, .half, .quarter, .eighth, .sixteenth, .thirtySecond])
-    #expect(notes.map(\.dotCount) == [0, 1, 0, 0, 0, 0])
+    #expect(notes.map(\.noteValueKind) == [.whole, .half, .quarter, .eighth, .sixteenth, .thirtySecond, .sixtyFourth, .sixtyFourth])
+    #expect(notes.map(\.dotCount) == [0, 1, 0, 0, 0, 0, 0, 0])
     #expect(notes[4].pitch == nil)
     #expect(notes[5].pitch == Pitch(step: .g, octave: 4))
+    #expect(notes[6].pitch == Pitch(step: .a, octave: 4))
+    #expect(notes[7].pitch == nil)
 }
 
 @Test func parserReadsMusicXMLBeamTags() throws {
@@ -256,6 +259,10 @@ private let creditTitleOnlyXML = """
     <credit-type>subtitle</credit-type>
     <credit-words>Subtitle</credit-words>
   </credit>
+  <credit page="1">
+    <credit-type>composer</credit-type>
+    <credit-words>Credit Composer</credit-words>
+  </credit>
   <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
   <part id="P1"><measure number="1"/></part>
 </score-partwise>
@@ -359,6 +366,8 @@ private let noteValuesAndDotsXML = """
       <note><pitch><step>F</step><octave>4</octave></pitch><duration>8</duration><voice>1</voice><staff>1</staff><type>eighth</type></note>
       <note><rest/><duration>4</duration><voice>1</voice><staff>1</staff><type>16th</type></note>
       <note><pitch><step>G</step><octave>4</octave></pitch><duration>2</duration><voice>1</voice><staff>1</staff><type>32nd</type></note>
+      <note><pitch><step>A</step><octave>4</octave></pitch><duration>1</duration><voice>1</voice><staff>1</staff><type>64th</type></note>
+      <note><rest/><duration>1</duration><voice>1</voice><staff>1</staff><type>64th</type></note>
     </measure>
   </part>
 </score-partwise>

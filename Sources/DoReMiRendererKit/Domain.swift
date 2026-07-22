@@ -254,10 +254,33 @@ public struct MusicXMLTranspose: Hashable, Codable, Sendable {
 public struct ScoreDocument: Hashable, Codable, Sendable {
     public let parts: [ScorePart]
     public let title: String?
+    /// Composer credit resolved from MusicXML metadata when available.
+    public let composer: String?
 
-    public init(parts: [ScorePart], title: String? = nil) {
+    public init(parts: [ScorePart], title: String? = nil, composer: String? = nil) {
         self.parts = parts
         self.title = title
+        self.composer = composer
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case parts
+        case title
+        case composer
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        parts = try container.decode([ScorePart].self, forKey: .parts)
+        title = try container.decodeIfPresent(String.self, forKey: .title)
+        composer = try container.decodeIfPresent(String.self, forKey: .composer)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(parts, forKey: .parts)
+        try container.encodeIfPresent(title, forKey: .title)
+        try container.encodeIfPresent(composer, forKey: .composer)
     }
 }
 
@@ -537,6 +560,7 @@ public enum NoteValueKind: String, Hashable, Codable, Sendable {
     case eighth
     case sixteenth
     case thirtySecond
+    case sixtyFourth
     case other
 
     public init(musicXMLType: String?) {
@@ -553,6 +577,8 @@ public enum NoteValueKind: String, Hashable, Codable, Sendable {
             self = .sixteenth
         case "32nd":
             self = .thirtySecond
+        case "64th":
+            self = .sixtyFourth
         default:
             self = .other
         }
@@ -570,8 +596,10 @@ public enum NoteValueKind: String, Hashable, Codable, Sendable {
             self = .eighth
         } else if quarters >= 0.1875 {
             self = .sixteenth
-        } else {
+        } else if quarters >= 0.09375 {
             self = .thirtySecond
+        } else {
+            self = .sixtyFourth
         }
     }
 }

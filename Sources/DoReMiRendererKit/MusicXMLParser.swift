@@ -51,6 +51,7 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
     private var movementTitle: String?
     private var movementNumber: String?
     private var creditTitle: String?
+    private var creditComposer: String?
     private var currentCreditType: String?
 
     private var partListNames: [String: String] = [:]
@@ -521,12 +522,12 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             if policy == .fail {
                 throw MusicXMLParserError.unsupportedFeature(diagnostic)
             }
-            return ParseResult(score: ScoreDocument(parts: [], title: scoreTitle), diagnostics: diagnostics)
+            return ParseResult(score: ScoreDocument(parts: [], title: scoreTitle, composer: scoreComposer), diagnostics: diagnostics)
         }
         if policy == .fail, let fatalUnsupportedDiagnostic {
             throw MusicXMLParserError.unsupportedFeature(fatalUnsupportedDiagnostic)
         }
-        return ParseResult(score: ScoreDocument(parts: parts, title: scoreTitle), diagnostics: diagnostics)
+        return ParseResult(score: ScoreDocument(parts: parts, title: scoreTitle, composer: scoreComposer), diagnostics: diagnostics)
     }
 
     private var parentElement: String? {
@@ -545,6 +546,10 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             return creditTitle
         }
         return movementNumber
+    }
+
+    private var scoreComposer: String? {
+        creditComposer
     }
 
     private func isPlaceholderTitle(_ title: String) -> Bool {
@@ -707,6 +712,8 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             .lowercased()
         if normalizedType == "title" || normalizedType == "movement title" || normalizedType == "work title" {
             creditTitle = creditTitle ?? text
+        } else if normalizedType == "composer" {
+            creditComposer = creditComposer ?? text
         }
     }
 
