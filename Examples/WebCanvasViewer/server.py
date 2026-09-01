@@ -29,6 +29,15 @@ MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 SUPPORTED_SUFFIXES = {".mxl", ".musicxml", ".xml"}
 SOURCE_CACHE_TTL_SECONDS = 10 * 60
 SAMPLE_LIBRARY_ROOT = PROJECT_ROOT / "sample" / "app-bundle-hold"
+ALLOWED_ORIGINS = {
+    "https://keetane.github.io",
+    "http://127.0.0.1:8767",
+    "http://127.0.0.1:8765",
+    "http://localhost:8767",
+    "http://localhost:8765",
+    "http://[::1]:8767",
+    "http://[::1]:8765",
+}
 uploaded_sources: dict[str, tuple[bytes, str, float]] = {}
 source_cache_lock = threading.Lock()
 
@@ -139,8 +148,24 @@ class WebPaletteHandler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(rendered)
 
+    def do_OPTIONS(self) -> None:  # noqa: N802 - inherited HTTP handler API
+        """Permit the published Pages viewer to call its local SDK companion."""
+        origin = self.headers.get("Origin")
+        if origin not in ALLOWED_ORIGINS:
+            self.send_response(HTTPStatus.FORBIDDEN)
+            self.end_headers()
+            return
+        self.send_response(HTTPStatus.NO_CONTENT)
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-DoReMi-File-Name")
+        self.send_header("Access-Control-Max-Age", "600")
+        self.end_headers()
+
     def do_GET(self) -> None:  # noqa: N802 - inherited HTTP handler API
         parsed = urlparse(self.path)
+        if parsed.path == "/api/health":
+            self.send_json({"status": "ok"})
+            return
         if parsed.path == "/api/samples":
             self.send_json(bundled_sample_entries())
             return
@@ -258,6 +283,10 @@ class WebPaletteHandler(SimpleHTTPRequestHandler):
         # The viewer is iterated locally. Never leave a stale module or upload
         # UI in the browser cache after the server-side exporter has changed.
         self.send_header("Cache-Control", "no-store, max-age=0")
+        origin = self.headers.get("Origin")
+        if origin in ALLOWED_ORIGINS:
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Vary", "Origin")
         super().end_headers()
 
     def log_message(self, format: str, *args) -> None:
