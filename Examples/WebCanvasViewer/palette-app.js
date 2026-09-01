@@ -131,13 +131,12 @@ async function loadFile(file) {
 }
 
 async function toggleSampleLibrary() {
-  if (!state.companionOrigin) return;
   const opening = state.activeDrawer !== "samples";
   setActiveDrawer(opening ? "samples" : null);
   if (!opening || state.samples) return;
   controls.sampleList.replaceChildren(sampleLibraryMessage("サンプル曲を読み込んでいます…"));
   try {
-    const response = await fetch(companionAPI("/api/samples"));
+    const response = await fetch(sampleCatalogURL());
     if (!response.ok) throw new Error(await responseDetail(response));
     state.samples = await response.json();
     renderSampleLibrary();
@@ -167,7 +166,7 @@ function sampleLibraryMessage(message) {
 async function loadBundledSample(sample) {
   info(`${sample.name} をSDKでレイアウトしています…`);
   try {
-    const response = await fetch(companionAPI(`/api/sample?id=${encodeURIComponent(sample.id)}`));
+    const response = await fetch(sample.plan ?? companionAPI(`/api/sample?id=${encodeURIComponent(sample.id)}`));
     if (!response.ok) throw new Error(await responseDetail(response));
     load(await response.json(), sample.name);
     closeDrawer();
@@ -692,18 +691,21 @@ function companionAPI(path) {
   return state.companionOrigin ? `${state.companionOrigin}${path}` : path;
 }
 
+function sampleCatalogURL() {
+  // GitHub Pages ships only the two sample scores that cleared the bundled
+  // asset review. Local development keeps its broader fixture catalogue.
+  return usesLoopbackCompanion ? companionAPI("/api/samples") : "./samples/catalog.json";
+}
+
 async function configureStaticHosting() {
   if (usesLoopbackCompanion) return;
-  controls.sampleLibraryButton.disabled = true;
-  controls.sampleLibraryButton.title = "ローカル companion を起動するとサンプル曲を利用できます";
+  controls.sampleLibraryButton.title = "サンプル曲";
   controls.file.closest("label")?.setAttribute("title", "MusicXML、MXL、またはWeb Render Planを開く");
   for (const origin of loopbackCompanionOrigins) {
     try {
       const response = await fetch(`${origin}/api/health`, { cache: "no-store" });
       if (!response.ok) continue;
       state.companionOrigin = origin;
-      controls.sampleLibraryButton.disabled = false;
-      controls.sampleLibraryButton.title = "サンプル曲";
       return;
     } catch {
       // Try the next conventional loopback port before falling back to JSON.

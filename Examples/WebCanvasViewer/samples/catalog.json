@@ -1,0 +1,12 @@
+[
+  {
+    "id": "ode-to-joy-easy-variation",
+    "name": "Ode to Joy Easy Variation",
+    "plan": "./samples/ode-to-joy-easy-variation.json"
+  },
+  {
+    "id": "fur-elise-beginner-piano",
+    "name": "Fur Elise - Beginner Piano",
+    "plan": "./samples/fur-elise-beginner-piano.json"
+  }
+]

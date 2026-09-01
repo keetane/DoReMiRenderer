@@ -53,6 +53,23 @@
   bundled files should be treated as third-party score assets and rechecked
   before App Store release or broader redistribution.
 
+## DoReMi Palette Web Learning Samples
+
+`Examples/WebCanvasViewer/samples/`
+
+- `ode-to-joy-easy-variation.json`
+- `fur-elise-beginner-piano.json`
+
+- Origin: SDK-generated Web Render Plans derived only from the two reviewed MXL
+  files listed above; the plans do not include the original MXL archive.
+- Distribution: static GitHub Pages learning samples, added 2026-09-02.
+- License position: follows the corresponding Ode to Joy and Fur Elise source
+  assessment below. The upstream repository describes its MusicXML as public
+  domain, while the transcription and arrangement data has no embedded grant.
+- Caution: retain the upstream attribution and recheck the source-score
+  redistribution position before expanding the public web catalogue or making
+  a commercial distribution.
+
 ### Happy Birthday To You Piano
 
 - TestFlight bundle status: excluded from the DoReMi Palette app bundle and
