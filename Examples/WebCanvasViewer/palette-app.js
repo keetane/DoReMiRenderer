@@ -17,6 +17,7 @@ const state = {
   context: null, nodes: new Set(), nextScheduledIndex: 0, contextStart: 0, timelineStart: 0, baseTempoBPM: 120, tempoBPM: 120, animationFrame: null,
   lastFollowedSystemIndex: null, pageCanvases: new Map(), transposeRequestID: 0, printing: false, samples: null, activeDrawer: null,
   companionOrigin: usesLoopbackCompanion ? location.origin : null,
+  hasAppliedInitialFitWidth: false,
 };
 const $ = (selector) => document.querySelector(selector);
 const pageStack = $("#page-stack");
@@ -92,7 +93,13 @@ function load(document, sourceName) {
   controls.sourceMeta.textContent = `${source.primaryPlan.noteAnchors.length} notes`;
   controls.status.hidden = true;
   buildTranspose();
-  void applyTranspose(true);
+  void applyTranspose(true).then(() => {
+    if (state.hasAppliedInitialFitWidth) return;
+    requestAnimationFrame(() => {
+      if (state.hasAppliedInitialFitWidth || !fitScoreToWidth()) return;
+      state.hasAppliedInitialFitWidth = true;
+    });
+  });
 }
 
 async function loadFile(file) {
@@ -571,13 +578,14 @@ function updateZoomFromInput() {
 function fitScoreToWidth() {
   const page = pageFrames(state.plan)[0];
   const scroll = $("#score-scroll");
-  if (!page || scroll.clientWidth <= 0) return;
+  if (!page || scroll.clientWidth <= 0) return false;
 
   // Keep the A4 frame unchanged and only fit its rendered width inside the scroll viewport.
   const fit = () => setScoreZoom((scroll.clientWidth - 2) / page.frame.width, false);
   fit();
   // A newly visible vertical scrollbar changes clientWidth on non-overlay scrollbar platforms.
   requestAnimationFrame(fit);
+  return true;
 }
 
 function sourceTempoBPM(timeline) {
