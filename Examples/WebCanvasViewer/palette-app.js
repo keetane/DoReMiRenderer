@@ -9,12 +9,14 @@ const COLORS = new Map(PITCHES.flatMap(([_, classes, color]) => classes.map((pit
 const WHITE = new Set([0, 2, 4, 5, 7, 9, 11]);
 const allPitchClasses = () => new Set(Array.from({ length: 12 }, (_, index) => index));
 const usesLoopbackCompanion = ["127.0.0.1", "localhost", "::1"].includes(location.hostname);
+const loopbackCompanionOrigins = ["http://127.0.0.1:8767", "http://127.0.0.1:8765"];
 const state = {
   source: null, plan: null, sourceName: "score-web.json", transpose: 0, scoreZoom: 1,
   noteColors: true, staffColors: false, keyboardColors: true, keyboardColorPosition: "top", nextNoteGuide: true, keyboardVisible: true, enabled: allPitchClasses(),
   selectedNoteID: null, selectedMidi: null, currentIndex: 0, activeMIDIs: new Set(), nextMIDIs: new Set(), playing: false,
   context: null, nodes: new Set(), nextScheduledIndex: 0, contextStart: 0, timelineStart: 0, baseTempoBPM: 120, tempoBPM: 120, animationFrame: null,
   lastFollowedSystemIndex: null, pageCanvases: new Map(), transposeRequestID: 0, printing: false, samples: null, activeDrawer: null,
+  companionOrigin: usesLoopbackCompanion ? location.origin : null,
 };
 const $ = (selector) => document.querySelector(selector);
 const pageStack = $("#page-stack");
@@ -102,16 +104,14 @@ async function loadFile(file) {
   if (!/\.(mxl|musicxml|xml)$/.test(name)) {
     throw new Error(".mxl、.musicxml、.xml、またはWeb Render Plan JSONを選択してください。");
   }
-  if (!usesLoopbackCompanion) {
-    throw new Error("GitHub Pages版ではWeb Render Plan JSONのみ開けます。MusicXML/MXLはローカル companion server で開いてください。");
-  }
+  if (!state.companionOrigin) throw new Error("MusicXML/MXLの変換用ローカル companion が見つかりません。プロジェクトで `cd Examples/WebCanvasViewer && python3 server.py --port 8767` を実行してから、もう一度開いてください。");
   if (file.size > 50 * 1024 * 1024) throw new Error("50 MB以下のMusicXML/MXLファイルを選択してください。");
   info("MusicXMLをSDKでレイアウトしています…");
   // Send a fixed byte body instead of relying on the browser's File-stream
   // transport. The loopback importer deliberately validates Content-Length,
   // and this keeps .mxl uploads reliable across browser implementations.
   const payload = await file.arrayBuffer();
-  const response = await fetch("./api/render", {
+  const response = await fetch(companionAPI("/api/render"), {
     method: "POST",
     headers: { "Content-Type": file.type || "application/octet-stream", "X-DoReMi-File-Name": encodeURIComponent(file.name) },
     body: payload,
@@ -124,13 +124,13 @@ async function loadFile(file) {
 }
 
 async function toggleSampleLibrary() {
-  if (!usesLoopbackCompanion) return;
+  if (!state.companionOrigin) return;
   const opening = state.activeDrawer !== "samples";
   setActiveDrawer(opening ? "samples" : null);
   if (!opening || state.samples) return;
   controls.sampleList.replaceChildren(sampleLibraryMessage("サンプル曲を読み込んでいます…"));
   try {
-    const response = await fetch("./api/samples");
+    const response = await fetch(companionAPI("/api/samples"));
     if (!response.ok) throw new Error(await responseDetail(response));
     state.samples = await response.json();
     renderSampleLibrary();
@@ -160,7 +160,7 @@ function sampleLibraryMessage(message) {
 async function loadBundledSample(sample) {
   info(`${sample.name} をSDKでレイアウトしています…`);
   try {
-    const response = await fetch(`./api/sample?id=${encodeURIComponent(sample.id)}`);
+    const response = await fetch(companionAPI(`/api/sample?id=${encodeURIComponent(sample.id)}`));
     if (!response.ok) throw new Error(await responseDetail(response));
     load(await response.json(), sample.name);
     closeDrawer();
@@ -200,7 +200,7 @@ async function applyTranspose(silent = false) {
   if (!variant && requestedTranspose !== 0 && state.source.sourceToken) {
     try {
       info("移調レイアウトをSDKで生成しています…");
-      const response = await fetch(`./api/transpose?token=${encodeURIComponent(state.source.sourceToken)}&semitones=${requestedTranspose}`);
+      const response = await fetch(companionAPI(`/api/transpose?token=${encodeURIComponent(state.source.sourceToken)}&semitones=${requestedTranspose}`));
       if (!response.ok) throw new Error(await responseDetail(response));
       variant = await response.json();
       validate(variant);
@@ -680,12 +680,27 @@ function setActiveDrawer(kind) {
   controls.sampleLibraryButton.setAttribute("aria-expanded", String(samplesOpen));
   controls.drawerTitle.textContent = paletteOpen ? "カラーパレット" : "サンプル曲";
 }
-function configureStaticHosting() {
+function companionAPI(path) {
+  return state.companionOrigin ? `${state.companionOrigin}${path}` : path;
+}
+
+async function configureStaticHosting() {
   if (usesLoopbackCompanion) return;
   controls.sampleLibraryButton.disabled = true;
-  controls.sampleLibraryButton.title = "GitHub Pages版ではローカルサンプルは利用できません";
-  controls.file.accept = "application/json,.json";
-  controls.file.closest("label")?.setAttribute("title", "Web Render Plan JSONを開く");
+  controls.sampleLibraryButton.title = "ローカル companion を起動するとサンプル曲を利用できます";
+  controls.file.closest("label")?.setAttribute("title", "MusicXML、MXL、またはWeb Render Planを開く");
+  for (const origin of loopbackCompanionOrigins) {
+    try {
+      const response = await fetch(`${origin}/api/health`, { cache: "no-store" });
+      if (!response.ok) continue;
+      state.companionOrigin = origin;
+      controls.sampleLibraryButton.disabled = false;
+      controls.sampleLibraryButton.title = "サンプル曲";
+      return;
+    } catch {
+      // Try the next conventional loopback port before falling back to JSON.
+    }
+  }
 }
 function info(message) { pageStack.hidden = false; controls.status.hidden = false; controls.status.textContent = message; }
 function fail(message) { pageStack.hidden = true; controls.status.hidden = false; controls.status.textContent = message; }
