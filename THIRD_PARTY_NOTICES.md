@@ -47,7 +47,8 @@ followed if a derived font is ever created.
 - Project: musetrainer/library
 - Repository: https://github.com/musetrainer/library
 - Purpose: source repository for the current TestFlight-facing bundled learning
-  MXL samples and one excluded development fixture.
+  MXL samples, the matching GitHub Pages Web Render Plans, and one excluded
+  development fixture.
 - Upstream statement: the repository README and GitHub About describe it as
   "Public domain MusicXML files."
 - License-file audit on 2026-05-21: no repository-root `LICENSE`, `COPYING`, or
