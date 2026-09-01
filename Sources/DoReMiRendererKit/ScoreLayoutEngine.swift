@@ -83,6 +83,10 @@ public struct LayoutOptions: Sendable {
     /// trailing inset before a barline. This is intended for compact reading
     /// profiles; the default preserves the native app and PDF engraving.
     public var usesDurationSensitiveShortNoteSpacing: Bool
+    /// Permits a fixed-width reader to compress sixteenth-note and shorter
+    /// runs below ordinary engraving clearance when adjacent measures need to
+    /// remain on the same system. Native and PDF layouts leave this disabled.
+    public var allowsAggressiveShortNoteCompression: Bool
     /// Relative title size for print-like layouts. `1` preserves the existing
     /// app and PDF typography; reading profiles can reduce title emphasis.
     public var titleScale: CGFloat
@@ -144,6 +148,7 @@ public struct LayoutOptions: Sendable {
         justifiesFinalSystem: Bool = false,
         fullyJustifiesFinalSystem: Bool = false,
         usesDurationSensitiveShortNoteSpacing: Bool = false,
+        allowsAggressiveShortNoteCompression: Bool = false,
         titleScale: CGFloat = 1,
         titleGapAboveFirstStaff: CGFloat? = nil,
         titleVerticalOffset: CGFloat = 0,
@@ -179,6 +184,7 @@ public struct LayoutOptions: Sendable {
         self.justifiesFinalSystem = justifiesFinalSystem
         self.fullyJustifiesFinalSystem = fullyJustifiesFinalSystem
         self.usesDurationSensitiveShortNoteSpacing = usesDurationSensitiveShortNoteSpacing
+        self.allowsAggressiveShortNoteCompression = allowsAggressiveShortNoteCompression
         self.titleScale = max(0.5, min(1.5, titleScale))
         self.titleGapAboveFirstStaff = titleGapAboveFirstStaff.map { max(0, $0) }
         self.titleVerticalOffset = titleVerticalOffset
@@ -587,6 +593,7 @@ struct ScoreLayoutEngine: Sendable {
             )
             let beamedNoteIDs = Set(beamGroups.flatMap(\.noteIDs))
             var pendingArticulations: [PendingArticulationLayout] = []
+            var pendingFingerings: [PendingFingeringLayout] = []
             for note in item.measure.notes {
                 let clef = clef(for: note.staffID, in: item.measure, at: note.onset)
                 let staffIndex = staffIndexByID[note.staffID] ?? 0
@@ -682,14 +689,15 @@ struct ScoreLayoutEngine: Sendable {
                     continue
                 }
 
+                let resolvedStemDirection = beamStemDirections[note.id]
+                    ?? chordStemDirections[ChordStemKey(note)]
+                    ?? explicitStemDirection(for: note)
+                    ?? stemDirection(for: position)
+
                 if note.noteValueKind.drawsStem {
                     let stemElementID = ScoreElementID(rawValue: "\(note.id.rawValue).stem")
-                    let stemDirection = beamStemDirections[note.id]
-                        ?? chordStemDirections[ChordStemKey(note)]
-                        ?? explicitStemDirection(for: note)
-                        ?? stemDirection(for: position)
                     let stemFrame = stemFrame(
-                        direction: stemDirection,
+                        direction: resolvedStemDirection,
                         noteFrame: stemReferenceFrame,
                         noteheadCenter: stemReferenceCenter,
                         metrics: metrics
@@ -714,7 +722,7 @@ struct ScoreLayoutEngine: Sendable {
                     if note.noteValueKind.flagCount > 0 && !beamedNoteIDs.contains(note.id) {
                         let flagElementID = ScoreElementID(rawValue: "\(note.id.rawValue).flag")
                         let flagFrame = flagFrame(
-                            direction: stemDirection,
+                            direction: resolvedStemDirection,
                             stemFrame: stemFrame,
                             noteFrame: noteFrame
                         )
@@ -799,33 +807,17 @@ struct ScoreLayoutEngine: Sendable {
                 }
 
                 for (fingeringIndex, fingering) in note.fingerings.enumerated() where !fingering.text.isEmpty {
-                    let annotation = fingeringLayout(
-                        id: ScoreElementID(rawValue: "\(note.id.rawValue).fingering.\(fingeringIndex)"),
-                        noteID: note.id,
-                        text: fingering.text,
-                        center: center,
-                        measure: item.measure,
-                        staffID: note.staffID,
-                        metrics: metrics
-                    )
-                    annotationMaxY = max(annotation.frame.maxY, annotationMaxY)
-                    elements.append(
-                        ElementLayout(
-                            id: annotation.id,
-                            kind: .fingering,
-                            noteID: note.id,
-                            measureID: item.measure.id,
-                            staffID: note.staffID,
-                            voiceID: note.voiceID,
-                            clef: clef,
-                            keySignature: displayedKeySignature,
-                            timeSignature: item.measure.timeSignature,
-                            pitchClassHint: pitch.pitchClass,
-                            frame: annotation.frame,
-                            noteLayout: noteLayout,
-                            annotation: annotation
-                        )
-                    )
+                    pendingFingerings.append(PendingFingeringLayout(
+                        annotation: fingering,
+                        index: fingeringIndex,
+                        note: note,
+                        measureID: item.measure.id,
+                        noteLayout: noteLayout,
+                        clef: clef,
+                        keySignature: displayedKeySignature,
+                        timeSignature: item.measure.timeSignature,
+                        pitchClassHint: pitch.pitchClass
+                    ))
                 }
 
                 for (articulationIndex, articulation) in note.articulations.enumerated() {
@@ -835,10 +827,7 @@ struct ScoreLayoutEngine: Sendable {
                         note: note,
                         measureID: item.measure.id,
                         noteLayout: noteLayout,
-                        stemDirection: beamStemDirections[note.id]
-                            ?? chordStemDirections[ChordStemKey(note)]
-                            ?? explicitStemDirection(for: note)
-                            ?? stemDirection(for: position),
+                        stemDirection: resolvedStemDirection,
                         clef: clef,
                         keySignature: displayedKeySignature,
                         timeSignature: item.measure.timeSignature,
@@ -901,6 +890,17 @@ struct ScoreLayoutEngine: Sendable {
                 elements: elements,
                 metrics: metrics
             ))
+            // Fingerings are placed after beams, articulations, curves, and
+            // tuplets so their lane can avoid the complete note cluster.
+            // Direction elements follow, allowing below-staff dynamics and
+            // hairpins to account for explicitly-below fingerings as well.
+            let fingeringElements = fingeringElements(
+                pendingFingerings,
+                existingElements: elements,
+                metrics: metrics
+            )
+            annotationMaxY = max(annotationMaxY, fingeringElements.map(\.frame.maxY).max() ?? annotationMaxY)
+            elements.append(contentsOf: fingeringElements)
             elements.append(contentsOf: barlineElements(
                 measure: item.measure,
                 staffIDs: staffIDs,
@@ -4438,6 +4438,7 @@ private struct LayoutMetrics {
     let notationScale: CGFloat
     let usesExpandedExpressionLanes: Bool
     let usesDurationSensitiveShortNoteSpacing: Bool
+    let allowsAggressiveShortNoteCompression: Bool
     let stemAttachmentInset: CGFloat
     let timeSignatureScale: CGFloat
     let timeSignatureFontSize: CGFloat?
@@ -4492,11 +4493,16 @@ private struct LayoutMetrics {
         }
         pickupMeasureMinRatio = 0.75
         staffLineHitHalfWidth = max(options.notationScale, options.staffSpace * 0.08)
-        ledgerLineWidth = noteheadSize.width + options.staffSpace * 0.45
+        // Ledger lines only need a subtle overhang beyond their notehead.
+        // The former staff-space multiplier grew disproportionately in the
+        // compact Web A4 profile, making high-register ledger lines look like
+        // independent bars. Keep the total overhang within one notation point.
+        ledgerLineWidth = noteheadSize.width + min(options.staffSpace * 0.18, options.notationScale)
         staffSpace = options.staffSpace
         notationScale = options.notationScale
         usesExpandedExpressionLanes = options.usesExpandedExpressionLanes
         usesDurationSensitiveShortNoteSpacing = options.usesDurationSensitiveShortNoteSpacing
+        allowsAggressiveShortNoteCompression = options.allowsAggressiveShortNoteCompression
         stemAttachmentInset = options.stemAttachmentInset
         timeSignatureScale = options.timeSignatureScale
         timeSignatureFontSize = options.timeSignatureFontSize
@@ -4781,6 +4787,18 @@ private struct PendingArticulationLayout {
     let pitchClassHint: PitchClass?
 }
 
+private struct PendingFingeringLayout {
+    let annotation: FingeringAnnotation
+    let index: Int
+    let note: ScoreNote
+    let measureID: MeasureID
+    let noteLayout: NoteLayout
+    let clef: Clef
+    let keySignature: KeySignature?
+    let timeSignature: TimeSignature?
+    let pitchClassHint: PitchClass?
+}
+
 private func width(
     for measure: Measure,
     measureIndex: Int,
@@ -4792,10 +4810,30 @@ private func width(
 ) -> CGFloat {
     let spacingUnits = spacingUnitCount(for: measure)
     let trailingInset = trailingNotationInsetWidth(for: measure, metrics: metrics)
+    let hasPrefix = measurePrefixContentWidth(
+        for: measure,
+        displayedKeySignature: displayedKeySignature,
+        forceClefPrefix: forceClefPrefix,
+        metrics: metrics
+    ) > 0
+    let symmetricTerminalInset = max(
+        trailingInset,
+        metrics.noteheadSize.width / 2 + max(metrics.staffSpace * 2, 6 * metrics.notationScale)
+    )
+    // `xCoordinatesByOnset` reserves this inset on both barlines for a
+    // prefix-free short-value measure. Include precisely that reservation in
+    // the line-break budget, otherwise its minimum onset gaps would be scaled
+    // down after measure planning. Do not also retain the ordinary leading
+    // note inset: the symmetric inset replaces it. Counting both makes a
+    // short-value measure look wider to the greedy system grouper than it is
+    // on the page, causing otherwise suitable neighbours to wrap early.
+    let symmetricInsetAllowance = usesSymmetricShortTerminalInsets(measure, metrics: metrics) && !hasPrefix
+        ? max(0, symmetricTerminalInset * 2 - metrics.noteInset - trailingInset)
+        : 0
     let rhythmicSpacingWidth = max(
         CGFloat(max(spacingUnits, 1)) * metrics.rhythmicSpacingUnitWidth,
         readableRhythmicSpacingWidth(for: measure, metrics: metrics)
-    ) + metrics.noteInset + trailingInset
+    ) + metrics.noteInset + trailingInset + symmetricInsetAllowance
     let midMeasureClefWidth = midMeasureClefSpacingWidth(for: measure, metrics: metrics)
     let noteStartOffset = prefixNoteStartOffset(
         for: measure,
@@ -5241,9 +5279,13 @@ private func readableRhythmicSpacingWidth(for measure: Measure, metrics: LayoutM
     }
 
     let minimumGap = if containsVeryShortNotes {
-        metrics.staffSpace * (metrics.usesDurationSensitiveShortNoteSpacing ? 1.65 : 2.25)
+        metrics.allowsAggressiveShortNoteCompression
+            ? max(metrics.staffSpace * 0.55, metrics.noteheadSize.width * 0.48)
+            : metrics.staffSpace * (metrics.usesDurationSensitiveShortNoteSpacing ? 1.65 : 2.25)
     } else if containsShortNotes {
-        metrics.staffSpace * (metrics.usesDurationSensitiveShortNoteSpacing ? 1.85 : 2.45)
+        metrics.allowsAggressiveShortNoteCompression
+            ? max(metrics.staffSpace * 0.70, metrics.noteheadSize.width * 0.55)
+            : metrics.staffSpace * (metrics.usesDurationSensitiveShortNoteSpacing ? 1.85 : 2.45)
     } else {
         metrics.staffSpace * 2.0
     }
@@ -5262,10 +5304,16 @@ private func requiresDurationSensitiveOnsetSpacing(
     let containsRest = measure.notes.contains { $0.pitch == nil }
     let resolvedDenseChords = hasDenseChords
         ?? Dictionary(grouping: measure.notes.filter { $0.pitch != nil }, by: \.onset).values.contains { $0.count >= 3 }
+    let containsShortValues = measure.notes.contains { $0.noteValueKind.flagCount >= 2 }
     // Existing beamed short-note handling already keeps its intentionally
     // compact internal spacing. The onset-envelope path is for cases that the
     // former pitch-only logic could not represent: rests and dense chords.
-    return containsRest || resolvedDenseChords
+    // The Web profile sends every measure containing sixteenth-note-or-shorter
+    // values through this path. This establishes the same 11pt minimum
+    // notehead-centre distance for mixed-value and all-short measures alike.
+    return containsRest
+        || resolvedDenseChords
+        || (metrics.allowsAggressiveShortNoteCompression && containsShortValues)
 }
 
 /// Returns the minimum readable horizontal distance between consecutive
@@ -5292,6 +5340,21 @@ private func durationSensitiveOnsetGaps(
         // measure budget while the visual envelope preserves readable ink
         // clearance for the shortest events.
         let durationGap = musicalTimeValue(nextOnset - currentOnset) * metrics.staffSpace * 4
+        if let aggressivelyCompactedGap = aggressivelyCompactedShortNoteGap(
+            currentNotes: currentNotes,
+            nextNotes: nextNotes,
+            metrics: metrics
+        ) {
+            return aggressivelyCompactedGap
+        }
+        if let compactShortRestTransitionGap = compactShortRestTransitionGap(
+            currentNotes: currentNotes,
+            nextNotes: nextNotes,
+            durationGap: durationGap,
+            metrics: metrics
+        ) {
+            return compactShortRestTransitionGap
+        }
         if let compactBeamedGap = compactBeamedShortNoteGap(
             currentNotes: currentNotes,
             nextNotes: nextNotes,
@@ -5305,6 +5368,136 @@ private func durationSensitiveOnsetGaps(
         let visualGap = currentEnvelope.trailing + nextEnvelope.leading + metrics.staffSpace * 0.35
         return max(durationGap, visualGap)
     }
+}
+
+/// The browser's fixed A4 width sometimes needs to retain neighbouring dense
+/// source measures in one system. This deliberately permits visual overlap
+/// for sixteenth-note-or-shorter onset pairs, including rests of the same
+/// value. The decision is made per shared staff/voice lane: a sustained event
+/// on another staff must not make the first gap of a short-note passage wider.
+/// Mixed durations in the same lane retain envelope-aware gaps.
+private func aggressivelyCompactedShortNoteGap(
+    currentNotes: [ScoreNote],
+    nextNotes: [ScoreNote],
+    metrics: LayoutMetrics
+) -> CGFloat? {
+    guard let sharedLaneEvents = aggressivelyCompactibleShortLaneEvents(
+        currentNotes: currentNotes,
+        nextNotes: nextNotes,
+        metrics: metrics
+    ) else { return nil }
+
+    let beamDepth = sharedLaneEvents
+        .map(\.noteValueKind.flagCount)
+        .min() ?? 2
+    // This is an explicit Web-only emergency mode: preserve one consistent
+    // onset grid for notes and rests instead of reintroducing duration-based
+    // expansion for every sixteenth. Normal and mixed-value measures still
+    // use the duration/envelope-aware path above.
+    return aggressiveShortNoteMinimumGap(for: beamDepth)
+}
+
+/// Returns the events which share an active staff/voice lane at both onsets
+/// when every event in that lane is a sixteenth note or shorter. Events that
+/// merely sustain on another staff are deliberately excluded: they do not
+/// consume horizontal clearance in the short-note lane.
+private func aggressivelyCompactibleShortLaneEvents(
+    currentNotes: [ScoreNote],
+    nextNotes: [ScoreNote],
+    metrics: LayoutMetrics
+) -> [ScoreNote]? {
+    guard metrics.allowsAggressiveShortNoteCompression,
+          !currentNotes.isEmpty,
+          !nextNotes.isEmpty
+    else { return nil }
+
+    let currentNotesByLane = Dictionary(grouping: currentNotes) {
+        "\($0.staffID.rawValue)|\($0.voiceID.rawValue)"
+    }
+    let nextNotesByLane = Dictionary(grouping: nextNotes) {
+        "\($0.staffID.rawValue)|\($0.voiceID.rawValue)"
+    }
+    let sharedLanes = Set(currentNotesByLane.keys).intersection(nextNotesByLane.keys)
+    guard !sharedLanes.isEmpty else { return nil }
+
+    let sharedLaneEvents = sharedLanes.flatMap { lane in
+        (currentNotesByLane[lane] ?? []) + (nextNotesByLane[lane] ?? [])
+    }
+    // A triplet eighth has only one flag, but its actual onset distance is
+    // shorter than a written eighth. Treat it like the compact short-value
+    // lane for the fixed-width reader so tuplets use the same readable 11pt
+    // floor rather than expanding as ordinary eighth-note spacing.
+    guard sharedLaneEvents.allSatisfy({
+        $0.noteValueKind.flagCount >= 2 || $0.tuplet != nil
+    }) else {
+        return nil
+    }
+    return sharedLaneEvents
+}
+
+/// Browser layout minimum in output points. The A4 reader never packs adjacent
+/// short-note noteheads closer than this; when the required width does not fit
+/// alongside its neighbours, the system wraps instead of compressing the ink.
+func aggressiveShortNoteMinimumGap(for flagCount: Int) -> CGFloat {
+    11
+}
+
+/// A short SMuFL rest is visually wider than its rhythmic role. When it
+/// borders an eighth-note-or-longer event, using its full text glyph envelope
+/// creates a false pause. The Web compact profile instead reserves only the
+/// actual rest/note ink clearance, while accidentals and dots stay on the
+/// conservative envelope path below.
+private func compactShortRestTransitionGap(
+    currentNotes: [ScoreNote],
+    nextNotes: [ScoreNote],
+    durationGap: CGFloat,
+    metrics: LayoutMetrics
+) -> CGFloat? {
+    guard metrics.allowsAggressiveShortNoteCompression else {
+        return nil
+    }
+
+    func isShortRestOnly(_ notes: [ScoreNote]) -> Bool {
+        !notes.isEmpty && notes.allSatisfy {
+            $0.pitch == nil && $0.noteValueKind.flagCount >= 2
+        }
+    }
+    let currentIsShortRest = isShortRestOnly(currentNotes)
+    let nextIsShortRest = isShortRestOnly(nextNotes)
+    guard currentIsShortRest != nextIsShortRest else {
+        return nil
+    }
+
+    let neighbouringNotes = currentIsShortRest ? nextNotes : currentNotes
+    guard neighbouringNotes.contains(where: { $0.noteValueKind.flagCount < 2 }),
+          !neighbouringNotes.contains(where: { $0.accidental != nil || $0.dotCount > 0 })
+    else {
+        return nil
+    }
+
+    let shortRestNotes = currentIsShortRest ? currentNotes : nextNotes
+    let restHalfWidth = shortRestNotes.map {
+        RestVisualMetrics.visualFrame(
+            centeredAt: .zero,
+            noteValue: $0.noteValueKind,
+            noteheadSize: metrics.noteheadSize,
+            notationScale: metrics.notationScale
+        ).width / 2
+    }.max() ?? metrics.noteheadSize.width / 2
+    let neighbouringHalfWidth: CGFloat
+    if neighbouringNotes.contains(where: { $0.pitch != nil }) {
+        neighbouringHalfWidth = metrics.noteheadSize.width / 2
+    } else {
+        neighbouringHalfWidth = neighbouringNotes.map {
+            RestVisualMetrics.visualFrame(
+                centeredAt: .zero,
+                noteValue: $0.noteValueKind,
+                noteheadSize: metrics.noteheadSize,
+                notationScale: metrics.notationScale
+            ).width / 2
+        }.max() ?? metrics.noteheadSize.width / 2
+    }
+    return max(durationGap, restHalfWidth + neighbouringHalfWidth + metrics.staffSpace * 0.28)
 }
 
 /// Allows a beamed run of plain sixteenth notes or shorter to stay compact
@@ -5569,19 +5762,25 @@ private func durationSensitiveOnsetXCoordinates(
 
     let gaps: [CGFloat]
     if availableWidth <= naturalWidth {
-        // A single measure can be wider than an A4 content row only in an
-        // extreme imported score. Preserve ordering and visible ink bounds as
-        // the final fallback; normal measure planning supplies the full width.
-        let scale = max(0, availableWidth) / naturalWidth
-        gaps = minimumGaps.map { $0 * scale }
+        // Preserve the minimum notehead clearance even for a single unusually
+        // dense measure. Normal measure planning reserves this width and wraps
+        // neighbouring measures; retaining it here is preferable to silently
+        // compressing the symbols below their 11pt readability floor.
+        gaps = minimumGaps
     } else {
         let extraWidth = availableWidth - naturalWidth
         let durationWeights = zip(onsets, onsets.dropFirst()).map {
             max(musicalTimeValue($0.1 - $0.0), 0.125)
         }
-        let totalWeight = durationWeights.reduce(0, +)
-        gaps = zip(minimumGaps, durationWeights).map { minimumGap, weight in
-            minimumGap + extraWidth * weight / totalWeight
+        let extraDistribution = durationSensitiveJustificationExtraDistribution(
+            extraWidth: extraWidth,
+            onsets: onsets,
+            measure: measure,
+            durationWeights: durationWeights,
+            metrics: metrics
+        )
+        gaps = zip(minimumGaps, extraDistribution).map { minimumGap, extra in
+            minimumGap + extra
         }
     }
 
@@ -5592,6 +5791,79 @@ private func durationSensitiveOnsetXCoordinates(
         coordinates[onsets[index + 1]] = x
     }
     return coordinates
+}
+
+/// Distributes a justified system's spare width without turning a short-value
+/// transition into a visually long pause. In the fixed-width Web profile,
+/// sixteenth-or-shorter events that meet a longer value receive a capped share;
+/// the remaining width is reallocated to longer rhythmic spans. This keeps a
+/// rest and a note on the same onset grid and preserves the full A4 measure
+/// width whenever other rhythmic spans can absorb it.
+private func durationSensitiveJustificationExtraDistribution(
+    extraWidth: CGFloat,
+    onsets: [MusicalTime],
+    measure: Measure,
+    durationWeights: [CGFloat],
+    metrics: LayoutMetrics
+) -> [CGFloat] {
+    guard extraWidth > 0,
+          durationWeights.count == max(0, onsets.count - 1)
+    else {
+        return Array(repeating: 0, count: durationWeights.count)
+    }
+
+    let notesByOnset = Dictionary(grouping: measure.notes, by: \.onset)
+    let shortToLongCaps: [CGFloat?] = zip(onsets, onsets.dropFirst()).map { currentOnset, nextOnset in
+        guard metrics.allowsAggressiveShortNoteCompression else {
+            return nil
+        }
+        let currentNotes = notesByOnset[currentOnset] ?? []
+        let nextNotes = notesByOnset[nextOnset] ?? []
+        if aggressivelyCompactibleShortLaneEvents(
+            currentNotes: currentNotes,
+            nextNotes: nextNotes,
+            metrics: metrics
+        ) != nil {
+            return nil
+        }
+        let currentIsShort = !currentNotes.isEmpty
+            && currentNotes.allSatisfy { $0.noteValueKind.flagCount >= 2 }
+        let nextIsShort = !nextNotes.isEmpty
+            && nextNotes.allSatisfy { $0.noteValueKind.flagCount >= 2 }
+        guard currentIsShort != nextIsShort else {
+            return nil
+        }
+        // Keep a short rest/note beside a normal-value event readable without
+        // allowing system justification to create a second, false pause.
+        return metrics.noteheadSize.width * 0.35
+    }
+
+    var additions = Array(repeating: CGFloat(0), count: durationWeights.count)
+    var remainingExtra = extraWidth
+    var activeIndices = Array(durationWeights.indices)
+    let tolerance = CGFloat(0.001)
+
+    while remainingExtra > tolerance, !activeIndices.isEmpty {
+        let totalWeight = activeIndices.reduce(CGFloat(0)) { $0 + durationWeights[$1] }
+        guard totalWeight > 0 else { break }
+
+        var distributed = CGFloat(0)
+        var nextActiveIndices: [Int] = []
+        for index in activeIndices {
+            let proposed = remainingExtra * durationWeights[index] / totalWeight
+            let remainingCap = shortToLongCaps[index].map { max(0, $0 - additions[index]) }
+            let addition = min(proposed, remainingCap ?? proposed)
+            additions[index] += addition
+            distributed += addition
+            if remainingCap == nil || addition + tolerance < remainingCap! {
+                nextActiveIndices.append(index)
+            }
+        }
+        guard distributed > tolerance else { break }
+        remainingExtra -= distributed
+        activeIndices = nextActiveIndices
+    }
+    return additions
 }
 
 private func trailingNotationInsetWidth(for measure: Measure, metrics: LayoutMetrics) -> CGFloat {
@@ -6315,20 +6587,65 @@ private func annotationLayout(
     )
 }
 
+private func fingeringElements(
+    _ pending: [PendingFingeringLayout],
+    existingElements: [ElementLayout],
+    metrics: LayoutMetrics
+) -> [ElementLayout] {
+    var result: [ElementLayout] = []
+    for item in pending {
+        let placement = item.annotation.placement == .unspecified ? .above : item.annotation.placement
+        let base = fingeringLayout(
+            id: ScoreElementID(rawValue: "\(item.note.id.rawValue).fingering.\(item.index)"),
+            noteID: item.note.id,
+            text: item.annotation.text,
+            noteLayout: item.noteLayout,
+            placement: placement,
+            index: item.index,
+            metrics: metrics
+        )
+        let annotation = fingeringLayoutAvoidingNotationCollision(
+            base,
+            placement: placement,
+            metrics: metrics,
+            existingElements: existingElements + result
+        )
+        result.append(ElementLayout(
+            id: annotation.id,
+            kind: .fingering,
+            noteID: item.note.id,
+            measureID: item.measureID,
+            staffID: item.note.staffID,
+            voiceID: item.note.voiceID,
+            clef: item.clef,
+            keySignature: item.keySignature,
+            timeSignature: item.timeSignature,
+            pitchClassHint: item.pitchClassHint,
+            frame: annotation.frame,
+            noteLayout: item.noteLayout,
+            annotation: annotation
+        ))
+    }
+    return result
+}
+
 private func fingeringLayout(
     id: ScoreElementID,
     noteID: NoteID,
     text: String,
-    center: CGPoint,
-    measure: Measure,
-    staffID: StaffID,
+    noteLayout: NoteLayout,
+    placement: ScoreDirectionPlacement,
+    index: Int,
     metrics: LayoutMetrics
 ) -> TextAnnotationLayout {
     let width = max(metrics.staffSpace * 1.2, CGFloat(text.count) * metrics.staffSpace * 0.7)
     let height = metrics.staffSpace * 1.3
+    let side: CGFloat = placement == .below ? 1 : -1
+    let yAnchor = side < 0 ? noteLayout.noteheadFrame.minY : noteLayout.noteheadFrame.maxY
+    let distance = metrics.staffSpace * (1.15 + CGFloat(index) * 0.75)
     let frame = CGRect(
-        x: center.x - width / 2,
-        y: center.y - metrics.staffSpace * 4.0,
+        x: noteLayout.noteheadCenter.x - width / 2,
+        y: side < 0 ? yAnchor - distance - height : yAnchor + distance,
         width: width,
         height: height
     )
@@ -6339,6 +6656,63 @@ private func fingeringLayout(
         origin: CGPoint(x: frame.minX, y: frame.minY + height * 0.75),
         frame: frame
     )
+}
+
+private func fingeringLayoutAvoidingNotationCollision(
+    _ annotation: TextAnnotationLayout,
+    placement: ScoreDirectionPlacement,
+    metrics: LayoutMetrics,
+    existingElements: [ElementLayout]
+) -> TextAnnotationLayout {
+    let clearance = max(2 * metrics.notationScale, metrics.staffSpace * 0.25)
+    let searchFrame = annotation.frame.insetBy(dx: -metrics.staffSpace, dy: -metrics.staffSpace * 5)
+    let collisionFrames = existingElements.compactMap { element -> CGRect? in
+        guard isFingeringCollisionCandidate(element.kind) else { return nil }
+        let frame = element.frame.insetBy(dx: -clearance, dy: -clearance)
+        return searchFrame.intersects(frame) ? frame : nil
+    }
+    guard fingeringCollisionScore(annotation.frame, frames: collisionFrames) > 0 else {
+        return annotation
+    }
+
+    let side: CGFloat = placement == .below ? 1 : -1
+    let laneStep = max(6 * metrics.notationScale, metrics.staffSpace * 0.8)
+    var best = annotation
+    var bestScore = fingeringCollisionScore(annotation.frame, frames: collisionFrames)
+    for multiplier in [1, 1.5, 2, 2.5, 3, 3.5, 4, 5] as [CGFloat] {
+        let shiftedFrame = annotation.frame.offsetBy(dx: 0, dy: side * laneStep * multiplier)
+        let shifted = TextAnnotationLayout(
+            id: annotation.id,
+            noteID: annotation.noteID,
+            text: annotation.text,
+            origin: CGPoint(x: shiftedFrame.minX, y: shiftedFrame.minY + shiftedFrame.height * 0.75),
+            frame: shiftedFrame
+        )
+        let score = fingeringCollisionScore(shifted.frame, frames: collisionFrames)
+        if score == 0 { return shifted }
+        if score < bestScore {
+            best = shifted
+            bestScore = score
+        }
+    }
+    return best
+}
+
+private func fingeringCollisionScore(_ frame: CGRect, frames: [CGRect]) -> CGFloat {
+    frames.reduce(CGFloat.zero) { score, collisionFrame in
+        guard frame.intersects(collisionFrame) else { return score }
+        let intersection = frame.intersection(collisionFrame)
+        return score + max(0, intersection.width) * max(0, intersection.height)
+    }
+}
+
+private func isFingeringCollisionCandidate(_ kind: ScoreElementKind) -> Bool {
+    switch kind {
+    case .notehead, .rest, .stem, .flag, .beam, .accidental, .dot, .ledgerLine, .lyric, .fingering, .articulation, .tie, .slur, .tuplet:
+        true
+    case .staffLine, .clef, .timeSignature, .keySignature, .barline, .dynamic, .hairpin, .pedal, .repeatEnding, .measureRepeat, .playbackJumpMarker:
+        false
+    }
 }
 
 private func ledgerLinesForNote(

@@ -90,6 +90,7 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
     private var lyricBuilder: LyricBuilder?
     private var directionBuilder: DirectionBuilder?
     private var metronomeBuilder: MetronomeBuilder?
+    private var fingeringPlacement: ScoreDirectionPlacement = .unspecified
     private var pendingClefNumber: String?
     private var pendingClefSign: String?
     private var pendingBarlineLocation: String?
@@ -167,6 +168,8 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             )
         case "lyric":
             lyricBuilder = LyricBuilder()
+        case "fingering":
+            fingeringPlacement = ScoreDirectionPlacement(rawValue: attributeDict["placement"] ?? "") ?? .unspecified
         case "chord":
             noteBuilder?.isChordTone = true
         case "rest":
@@ -458,8 +461,9 @@ private final class MusicXMLParserDelegate: NSObject, XMLParserDelegate {
             lyricBuilder = nil
         case "fingering":
             if parentElement == "technical", !text.isEmpty {
-                noteBuilder?.fingerings.append(FingeringAnnotation(text: text))
+                noteBuilder?.fingerings.append(FingeringAnnotation(text: text, placement: fingeringPlacement))
             }
+            fingeringPlacement = .unspecified
         case "beam":
             if parentElement == "note",
                let beamValue = MusicXMLBeamValue(rawValue: text) {

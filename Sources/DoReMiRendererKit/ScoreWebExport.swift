@@ -173,20 +173,34 @@ public struct ScoreWebNoteAnchor: Hashable, Codable, Sendable {
     }
 }
 
-/// Semantic ledger-line metadata for browser palette overlays. A ledger line
-/// belongs to the written note that requires it, so its colour follows that
-/// note's spelling rather than the staff position it crosses.
+/// Semantic ledger-line metadata for browser palette overlays. Each ledger
+/// line carries the pitch class of its own staff position. This keeps a stack
+/// of ledger lines aligned with the same fixed pitch-colour pattern as staff
+/// rules, instead of tinting every line with the attached note's colour.
 public struct ScoreWebLedgerLine: Hashable, Codable, Sendable {
     public let start: ScoreWebPoint
     public let end: ScoreWebPoint
     public let noteID: NoteID?
     public let colorPitchClass: Int?
 
-    init(layout: LedgerLineLayout, note: NoteLayout?) {
+    init(layout: LedgerLineLayout) {
         start = ScoreWebPoint(layout.start)
         end = ScoreWebPoint(layout.end)
         noteID = layout.noteID
-        colorPitchClass = note?.pitch.map { ScoreWebNoteAnchor.naturalPitchClass(for: $0.step) }
+        colorPitchClass = Self.naturalPitchClass(for: layout.pitchClassHint)
+    }
+
+    private static func naturalPitchClass(for hint: PitchClass?) -> Int? {
+        switch hint {
+        case .c: 0
+        case .d: 2
+        case .e: 4
+        case .f: 5
+        case .g: 7
+        case .a: 9
+        case .b: 11
+        case nil: nil
+        }
     }
 }
 
@@ -443,6 +457,9 @@ public struct ScoreWebLayoutProfile: Hashable, Codable, Sendable {
             justifiesFinalSystem: false,
             fullyJustifiesFinalSystem: false,
             usesDurationSensitiveShortNoteSpacing: true,
+            // Keep adjacent dense source measures in one fixed-width browser
+            // system. Native and PDF profiles retain ordinary clearance.
+            allowsAggressiveShortNoteCompression: true,
             titleScale: 0.82,
             titleGapAboveFirstStaff: 120 * notationScale,
             // Move only the title closer to the first system. Reservation for
@@ -496,10 +513,7 @@ struct ScoreWebRenderPlanBuilder {
             }
         let staffLines = layout.staffLines.map(ScoreWebStaffLine.init(layout:))
         let ledgerLines = layout.ledgerLines.map { ledgerLine in
-            ScoreWebLedgerLine(
-                layout: ledgerLine,
-                note: ledgerLine.noteID.flatMap(layout.noteLayout(for:))
-            )
+            ScoreWebLedgerLine(layout: ledgerLine)
         }
         let systems = layout.systems.map(ScoreWebSystemGuide.init(layout:))
         let pages = layout.pages.map(ScoreWebPage.init(layout:))

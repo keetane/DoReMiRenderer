@@ -212,6 +212,26 @@ import Testing
     #expect(fingering.frame != .zero)
 }
 
+@Test func fingeringHonorsPlacementAndAvoidsBeamedStemGeometry() throws {
+    let result = try MusicXMLParser().parse(data: Data(fingeringCollisionXML.utf8))
+    let notes = try #require(result.score.parts.first?.measures.first?.notes)
+    #expect(notes[0].fingerings == [FingeringAnnotation(text: "4")])
+    #expect(notes[2].fingerings == [FingeringAnnotation(text: "2", placement: .below)])
+
+    let layout = try ScoreLayoutEngine().layout(score: result.score)
+    let upperFingering = try #require(layout.elements.first { $0.kind == .fingering && $0.noteID == notes[0].id })
+    let lowerFingering = try #require(layout.elements.first { $0.kind == .fingering && $0.noteID == notes[2].id })
+    let lowerNoteLayout = try #require(layout.noteLayout(for: notes[2].id))
+    let beamFrames = layout.elements.filter { $0.kind == .beam }.map(\.frame)
+    let upperStemFrames = layout.elements
+        .filter { $0.kind == .stem && ($0.noteID == notes[0].id || $0.noteID == notes[1].id) }
+        .map(\.frame)
+
+    #expect(lowerFingering.frame.minY > lowerNoteLayout.noteheadFrame.maxY)
+    #expect(beamFrames.allSatisfy { !upperFingering.frame.insetBy(dx: -1, dy: -1).intersects($0) })
+    #expect(upperStemFrames.allSatisfy { !upperFingering.frame.insetBy(dx: -1, dy: -1).intersects($0) })
+}
+
 @Test func painterDrawsLyricAndFingeringTextFromLayoutElements() throws {
     let result = try MusicXMLParser().parse(data: Data(lyricsFingeringXML.utf8))
     let layout = try ScoreLayoutEngine().layout(score: result.score)
@@ -428,6 +448,18 @@ private let lyricsFingeringXML = """
       <lyric><syllabic>single</syllabic><text>Do</text></lyric>
       <notations><technical><fingering>1</fingering></technical></notations>
     </note>
+  </measure></part>
+</score-partwise>
+"""
+
+private let fingeringCollisionXML = """
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Fingerings</part-name></score-part></part-list>
+  <part id="P1"><measure number="1">
+    <attributes><divisions>4</divisions><clef><sign>G</sign><line>2</line></clef></attributes>
+    <note><pitch><step>C</step><octave>5</octave></pitch><duration>1</duration><type>16th</type><stem>up</stem><beam number="1">begin</beam><beam number="2">begin</beam><notations><technical><fingering>4</fingering></technical></notations></note>
+    <note><pitch><step>D</step><octave>5</octave></pitch><duration>1</duration><type>16th</type><stem>up</stem><beam number="1">end</beam><beam number="2">end</beam><notations><technical><fingering>3</fingering></technical></notations></note>
+    <note><pitch><step>G</step><octave>4</octave></pitch><duration>2</duration><type>eighth</type><stem>down</stem><notations><technical><fingering placement="below">2</fingering></technical></notations></note>
   </measure></part>
 </score-partwise>
 """

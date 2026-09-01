@@ -19,7 +19,7 @@ import uuid
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 
 WEB_ROOT = Path(__file__).resolve().parent
@@ -28,6 +28,7 @@ EXPORTER = PROJECT_ROOT / ".build" / "debug" / "DoReMiRendererWebExport"
 MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 SUPPORTED_SUFFIXES = {".mxl", ".musicxml", ".xml"}
 SOURCE_CACHE_TTL_SECONDS = 10 * 60
+SAMPLE_LIBRARY_ROOT = PROJECT_ROOT / "sample" / "app-bundle-hold"
 uploaded_sources: dict[str, tuple[bytes, str, float]] = {}
 source_cache_lock = threading.Lock()
 
@@ -46,6 +47,51 @@ def ensure_exporter() -> Path:
     if not EXPORTER.is_file():
         raise RuntimeError("DoReMiRendererWebExport のビルドに失敗しました。")
     return EXPORTER
+
+
+def render_score_bundle(payload: bytes, suffix: str) -> bytes:
+    """Run the SDK exporter and retain source bytes for on-demand transpose."""
+    with tempfile.TemporaryDirectory(prefix="doremipalette-web-") as temporary_directory:
+        temporary_root = Path(temporary_directory)
+        input_path = temporary_root / f"score{suffix}"
+        output_path = temporary_root / "score-web.json"
+        input_path.write_bytes(payload)
+        result = subprocess.run(
+            [
+                str(ensure_exporter()),
+                "--input", str(input_path),
+                "--output", str(output_path),
+                "--width", "1024",
+                # Initial import stays responsive for large scores.
+                # Chosen transpositions are rendered on demand below.
+                "--primary-only",
+            ],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=90,
+        )
+        if result.returncode != 0 or not output_path.is_file():
+            detail = (result.stderr or result.stdout or "MusicXML/MXLを変換できませんでした。").strip()
+            raise RuntimeError(detail[-1200:])
+        document = json.loads(output_path.read_text(encoding="utf-8"))
+
+    token = uuid.uuid4().hex
+    with source_cache_lock:
+        WebPaletteHandler._evict_expired_sources()
+        uploaded_sources[token] = (payload, suffix, time.monotonic() + SOURCE_CACHE_TTL_SECONDS)
+    document["sourceToken"] = token
+    document["availableTransposeSemitones"] = list(range(-6, 6))
+    return json.dumps(document, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+
+
+def bundled_sample_entries() -> list[dict[str, str]]:
+    if not SAMPLE_LIBRARY_ROOT.is_dir():
+        return []
+    return [
+        {"id": path.name, "name": path.stem.replace("_", " ")}
+        for path in sorted(SAMPLE_LIBRARY_ROOT.glob("*.mxl"), key=lambda item: item.name.casefold())
+    ]
 
 
 class WebPaletteHandler(SimpleHTTPRequestHandler):
@@ -78,37 +124,7 @@ class WebPaletteHandler(SimpleHTTPRequestHandler):
             return
 
         try:
-            with tempfile.TemporaryDirectory(prefix="doremipalette-web-") as temporary_directory:
-                temporary_root = Path(temporary_directory)
-                input_path = temporary_root / f"score{suffix}"
-                output_path = temporary_root / "score-web.json"
-                input_path.write_bytes(payload)
-                result = subprocess.run(
-                    [
-                        str(ensure_exporter()),
-                        "--input", str(input_path),
-                        "--output", str(output_path),
-                        "--width", "1024",
-                        # Initial import stays responsive for large scores.
-                        # Chosen transpositions are rendered on demand below.
-                        "--primary-only",
-                    ],
-                    cwd=PROJECT_ROOT,
-                    capture_output=True,
-                    text=True,
-                    timeout=90,
-                )
-                if result.returncode != 0 or not output_path.is_file():
-                    detail = (result.stderr or result.stdout or "MusicXML/MXLを変換できませんでした。").strip()
-                    raise RuntimeError(detail[-1200:])
-                document = json.loads(output_path.read_text(encoding="utf-8"))
-                token = uuid.uuid4().hex
-                with source_cache_lock:
-                    self._evict_expired_sources()
-                    uploaded_sources[token] = (payload, suffix, time.monotonic() + SOURCE_CACHE_TTL_SECONDS)
-                document["sourceToken"] = token
-                document["availableTransposeSemitones"] = list(range(-6, 6))
-                rendered = json.dumps(document, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+            rendered = render_score_bundle(payload, suffix)
         except subprocess.TimeoutExpired:
             self.send_api_error(HTTPStatus.GATEWAY_TIMEOUT, "MusicXML/MXLの変換がタイムアウトしました。")
             return
@@ -125,12 +141,18 @@ class WebPaletteHandler(SimpleHTTPRequestHandler):
 
     def do_GET(self) -> None:  # noqa: N802 - inherited HTTP handler API
         parsed = urlparse(self.path)
+        if parsed.path == "/api/samples":
+            self.send_json(bundled_sample_entries())
+            return
+        if parsed.path == "/api/sample":
+            self.render_bundled_sample(parse_qs(parsed.query).get("id", [""])[0])
+            return
         if parsed.path != "/api/transpose":
             return super().do_GET()
-        parameters = dict(item.split("=", 1) if "=" in item else (item, "") for item in parsed.query.split("&") if item)
-        token = parameters.get("token", "")
+        parameters = parse_qs(parsed.query)
+        token = parameters.get("token", [""])[0]
         try:
-            semitones = int(parameters.get("semitones", ""))
+            semitones = int(parameters.get("semitones", [""])[0])
         except ValueError:
             semitones = 99
         with source_cache_lock:
@@ -177,6 +199,31 @@ class WebPaletteHandler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(rendered)
 
+    def render_bundled_sample(self, requested_name: str) -> None:
+        name = Path(requested_name).name
+        candidate = (SAMPLE_LIBRARY_ROOT / name).resolve()
+        if (
+            candidate.parent != SAMPLE_LIBRARY_ROOT.resolve()
+            or candidate.suffix.lower() != ".mxl"
+            or not candidate.is_file()
+        ):
+            self.send_api_error(HTTPStatus.NOT_FOUND, "指定したサンプルは見つかりません。")
+            return
+        try:
+            rendered = render_score_bundle(candidate.read_bytes(), candidate.suffix.lower())
+        except subprocess.TimeoutExpired:
+            self.send_api_error(HTTPStatus.GATEWAY_TIMEOUT, "サンプルの変換がタイムアウトしました。")
+            return
+        except Exception as error:
+            self.send_api_error(HTTPStatus.UNPROCESSABLE_ENTITY, str(error))
+            return
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(rendered)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(rendered)
+
     @staticmethod
     def _evict_expired_sources() -> None:
         now = time.monotonic()
@@ -195,6 +242,15 @@ class WebPaletteHandler(SimpleHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+
+    def send_json(self, value: object) -> None:
+        payload = json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(payload)))
+        self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(payload)
 
