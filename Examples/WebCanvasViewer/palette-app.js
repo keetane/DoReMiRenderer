@@ -8,28 +8,32 @@ const PITCHES = [
 const COLORS = new Map(PITCHES.flatMap(([_, classes, color]) => classes.map((pitchClass) => [pitchClass, color])));
 const WHITE = new Set([0, 2, 4, 5, 7, 9, 11]);
 const allPitchClasses = () => new Set(Array.from({ length: 12 }, (_, index) => index));
+const usesLoopbackCompanion = ["127.0.0.1", "localhost", "::1"].includes(location.hostname);
 const state = {
   source: null, plan: null, sourceName: "score-web.json", transpose: 0, scoreZoom: 1,
   noteColors: true, staffColors: false, keyboardColors: true, keyboardColorPosition: "top", nextNoteGuide: true, keyboardVisible: true, enabled: allPitchClasses(),
   selectedNoteID: null, selectedMidi: null, currentIndex: 0, activeMIDIs: new Set(), nextMIDIs: new Set(), playing: false,
   context: null, nodes: new Set(), nextScheduledIndex: 0, contextStart: 0, timelineStart: 0, baseTempoBPM: 120, tempoBPM: 120, animationFrame: null,
-  lastFollowedSystemIndex: null, pageCanvases: new Map(), transposeRequestID: 0,
+  lastFollowedSystemIndex: null, pageCanvases: new Map(), transposeRequestID: 0, printing: false, samples: null, activeDrawer: null,
 };
 const $ = (selector) => document.querySelector(selector);
 const pageStack = $("#page-stack");
 const controls = {
-  status: $("#status"), palette: $("#palette"), paletteButton: $("#palette-button"), noteColors: $("#note-colors"),
-  keyboard: $("#keyboard-button"), dock: $("#keyboard-dock"), file: $("#file-input"), sourceName: $("#score-name"),
+  status: $("#status"), palette: $("#palette"), paletteButton: $("#palette-button"), drawer: $("#right-drawer"), drawerBackdrop: $("#drawer-backdrop"), drawerClose: $("#drawer-close"), drawerTitle: $("#drawer-title"), noteColors: $("#note-colors"),
+  keyboard: $("#keyboard-button"), dock: $("#keyboard-dock"), file: $("#file-input"), sampleLibraryButton: $("#sample-library-button"), sampleLibrary: $("#sample-library"), sampleList: $("#sample-list"), print: $("#print-button"), sourceName: $("#score-name"),
   sourceMeta: $("#score-meta"), selected: $("#selected-note"), current: $("#current-note"), transpose: $("#transpose-select"), originalScale: $("#original-scale-button"), keyboardElement: $("#keyboard"),
   staffColors: $("#staff-colors"), keyboardColors: $("#keyboard-colors"), keyboardColorPosition: $("#keyboard-color-position"), nextNoteGuide: $("#next-note-guide"), allPitches: $("#all-pitches"),
-  tempo: $("#tempo-input"), zoom: $("#zoom-input"), reset: $("#reset-button"), previous: $("#previous-button"), play: $("#play-button"),
+  tempo: $("#tempo-input"), zoom: $("#zoom-input"), fitWidth: $("#fit-width-button"), reset: $("#reset-button"), previous: $("#previous-button"), play: $("#play-button"),
   stop: $("#stop-button"), next: $("#next-button"), jump: $("#jump-button"), measure: $("#measure-input"), measureStatus: $("#measure-status"),
 };
 
 buildPalette();
 buildTranspose();
 buildKeyboard();
+configureStaticHosting();
 controls.paletteButton.addEventListener("click", () => togglePalette());
+controls.drawerClose.addEventListener("click", closeDrawer);
+controls.drawerBackdrop.addEventListener("click", closeDrawer);
 controls.noteColors.addEventListener("click", () => { state.noteColors = !state.noteColors; sync(); redraw(); });
 controls.keyboard.addEventListener("click", () => { state.keyboardVisible = !state.keyboardVisible; sync(); });
 $("#palette-reset").addEventListener("click", () => { state.enabled = allPitchClasses(); state.noteColors = true; state.staffColors = false; state.keyboardColors = true; state.keyboardColorPosition = "top"; state.nextNoteGuide = true; sync(); redraw(); });
@@ -39,12 +43,15 @@ controls.keyboardColorPosition.addEventListener("click", () => { state.keyboardC
 controls.nextNoteGuide.addEventListener("click", () => { state.nextNoteGuide = !state.nextNoteGuide; sync(); redraw(); });
 controls.allPitches.addEventListener("click", () => { state.enabled = state.enabled.size === 12 ? new Set() : allPitchClasses(); sync(); redraw(); });
 controls.file.addEventListener("change", async (event) => { const file = event.target.files?.[0]; if (!file) return; try { await loadFile(file); } catch (error) { fail(`スコアを開けません: ${error.message}`); } finally { controls.file.value = ""; } });
+controls.sampleLibraryButton.addEventListener("click", () => { void toggleSampleLibrary(); });
+controls.print.addEventListener("click", printScore);
 controls.transpose.addEventListener("change", () => { state.transpose = Number(controls.transpose.value); void applyTranspose(); });
 controls.originalScale.addEventListener("click", () => { state.transpose = 0; void applyTranspose(); });
 controls.tempo.addEventListener("change", updateTempoFromInput);
 controls.tempo.addEventListener("keydown", (event) => { if (event.key === "Enter") { event.preventDefault(); updateTempoFromInput(); controls.tempo.blur(); } });
 controls.zoom.addEventListener("change", updateZoomFromInput);
 controls.zoom.addEventListener("keydown", (event) => { if (event.key === "Enter") { event.preventDefault(); updateZoomFromInput(); controls.zoom.blur(); } });
+controls.fitWidth.addEventListener("click", fitScoreToWidth);
 controls.reset.addEventListener("click", () => setEvent(0, true));
 controls.previous.addEventListener("click", () => move(-1));
 controls.next.addEventListener("click", () => move(1));
@@ -53,6 +60,8 @@ controls.measure.addEventListener("keydown", (event) => { if (event.key === "Ent
 controls.play.addEventListener("click", play);
 controls.stop.addEventListener("click", stop);
 addEventListener("resize", () => requestAnimationFrame(redraw));
+addEventListener("keydown", (event) => { if (event.key === "Escape") closeDrawer(); });
+addEventListener("afterprint", finishPrint);
 
 try {
   const [response] = await Promise.all([fetch("./score-web.json"), ensureSMuFLFont()]);
@@ -67,7 +76,7 @@ function load(document, sourceName) {
   state.source = source;
   state.sourceName = sourceName;
   state.transpose = 0;
-  state.scoreZoom = 1;
+  // scoreZoom is a viewer preference and intentionally survives score changes.
   state.baseTempoBPM = sourceTempoBPM(source.events);
   state.tempoBPM = state.baseTempoBPM;
   state.pageCanvases.clear();
@@ -93,6 +102,9 @@ async function loadFile(file) {
   if (!/\.(mxl|musicxml|xml)$/.test(name)) {
     throw new Error(".mxl、.musicxml、.xml、またはWeb Render Plan JSONを選択してください。");
   }
+  if (!usesLoopbackCompanion) {
+    throw new Error("GitHub Pages版ではWeb Render Plan JSONのみ開けます。MusicXML/MXLはローカル companion server で開いてください。");
+  }
   if (file.size > 50 * 1024 * 1024) throw new Error("50 MB以下のMusicXML/MXLファイルを選択してください。");
   info("MusicXMLをSDKでレイアウトしています…");
   // Send a fixed byte body instead of relying on the browser's File-stream
@@ -109,6 +121,52 @@ async function loadFile(file) {
     throw new Error(detail || "MusicXML/MXL変換サーバーに接続できません。Examples/WebCanvasViewer/server.pyで起動してください。");
   }
   load(await response.json(), file.name);
+}
+
+async function toggleSampleLibrary() {
+  if (!usesLoopbackCompanion) return;
+  const opening = state.activeDrawer !== "samples";
+  setActiveDrawer(opening ? "samples" : null);
+  if (!opening || state.samples) return;
+  controls.sampleList.replaceChildren(sampleLibraryMessage("サンプル曲を読み込んでいます…"));
+  try {
+    const response = await fetch("./api/samples");
+    if (!response.ok) throw new Error(await responseDetail(response));
+    state.samples = await response.json();
+    renderSampleLibrary();
+  } catch (error) {
+    controls.sampleList.replaceChildren(sampleLibraryMessage(`サンプル曲を読み込めません: ${error.message}`));
+  }
+}
+
+function renderSampleLibrary() {
+  controls.sampleList.replaceChildren(...state.samples.map((sample) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = sample.name;
+    button.title = sample.name;
+    button.addEventListener("click", () => { void loadBundledSample(sample); });
+    return button;
+  }));
+}
+
+function sampleLibraryMessage(message) {
+  const element = document.createElement("span");
+  element.className = "sample-library-message";
+  element.textContent = message;
+  return element;
+}
+
+async function loadBundledSample(sample) {
+  info(`${sample.name} をSDKでレイアウトしています…`);
+  try {
+    const response = await fetch(`./api/sample?id=${encodeURIComponent(sample.id)}`);
+    if (!response.ok) throw new Error(await responseDetail(response));
+    load(await response.json(), sample.name);
+    closeDrawer();
+  } catch (error) {
+    fail(`サンプル曲を開けません: ${error.message}`);
+  }
 }
 
 function normalize(document) {
@@ -175,8 +233,8 @@ function events() { return state.source?.events ?? []; }
 
 function redraw() {
   if (!state.plan) return;
-  const event = events()[state.currentIndex];
-  const nextEvent = state.nextNoteGuide ? events()[state.currentIndex + 1] : null;
+  const event = state.printing ? null : events()[state.currentIndex];
+  const nextEvent = state.printing || !state.nextNoteGuide ? null : events()[state.currentIndex + 1];
   const pages = pageFrames(state.plan);
   preparePageCanvases(pages);
   applyPageStackWidth(pages);
@@ -186,7 +244,7 @@ function redraw() {
       noteColors: state.noteColors, staffColors: state.staffColors, enabledPitchClasses: state.enabled,
       noteColorForPitchClass: (pitchClass) => COLORS.get(pitchClass),
       staffColorForPitchClass: (pitchClass) => COLORS.get(pitchClass),
-      selectedNoteIDs: new Set(state.selectedNoteID ? [state.selectedNoteID] : []),
+      selectedNoteIDs: new Set(!state.printing && state.selectedNoteID ? [state.selectedNoteID] : []),
       currentNoteIDs: new Set(event?.noteIDs ?? []),
       nextNoteIDs: new Set(nextEvent?.noteIDs ?? []),
     });
@@ -243,6 +301,8 @@ function sync() {
   controls.tempo.disabled = !hasTimeline;
   controls.zoom.value = String(Math.round(state.scoreZoom * 100));
   controls.zoom.disabled = !state.plan;
+  controls.fitWidth.disabled = !state.plan;
+  controls.print.disabled = !state.plan || state.printing;
   for (const button of document.querySelectorAll("#pitch-controls button")) {
     const classes = button.dataset.classes.split(",").map(Number);
     button.classList.toggle("is-active", classes.every((pitchClass) => state.enabled.has(pitchClass)));
@@ -252,6 +312,25 @@ function sync() {
   const event = events()[state.currentIndex];
   controls.measureStatus.textContent = event ? `${event.measureNumber} / ${new Set(events().map((item) => item.measureNumber)).size}` : "-/ -";
   if (event) controls.measure.value = event.measureNumber;
+}
+
+function printScore() {
+  if (!state.plan || state.printing) return;
+  stop();
+  state.printing = true;
+  document.body.classList.add("is-printing");
+  sync();
+  requestAnimationFrame(() => {
+    redraw();
+    requestAnimationFrame(() => window.print());
+  });
+}
+
+function finishPrint() {
+  if (!state.printing) return;
+  state.printing = false;
+  document.body.classList.remove("is-printing");
+  requestAnimationFrame(() => { redraw(); sync(); });
 }
 
 function buildPalette() {
@@ -489,6 +568,18 @@ function updateZoomFromInput() {
   setScoreZoom(value / 100);
 }
 
+function fitScoreToWidth() {
+  const page = pageFrames(state.plan)[0];
+  const scroll = $("#score-scroll");
+  if (!page || scroll.clientWidth <= 0) return;
+
+  // Keep the A4 frame unchanged and only fit its rendered width inside the scroll viewport.
+  const fit = () => setScoreZoom((scroll.clientWidth - 2) / page.frame.width, false);
+  fit();
+  // A newly visible vertical scrollbar changes clientWidth on non-overlay scrollbar platforms.
+  requestAnimationFrame(fit);
+}
+
 function sourceTempoBPM(timeline) {
   const explicitTempo = timeline.find((event) => Number.isFinite(Number(event.tempoBPM)))?.tempoBPM;
   return clampTempoBPM(explicitTempo ?? 120);
@@ -515,8 +606,9 @@ function follow(event) {
   scroll.scrollTo({ top: Math.max(0, scroll.scrollTop + position - scrollBounds.height * 0.18), behavior: "smooth" });
 }
 
-function setScoreZoom(value) {
-  state.scoreZoom = Math.min(2, Math.max(0.5, Math.round(value * 10) / 10));
+function setScoreZoom(value, snapToInputStep = true) {
+  const clamped = Math.min(3, Math.max(0.5, value));
+  state.scoreZoom = snapToInputStep ? Math.round(clamped * 10) / 10 : clamped;
   applyPageStackWidth();
   redraw();
   sync();
@@ -569,7 +661,32 @@ function scaleName(tonic, mode, original) {
 }
 
 function transposedPitches(event) { return event.midiPitches.map((midi) => midi + state.transpose).filter((midi) => midi >= 0 && midi <= 127); }
-function togglePalette() { controls.palette.classList.toggle("is-open"); controls.paletteButton.classList.toggle("active", controls.palette.classList.contains("is-open")); controls.paletteButton.setAttribute("aria-expanded", String(controls.palette.classList.contains("is-open"))); }
+function togglePalette() { setActiveDrawer(state.activeDrawer === "palette" ? null : "palette"); }
+function closeDrawer() { setActiveDrawer(null); }
+function setActiveDrawer(kind) {
+  state.activeDrawer = kind;
+  const isOpen = kind != null;
+  const paletteOpen = kind === "palette";
+  const samplesOpen = kind === "samples";
+  controls.drawer.classList.toggle("is-open", isOpen);
+  controls.drawerBackdrop.classList.toggle("is-open", isOpen);
+  controls.drawer.setAttribute("aria-hidden", String(!isOpen));
+  controls.drawerBackdrop.setAttribute("aria-hidden", String(!isOpen));
+  controls.palette.classList.toggle("is-open", paletteOpen);
+  controls.sampleLibrary.classList.toggle("is-open", samplesOpen);
+  controls.paletteButton.classList.toggle("active", paletteOpen);
+  controls.sampleLibraryButton.classList.toggle("active", samplesOpen);
+  controls.paletteButton.setAttribute("aria-expanded", String(paletteOpen));
+  controls.sampleLibraryButton.setAttribute("aria-expanded", String(samplesOpen));
+  controls.drawerTitle.textContent = paletteOpen ? "カラーパレット" : "サンプル曲";
+}
+function configureStaticHosting() {
+  if (usesLoopbackCompanion) return;
+  controls.sampleLibraryButton.disabled = true;
+  controls.sampleLibraryButton.title = "GitHub Pages版ではローカルサンプルは利用できません";
+  controls.file.accept = "application/json,.json";
+  controls.file.closest("label")?.setAttribute("title", "Web Render Plan JSONを開く");
+}
 function info(message) { pageStack.hidden = false; controls.status.hidden = false; controls.status.textContent = message; }
 function fail(message) { pageStack.hidden = true; controls.status.hidden = false; controls.status.textContent = message; }
 function midiLabel(midi) { const names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]; return `${names[mod(midi, 12)]}${Math.floor(midi / 12) - 1}`; }

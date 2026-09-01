@@ -697,9 +697,13 @@ public struct LyricAnnotation: Hashable, Codable, Sendable {
 
 public struct FingeringAnnotation: Hashable, Codable, Sendable {
     public let text: String
+    /// MusicXML allows a fingering to opt into an above or below staff lane.
+    /// Unspecified markings retain the conventional above-staff placement.
+    public let placement: ScoreDirectionPlacement
 
-    public init(text: String) {
+    public init(text: String, placement: ScoreDirectionPlacement = .unspecified) {
         self.text = text
+        self.placement = placement
     }
 }
 

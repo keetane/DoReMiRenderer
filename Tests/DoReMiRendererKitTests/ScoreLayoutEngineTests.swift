@@ -178,8 +178,12 @@ import Testing
     }
 
     let renderer = DoReMiRenderer()
-    let beamedLayout = try renderer.layout(score: score(explicitBeams: true), options: renderer.webLayoutOptions(containerWidth: 1_024))
-    let flaggedLayout = try renderer.layout(score: score(explicitBeams: false), options: renderer.webLayoutOptions(containerWidth: 1_024))
+    var readableWebOptions = renderer.webLayoutOptions(containerWidth: 1_024)
+    // This regression preserves the conventional readable-gap contract. The
+    // Web profile's opt-in emergency compression is covered separately.
+    readableWebOptions.allowsAggressiveShortNoteCompression = false
+    let beamedLayout = try renderer.layout(score: score(explicitBeams: true), options: readableWebOptions)
+    let flaggedLayout = try renderer.layout(score: score(explicitBeams: false), options: readableWebOptions)
     let beamedFirst = try #require(beamedLayout.noteLayout(for: NoteID(rawValue: "run-0")))
     let beamedSecond = try #require(beamedLayout.noteLayout(for: NoteID(rawValue: "run-1")))
     let flaggedFirst = try #require(flaggedLayout.noteLayout(for: NoteID(rawValue: "run-0")))
@@ -381,6 +385,75 @@ import Testing
     let quarterGap = quarterNote.noteheadCenter.x - quarterRest.noteheadCenter.x
     #expect(eighthGap > sixteenthGap)
     #expect(quarterGap > eighthGap)
+}
+
+@Test func webJustificationCapsShortToLongTransitionAndMovesExtraWidthToLongerSpans() throws {
+    let staffID = StaffID(rawValue: "1")
+    func measure(number: String, notes: [ScoreNote]) -> Measure {
+        Measure(
+            id: MeasureID(partIndex: 0, measureNumber: number),
+            number: number,
+            notes: notes,
+            clef: Clef(kind: .treble),
+            timeSignature: TimeSignature(beats: 4, beatType: 4)
+        )
+    }
+    let firstNotes = [
+        makeNote(id: "short-rest", pitch: nil, onsetTicks: 0, durationTicks: 1, noteValueKind: .sixteenth),
+        makeNote(id: "eighth-after-rest", pitch: Pitch(step: .c, octave: 5), onsetTicks: 1, durationTicks: 2, noteValueKind: .eighth),
+        makeNote(id: "first-quarter", pitch: Pitch(step: .d, octave: 5), onsetTicks: 3, durationTicks: 4, noteValueKind: .quarter),
+        makeNote(id: "second-quarter", pitch: Pitch(step: .e, octave: 5), onsetTicks: 7, durationTicks: 4, noteValueKind: .quarter),
+        makeNote(id: "third-quarter", pitch: Pitch(step: .f, octave: 5), onsetTicks: 11, durationTicks: 4, noteValueKind: .quarter),
+        makeNote(id: "tail-sixteenth", pitch: Pitch(step: .g, octave: 5), onsetTicks: 15, durationTicks: 1, noteValueKind: .sixteenth),
+    ].map { note in
+        ScoreNote(
+            id: note.id,
+            pitch: note.pitch,
+            onset: note.onset,
+            duration: note.duration,
+            noteValueKind: note.noteValueKind,
+            voiceID: note.voiceID,
+            staffID: staffID
+        )
+    }
+    let tailNotes = [
+        makeNote(id: "tail-quarter", pitch: Pitch(step: .c, octave: 4), onsetTicks: 0, durationTicks: 16, noteValueKind: .whole),
+    ].map { note in
+        ScoreNote(
+            id: note.id,
+            pitch: note.pitch,
+            onset: note.onset,
+            duration: note.duration,
+            noteValueKind: note.noteValueKind,
+            voiceID: note.voiceID,
+            staffID: staffID
+        )
+    }
+    let score = ScoreDocument(parts: [
+        ScorePart(id: "P1", measures: [
+            measure(number: "1", notes: firstNotes),
+            measure(number: "2", notes: tailNotes),
+        ]),
+    ])
+    let renderer = DoReMiRenderer()
+    var cappedOptions = renderer.webLayoutOptions(containerWidth: 1_024)
+    cappedOptions.maximumMeasuresPerSystem = 1
+    let capped = try renderer.layout(score: score, options: cappedOptions)
+    var uncappedOptions = cappedOptions
+    uncappedOptions.allowsAggressiveShortNoteCompression = false
+    let uncapped = try renderer.layout(score: score, options: uncappedOptions)
+
+    func gap(_ layout: ScoreLayout, _ leftID: String, _ rightID: String) throws -> CGFloat {
+        let left = try #require(layout.noteLayout(for: NoteID(rawValue: leftID)))
+        let right = try #require(layout.noteLayout(for: NoteID(rawValue: rightID)))
+        return right.noteheadCenter.x - left.noteheadCenter.x
+    }
+
+    let cappedShortToLong = try gap(capped, "short-rest", "eighth-after-rest")
+    let uncappedShortToLong = try gap(uncapped, "short-rest", "eighth-after-rest")
+    let cappedQuarterGap = try gap(capped, "first-quarter", "second-quarter")
+    #expect(cappedShortToLong < uncappedShortToLong)
+    #expect(cappedQuarterGap > cappedShortToLong)
 }
 
 @Test func restGlyphFramesStayInsideTheirMeasureAndUseFullVisualWidth() throws {
@@ -2168,6 +2241,9 @@ import Testing
     #expect(ledgerLines.map(\.lineStepFromMiddle) == [6, 8])
     #expect(ledgerLines.compactMap(\.pitchClassHint) == [.a, .c])
     #expect(ledgerLines.compactMap { layout.elementLayout(for: $0.id)?.pitchClassHint } == [.a, .c])
+    let highNotehead = try #require(layout.noteLayout(for: NoteID(rawValue: "high-c")))
+    #expect(ledgerLines.allSatisfy { $0.frame.width > highNotehead.noteheadFrame.width })
+    #expect(ledgerLines.allSatisfy { $0.frame.width <= highNotehead.noteheadFrame.width + 1.001 })
 }
 
 @Test func staffSpecificClefsAffectGrandStaffVerticalPlacement() throws {

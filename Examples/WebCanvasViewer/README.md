@@ -25,9 +25,14 @@ swift run DoReMiRendererWebExport \
 Copy `Sources/DoReMiRendererKit/Resources/Fonts/Bravura.otf` beside `index.html`
 when hosting this example, and preserve the accompanying SIL OFL notice.
 
-For a static demonstration of an already-exported plan, any static HTTP server
-is sufficient. To open MusicXML or MXL from the toolbar, use the loopback-only
-companion server instead:
+For a static demonstration of an already-exported plan, including GitHub Pages,
+any static HTTP server is sufficient. GitHub Pages publishes the bundled
+`score-web.json` and supports playback, palette controls, keyboard, zoom, and
+A4 printing. It intentionally disables the local sample drawer and direct
+MusicXML/MXL import because Pages cannot run the SDK companion process.
+
+To open MusicXML or MXL from the toolbar, use the loopback-only companion
+server instead:
 
 ```sh
 cd Examples/WebCanvasViewer
@@ -60,11 +65,17 @@ Direct MusicXML/MXL import remains a server responsibility: the browser does
 not parse notation or manufacture layout coordinates. The exported anchors
 include pitched MIDI values, so palette note colours and keyboard selection use
 the same stable note identity as the score.
+The `♪` toolbar button opens the local development sample-library drawer from the right,
+and the palette button opens the matching right-side colour drawer. The sample list is sourced from
+`sample/app-bundle-hold`, expands into the drawer rather than using a nested list scrollbar, and
+identifies [musetrainer/library](https://github.com/musetrainer/library) as its data source. The loopback server returns only a filename list and
+the SDK-generated render plan for the chosen `.mxl`; the browser never receives
+the sample directory path or parses the MXL file.
 The palette uses the iOS `defaultEducationalPalette` values and its basic
 pitch-class grouping: C/C#, D/D#, E, F/F#, G/G#, A/A#, and B. Score noteheads
 are recoloured by reusing the exported SMuFL notehead command, so open and
 filled heads retain their original glyph shape. Optional staff-line colour,
-including note-linked ledger lines, is drawn over the ordinary black rule but
+including ledger lines coloured from their own staff positions, is drawn over the ordinary black rule but
 below notes and symbols. The
 keyboard follows the selected scale's written degree spelling: for example,
 B-flat in F major uses the B colour family and F-sharp in G major uses the F
@@ -78,10 +89,16 @@ match iOS: note and keyboard colours are on, while staff-line colours are off.
 
 The toolbar provides a natural-sign original-scale reset button, compact scale
 labels (`C / Am`, `F / Dm`), one chromatic octave of transpose choices (`-6...+5`), score-only zoom
-from 50% to 200% with editable numeric input and 10% step controls,
+from 50% to 300% with editable numeric input and 10% step controls, plus a `↔` button that fits the
+rendered A4 page width to the score canvas,
 Play/Stop/Reset, an editable 30–300 BPM tempo control, Previous/Next immediately
 after Reset, and direct measure Jump. The BPM field uses the source tempo exported
 by the SDK as its initial value and scales timing without changing layout.
+The printer button opens the browser print dialog using the SDK-exported A4
+portrait pages at 1:1 size. It prints score pages only: the toolbar, palette,
+keyboard, playback guide, next-note guide, and selected-note highlight are
+excluded. Keep the browser print dialog at A4 portrait and 100% scale; the
+viewer restores its interactive controls and zoom after printing.
 Selecting a transpose variant always changes the score through an SDK-generated
 `ScoreLayout`; an imported score asks the loopback server for the chosen plan on
 demand and caches it only for the active browser session. There is no separate
