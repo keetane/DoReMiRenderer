@@ -47,8 +47,8 @@ followed if a derived font is ever created.
 - Project: musetrainer/library
 - Repository: https://github.com/musetrainer/library
 - Purpose: source repository for the current TestFlight-facing bundled learning
-  MXL samples, the matching GitHub Pages Web Render Plans, and one excluded
-  development fixture.
+  MXL samples, the complete GitHub Pages Web Render Plan catalog, and excluded
+  development fixtures.
 - Upstream statement: the repository README and GitHub About describe it as
   "Public domain MusicXML files."
 - License-file audit on 2026-05-21: no repository-root `LICENSE`, `COPYING`, or
@@ -60,6 +60,11 @@ followed if a derived font is ever created.
   - `Happy_Birthday_To_You_Piano.mxl` is not shipped in the TestFlight app
     bundle because its embedded metadata has a named arranger and no rights
     grant.
+
+The published Web catalog is separately scoped: at the product owner's
+direction it contains SDK-generated render plans for every current MXL in the
+development sample source directory, including files not accepted for the app
+bundle. This does not change the TestFlight app-bundle review classification.
 
 These are score assets, not code dependencies. `ASSET_LICENSES.md` records the
 per-file source URLs, embedded MusicXML metadata, and TestFlight risk

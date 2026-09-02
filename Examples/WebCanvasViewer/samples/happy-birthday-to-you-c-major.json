@@ -1,0 +1,7164 @@
+{
+  "canvas" : {
+    "height" : 842,
+    "width" : 595,
+    "x" : 0,
+    "y" : 0
+  },
+  "commands" : [
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 1,
+        "green" : 1,
+        "red" : 1
+      },
+      "kind" : "fillRect",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "rect" : {
+        "height" : 842,
+        "width" : 595,
+        "x" : 0,
+        "y" : 0
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "control" : {
+        "x" : 14.130434782608699,
+        "y" : 43.36152173913044
+      },
+      "end" : {
+        "x" : 19.347826086956527,
+        "y" : 66.38847826086958
+      },
+      "kind" : "strokeQuadraticCurve",
+      "lineWidth" : 0.9391304347826088,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 19.347826086956527,
+        "y" : 22.105869565217393
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "control" : {
+        "x" : 14.130434782608699,
+        "y" : 89.41543478260871
+      },
+      "end" : {
+        "x" : 19.347826086956527,
+        "y" : 110.67108695652176
+      },
+      "kind" : "strokeQuadraticCurve",
+      "lineWidth" : 0.9391304347826088,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 19.347826086956527,
+        "y" : 66.38847826086958
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 23.913043478260875,
+        "y" : 90.84500000000003
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.5634782608695653,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 41.93195652173914
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 215.08578458498025,
+        "y" : 90.84500000000003
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.5634782608695653,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 215.08578458498025,
+        "y" : 41.93195652173914
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 319.9461462450593,
+        "y" : 90.84500000000003
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.5634782608695653,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 319.9461462450593,
+        "y" : 41.93195652173914
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 466.2265948616601,
+        "y" : 90.84500000000003
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.5634782608695653,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 466.2265948616601,
+        "y" : 41.93195652173914
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 571.0869565217391,
+        "y" : 90.84500000000003
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.5634782608695653,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 571.0869565217391,
+        "y" : 41.93195652173914
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "control" : {
+        "x" : 14.130434782608699,
+        "y" : 187.20652173913044
+      },
+      "end" : {
+        "x" : 19.347826086956527,
+        "y" : 210.2334782608696
+      },
+      "kind" : "strokeQuadraticCurve",
+      "lineWidth" : 0.9391304347826088,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 19.347826086956527,
+        "y" : 165.9508695652174
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "control" : {
+        "x" : 14.130434782608699,
+        "y" : 233.26043478260874
+      },
+      "end" : {
+        "x" : 19.347826086956527,
+        "y" : 254.51608695652178
+      },
+      "kind" : "strokeQuadraticCurve",
+      "lineWidth" : 0.9391304347826088,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 19.347826086956527,
+        "y" : 210.2334782608696
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 23.913043478260875,
+        "y" : 234.69000000000003
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.5634782608695653,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 185.77695652173915
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 141.32028458498024,
+        "y" : 234.69000000000003
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.5634782608695653,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 141.32028458498024,
+        "y" : 185.77695652173915
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 219.58115415019762,
+        "y" : 234.69000000000003
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.5634782608695653,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 219.58115415019762,
+        "y" : 185.77695652173915
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 313.1751541501976,
+        "y" : 234.69000000000003
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.5634782608695653,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 313.1751541501976,
+        "y" : 185.77695652173915
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 365.34906719367586,
+        "y" : 234.69000000000003
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.5634782608695653,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 365.34906719367586,
+        "y" : 185.77695652173915
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 215.08578458498025,
+        "y" : 41.93195652173913
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 41.93195652173913
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 215.08578458498025,
+        "y" : 36.9754347826087
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 36.9754347826087
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 215.08578458498025,
+        "y" : 32.018913043478264
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 32.018913043478264
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 215.08578458498025,
+        "y" : 27.062391304347827
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 27.062391304347827
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 215.08578458498025,
+        "y" : 22.105869565217393
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 22.105869565217393
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 215.08578458498025,
+        "y" : 110.67108695652178
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 110.67108695652178
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 215.08578458498025,
+        "y" : 105.71456521739134
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 105.71456521739134
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 215.08578458498025,
+        "y" : 100.7580434782609
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 100.7580434782609
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 215.08578458498025,
+        "y" : 95.80152173913046
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 95.80152173913046
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 215.08578458498025,
+        "y" : 90.84500000000003
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 90.84500000000003
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 319.9461462450593,
+        "y" : 41.93195652173913
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 215.08578458498025,
+        "y" : 41.93195652173913
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 319.9461462450593,
+        "y" : 36.9754347826087
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 215.08578458498025,
+        "y" : 36.9754347826087
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 319.9461462450593,
+        "y" : 32.018913043478264
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 215.08578458498025,
+        "y" : 32.018913043478264
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 319.9461462450593,
+        "y" : 27.062391304347827
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 215.08578458498025,
+        "y" : 27.062391304347827
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 319.9461462450593,
+        "y" : 22.105869565217393
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 215.08578458498025,
+        "y" : 22.105869565217393
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 319.9461462450593,
+        "y" : 110.67108695652178
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 215.08578458498025,
+        "y" : 110.67108695652178
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 319.9461462450593,
+        "y" : 105.71456521739134
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 215.08578458498025,
+        "y" : 105.71456521739134
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 319.9461462450593,
+        "y" : 100.7580434782609
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 215.08578458498025,
+        "y" : 100.7580434782609
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 319.9461462450593,
+        "y" : 95.80152173913046
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 215.08578458498025,
+        "y" : 95.80152173913046
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 319.9461462450593,
+        "y" : 90.84500000000003
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 215.08578458498025,
+        "y" : 90.84500000000003
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 466.2265948616601,
+        "y" : 41.93195652173913
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 319.9461462450593,
+        "y" : 41.93195652173913
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 466.2265948616601,
+        "y" : 36.9754347826087
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 319.9461462450593,
+        "y" : 36.9754347826087
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 466.2265948616601,
+        "y" : 32.018913043478264
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 319.9461462450593,
+        "y" : 32.018913043478264
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 466.2265948616601,
+        "y" : 27.062391304347827
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 319.9461462450593,
+        "y" : 27.062391304347827
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 466.2265948616601,
+        "y" : 22.105869565217393
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 319.9461462450593,
+        "y" : 22.105869565217393
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 466.2265948616601,
+        "y" : 110.67108695652178
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 319.9461462450593,
+        "y" : 110.67108695652178
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 466.2265948616601,
+        "y" : 105.71456521739134
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 319.9461462450593,
+        "y" : 105.71456521739134
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 466.2265948616601,
+        "y" : 100.7580434782609
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 319.9461462450593,
+        "y" : 100.7580434782609
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 466.2265948616601,
+        "y" : 95.80152173913046
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 319.9461462450593,
+        "y" : 95.80152173913046
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 466.2265948616601,
+        "y" : 90.84500000000003
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 319.9461462450593,
+        "y" : 90.84500000000003
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 571.0869565217391,
+        "y" : 41.93195652173913
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 466.2265948616601,
+        "y" : 41.93195652173913
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 571.0869565217391,
+        "y" : 36.9754347826087
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 466.2265948616601,
+        "y" : 36.9754347826087
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 571.0869565217391,
+        "y" : 32.018913043478264
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 466.2265948616601,
+        "y" : 32.018913043478264
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 571.0869565217391,
+        "y" : 27.062391304347827
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 466.2265948616601,
+        "y" : 27.062391304347827
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 571.0869565217391,
+        "y" : 22.105869565217393
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 466.2265948616601,
+        "y" : 22.105869565217393
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 571.0869565217391,
+        "y" : 110.67108695652178
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 466.2265948616601,
+        "y" : 110.67108695652178
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 571.0869565217391,
+        "y" : 105.71456521739134
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 466.2265948616601,
+        "y" : 105.71456521739134
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 571.0869565217391,
+        "y" : 100.7580434782609
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 466.2265948616601,
+        "y" : 100.7580434782609
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 571.0869565217391,
+        "y" : 95.80152173913046
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 466.2265948616601,
+        "y" : 95.80152173913046
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 571.0869565217391,
+        "y" : 90.84500000000003
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 466.2265948616601,
+        "y" : 90.84500000000003
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 141.32028458498024,
+        "y" : 185.77695652173915
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 185.77695652173915
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 141.32028458498024,
+        "y" : 180.82043478260871
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 180.82043478260871
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 141.32028458498024,
+        "y" : 175.86391304347828
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 175.86391304347828
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 141.32028458498024,
+        "y" : 170.90739130434784
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 170.90739130434784
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 141.32028458498024,
+        "y" : 165.9508695652174
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 165.9508695652174
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 141.32028458498024,
+        "y" : 254.51608695652178
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 254.51608695652178
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 141.32028458498024,
+        "y" : 249.55956521739134
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 249.55956521739134
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 141.32028458498024,
+        "y" : 244.6030434782609
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 244.6030434782609
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 141.32028458498024,
+        "y" : 239.64652173913046
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 239.64652173913046
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 141.32028458498024,
+        "y" : 234.69000000000003
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 234.69000000000003
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 219.58115415019762,
+        "y" : 185.77695652173915
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 141.32028458498024,
+        "y" : 185.77695652173915
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 219.58115415019762,
+        "y" : 180.82043478260871
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 141.32028458498024,
+        "y" : 180.82043478260871
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 219.58115415019762,
+        "y" : 175.86391304347828
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 141.32028458498024,
+        "y" : 175.86391304347828
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 219.58115415019762,
+        "y" : 170.90739130434784
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 141.32028458498024,
+        "y" : 170.90739130434784
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 219.58115415019762,
+        "y" : 165.9508695652174
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 141.32028458498024,
+        "y" : 165.9508695652174
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 219.58115415019762,
+        "y" : 254.51608695652178
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 141.32028458498024,
+        "y" : 254.51608695652178
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 219.58115415019762,
+        "y" : 249.55956521739134
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 141.32028458498024,
+        "y" : 249.55956521739134
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 219.58115415019762,
+        "y" : 244.6030434782609
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 141.32028458498024,
+        "y" : 244.6030434782609
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 219.58115415019762,
+        "y" : 239.64652173913046
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 141.32028458498024,
+        "y" : 239.64652173913046
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 219.58115415019762,
+        "y" : 234.69000000000003
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 141.32028458498024,
+        "y" : 234.69000000000003
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 313.1751541501976,
+        "y" : 185.77695652173915
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 219.58115415019762,
+        "y" : 185.77695652173915
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 313.1751541501976,
+        "y" : 180.82043478260871
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 219.58115415019762,
+        "y" : 180.82043478260871
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 313.1751541501976,
+        "y" : 175.86391304347828
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 219.58115415019762,
+        "y" : 175.86391304347828
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 313.1751541501976,
+        "y" : 170.90739130434784
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 219.58115415019762,
+        "y" : 170.90739130434784
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 313.1751541501976,
+        "y" : 165.9508695652174
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 219.58115415019762,
+        "y" : 165.9508695652174
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 313.1751541501976,
+        "y" : 254.51608695652178
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 219.58115415019762,
+        "y" : 254.51608695652178
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 313.1751541501976,
+        "y" : 249.55956521739134
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 219.58115415019762,
+        "y" : 249.55956521739134
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 313.1751541501976,
+        "y" : 244.6030434782609
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 219.58115415019762,
+        "y" : 244.6030434782609
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 313.1751541501976,
+        "y" : 239.64652173913046
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 219.58115415019762,
+        "y" : 239.64652173913046
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 313.1751541501976,
+        "y" : 234.69000000000003
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 219.58115415019762,
+        "y" : 234.69000000000003
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 365.34906719367586,
+        "y" : 185.77695652173915
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 313.1751541501976,
+        "y" : 185.77695652173915
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 365.34906719367586,
+        "y" : 180.82043478260871
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 313.1751541501976,
+        "y" : 180.82043478260871
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 365.34906719367586,
+        "y" : 175.86391304347828
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 313.1751541501976,
+        "y" : 175.86391304347828
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 365.34906719367586,
+        "y" : 170.90739130434784
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 313.1751541501976,
+        "y" : 170.90739130434784
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 365.34906719367586,
+        "y" : 165.9508695652174
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 313.1751541501976,
+        "y" : 165.9508695652174
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 365.34906719367586,
+        "y" : 254.51608695652178
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 313.1751541501976,
+        "y" : 254.51608695652178
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 365.34906719367586,
+        "y" : 249.55956521739134
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 313.1751541501976,
+        "y" : 249.55956521739134
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 365.34906719367586,
+        "y" : 244.6030434782609
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 313.1751541501976,
+        "y" : 244.6030434782609
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 365.34906719367586,
+        "y" : 239.64652173913046
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 313.1751541501976,
+        "y" : 239.64652173913046
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 365.34906719367586,
+        "y" : 234.69000000000003
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 313.1751541501976,
+        "y" : 234.69000000000003
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 107.46158893280634,
+        "y" : 229.7334782608696
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 96.91811067193677,
+        "y" : 229.7334782608696
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 185.7224584980237,
+        "y" : 229.7334782608696
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 175.17898023715415,
+        "y" : 229.7334782608696
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 279.31645849802374,
+        "y" : 229.7334782608696
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 268.7729802371541,
+        "y" : 229.7334782608696
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 16.237565217391303,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 35.5306324110672,
+        "y" : 32.50804347826087
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 19.56521739130435,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 50.80780632411068,
+        "y" : 26.96768181818182
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 19.56521739130435,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 50.80780632411068,
+        "y" : 37.00987747035574
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 14.613808695652175,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 35.03498023715416,
+        "y" : 98.9863043478261
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 19.56521739130435,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 50.80780632411068,
+        "y" : 95.70681225296447
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 19.56521739130435,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 50.80780632411068,
+        "y" : 105.74900790513837
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 23.913043478260875,
+        "y" : 110.67108695652176
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.5947826086956522,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 22.105869565217393
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 215.08578458498025,
+        "y" : 110.67108695652176
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.5947826086956522,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 215.08578458498025,
+        "y" : 22.105869565217393
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 319.9461462450593,
+        "y" : 110.67108695652176
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.5947826086956522,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 319.9461462450593,
+        "y" : 22.105869565217393
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 466.2265948616601,
+        "y" : 110.67108695652176
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.5947826086956522,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 466.2265948616601,
+        "y" : 22.105869565217393
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 571.0869565217391,
+        "y" : 110.67108695652176
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.5947826086956522,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 571.0869565217391,
+        "y" : 22.105869565217393
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 16.237565217391303,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 35.5306324110672,
+        "y" : 176.35304347826087
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 14.613808695652175,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 35.03498023715416,
+        "y" : 242.83130434782612
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 23.913043478260875,
+        "y" : 254.51608695652178
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.5947826086956522,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 165.9508695652174
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 141.32028458498024,
+        "y" : 254.51608695652178
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.5947826086956522,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 141.32028458498024,
+        "y" : 165.9508695652174
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 219.58115415019762,
+        "y" : 254.51608695652178
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.5947826086956522,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 219.58115415019762,
+        "y" : 165.9508695652174
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 313.1751541501976,
+        "y" : 254.51608695652178
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.5947826086956522,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 313.1751541501976,
+        "y" : 165.9508695652174
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 362.62298023715414,
+        "y" : 254.51608695652178
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.5947826086956522,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 362.62298023715414,
+        "y" : 165.9508695652174
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 365.34906719367586,
+        "y" : 254.51608695652178
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 2.379130434782609,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 365.34906719367586,
+        "y" : 165.9508695652174
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.182608695652174,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 81.84881422924903,
+        "y" : 100.7580434782609
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.182608695652174,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 228.1292628458498,
+        "y" : 100.7580434782609
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.182608695652174,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 332.9896245059289,
+        "y" : 100.7580434782609
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.182608695652174,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 479.27007312252965,
+        "y" : 100.7580434782609
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.182608695652174,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 49.834980237154156,
+        "y" : 244.6030434782609
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.182608695652174,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 154.3637628458498,
+        "y" : 244.6030434782609
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.182608695652174,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 232.62463241106718,
+        "y" : 244.6030434782609
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 84.3618577075099,
+        "y" : 19.869565217391308
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 84.3618577075099,
+        "y" : 36.455434782608705
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 120.47094812252966,
+        "y" : 19.869565217391308
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 120.47094812252966,
+        "y" : 36.455434782608705
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 152.12516897233203,
+        "y" : 17.39130434782609
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 152.12516897233203,
+        "y" : 33.97717391304349
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 204.55534980237155,
+        "y" : 19.869565217391308
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 204.55534980237155,
+        "y" : 36.455434782608705
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 147.0990820158103,
+        "y" : 120.3421739130435
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 147.0990820158103,
+        "y" : 103.7563043478261
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 147.0990820158103,
+        "y" : 115.38565217391306
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 147.0990820158103,
+        "y" : 98.79978260869566
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 147.0990820158103,
+        "y" : 110.42913043478262
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 147.0990820158103,
+        "y" : 93.84326086956523
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 120.47094812252966,
+        "y" : 19.869565217391308
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 84.3618577075099,
+        "y" : 19.869565217391308
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 225.61621936758894,
+        "y" : 46.646521739130435
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 225.61621936758894,
+        "y" : 30.060652173913045
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 304.38962450592885,
+        "y" : 49.124782608695654
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 304.38962450592885,
+        "y" : 32.53891304347826
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 304.38962450592885,
+        "y" : 117.86391304347828
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 304.38962450592885,
+        "y" : 101.27804347826088
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 304.38962450592885,
+        "y" : 112.90739130434784
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 304.38962450592885,
+        "y" : 96.32152173913045
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 304.38962450592885,
+        "y" : 110.42913043478262
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 304.38962450592885,
+        "y" : 93.84326086956523
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 335.50266798418977,
+        "y" : 19.869565217391308
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 335.50266798418977,
+        "y" : 36.455434782608705
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 371.6117583992095,
+        "y" : 19.869565217391308
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 371.6117583992095,
+        "y" : 36.455434782608705
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 403.2659792490119,
+        "y" : 17.39130434782609
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 403.2659792490119,
+        "y" : 33.97717391304349
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 455.6961600790514,
+        "y" : 19.869565217391308
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 455.6961600790514,
+        "y" : 36.455434782608705
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 398.2398922924901,
+        "y" : 122.82043478260871
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 398.2398922924901,
+        "y" : 106.23456521739132
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 398.2398922924901,
+        "y" : 112.90739130434784
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 398.2398922924901,
+        "y" : 96.32152173913045
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 398.2398922924901,
+        "y" : 110.42913043478262
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 398.2398922924901,
+        "y" : 93.84326086956523
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 371.6117583992095,
+        "y" : 19.869565217391308
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 335.50266798418977,
+        "y" : 19.869565217391308
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 476.75702964426875,
+        "y" : 44.168260869565216
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 476.75702964426875,
+        "y" : 27.582391304347826
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 555.5304347826087,
+        "y" : 46.646521739130435
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 555.5304347826087,
+        "y" : 30.060652173913045
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 555.5304347826087,
+        "y" : 120.3421739130435
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 555.5304347826087,
+        "y" : 103.7563043478261
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 555.5304347826087,
+        "y" : 115.38565217391306
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 555.5304347826087,
+        "y" : 98.79978260869566
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 555.5304347826087,
+        "y" : 110.42913043478262
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 555.5304347826087,
+        "y" : 93.84326086956523
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 52.348023715415025,
+        "y" : 163.7145652173913
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 52.348023715415025,
+        "y" : 180.3004347826087
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 75.28550197628459,
+        "y" : 163.7145652173913
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 75.28550197628459,
+        "y" : 180.3004347826087
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 99.67680632411069,
+        "y" : 180.5784782608696
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 99.67680632411069,
+        "y" : 163.9926086956522
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 125.76376284584981,
+        "y" : 185.53500000000003
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 125.76376284584981,
+        "y" : 168.94913043478263
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 99.67680632411069,
+        "y" : 259.2306521739131
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 99.67680632411069,
+        "y" : 242.6447826086957
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 99.67680632411069,
+        "y" : 251.79586956521743
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 99.67680632411069,
+        "y" : 235.21000000000004
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 99.67680632411069,
+        "y" : 246.839347826087
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 99.67680632411069,
+        "y" : 230.2534782608696
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 75.28550197628459,
+        "y" : 163.7145652173913
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 52.348023715415025,
+        "y" : 163.7145652173913
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 151.85071936758894,
+        "y" : 190.49152173913046
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 151.85071936758894,
+        "y" : 173.90565217391307
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 177.93767588932806,
+        "y" : 192.96978260869568
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 177.93767588932806,
+        "y" : 176.3839130434783
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 209.05071936758893,
+        "y" : 161.2363043478261
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 209.05071936758893,
+        "y" : 177.82217391304349
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 177.93767588932806,
+        "y" : 256.75239130434784
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 177.93767588932806,
+        "y" : 240.16652173913047
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 177.93767588932806,
+        "y" : 251.79586956521743
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 177.93767588932806,
+        "y" : 235.21000000000004
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 177.93767588932806,
+        "y" : 246.839347826087
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 177.93767588932806,
+        "y" : 230.2534782608696
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 230.1115889328063,
+        "y" : 183.0567391304348
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 230.1115889328063,
+        "y" : 166.4708695652174
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 253.04906719367588,
+        "y" : 183.0567391304348
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 253.04906719367588,
+        "y" : 166.4708695652174
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 271.531675889328,
+        "y" : 185.53500000000003
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 271.531675889328,
+        "y" : 168.94913043478263
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 297.61863241106715,
+        "y" : 190.49152173913046
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 297.61863241106715,
+        "y" : 173.90565217391307
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 271.531675889328,
+        "y" : 259.2306521739131
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 271.531675889328,
+        "y" : 242.6447826086957
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 271.531675889328,
+        "y" : 254.27413043478265
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 271.531675889328,
+        "y" : 237.68826086956526
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 271.531675889328,
+        "y" : 246.839347826087
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 271.531675889328,
+        "y" : 230.2534782608696
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 253.04906719367588,
+        "y" : 183.0567391304348
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 230.1115889328063,
+        "y" : 183.0567391304348
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 323.7055889328063,
+        "y" : 188.01326086956524
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 323.7055889328063,
+        "y" : 171.42739130434785
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 349.7925454545454,
+        "y" : 190.49152173913046
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 349.7925454545454,
+        "y" : 173.90565217391307
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 323.7055889328063,
+        "y" : 261.70891304347833
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 323.7055889328063,
+        "y" : 245.1230434782609
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 323.7055889328063,
+        "y" : 256.75239130434784
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 323.7055889328063,
+        "y" : 240.16652173913047
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 323.7055889328063,
+        "y" : 254.27413043478265
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 323.7055889328063,
+        "y" : 237.68826086956526
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 349.7925454545454,
+        "y" : 264.1871739130435
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 349.7925454545454,
+        "y" : 247.60130434782613
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 349.7925454545454,
+        "y" : 259.2306521739131
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 349.7925454545454,
+        "y" : 242.6447826086957
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 349.7925454545454,
+        "y" : 254.27413043478265
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 0.8500000000000002,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 349.7925454545454,
+        "y" : 237.68826086956526
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 81.84881422924903,
+        "y" : 36.9754347826087
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 117.9579046442688,
+        "y" : 36.9754347826087
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 149.61212549407117,
+        "y" : 34.49717391304348
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 202.04230632411068,
+        "y" : 36.9754347826087
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 149.61212549407117,
+        "y" : 103.2363043478261
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 149.61212549407117,
+        "y" : 98.27978260869567
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 149.61212549407117,
+        "y" : 93.32326086956523
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 228.1292628458498,
+        "y" : 29.540652173913045
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 306.90266798418975,
+        "y" : 32.018913043478264
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 306.90266798418975,
+        "y" : 100.75804347826089
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 301.876581027668,
+        "y" : 95.80152173913045
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 306.90266798418975,
+        "y" : 93.32326086956523
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 332.9896245059289,
+        "y" : 36.9754347826087
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 369.0987149209486,
+        "y" : 36.9754347826087
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 400.752935770751,
+        "y" : 34.49717391304348
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 453.1831166007905,
+        "y" : 36.9754347826087
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 400.752935770751,
+        "y" : 105.71456521739132
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 395.72684881422924,
+        "y" : 95.80152173913045
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 400.752935770751,
+        "y" : 93.32326086956523
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 479.27007312252965,
+        "y" : 27.062391304347827
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 558.0434782608696,
+        "y" : 29.540652173913045
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 558.0434782608696,
+        "y" : 103.2363043478261
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 558.0434782608696,
+        "y" : 98.27978260869567
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 558.0434782608696,
+        "y" : 93.32326086956523
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 49.834980237154156,
+        "y" : 180.82043478260871
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 72.77245849802372,
+        "y" : 180.82043478260871
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 102.18984980237155,
+        "y" : 163.47260869565218
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 128.27680632411068,
+        "y" : 168.42913043478262
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 102.18984980237155,
+        "y" : 242.12478260869568
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 102.18984980237155,
+        "y" : 234.69000000000003
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 102.18984980237155,
+        "y" : 229.7334782608696
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 154.3637628458498,
+        "y" : 173.38565217391306
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 180.45071936758893,
+        "y" : 175.86391304347828
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 206.53767588932806,
+        "y" : 178.3421739130435
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 180.45071936758893,
+        "y" : 239.64652173913046
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 180.45071936758893,
+        "y" : 234.69000000000003
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 180.45071936758893,
+        "y" : 229.7334782608696
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 232.62463241106718,
+        "y" : 165.9508695652174
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 255.56211067193675,
+        "y" : 165.9508695652174
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 274.0447193675889,
+        "y" : 168.42913043478262
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 300.13167588932805,
+        "y" : 173.38565217391306
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 274.0447193675889,
+        "y" : 242.12478260869568
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 274.0447193675889,
+        "y" : 237.16826086956524
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 274.0447193675889,
+        "y" : 229.7334782608696
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 326.2186324110672,
+        "y" : 170.90739130434784
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 352.3055889328063,
+        "y" : 173.38565217391306
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 326.2186324110672,
+        "y" : 244.6030434782609
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 321.19254545454544,
+        "y" : 239.64652173913046
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 326.2186324110672,
+        "y" : 237.16826086956524
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 352.3055889328063,
+        "y" : 247.08130434782612
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 352.3055889328063,
+        "y" : 242.12478260869568
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 18.847826086956523,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 352.3055889328063,
+        "y" : 237.16826086956524
+      },
+      "text" : ""
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontName" : "Bravura",
+      "fontRole" : "smufl",
+      "fontSize" : 16.03913043478261,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 95.93984980237155,
+        "y" : 234.69000000000003
+      },
+      "text" : ""
+    }
+  ],
+  "formatVersion" : 7,
+  "initialKeySignature" : {
+    "fifths" : 0,
+    "mode" : "major"
+  },
+  "ledgerLines" : [
+    {
+      "colorPitchClass" : 0,
+      "end" : {
+        "x" : 107.46158893280634,
+        "y" : 229.7334782608696
+      },
+      "noteID" : "0.0.4.35.5.2.2.2.2",
+      "start" : {
+        "x" : 96.91811067193677,
+        "y" : 229.7334782608696
+      }
+    },
+    {
+      "colorPitchClass" : 0,
+      "end" : {
+        "x" : 185.7224584980237,
+        "y" : 229.7334782608696
+      },
+      "noteID" : "0.0.5.42.5.2.2.2.2",
+      "start" : {
+        "x" : 175.17898023715415,
+        "y" : 229.7334782608696
+      }
+    },
+    {
+      "colorPitchClass" : 0,
+      "end" : {
+        "x" : 279.31645849802374,
+        "y" : 229.7334782608696
+      },
+      "noteID" : "0.0.6.50.5.2.2.2.2",
+      "start" : {
+        "x" : 268.7729802371541,
+        "y" : 229.7334782608696
+      }
+    }
+  ],
+  "noteAnchors" : [
+    {
+      "center" : {
+        "x" : 81.84881422924903,
+        "y" : 36.9754347826087
+      },
+      "colorPitchClass" : 7,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 76.84881422924903,
+        "y" : 33.279782608695655
+      },
+      "measureID" : "0.1",
+      "midiNumber" : 67,
+      "noteID" : "0.0.0.0.1.1.0.2.0",
+      "staffID" : "1",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 117.9579046442688,
+        "y" : 36.9754347826087
+      },
+      "colorPitchClass" : 7,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 112.9579046442688,
+        "y" : 33.279782608695655
+      },
+      "measureID" : "0.1",
+      "midiNumber" : 67,
+      "noteID" : "0.0.0.1.1.1.1.2.0",
+      "staffID" : "1",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 149.61212549407117,
+        "y" : 34.49717391304348
+      },
+      "colorPitchClass" : 9,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 144.61212549407117,
+        "y" : 30.80152173913044
+      },
+      "measureID" : "0.1",
+      "midiNumber" : 69,
+      "noteID" : "0.0.0.2.1.1.2.2.0",
+      "staffID" : "1",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 202.04230632411068,
+        "y" : 36.9754347826087
+      },
+      "colorPitchClass" : 7,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 197.04230632411068,
+        "y" : 33.279782608695655
+      },
+      "measureID" : "0.1",
+      "midiNumber" : 67,
+      "noteID" : "0.0.0.3.1.1.4.2.0",
+      "staffID" : "1",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 81.84881422924903,
+        "y" : 100.7580434782609
+      },
+      "frame" : {
+        "height" : 20.000869565217393,
+        "width" : 14.909739130434781,
+        "x" : 74.39394466403164,
+        "y" : 90.75760869565221
+      },
+      "measureID" : "0.1",
+      "noteID" : "0.0.0.4.5.2.0.2.0",
+      "staffID" : "2",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 149.61212549407117,
+        "y" : 103.23630434782612
+      },
+      "colorPitchClass" : 0,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 144.61212549407117,
+        "y" : 99.54065217391306
+      },
+      "measureID" : "0.1",
+      "midiNumber" : 48,
+      "noteID" : "0.0.0.5.5.2.2.2.0",
+      "staffID" : "2",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 149.61212549407117,
+        "y" : 98.27978260869568
+      },
+      "colorPitchClass" : 4,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 144.61212549407117,
+        "y" : 94.58413043478262
+      },
+      "measureID" : "0.1",
+      "midiNumber" : 52,
+      "noteID" : "0.0.0.6.5.2.2.2.1",
+      "staffID" : "2",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 149.61212549407117,
+        "y" : 93.32326086956525
+      },
+      "colorPitchClass" : 7,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 144.61212549407117,
+        "y" : 89.62760869565219
+      },
+      "measureID" : "0.1",
+      "midiNumber" : 55,
+      "noteID" : "0.0.0.7.5.2.2.2.2",
+      "staffID" : "2",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 228.1292628458498,
+        "y" : 100.7580434782609
+      },
+      "frame" : {
+        "height" : 20.000869565217393,
+        "width" : 14.909739130434781,
+        "x" : 220.67439328063242,
+        "y" : 90.75760869565221
+      },
+      "measureID" : "0.2",
+      "noteID" : "0.0.1.10.5.2.0.2.0",
+      "staffID" : "2",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 306.90266798418975,
+        "y" : 100.7580434782609
+      },
+      "colorPitchClass" : 2,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 301.90266798418975,
+        "y" : 97.06239130434784
+      },
+      "measureID" : "0.2",
+      "midiNumber" : 50,
+      "noteID" : "0.0.1.11.5.2.2.2.0",
+      "staffID" : "2",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 301.876581027668,
+        "y" : 95.80152173913046
+      },
+      "colorPitchClass" : 5,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 296.876581027668,
+        "y" : 92.1058695652174
+      },
+      "measureID" : "0.2",
+      "midiNumber" : 53,
+      "noteID" : "0.0.1.12.5.2.2.2.1",
+      "staffID" : "2",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 306.90266798418975,
+        "y" : 93.32326086956525
+      },
+      "colorPitchClass" : 7,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 301.90266798418975,
+        "y" : 89.62760869565219
+      },
+      "measureID" : "0.2",
+      "midiNumber" : 55,
+      "noteID" : "0.0.1.13.5.2.2.2.2",
+      "staffID" : "2",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 228.1292628458498,
+        "y" : 29.540652173913045
+      },
+      "colorPitchClass" : 0,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 223.1292628458498,
+        "y" : 25.845000000000002
+      },
+      "measureID" : "0.2",
+      "midiNumber" : 72,
+      "noteID" : "0.0.1.8.1.1.0.2.0",
+      "staffID" : "1",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 306.90266798418975,
+        "y" : 32.018913043478264
+      },
+      "colorPitchClass" : 11,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 301.90266798418975,
+        "y" : 28.32326086956522
+      },
+      "measureID" : "0.2",
+      "midiNumber" : 71,
+      "noteID" : "0.0.1.9.1.1.2.2.0",
+      "staffID" : "1",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 332.9896245059289,
+        "y" : 36.9754347826087
+      },
+      "colorPitchClass" : 7,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 327.9896245059289,
+        "y" : 33.279782608695655
+      },
+      "measureID" : "0.3",
+      "midiNumber" : 67,
+      "noteID" : "0.0.2.14.1.1.0.2.0",
+      "staffID" : "1",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 369.0987149209486,
+        "y" : 36.9754347826087
+      },
+      "colorPitchClass" : 7,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 364.0987149209486,
+        "y" : 33.279782608695655
+      },
+      "measureID" : "0.3",
+      "midiNumber" : 67,
+      "noteID" : "0.0.2.15.1.1.1.2.0",
+      "staffID" : "1",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 400.752935770751,
+        "y" : 34.49717391304348
+      },
+      "colorPitchClass" : 9,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 395.752935770751,
+        "y" : 30.80152173913044
+      },
+      "measureID" : "0.3",
+      "midiNumber" : 69,
+      "noteID" : "0.0.2.16.1.1.2.2.0",
+      "staffID" : "1",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 453.1831166007905,
+        "y" : 36.9754347826087
+      },
+      "colorPitchClass" : 7,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 448.1831166007905,
+        "y" : 33.279782608695655
+      },
+      "measureID" : "0.3",
+      "midiNumber" : 67,
+      "noteID" : "0.0.2.17.1.1.4.2.0",
+      "staffID" : "1",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 332.9896245059289,
+        "y" : 100.7580434782609
+      },
+      "frame" : {
+        "height" : 20.000869565217393,
+        "width" : 14.909739130434781,
+        "x" : 325.5347549407115,
+        "y" : 90.75760869565221
+      },
+      "measureID" : "0.3",
+      "noteID" : "0.0.2.18.5.2.0.2.0",
+      "staffID" : "2",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 400.752935770751,
+        "y" : 105.71456521739134
+      },
+      "colorPitchClass" : 11,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 395.752935770751,
+        "y" : 102.01891304347828
+      },
+      "measureID" : "0.3",
+      "midiNumber" : 47,
+      "noteID" : "0.0.2.19.5.2.2.2.0",
+      "staffID" : "2",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 395.72684881422924,
+        "y" : 95.80152173913046
+      },
+      "colorPitchClass" : 5,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 390.72684881422924,
+        "y" : 92.1058695652174
+      },
+      "measureID" : "0.3",
+      "midiNumber" : 53,
+      "noteID" : "0.0.2.20.5.2.2.2.1",
+      "staffID" : "2",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 400.752935770751,
+        "y" : 93.32326086956525
+      },
+      "colorPitchClass" : 7,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 395.752935770751,
+        "y" : 89.62760869565219
+      },
+      "measureID" : "0.3",
+      "midiNumber" : 55,
+      "noteID" : "0.0.2.21.5.2.2.2.2",
+      "staffID" : "2",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 479.27007312252965,
+        "y" : 27.062391304347827
+      },
+      "colorPitchClass" : 2,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 474.27007312252965,
+        "y" : 23.366739130434784
+      },
+      "measureID" : "0.4",
+      "midiNumber" : 74,
+      "noteID" : "0.0.3.22.1.1.0.2.0",
+      "staffID" : "1",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 558.0434782608696,
+        "y" : 29.540652173913045
+      },
+      "colorPitchClass" : 0,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 553.0434782608696,
+        "y" : 25.845000000000002
+      },
+      "measureID" : "0.4",
+      "midiNumber" : 72,
+      "noteID" : "0.0.3.23.1.1.2.2.0",
+      "staffID" : "1",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 479.27007312252965,
+        "y" : 100.7580434782609
+      },
+      "frame" : {
+        "height" : 20.000869565217393,
+        "width" : 14.909739130434781,
+        "x" : 471.81520355731226,
+        "y" : 90.75760869565221
+      },
+      "measureID" : "0.4",
+      "noteID" : "0.0.3.24.5.2.0.2.0",
+      "staffID" : "2",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 558.0434782608696,
+        "y" : 103.23630434782612
+      },
+      "colorPitchClass" : 0,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 553.0434782608696,
+        "y" : 99.54065217391306
+      },
+      "measureID" : "0.4",
+      "midiNumber" : 48,
+      "noteID" : "0.0.3.25.5.2.2.2.0",
+      "staffID" : "2",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 558.0434782608696,
+        "y" : 98.27978260869568
+      },
+      "colorPitchClass" : 4,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 553.0434782608696,
+        "y" : 94.58413043478262
+      },
+      "measureID" : "0.4",
+      "midiNumber" : 52,
+      "noteID" : "0.0.3.26.5.2.2.2.1",
+      "staffID" : "2",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 558.0434782608696,
+        "y" : 93.32326086956525
+      },
+      "colorPitchClass" : 7,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 553.0434782608696,
+        "y" : 89.62760869565219
+      },
+      "measureID" : "0.4",
+      "midiNumber" : 55,
+      "noteID" : "0.0.3.27.5.2.2.2.2",
+      "staffID" : "2",
+      "systemIndex" : 0
+    },
+    {
+      "center" : {
+        "x" : 49.834980237154156,
+        "y" : 180.82043478260871
+      },
+      "colorPitchClass" : 7,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 44.834980237154156,
+        "y" : 177.12478260869568
+      },
+      "measureID" : "0.5",
+      "midiNumber" : 67,
+      "noteID" : "0.0.4.28.1.1.0.2.0",
+      "staffID" : "1",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 72.77245849802372,
+        "y" : 180.82043478260871
+      },
+      "colorPitchClass" : 7,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 67.77245849802372,
+        "y" : 177.12478260869568
+      },
+      "measureID" : "0.5",
+      "midiNumber" : 67,
+      "noteID" : "0.0.4.29.1.1.1.2.0",
+      "staffID" : "1",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 102.18984980237155,
+        "y" : 163.47260869565218
+      },
+      "colorPitchClass" : 7,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 97.18984980237155,
+        "y" : 159.77695652173915
+      },
+      "measureID" : "0.5",
+      "midiNumber" : 79,
+      "noteID" : "0.0.4.30.1.1.2.2.0",
+      "staffID" : "1",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 128.27680632411068,
+        "y" : 168.42913043478262
+      },
+      "colorPitchClass" : 4,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 123.27680632411068,
+        "y" : 164.7334782608696
+      },
+      "measureID" : "0.5",
+      "midiNumber" : 76,
+      "noteID" : "0.0.4.31.1.1.4.2.0",
+      "staffID" : "1",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 49.834980237154156,
+        "y" : 244.6030434782609
+      },
+      "frame" : {
+        "height" : 20.000869565217393,
+        "width" : 14.909739130434781,
+        "x" : 42.38011067193676,
+        "y" : 234.6026086956522
+      },
+      "measureID" : "0.5",
+      "noteID" : "0.0.4.32.5.2.0.2.0",
+      "staffID" : "2",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 102.18984980237155,
+        "y" : 242.12478260869568
+      },
+      "colorPitchClass" : 4,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 97.18984980237155,
+        "y" : 238.42913043478265
+      },
+      "measureID" : "0.5",
+      "midiNumber" : 52,
+      "noteID" : "0.0.4.33.5.2.2.2.0",
+      "staffID" : "2",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 102.18984980237155,
+        "y" : 234.69000000000003
+      },
+      "colorPitchClass" : 9,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 97.18984980237155,
+        "y" : 230.994347826087
+      },
+      "measureID" : "0.5",
+      "midiNumber" : 58,
+      "noteID" : "0.0.4.34.5.2.2.2.1",
+      "staffID" : "2",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 102.18984980237155,
+        "y" : 229.7334782608696
+      },
+      "colorPitchClass" : 0,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 97.18984980237155,
+        "y" : 226.03782608695656
+      },
+      "measureID" : "0.5",
+      "midiNumber" : 60,
+      "noteID" : "0.0.4.35.5.2.2.2.2",
+      "staffID" : "2",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 154.3637628458498,
+        "y" : 173.38565217391306
+      },
+      "colorPitchClass" : 0,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 149.3637628458498,
+        "y" : 169.69000000000003
+      },
+      "measureID" : "0.6",
+      "midiNumber" : 72,
+      "noteID" : "0.0.5.36.1.1.0.2.0",
+      "staffID" : "1",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 180.45071936758893,
+        "y" : 175.86391304347828
+      },
+      "colorPitchClass" : 11,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 175.45071936758893,
+        "y" : 172.16826086956524
+      },
+      "measureID" : "0.6",
+      "midiNumber" : 71,
+      "noteID" : "0.0.5.37.1.1.2.2.0",
+      "staffID" : "1",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 206.53767588932806,
+        "y" : 178.3421739130435
+      },
+      "colorPitchClass" : 9,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 201.53767588932806,
+        "y" : 174.64652173913046
+      },
+      "measureID" : "0.6",
+      "midiNumber" : 69,
+      "noteID" : "0.0.5.38.1.1.4.2.0",
+      "staffID" : "1",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 154.3637628458498,
+        "y" : 244.6030434782609
+      },
+      "frame" : {
+        "height" : 20.000869565217393,
+        "width" : 14.909739130434781,
+        "x" : 146.9088932806324,
+        "y" : 234.6026086956522
+      },
+      "measureID" : "0.6",
+      "noteID" : "0.0.5.39.5.2.0.2.0",
+      "staffID" : "2",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 180.45071936758893,
+        "y" : 239.64652173913046
+      },
+      "colorPitchClass" : 5,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 175.45071936758893,
+        "y" : 235.95086956521743
+      },
+      "measureID" : "0.6",
+      "midiNumber" : 53,
+      "noteID" : "0.0.5.40.5.2.2.2.0",
+      "staffID" : "2",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 180.45071936758893,
+        "y" : 234.69000000000003
+      },
+      "colorPitchClass" : 9,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 175.45071936758893,
+        "y" : 230.994347826087
+      },
+      "measureID" : "0.6",
+      "midiNumber" : 57,
+      "noteID" : "0.0.5.41.5.2.2.2.1",
+      "staffID" : "2",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 180.45071936758893,
+        "y" : 229.7334782608696
+      },
+      "colorPitchClass" : 0,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 175.45071936758893,
+        "y" : 226.03782608695656
+      },
+      "measureID" : "0.6",
+      "midiNumber" : 60,
+      "noteID" : "0.0.5.42.5.2.2.2.2",
+      "staffID" : "2",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 232.62463241106718,
+        "y" : 165.9508695652174
+      },
+      "colorPitchClass" : 5,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 227.62463241106718,
+        "y" : 162.25521739130437
+      },
+      "measureID" : "0.7",
+      "midiNumber" : 77,
+      "noteID" : "0.0.6.43.1.1.0.2.0",
+      "staffID" : "1",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 255.56211067193675,
+        "y" : 165.9508695652174
+      },
+      "colorPitchClass" : 5,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 250.56211067193675,
+        "y" : 162.25521739130437
+      },
+      "measureID" : "0.7",
+      "midiNumber" : 77,
+      "noteID" : "0.0.6.44.1.1.1.2.0",
+      "staffID" : "1",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 274.0447193675889,
+        "y" : 168.42913043478262
+      },
+      "colorPitchClass" : 4,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 269.0447193675889,
+        "y" : 164.7334782608696
+      },
+      "measureID" : "0.7",
+      "midiNumber" : 76,
+      "noteID" : "0.0.6.45.1.1.2.2.0",
+      "staffID" : "1",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 300.13167588932805,
+        "y" : 173.38565217391306
+      },
+      "colorPitchClass" : 0,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 295.13167588932805,
+        "y" : 169.69000000000003
+      },
+      "measureID" : "0.7",
+      "midiNumber" : 72,
+      "noteID" : "0.0.6.46.1.1.4.2.0",
+      "staffID" : "1",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 232.62463241106718,
+        "y" : 244.6030434782609
+      },
+      "frame" : {
+        "height" : 20.000869565217393,
+        "width" : 14.909739130434781,
+        "x" : 225.1697628458498,
+        "y" : 234.6026086956522
+      },
+      "measureID" : "0.7",
+      "noteID" : "0.0.6.47.5.2.0.2.0",
+      "staffID" : "2",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 274.0447193675889,
+        "y" : 242.12478260869568
+      },
+      "colorPitchClass" : 4,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 269.0447193675889,
+        "y" : 238.42913043478265
+      },
+      "measureID" : "0.7",
+      "midiNumber" : 52,
+      "noteID" : "0.0.6.48.5.2.2.2.0",
+      "staffID" : "2",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 274.0447193675889,
+        "y" : 237.16826086956524
+      },
+      "colorPitchClass" : 7,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 269.0447193675889,
+        "y" : 233.4726086956522
+      },
+      "measureID" : "0.7",
+      "midiNumber" : 55,
+      "noteID" : "0.0.6.49.5.2.2.2.1",
+      "staffID" : "2",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 274.0447193675889,
+        "y" : 229.7334782608696
+      },
+      "colorPitchClass" : 0,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 269.0447193675889,
+        "y" : 226.03782608695656
+      },
+      "measureID" : "0.7",
+      "midiNumber" : 60,
+      "noteID" : "0.0.6.50.5.2.2.2.2",
+      "staffID" : "2",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 326.2186324110672,
+        "y" : 170.90739130434784
+      },
+      "colorPitchClass" : 2,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 321.2186324110672,
+        "y" : 167.2117391304348
+      },
+      "measureID" : "0.8",
+      "midiNumber" : 74,
+      "noteID" : "0.0.7.51.1.1.0.2.0",
+      "staffID" : "1",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 352.3055889328063,
+        "y" : 173.38565217391306
+      },
+      "colorPitchClass" : 0,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 347.3055889328063,
+        "y" : 169.69000000000003
+      },
+      "measureID" : "0.8",
+      "midiNumber" : 72,
+      "noteID" : "0.0.7.52.1.1.2.2.0",
+      "staffID" : "1",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 326.2186324110672,
+        "y" : 244.6030434782609
+      },
+      "colorPitchClass" : 2,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 321.2186324110672,
+        "y" : 240.90739130434787
+      },
+      "measureID" : "0.8",
+      "midiNumber" : 50,
+      "noteID" : "0.0.7.53.5.2.0.2.0",
+      "staffID" : "2",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 321.19254545454544,
+        "y" : 239.64652173913046
+      },
+      "colorPitchClass" : 5,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 316.19254545454544,
+        "y" : 235.95086956521743
+      },
+      "measureID" : "0.8",
+      "midiNumber" : 53,
+      "noteID" : "0.0.7.54.5.2.0.2.1",
+      "staffID" : "2",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 326.2186324110672,
+        "y" : 237.16826086956524
+      },
+      "colorPitchClass" : 7,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 321.2186324110672,
+        "y" : 233.4726086956522
+      },
+      "measureID" : "0.8",
+      "midiNumber" : 55,
+      "noteID" : "0.0.7.55.5.2.0.2.2",
+      "staffID" : "2",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 352.3055889328063,
+        "y" : 247.08130434782612
+      },
+      "colorPitchClass" : 0,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 347.3055889328063,
+        "y" : 243.3856521739131
+      },
+      "measureID" : "0.8",
+      "midiNumber" : 48,
+      "noteID" : "0.0.7.56.5.2.2.2.0",
+      "staffID" : "2",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 352.3055889328063,
+        "y" : 242.12478260869568
+      },
+      "colorPitchClass" : 4,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 347.3055889328063,
+        "y" : 238.42913043478265
+      },
+      "measureID" : "0.8",
+      "midiNumber" : 52,
+      "noteID" : "0.0.7.57.5.2.2.2.1",
+      "staffID" : "2",
+      "systemIndex" : 1
+    },
+    {
+      "center" : {
+        "x" : 352.3055889328063,
+        "y" : 237.16826086956524
+      },
+      "colorPitchClass" : 7,
+      "frame" : {
+        "height" : 7.391304347826088,
+        "width" : 10.000000000000002,
+        "x" : 347.3055889328063,
+        "y" : 233.4726086956522
+      },
+      "measureID" : "0.8",
+      "midiNumber" : 55,
+      "noteID" : "0.0.7.58.5.2.2.2.2",
+      "staffID" : "2",
+      "systemIndex" : 1
+    }
+  ],
+  "pages" : [
+    {
+      "contentFrame" : {
+        "height" : 322.8828260869565,
+        "width" : 547.1739130434783,
+        "x" : 23.913043478260875,
+        "y" : 0
+      },
+      "frame" : {
+        "height" : 842,
+        "width" : 595,
+        "x" : 0,
+        "y" : 0
+      },
+      "index" : 0,
+      "systemIndices" : [
+        0,
+        1
+      ]
+    }
+  ],
+  "playbackEvents" : [
+    {
+      "intervalSeconds" : 0.25,
+      "measureID" : "0.1",
+      "measureNumber" : "1",
+      "midiPitches" : [
+        67
+      ],
+      "midiSoundDurationSeconds" : {
+        "67" : 0.25
+      },
+      "noteIDs" : [
+        "0.0.0.0.1.1.0.2.0"
+      ],
+      "soundDurationSeconds" : 0.25,
+      "startSeconds" : 0,
+      "tempoBPM" : 120,
+      "velocityScale" : 1
+    },
+    {
+      "intervalSeconds" : 0.25,
+      "measureID" : "0.1",
+      "measureNumber" : "1",
+      "midiPitches" : [
+        67
+      ],
+      "midiSoundDurationSeconds" : {
+        "67" : 0.25
+      },
+      "noteIDs" : [
+        "0.0.0.1.1.1.1.2.0"
+      ],
+      "soundDurationSeconds" : 0.25,
+      "startSeconds" : 0.25,
+      "tempoBPM" : 120,
+      "velocityScale" : 1
+    },
+    {
+      "intervalSeconds" : 0.5,
+      "measureID" : "0.1",
+      "measureNumber" : "1",
+      "midiPitches" : [
+        69,
+        48,
+        52,
+        55
+      ],
+      "midiSoundDurationSeconds" : {
+        "48" : 1,
+        "52" : 1,
+        "55" : 1,
+        "69" : 0.5
+      },
+      "noteIDs" : [
+        "0.0.0.2.1.1.2.2.0",
+        "0.0.0.5.5.2.2.2.0",
+        "0.0.0.6.5.2.2.2.1",
+        "0.0.0.7.5.2.2.2.2"
+      ],
+      "soundDurationSeconds" : 1,
+      "startSeconds" : 0.5,
+      "tempoBPM" : 120,
+      "velocityScale" : 1
+    },
+    {
+      "intervalSeconds" : 0.5,
+      "measureID" : "0.1",
+      "measureNumber" : "1",
+      "midiPitches" : [
+        67
+      ],
+      "midiSoundDurationSeconds" : {
+        "67" : 0.5
+      },
+      "noteIDs" : [
+        "0.0.0.3.1.1.4.2.0"
+      ],
+      "soundDurationSeconds" : 0.5,
+      "startSeconds" : 1,
+      "tempoBPM" : 120,
+      "velocityScale" : 1
+    },
+    {
+      "intervalSeconds" : 0.5,
+      "measureID" : "0.2",
+      "measureNumber" : "2",
+      "midiPitches" : [
+        72
+      ],
+      "midiSoundDurationSeconds" : {
+        "72" : 0.5
+      },
+      "noteIDs" : [
+        "0.0.1.8.1.1.0.2.0"
+      ],
+      "soundDurationSeconds" : 0.5,
+      "startSeconds" : 1.5,
+      "tempoBPM" : 120,
+      "velocityScale" : 1
+    },
+    {
+      "intervalSeconds" : 1,
+      "measureID" : "0.2",
+      "measureNumber" : "2",
+      "midiPitches" : [
+        71,
+        50,
+        53,
+        55
+      ],
+      "midiSoundDurationSeconds" : {
+        "50" : 1,
+        "53" : 1,
+        "55" : 1,
+        "71" : 1
+      },
+      "noteIDs" : [
+        "0.0.1.9.1.1.2.2.0",
+        "0.0.1.11.5.2.2.2.0",
+        "0.0.1.12.5.2.2.2.1",
+        "0.0.1.13.5.2.2.2.2"
+      ],
+      "soundDurationSeconds" : 1,
+      "startSeconds" : 2,
+      "tempoBPM" : 120,
+      "velocityScale" : 1
+    },
+    {
+      "intervalSeconds" : 0.25,
+      "measureID" : "0.3",
+      "measureNumber" : "3",
+      "midiPitches" : [
+        67
+      ],
+      "midiSoundDurationSeconds" : {
+        "67" : 0.25
+      },
+      "noteIDs" : [
+        "0.0.2.14.1.1.0.2.0"
+      ],
+      "soundDurationSeconds" : 0.25,
+      "startSeconds" : 3,
+      "tempoBPM" : 120,
+      "velocityScale" : 1
+    },
+    {
+      "intervalSeconds" : 0.25,
+      "measureID" : "0.3",
+      "measureNumber" : "3",
+      "midiPitches" : [
+        67
+      ],
+      "midiSoundDurationSeconds" : {
+        "67" : 0.25
+      },
+      "noteIDs" : [
+        "0.0.2.15.1.1.1.2.0"
+      ],
+      "soundDurationSeconds" : 0.25,
+      "startSeconds" : 3.25,
+      "tempoBPM" : 120,
+      "velocityScale" : 1
+    },
+    {
+      "intervalSeconds" : 0.5,
+      "measureID" : "0.3",
+      "measureNumber" : "3",
+      "midiPitches" : [
+        69,
+        47,
+        53,
+        55
+      ],
+      "midiSoundDurationSeconds" : {
+        "47" : 1,
+        "53" : 1,
+        "55" : 1,
+        "69" : 0.5
+      },
+      "noteIDs" : [
+        "0.0.2.16.1.1.2.2.0",
+        "0.0.2.19.5.2.2.2.0",
+        "0.0.2.20.5.2.2.2.1",
+        "0.0.2.21.5.2.2.2.2"
+      ],
+      "soundDurationSeconds" : 1,
+      "startSeconds" : 3.5,
+      "tempoBPM" : 120,
+      "velocityScale" : 1
+    },
+    {
+      "intervalSeconds" : 0.5,
+      "measureID" : "0.3",
+      "measureNumber" : "3",
+      "midiPitches" : [
+        67
+      ],
+      "midiSoundDurationSeconds" : {
+        "67" : 0.5
+      },
+      "noteIDs" : [
+        "0.0.2.17.1.1.4.2.0"
+      ],
+      "soundDurationSeconds" : 0.5,
+      "startSeconds" : 4,
+      "tempoBPM" : 120,
+      "velocityScale" : 1
+    },
+    {
+      "intervalSeconds" : 0.5,
+      "measureID" : "0.4",
+      "measureNumber" : "4",
+      "midiPitches" : [
+        74
+      ],
+      "midiSoundDurationSeconds" : {
+        "74" : 0.5
+      },
+      "noteIDs" : [
+        "0.0.3.22.1.1.0.2.0"
+      ],
+      "soundDurationSeconds" : 0.5,
+      "startSeconds" : 4.5,
+      "tempoBPM" : 120,
+      "velocityScale" : 1
+    },
+    {
+      "intervalSeconds" : 1,
+      "measureID" : "0.4",
+      "measureNumber" : "4",
+      "midiPitches" : [
+        72,
+        48,
+        52,
+        55
+      ],
+      "midiSoundDurationSeconds" : {
+        "48" : 1,
+        "52" : 1,
+        "55" : 1,
+        "72" : 1
+      },
+      "noteIDs" : [
+        "0.0.3.23.1.1.2.2.0",
+        "0.0.3.25.5.2.2.2.0",
+        "0.0.3.26.5.2.2.2.1",
+        "0.0.3.27.5.2.2.2.2"
+      ],
+      "soundDurationSeconds" : 1,
+      "startSeconds" : 5,
+      "tempoBPM" : 120,
+      "velocityScale" : 1
+    },
+    {
+      "intervalSeconds" : 0.25,
+      "measureID" : "0.5",
+      "measureNumber" : "5",
+      "midiPitches" : [
+        67
+      ],
+      "midiSoundDurationSeconds" : {
+        "67" : 0.25
+      },
+      "noteIDs" : [
+        "0.0.4.28.1.1.0.2.0"
+      ],
+      "soundDurationSeconds" : 0.25,
+      "startSeconds" : 6,
+      "tempoBPM" : 120,
+      "velocityScale" : 1
+    },
+    {
+      "intervalSeconds" : 0.25,
+      "measureID" : "0.5",
+      "measureNumber" : "5",
+      "midiPitches" : [
+        67
+      ],
+      "midiSoundDurationSeconds" : {
+        "67" : 0.25
+      },
+      "noteIDs" : [
+        "0.0.4.29.1.1.1.2.0"
+      ],
+      "soundDurationSeconds" : 0.25,
+      "startSeconds" : 6.25,
+      "tempoBPM" : 120,
+      "velocityScale" : 1
+    },
+    {
+      "intervalSeconds" : 0.5,
+      "measureID" : "0.5",
+      "measureNumber" : "5",
+      "midiPitches" : [
+        79,
+        52,
+        58,
+        60
+      ],
+      "midiSoundDurationSeconds" : {
+        "52" : 1,
+        "58" : 1,
+        "60" : 1,
+        "79" : 0.5
+      },
+      "noteIDs" : [
+        "0.0.4.30.1.1.2.2.0",
+        "0.0.4.33.5.2.2.2.0",
+        "0.0.4.34.5.2.2.2.1",
+        "0.0.4.35.5.2.2.2.2"
+      ],
+      "soundDurationSeconds" : 1,
+      "startSeconds" : 6.5,
+      "tempoBPM" : 120,
+      "velocityScale" : 1
+    },
+    {
+      "intervalSeconds" : 0.5,
+      "measureID" : "0.5",
+      "measureNumber" : "5",
+      "midiPitches" : [
+        76
+      ],
+      "midiSoundDurationSeconds" : {
+        "76" : 0.5
+      },
+      "noteIDs" : [
+        "0.0.4.31.1.1.4.2.0"
+      ],
+      "soundDurationSeconds" : 0.5,
+      "startSeconds" : 7,
+      "tempoBPM" : 120,
+      "velocityScale" : 1
+    },
+    {
+      "intervalSeconds" : 0.5,
+      "measureID" : "0.6",
+      "measureNumber" : "6",
+      "midiPitches" : [
+        72
+      ],
+      "midiSoundDurationSeconds" : {
+        "72" : 0.5
+      },
+      "noteIDs" : [
+        "0.0.5.36.1.1.0.2.0"
+      ],
+      "soundDurationSeconds" : 0.5,
+      "startSeconds" : 7.5,
+      "tempoBPM" : 120,
+      "velocityScale" : 1
+    },
+    {
+      "intervalSeconds" : 0.5,
+      "measureID" : "0.6",
+      "measureNumber" : "6",
+      "midiPitches" : [
+        71,
+        53,
+        57,
+        60
+      ],
+      "midiSoundDurationSeconds" : {
+        "53" : 1,
+        "57" : 1,
+        "60" : 1,
+        "71" : 0.5
+      },
+      "noteIDs" : [
+        "0.0.5.37.1.1.2.2.0",
+        "0.0.5.40.5.2.2.2.0",
+        "0.0.5.41.5.2.2.2.1",
+        "0.0.5.42.5.2.2.2.2"
+      ],
+      "soundDurationSeconds" : 1,
+      "startSeconds" : 8,
+      "tempoBPM" : 120,
+      "velocityScale" : 1
+    },
+    {
+      "intervalSeconds" : 0.5,
+      "measureID" : "0.6",
+      "measureNumber" : "6",
+      "midiPitches" : [
+        69
+      ],
+      "midiSoundDurationSeconds" : {
+        "69" : 0.5
+      },
+      "noteIDs" : [
+        "0.0.5.38.1.1.4.2.0"
+      ],
+      "soundDurationSeconds" : 0.5,
+      "startSeconds" : 8.5,
+      "tempoBPM" : 120,
+      "velocityScale" : 1
+    },
+    {
+      "intervalSeconds" : 0.25,
+      "measureID" : "0.7",
+      "measureNumber" : "7",
+      "midiPitches" : [
+        77
+      ],
+      "midiSoundDurationSeconds" : {
+        "77" : 0.25
+      },
+      "noteIDs" : [
+        "0.0.6.43.1.1.0.2.0"
+      ],
+      "soundDurationSeconds" : 0.25,
+      "startSeconds" : 9,
+      "tempoBPM" : 120,
+      "velocityScale" : 1
+    },
+    {
+      "intervalSeconds" : 0.25,
+      "measureID" : "0.7",
+      "measureNumber" : "7",
+      "midiPitches" : [
+        77
+      ],
+      "midiSoundDurationSeconds" : {
+        "77" : 0.25
+      },
+      "noteIDs" : [
+        "0.0.6.44.1.1.1.2.0"
+      ],
+      "soundDurationSeconds" : 0.25,
+      "startSeconds" : 9.25,
+      "tempoBPM" : 120,
+      "velocityScale" : 1
+    },
+    {
+      "intervalSeconds" : 0.5,
+      "measureID" : "0.7",
+      "measureNumber" : "7",
+      "midiPitches" : [
+        76,
+        52,
+        55,
+        60
+      ],
+      "midiSoundDurationSeconds" : {
+        "52" : 1,
+        "55" : 1,
+        "60" : 1,
+        "76" : 0.5
+      },
+      "noteIDs" : [
+        "0.0.6.45.1.1.2.2.0",
+        "0.0.6.48.5.2.2.2.0",
+        "0.0.6.49.5.2.2.2.1",
+        "0.0.6.50.5.2.2.2.2"
+      ],
+      "soundDurationSeconds" : 1,
+      "startSeconds" : 9.5,
+      "tempoBPM" : 120,
+      "velocityScale" : 1
+    },
+    {
+      "intervalSeconds" : 0.5,
+      "measureID" : "0.7",
+      "measureNumber" : "7",
+      "midiPitches" : [
+        72
+      ],
+      "midiSoundDurationSeconds" : {
+        "72" : 0.5
+      },
+      "noteIDs" : [
+        "0.0.6.46.1.1.4.2.0"
+      ],
+      "soundDurationSeconds" : 0.5,
+      "startSeconds" : 10,
+      "tempoBPM" : 120,
+      "velocityScale" : 1
+    },
+    {
+      "intervalSeconds" : 0.5,
+      "measureID" : "0.8",
+      "measureNumber" : "8",
+      "midiPitches" : [
+        74,
+        50,
+        53,
+        55
+      ],
+      "midiSoundDurationSeconds" : {
+        "50" : 0.5,
+        "53" : 0.5,
+        "55" : 0.5,
+        "74" : 0.5
+      },
+      "noteIDs" : [
+        "0.0.7.51.1.1.0.2.0",
+        "0.0.7.53.5.2.0.2.0",
+        "0.0.7.54.5.2.0.2.1",
+        "0.0.7.55.5.2.0.2.2"
+      ],
+      "soundDurationSeconds" : 0.5,
+      "startSeconds" : 10.5,
+      "tempoBPM" : 120,
+      "velocityScale" : 1
+    },
+    {
+      "intervalSeconds" : 1,
+      "measureID" : "0.8",
+      "measureNumber" : "8",
+      "midiPitches" : [
+        72,
+        48,
+        52,
+        55
+      ],
+      "midiSoundDurationSeconds" : {
+        "48" : 1,
+        "52" : 1,
+        "55" : 1,
+        "72" : 1
+      },
+      "noteIDs" : [
+        "0.0.7.52.1.1.2.2.0",
+        "0.0.7.56.5.2.2.2.0",
+        "0.0.7.57.5.2.2.2.1",
+        "0.0.7.58.5.2.2.2.2"
+      ],
+      "soundDurationSeconds" : 1,
+      "startSeconds" : 11,
+      "tempoBPM" : 120,
+      "velocityScale" : 1
+    }
+  ],
+  "staffLines" : [
+    {
+      "end" : {
+        "x" : 215.08578458498025,
+        "y" : 41.93195652173913
+      },
+      "pitchClass" : "e",
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 41.93195652173913
+      }
+    },
+    {
+      "end" : {
+        "x" : 215.08578458498025,
+        "y" : 36.9754347826087
+      },
+      "pitchClass" : "g",
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 36.9754347826087
+      }
+    },
+    {
+      "end" : {
+        "x" : 215.08578458498025,
+        "y" : 32.018913043478264
+      },
+      "pitchClass" : "b",
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 32.018913043478264
+      }
+    },
+    {
+      "end" : {
+        "x" : 215.08578458498025,
+        "y" : 27.062391304347827
+      },
+      "pitchClass" : "d",
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 27.062391304347827
+      }
+    },
+    {
+      "end" : {
+        "x" : 215.08578458498025,
+        "y" : 22.105869565217393
+      },
+      "pitchClass" : "f",
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 22.105869565217393
+      }
+    },
+    {
+      "end" : {
+        "x" : 215.08578458498025,
+        "y" : 110.67108695652178
+      },
+      "pitchClass" : "g",
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 110.67108695652178
+      }
+    },
+    {
+      "end" : {
+        "x" : 215.08578458498025,
+        "y" : 105.71456521739134
+      },
+      "pitchClass" : "b",
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 105.71456521739134
+      }
+    },
+    {
+      "end" : {
+        "x" : 215.08578458498025,
+        "y" : 100.7580434782609
+      },
+      "pitchClass" : "d",
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 100.7580434782609
+      }
+    },
+    {
+      "end" : {
+        "x" : 215.08578458498025,
+        "y" : 95.80152173913046
+      },
+      "pitchClass" : "f",
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 95.80152173913046
+      }
+    },
+    {
+      "end" : {
+        "x" : 215.08578458498025,
+        "y" : 90.84500000000003
+      },
+      "pitchClass" : "a",
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 90.84500000000003
+      }
+    },
+    {
+      "end" : {
+        "x" : 319.9461462450593,
+        "y" : 41.93195652173913
+      },
+      "pitchClass" : "e",
+      "start" : {
+        "x" : 215.08578458498025,
+        "y" : 41.93195652173913
+      }
+    },
+    {
+      "end" : {
+        "x" : 319.9461462450593,
+        "y" : 36.9754347826087
+      },
+      "pitchClass" : "g",
+      "start" : {
+        "x" : 215.08578458498025,
+        "y" : 36.9754347826087
+      }
+    },
+    {
+      "end" : {
+        "x" : 319.9461462450593,
+        "y" : 32.018913043478264
+      },
+      "pitchClass" : "b",
+      "start" : {
+        "x" : 215.08578458498025,
+        "y" : 32.018913043478264
+      }
+    },
+    {
+      "end" : {
+        "x" : 319.9461462450593,
+        "y" : 27.062391304347827
+      },
+      "pitchClass" : "d",
+      "start" : {
+        "x" : 215.08578458498025,
+        "y" : 27.062391304347827
+      }
+    },
+    {
+      "end" : {
+        "x" : 319.9461462450593,
+        "y" : 22.105869565217393
+      },
+      "pitchClass" : "f",
+      "start" : {
+        "x" : 215.08578458498025,
+        "y" : 22.105869565217393
+      }
+    },
+    {
+      "end" : {
+        "x" : 319.9461462450593,
+        "y" : 110.67108695652178
+      },
+      "pitchClass" : "g",
+      "start" : {
+        "x" : 215.08578458498025,
+        "y" : 110.67108695652178
+      }
+    },
+    {
+      "end" : {
+        "x" : 319.9461462450593,
+        "y" : 105.71456521739134
+      },
+      "pitchClass" : "b",
+      "start" : {
+        "x" : 215.08578458498025,
+        "y" : 105.71456521739134
+      }
+    },
+    {
+      "end" : {
+        "x" : 319.9461462450593,
+        "y" : 100.7580434782609
+      },
+      "pitchClass" : "d",
+      "start" : {
+        "x" : 215.08578458498025,
+        "y" : 100.7580434782609
+      }
+    },
+    {
+      "end" : {
+        "x" : 319.9461462450593,
+        "y" : 95.80152173913046
+      },
+      "pitchClass" : "f",
+      "start" : {
+        "x" : 215.08578458498025,
+        "y" : 95.80152173913046
+      }
+    },
+    {
+      "end" : {
+        "x" : 319.9461462450593,
+        "y" : 90.84500000000003
+      },
+      "pitchClass" : "a",
+      "start" : {
+        "x" : 215.08578458498025,
+        "y" : 90.84500000000003
+      }
+    },
+    {
+      "end" : {
+        "x" : 466.2265948616601,
+        "y" : 41.93195652173913
+      },
+      "pitchClass" : "e",
+      "start" : {
+        "x" : 319.9461462450593,
+        "y" : 41.93195652173913
+      }
+    },
+    {
+      "end" : {
+        "x" : 466.2265948616601,
+        "y" : 36.9754347826087
+      },
+      "pitchClass" : "g",
+      "start" : {
+        "x" : 319.9461462450593,
+        "y" : 36.9754347826087
+      }
+    },
+    {
+      "end" : {
+        "x" : 466.2265948616601,
+        "y" : 32.018913043478264
+      },
+      "pitchClass" : "b",
+      "start" : {
+        "x" : 319.9461462450593,
+        "y" : 32.018913043478264
+      }
+    },
+    {
+      "end" : {
+        "x" : 466.2265948616601,
+        "y" : 27.062391304347827
+      },
+      "pitchClass" : "d",
+      "start" : {
+        "x" : 319.9461462450593,
+        "y" : 27.062391304347827
+      }
+    },
+    {
+      "end" : {
+        "x" : 466.2265948616601,
+        "y" : 22.105869565217393
+      },
+      "pitchClass" : "f",
+      "start" : {
+        "x" : 319.9461462450593,
+        "y" : 22.105869565217393
+      }
+    },
+    {
+      "end" : {
+        "x" : 466.2265948616601,
+        "y" : 110.67108695652178
+      },
+      "pitchClass" : "g",
+      "start" : {
+        "x" : 319.9461462450593,
+        "y" : 110.67108695652178
+      }
+    },
+    {
+      "end" : {
+        "x" : 466.2265948616601,
+        "y" : 105.71456521739134
+      },
+      "pitchClass" : "b",
+      "start" : {
+        "x" : 319.9461462450593,
+        "y" : 105.71456521739134
+      }
+    },
+    {
+      "end" : {
+        "x" : 466.2265948616601,
+        "y" : 100.7580434782609
+      },
+      "pitchClass" : "d",
+      "start" : {
+        "x" : 319.9461462450593,
+        "y" : 100.7580434782609
+      }
+    },
+    {
+      "end" : {
+        "x" : 466.2265948616601,
+        "y" : 95.80152173913046
+      },
+      "pitchClass" : "f",
+      "start" : {
+        "x" : 319.9461462450593,
+        "y" : 95.80152173913046
+      }
+    },
+    {
+      "end" : {
+        "x" : 466.2265948616601,
+        "y" : 90.84500000000003
+      },
+      "pitchClass" : "a",
+      "start" : {
+        "x" : 319.9461462450593,
+        "y" : 90.84500000000003
+      }
+    },
+    {
+      "end" : {
+        "x" : 571.0869565217391,
+        "y" : 41.93195652173913
+      },
+      "pitchClass" : "e",
+      "start" : {
+        "x" : 466.2265948616601,
+        "y" : 41.93195652173913
+      }
+    },
+    {
+      "end" : {
+        "x" : 571.0869565217391,
+        "y" : 36.9754347826087
+      },
+      "pitchClass" : "g",
+      "start" : {
+        "x" : 466.2265948616601,
+        "y" : 36.9754347826087
+      }
+    },
+    {
+      "end" : {
+        "x" : 571.0869565217391,
+        "y" : 32.018913043478264
+      },
+      "pitchClass" : "b",
+      "start" : {
+        "x" : 466.2265948616601,
+        "y" : 32.018913043478264
+      }
+    },
+    {
+      "end" : {
+        "x" : 571.0869565217391,
+        "y" : 27.062391304347827
+      },
+      "pitchClass" : "d",
+      "start" : {
+        "x" : 466.2265948616601,
+        "y" : 27.062391304347827
+      }
+    },
+    {
+      "end" : {
+        "x" : 571.0869565217391,
+        "y" : 22.105869565217393
+      },
+      "pitchClass" : "f",
+      "start" : {
+        "x" : 466.2265948616601,
+        "y" : 22.105869565217393
+      }
+    },
+    {
+      "end" : {
+        "x" : 571.0869565217391,
+        "y" : 110.67108695652178
+      },
+      "pitchClass" : "g",
+      "start" : {
+        "x" : 466.2265948616601,
+        "y" : 110.67108695652178
+      }
+    },
+    {
+      "end" : {
+        "x" : 571.0869565217391,
+        "y" : 105.71456521739134
+      },
+      "pitchClass" : "b",
+      "start" : {
+        "x" : 466.2265948616601,
+        "y" : 105.71456521739134
+      }
+    },
+    {
+      "end" : {
+        "x" : 571.0869565217391,
+        "y" : 100.7580434782609
+      },
+      "pitchClass" : "d",
+      "start" : {
+        "x" : 466.2265948616601,
+        "y" : 100.7580434782609
+      }
+    },
+    {
+      "end" : {
+        "x" : 571.0869565217391,
+        "y" : 95.80152173913046
+      },
+      "pitchClass" : "f",
+      "start" : {
+        "x" : 466.2265948616601,
+        "y" : 95.80152173913046
+      }
+    },
+    {
+      "end" : {
+        "x" : 571.0869565217391,
+        "y" : 90.84500000000003
+      },
+      "pitchClass" : "a",
+      "start" : {
+        "x" : 466.2265948616601,
+        "y" : 90.84500000000003
+      }
+    },
+    {
+      "end" : {
+        "x" : 141.32028458498024,
+        "y" : 185.77695652173915
+      },
+      "pitchClass" : "e",
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 185.77695652173915
+      }
+    },
+    {
+      "end" : {
+        "x" : 141.32028458498024,
+        "y" : 180.82043478260871
+      },
+      "pitchClass" : "g",
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 180.82043478260871
+      }
+    },
+    {
+      "end" : {
+        "x" : 141.32028458498024,
+        "y" : 175.86391304347828
+      },
+      "pitchClass" : "b",
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 175.86391304347828
+      }
+    },
+    {
+      "end" : {
+        "x" : 141.32028458498024,
+        "y" : 170.90739130434784
+      },
+      "pitchClass" : "d",
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 170.90739130434784
+      }
+    },
+    {
+      "end" : {
+        "x" : 141.32028458498024,
+        "y" : 165.9508695652174
+      },
+      "pitchClass" : "f",
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 165.9508695652174
+      }
+    },
+    {
+      "end" : {
+        "x" : 141.32028458498024,
+        "y" : 254.51608695652178
+      },
+      "pitchClass" : "g",
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 254.51608695652178
+      }
+    },
+    {
+      "end" : {
+        "x" : 141.32028458498024,
+        "y" : 249.55956521739134
+      },
+      "pitchClass" : "b",
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 249.55956521739134
+      }
+    },
+    {
+      "end" : {
+        "x" : 141.32028458498024,
+        "y" : 244.6030434782609
+      },
+      "pitchClass" : "d",
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 244.6030434782609
+      }
+    },
+    {
+      "end" : {
+        "x" : 141.32028458498024,
+        "y" : 239.64652173913046
+      },
+      "pitchClass" : "f",
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 239.64652173913046
+      }
+    },
+    {
+      "end" : {
+        "x" : 141.32028458498024,
+        "y" : 234.69000000000003
+      },
+      "pitchClass" : "a",
+      "start" : {
+        "x" : 23.913043478260875,
+        "y" : 234.69000000000003
+      }
+    },
+    {
+      "end" : {
+        "x" : 219.58115415019762,
+        "y" : 185.77695652173915
+      },
+      "pitchClass" : "e",
+      "start" : {
+        "x" : 141.32028458498024,
+        "y" : 185.77695652173915
+      }
+    },
+    {
+      "end" : {
+        "x" : 219.58115415019762,
+        "y" : 180.82043478260871
+      },
+      "pitchClass" : "g",
+      "start" : {
+        "x" : 141.32028458498024,
+        "y" : 180.82043478260871
+      }
+    },
+    {
+      "end" : {
+        "x" : 219.58115415019762,
+        "y" : 175.86391304347828
+      },
+      "pitchClass" : "b",
+      "start" : {
+        "x" : 141.32028458498024,
+        "y" : 175.86391304347828
+      }
+    },
+    {
+      "end" : {
+        "x" : 219.58115415019762,
+        "y" : 170.90739130434784
+      },
+      "pitchClass" : "d",
+      "start" : {
+        "x" : 141.32028458498024,
+        "y" : 170.90739130434784
+      }
+    },
+    {
+      "end" : {
+        "x" : 219.58115415019762,
+        "y" : 165.9508695652174
+      },
+      "pitchClass" : "f",
+      "start" : {
+        "x" : 141.32028458498024,
+        "y" : 165.9508695652174
+      }
+    },
+    {
+      "end" : {
+        "x" : 219.58115415019762,
+        "y" : 254.51608695652178
+      },
+      "pitchClass" : "g",
+      "start" : {
+        "x" : 141.32028458498024,
+        "y" : 254.51608695652178
+      }
+    },
+    {
+      "end" : {
+        "x" : 219.58115415019762,
+        "y" : 249.55956521739134
+      },
+      "pitchClass" : "b",
+      "start" : {
+        "x" : 141.32028458498024,
+        "y" : 249.55956521739134
+      }
+    },
+    {
+      "end" : {
+        "x" : 219.58115415019762,
+        "y" : 244.6030434782609
+      },
+      "pitchClass" : "d",
+      "start" : {
+        "x" : 141.32028458498024,
+        "y" : 244.6030434782609
+      }
+    },
+    {
+      "end" : {
+        "x" : 219.58115415019762,
+        "y" : 239.64652173913046
+      },
+      "pitchClass" : "f",
+      "start" : {
+        "x" : 141.32028458498024,
+        "y" : 239.64652173913046
+      }
+    },
+    {
+      "end" : {
+        "x" : 219.58115415019762,
+        "y" : 234.69000000000003
+      },
+      "pitchClass" : "a",
+      "start" : {
+        "x" : 141.32028458498024,
+        "y" : 234.69000000000003
+      }
+    },
+    {
+      "end" : {
+        "x" : 313.1751541501976,
+        "y" : 185.77695652173915
+      },
+      "pitchClass" : "e",
+      "start" : {
+        "x" : 219.58115415019762,
+        "y" : 185.77695652173915
+      }
+    },
+    {
+      "end" : {
+        "x" : 313.1751541501976,
+        "y" : 180.82043478260871
+      },
+      "pitchClass" : "g",
+      "start" : {
+        "x" : 219.58115415019762,
+        "y" : 180.82043478260871
+      }
+    },
+    {
+      "end" : {
+        "x" : 313.1751541501976,
+        "y" : 175.86391304347828
+      },
+      "pitchClass" : "b",
+      "start" : {
+        "x" : 219.58115415019762,
+        "y" : 175.86391304347828
+      }
+    },
+    {
+      "end" : {
+        "x" : 313.1751541501976,
+        "y" : 170.90739130434784
+      },
+      "pitchClass" : "d",
+      "start" : {
+        "x" : 219.58115415019762,
+        "y" : 170.90739130434784
+      }
+    },
+    {
+      "end" : {
+        "x" : 313.1751541501976,
+        "y" : 165.9508695652174
+      },
+      "pitchClass" : "f",
+      "start" : {
+        "x" : 219.58115415019762,
+        "y" : 165.9508695652174
+      }
+    },
+    {
+      "end" : {
+        "x" : 313.1751541501976,
+        "y" : 254.51608695652178
+      },
+      "pitchClass" : "g",
+      "start" : {
+        "x" : 219.58115415019762,
+        "y" : 254.51608695652178
+      }
+    },
+    {
+      "end" : {
+        "x" : 313.1751541501976,
+        "y" : 249.55956521739134
+      },
+      "pitchClass" : "b",
+      "start" : {
+        "x" : 219.58115415019762,
+        "y" : 249.55956521739134
+      }
+    },
+    {
+      "end" : {
+        "x" : 313.1751541501976,
+        "y" : 244.6030434782609
+      },
+      "pitchClass" : "d",
+      "start" : {
+        "x" : 219.58115415019762,
+        "y" : 244.6030434782609
+      }
+    },
+    {
+      "end" : {
+        "x" : 313.1751541501976,
+        "y" : 239.64652173913046
+      },
+      "pitchClass" : "f",
+      "start" : {
+        "x" : 219.58115415019762,
+        "y" : 239.64652173913046
+      }
+    },
+    {
+      "end" : {
+        "x" : 313.1751541501976,
+        "y" : 234.69000000000003
+      },
+      "pitchClass" : "a",
+      "start" : {
+        "x" : 219.58115415019762,
+        "y" : 234.69000000000003
+      }
+    },
+    {
+      "end" : {
+        "x" : 365.34906719367586,
+        "y" : 185.77695652173915
+      },
+      "pitchClass" : "e",
+      "start" : {
+        "x" : 313.1751541501976,
+        "y" : 185.77695652173915
+      }
+    },
+    {
+      "end" : {
+        "x" : 365.34906719367586,
+        "y" : 180.82043478260871
+      },
+      "pitchClass" : "g",
+      "start" : {
+        "x" : 313.1751541501976,
+        "y" : 180.82043478260871
+      }
+    },
+    {
+      "end" : {
+        "x" : 365.34906719367586,
+        "y" : 175.86391304347828
+      },
+      "pitchClass" : "b",
+      "start" : {
+        "x" : 313.1751541501976,
+        "y" : 175.86391304347828
+      }
+    },
+    {
+      "end" : {
+        "x" : 365.34906719367586,
+        "y" : 170.90739130434784
+      },
+      "pitchClass" : "d",
+      "start" : {
+        "x" : 313.1751541501976,
+        "y" : 170.90739130434784
+      }
+    },
+    {
+      "end" : {
+        "x" : 365.34906719367586,
+        "y" : 165.9508695652174
+      },
+      "pitchClass" : "f",
+      "start" : {
+        "x" : 313.1751541501976,
+        "y" : 165.9508695652174
+      }
+    },
+    {
+      "end" : {
+        "x" : 365.34906719367586,
+        "y" : 254.51608695652178
+      },
+      "pitchClass" : "g",
+      "start" : {
+        "x" : 313.1751541501976,
+        "y" : 254.51608695652178
+      }
+    },
+    {
+      "end" : {
+        "x" : 365.34906719367586,
+        "y" : 249.55956521739134
+      },
+      "pitchClass" : "b",
+      "start" : {
+        "x" : 313.1751541501976,
+        "y" : 249.55956521739134
+      }
+    },
+    {
+      "end" : {
+        "x" : 365.34906719367586,
+        "y" : 244.6030434782609
+      },
+      "pitchClass" : "d",
+      "start" : {
+        "x" : 313.1751541501976,
+        "y" : 244.6030434782609
+      }
+    },
+    {
+      "end" : {
+        "x" : 365.34906719367586,
+        "y" : 239.64652173913046
+      },
+      "pitchClass" : "f",
+      "start" : {
+        "x" : 313.1751541501976,
+        "y" : 239.64652173913046
+      }
+    },
+    {
+      "end" : {
+        "x" : 365.34906719367586,
+        "y" : 234.69000000000003
+      },
+      "pitchClass" : "a",
+      "start" : {
+        "x" : 313.1751541501976,
+        "y" : 234.69000000000003
+      }
+    }
+  ],
+  "systems" : [
+    {
+      "frame" : {
+        "height" : 88.56521739130437,
+        "width" : 547.1739130434783,
+        "x" : 23.913043478260875,
+        "y" : 22.105869565217393
+      },
+      "index" : 0
+    },
+    {
+      "frame" : {
+        "height" : 88.56521739130437,
+        "width" : 547.1739130434783,
+        "x" : 23.913043478260875,
+        "y" : 165.9508695652174
+      },
+      "index" : 1
+    }
+  ]
+}

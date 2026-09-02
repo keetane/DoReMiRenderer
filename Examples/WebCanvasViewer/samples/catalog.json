@@ -1,12 +1,362 @@
 [
   {
-    "id": "ode-to-joy-easy-variation",
-    "name": "Ode to Joy Easy Variation",
-    "plan": "./samples/ode-to-joy-easy-variation.json"
+    "id": "12-variations-of-twinkle-twinkle-little-star",
+    "name": "12 Variations of Twinkle Twinkle Little Star",
+    "plan": "./samples/12-variations-of-twinkle-twinkle-little-star.json",
+    "source": "12_Variations_of_Twinkle_Twinkle_Little_Star.mxl"
   },
   {
-    "id": "fur-elise-beginner-piano",
-    "name": "Fur Elise - Beginner Piano",
-    "plan": "./samples/fur-elise-beginner-piano.json"
+    "id": "arabesque-l-66-no-1-in-e-major",
+    "name": "Arabesque L. 66 No. 1 in E Major",
+    "plan": "./samples/arabesque-l-66-no-1-in-e-major.json",
+    "source": "Arabesque_L._66_No._1_in_E_Major.mxl"
+  },
+  {
+    "id": "ave-maria-d839-schubert-solo-piano-arrg",
+    "name": "Ave Maria D839 - Schubert - Solo Piano Arrg.",
+    "plan": "./samples/ave-maria-d839-schubert-solo-piano-arrg.json",
+    "source": "Ave_Maria_D839_-_Schubert_-_Solo_Piano_Arrg..mxl"
+  },
+  {
+    "id": "bach-minuet-in-g-major-bwv-anh-114",
+    "name": "Bach Minuet in G Major BWV Anh. 114",
+    "plan": "./samples/bach-minuet-in-g-major-bwv-anh-114.json",
+    "source": "Bach_Minuet_in_G_Major_BWV_Anh._114.mxl"
+  },
+  {
+    "id": "bach-toccata-and-fugue-in-d-minor-piano-solo",
+    "name": "Bach Toccata and Fugue in D Minor Piano solo",
+    "plan": "./samples/bach-toccata-and-fugue-in-d-minor-piano-solo.json",
+    "source": "Bach_Toccata_and_Fugue_in_D_Minor_Piano_solo.mxl"
+  },
+  {
+    "id": "beethoven-symphony-no-5-1st-movement-piano-solo",
+    "name": "Beethoven Symphony No. 5 1st movement Piano solo",
+    "plan": "./samples/beethoven-symphony-no-5-1st-movement-piano-solo.json",
+    "source": "Beethoven_Symphony_No._5_1st_movement_Piano_solo.mxl"
+  },
+  {
+    "id": "bella-ciao",
+    "name": "Bella Ciao",
+    "plan": "./samples/bella-ciao.json",
+    "source": "Bella_Ciao.mxl"
+  },
+  {
+    "id": "canon-in-d",
+    "name": "Canon in D",
+    "plan": "./samples/canon-in-d.json",
+    "source": "Canon_in_D.mxl"
+  },
+  {
+    "id": "canon-in-d-easy",
+    "name": "Canon in D easy",
+    "plan": "./samples/canon-in-d-easy.json",
+    "source": "Canon_in_D_easy.mxl"
+  },
+  {
+    "id": "carol-of-the-bells",
+    "name": "Carol of the Bells",
+    "plan": "./samples/carol-of-the-bells.json",
+    "source": "Carol_of_the_Bells.mxl"
+  },
+  {
+    "id": "carol-of-the-bells-easy-piano",
+    "name": "Carol of the Bells easy piano",
+    "plan": "./samples/carol-of-the-bells-easy-piano.json",
+    "source": "Carol_of_the_Bells_easy_piano.mxl"
+  },
+  {
+    "id": "chopin-ballade-no-1-in-g-minor-op-23",
+    "name": "Chopin - Ballade no. 1 in G minor Op. 23",
+    "plan": "./samples/chopin-ballade-no-1-in-g-minor-op-23.json",
+    "source": "Chopin_-_Ballade_no._1_in_G_minor_Op._23.mxl"
+  },
+  {
+    "id": "chopin-nocturne-op-9-no-1",
+    "name": "Chopin - Nocturne Op. 9 No. 1",
+    "plan": "./samples/chopin-nocturne-op-9-no-1.json",
+    "source": "Chopin_-_Nocturne_Op._9_No._1.mxl"
+  },
+  {
+    "id": "chopin-nocturne-op-9-no-2-e-flat-major",
+    "name": "Chopin - Nocturne Op 9 No 2 E Flat Major",
+    "plan": "./samples/chopin-nocturne-op-9-no-2-e-flat-major.json",
+    "source": "Chopin_-_Nocturne_Op_9_No_2_E_Flat_Major.mxl"
+  },
+  {
+    "id": "clair-de-lune-debussy",
+    "name": "Clair de Lune Debussy",
+    "plan": "./samples/clair-de-lune-debussy.json",
+    "source": "Clair_de_Lune__Debussy.mxl"
+  },
+  {
+    "id": "clair-de-lune-claude-debussy",
+    "name": "Clair de lune - Claude Debussy",
+    "plan": "./samples/clair-de-lune-claude-debussy.json",
+    "source": "Clair_de_lune_-_Claude_Debussy.mxl"
+  },
+  {
+    "id": "dance-of-the-sugar-plum-fairy",
+    "name": "Dance of the sugar plum fairy",
+    "plan": "./samples/dance-of-the-sugar-plum-fairy.json",
+    "source": "Dance_of_the_sugar_plum_fairy.mxl"
+  },
+  {
+    "id": "erik-satie-gymnopedie-no-1",
+    "name": "Erik Satie - Gymnopedie No.1",
+    "plan": "./samples/erik-satie-gymnopedie-no-1.json",
+    "source": "Erik_Satie_-_Gymnopedie_No.1.mxl"
+  },
+  {
+    "id": "flight-of-the-bumblebee",
+    "name": "Flight of the Bumblebee",
+    "plan": "./samples/flight-of-the-bumblebee.json",
+    "source": "Flight_of_the_Bumblebee.mxl"
+  },
+  {
+    "id": "fur-elise",
+    "name": "Fur Elise",
+    "plan": "./samples/fur-elise.json",
+    "source": "Fur_Elise.mxl"
+  },
+  {
+    "id": "fur-elise-beethoven-for-beginner-piano",
+    "name": "Fur Elise - Beethoven - for beginner piano",
+    "plan": "./samples/fur-elise-beethoven-for-beginner-piano.json",
+    "source": "Fur_Elise_-_Beethoven_-_for_beginner_piano.mxl"
+  },
+  {
+    "id": "fur-elise-easy-piano",
+    "name": "Fur Elise Easy Piano",
+    "plan": "./samples/fur-elise-easy-piano.json",
+    "source": "Fur_Elise_Easy_Piano.mxl"
+  },
+  {
+    "id": "g-minor-bach-original",
+    "name": "G Minor Bach Original",
+    "plan": "./samples/g-minor-bach-original.json",
+    "source": "G_Minor_Bach_Original.mxl"
+  },
+  {
+    "id": "gnossienne-no-1",
+    "name": "Gnossienne No. 1",
+    "plan": "./samples/gnossienne-no-1.json",
+    "source": "Gnossienne_No._1.mxl"
+  },
+  {
+    "id": "greensleeves-for-piano-easy-and-beautiful",
+    "name": "Greensleeves for Piano easy and beautiful",
+    "plan": "./samples/greensleeves-for-piano-easy-and-beautiful.json",
+    "source": "Greensleeves_for_Piano_easy_and_beautiful.mxl"
+  },
+  {
+    "id": "gymnopdie-no-1-satie",
+    "name": "Gymnopdie No. 1 Satie",
+    "plan": "./samples/gymnopdie-no-1-satie.json",
+    "source": "Gymnopdie_No._1__Satie.mxl"
+  },
+  {
+    "id": "happy-birthday-to-you-c-major",
+    "name": "Happy Birthday To You C Major",
+    "plan": "./samples/happy-birthday-to-you-c-major.json",
+    "source": "Happy_Birthday_To_You_C_Major.mxl"
+  },
+  {
+    "id": "happy-birthday-to-you-piano",
+    "name": "Happy Birthday To You Piano",
+    "plan": "./samples/happy-birthday-to-you-piano.json",
+    "source": "Happy_Birthday_To_You_Piano.mxl"
+  },
+  {
+    "id": "hungarian-dance-no-5-in-g-minor",
+    "name": "Hungarian Dance No 5 in G Minor",
+    "plan": "./samples/hungarian-dance-no-5-in-g-minor.json",
+    "source": "Hungarian_Dance_No_5_in_G_Minor.mxl"
+  },
+  {
+    "id": "j-s-bach-air-on-the-g-string-piano-arrangement",
+    "name": "J. S. Bach - Air on the G String Piano arrangement",
+    "plan": "./samples/j-s-bach-air-on-the-g-string-piano-arrangement.json",
+    "source": "J._S._Bach_-_Air_on_the_G_String_Piano_arrangement.mxl"
+  },
+  {
+    "id": "la-campanella-grandes-etudes-de-paganini-no-3-franz-liszt",
+    "name": "La Campanella - Grandes Etudes de Paganini No. 3 - Franz Liszt",
+    "plan": "./samples/la-campanella-grandes-etudes-de-paganini-no-3-franz-liszt.json",
+    "source": "La_Campanella_-_Grandes_Etudes_de_Paganini_No._3_-_Franz_Liszt.mxl"
+  },
+  {
+    "id": "lacrimosa-requiem",
+    "name": "Lacrimosa - Requiem",
+    "plan": "./samples/lacrimosa-requiem.json",
+    "source": "Lacrimosa_-_Requiem.mxl"
+  },
+  {
+    "id": "liebestraum-no-3-in-a-major",
+    "name": "Liebestraum No. 3 in A Major",
+    "plan": "./samples/liebestraum-no-3-in-a-major.json",
+    "source": "Liebestraum_No._3_in_A_Major.mxl"
+  },
+  {
+    "id": "maple-leaf-rag-scott-joplin",
+    "name": "Maple Leaf Rag Scott Joplin",
+    "plan": "./samples/maple-leaf-rag-scott-joplin.json",
+    "source": "Maple_Leaf_Rag_Scott_Joplin.mxl"
+  },
+  {
+    "id": "minuet-in-g-major-bach",
+    "name": "Minuet in G Major Bach",
+    "plan": "./samples/minuet-in-g-major-bach.json",
+    "source": "Minuet_in_G_Major_Bach.mxl"
+  },
+  {
+    "id": "mozart-piano-sonata-no-16-allegro",
+    "name": "Mozart - Piano Sonata No. 16 - Allegro",
+    "plan": "./samples/mozart-piano-sonata-no-16-allegro.json",
+    "source": "Mozart_-_Piano_Sonata_No._16_-_Allegro.mxl"
+  },
+  {
+    "id": "nocturne-no-20-in-c-minor",
+    "name": "Nocturne No. 20 in C Minor",
+    "plan": "./samples/nocturne-no-20-in-c-minor.json",
+    "source": "Nocturne_No._20_in_C_Minor.mxl"
+  },
+  {
+    "id": "nocturne-in-c-sharp-minor",
+    "name": "Nocturne in C sharp Minor",
+    "plan": "./samples/nocturne-in-c-sharp-minor.json",
+    "source": "Nocturne_in_C_sharp_Minor.mxl"
+  },
+  {
+    "id": "nocturne-in-e-flat-major-op-9-no-2-easy",
+    "name": "Nocturne in E-flat Major Op. 9 No. 2 Easy",
+    "plan": "./samples/nocturne-in-e-flat-major-op-9-no-2-easy.json",
+    "source": "Nocturne_in_E-flat_Major_Op._9_No._2_Easy.mxl"
+  },
+  {
+    "id": "ode-to-joy-easy-variation",
+    "name": "Ode to Joy Easy variation",
+    "plan": "./samples/ode-to-joy-easy-variation.json",
+    "source": "Ode_to_Joy_Easy_variation.mxl"
+  },
+  {
+    "id": "passacaglia",
+    "name": "Passacaglia",
+    "plan": "./samples/passacaglia.json",
+    "source": "Passacaglia.mxl"
+  },
+  {
+    "id": "passacaglia2",
+    "name": "Passacaglia2",
+    "plan": "./samples/passacaglia2.json",
+    "source": "Passacaglia2.mxl"
+  },
+  {
+    "id": "piano-sonata-no-11-k-331-3rd-movement-rondo-alla-turca",
+    "name": "Piano Sonata No. 11 K. 331 3rd Movement Rondo alla Turca",
+    "plan": "./samples/piano-sonata-no-11-k-331-3rd-movement-rondo-alla-turca.json",
+    "source": "Piano_Sonata_No._11_K._331_3rd_Movement_Rondo_alla_Turca.mxl"
+  },
+  {
+    "id": "prelude-i-in-c-major-bwv-846-well-tempered-clavier-first-book",
+    "name": "Prelude I in C major BWV 846 - Well Tempered Clavier First Book",
+    "plan": "./samples/prelude-i-in-c-major-bwv-846-well-tempered-clavier-first-book.json",
+    "source": "Prelude_I_in_C_major_BWV_846_-_Well_Tempered_Clavier_First_Book.mxl"
+  },
+  {
+    "id": "prelude-no-2-bwv-847-in-c-minor",
+    "name": "Prelude No. 2 BWV 847 in C Minor",
+    "plan": "./samples/prelude-no-2-bwv-847-in-c-minor.json",
+    "source": "Prelude_No._2_BWV_847_in_C_Minor.mxl"
+  },
+  {
+    "id": "prlude-no-4-in-e-minor-op-28-frdric-chopin",
+    "name": "Prlude No. 4 in E Minor Op. 28 - Frdric Chopin",
+    "plan": "./samples/prlude-no-4-in-e-minor-op-28-frdric-chopin.json",
+    "source": "Prlude_No._4_in_E_Minor_Op._28_-_Frdric_Chopin.mxl"
+  },
+  {
+    "id": "prlude-opus-28-no-4-in-e-minor-chopin",
+    "name": "Prlude Opus 28 No. 4 in E Minor Chopin",
+    "plan": "./samples/prlude-opus-28-no-4-in-e-minor-chopin.json",
+    "source": "Prlude_Opus_28_No._4_in_E_Minor__Chopin.mxl"
+  },
+  {
+    "id": "schubert-serenade-standchen-by-lizst",
+    "name": "Schubert Serenade - Standchen - By Lizst",
+    "plan": "./samples/schubert-serenade-standchen-by-lizst.json",
+    "source": "Schubert_Serenade_-_Standchen_-_By_Lizst.mxl"
+  },
+  {
+    "id": "sonata-no-16-1st-movement-k-545",
+    "name": "Sonata No. 16 1st Movement K. 545",
+    "plan": "./samples/sonata-no-16-1st-movement-k-545.json",
+    "source": "Sonata_No._16_1st_Movement_K._545.mxl"
+  },
+  {
+    "id": "sonate-no-14-moonlight-1st-movement",
+    "name": "Sonate No. 14 Moonlight 1st Movement",
+    "plan": "./samples/sonate-no-14-moonlight-1st-movement.json",
+    "source": "Sonate_No._14_Moonlight_1st_Movement.mxl"
+  },
+  {
+    "id": "sonate-no-14-moonlight-3rd-movement",
+    "name": "Sonate No. 14 Moonlight 3rd Movement",
+    "plan": "./samples/sonate-no-14-moonlight-3rd-movement.json",
+    "source": "Sonate_No._14_Moonlight_3rd_Movement.mxl"
+  },
+  {
+    "id": "sonate-no-8-pathetique-2nd-movement",
+    "name": "Sonate No. 8 Pathetique 2nd Movement",
+    "plan": "./samples/sonate-no-8-pathetique-2nd-movement.json",
+    "source": "Sonate_No._8_Pathetique_2nd_Movement.mxl"
+  },
+  {
+    "id": "swan-lake",
+    "name": "Swan Lake",
+    "plan": "./samples/swan-lake.json",
+    "source": "Swan_Lake.mxl"
+  },
+  {
+    "id": "the-entertainer-scott-joplin",
+    "name": "The Entertainer - Scott Joplin",
+    "plan": "./samples/the-entertainer-scott-joplin.json",
+    "source": "The_Entertainer_-_Scott_Joplin.mxl"
+  },
+  {
+    "id": "the-entertainer-scott-joplin-1902",
+    "name": "The Entertainer - Scott Joplin - 1902",
+    "plan": "./samples/the-entertainer-scott-joplin-1902.json",
+    "source": "The_Entertainer_-_Scott_Joplin_-_1902.mxl"
+  },
+  {
+    "id": "wa-mozart-marche-turque-turkish-march-fingered",
+    "name": "WA Mozart Marche Turque Turkish March fingered",
+    "plan": "./samples/wa-mozart-marche-turque-turkish-march-fingered.json",
+    "source": "WA_Mozart_Marche_Turque_Turkish_March_fingered.mxl"
+  },
+  {
+    "id": "waltz-opus-64-no-2-in-c-minor",
+    "name": "Waltz Opus 64 No. 2 in C Minor",
+    "plan": "./samples/waltz-opus-64-no-2-in-c-minor.json",
+    "source": "Waltz_Opus_64_No._2_in_C_Minor.mxl"
+  },
+  {
+    "id": "waltz-in-a-minorchopin",
+    "name": "Waltz in A MinorChopin",
+    "plan": "./samples/waltz-in-a-minorchopin.json",
+    "source": "Waltz_in_A_MinorChopin.mxl"
+  },
+  {
+    "id": "waltz-of-the-flowers",
+    "name": "Waltz of the Flowers",
+    "plan": "./samples/waltz-of-the-flowers.json",
+    "source": "Waltz_of_the_Flowers.mxl"
+  },
+  {
+    "id": "moonlight-sonata-3rd-movement",
+    "name": "moonlight sonata 3rd movement",
+    "plan": "./samples/moonlight-sonata-3rd-movement.json",
+    "source": "moonlight_sonata_3rd_movement.mxl"
   }
 ]
