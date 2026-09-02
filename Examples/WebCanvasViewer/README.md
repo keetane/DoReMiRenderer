@@ -27,9 +27,9 @@ when hosting this example, and preserve the accompanying SIL OFL notice.
 
 For a static demonstration of an already-exported plan, including GitHub Pages,
 any static HTTP server is sufficient. GitHub Pages publishes the bundled
-`score-web.json`, plus the rights-reviewed Ode to Joy and Fur Elise learning
-samples, and supports playback, palette controls, keyboard, zoom, and A4
-printing. To open a local MusicXML or MXL file from the published page,
+`score-web.json` and a static SDK Render Plan for every MXL currently in the
+web sample catalog. It supports playback, palette controls, keyboard, zoom,
+and A4 printing. To open a local MusicXML or MXL file from the published page,
 start the loopback companion below on the same Mac. The page detects the
 default `http://127.0.0.1:8765` companion (and the development port `8767`)
 and uploads the selected bytes directly to that local process; no score file is
@@ -72,12 +72,13 @@ include pitched MIDI values, so palette note colours and keyboard selection use
 the same stable note identity as the score.
 The `♪` toolbar button opens the sample-library drawer from the right, and the
 palette button opens the matching right-side colour drawer. GitHub Pages includes
-the two rights-reviewed learning samples as pre-generated SDK render plans, so
-they work on mobile without a local process. The local companion instead lists
-the development catalogue in `sample/app-bundle-hold`. The published sample
-catalog identifies [musetrainer/library](https://github.com/musetrainer/library)
+pre-generated SDK render plans for every MXL currently registered in the static
+sample catalog, so the catalog works on mobile without a local process. The
+local companion instead lists the development catalogue in `sample/app-bundle-hold`.
+The published sample catalog identifies [musetrainer/library](https://github.com/musetrainer/library)
 as its data source; the browser never parses the MXL files or receives a sample
-directory path.
+directory path. See `ASSET_LICENSES.md` for the source and redistribution
+caution that applies to these third-party score-data derivatives.
 The palette uses the iOS `defaultEducationalPalette` values and its basic
 pitch-class grouping: C/C#, D/D#, E, F/F#, G/G#, A/A#, and B. Score noteheads
 are recoloured by reusing the exported SMuFL notehead command, so open and
