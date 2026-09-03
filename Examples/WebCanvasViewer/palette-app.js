@@ -14,7 +14,7 @@ const state = {
   source: null, plan: null, sourceName: "score-web.json", transpose: 0, scoreZoom: 1,
   noteColors: true, staffColors: false, keyboardColors: true, keyboardColorPosition: "top", nextNoteGuide: true, keyboardVisible: true, enabled: allPitchClasses(),
   selectedNoteID: null, selectedMidi: null, currentIndex: 0, activeMIDIs: new Set(), nextMIDIs: new Set(), playing: false,
-  context: null, nodes: new Set(), nextScheduledIndex: 0, contextStart: 0, timelineStart: 0, baseTempoBPM: 120, tempoBPM: 120, animationFrame: null,
+  context: null, audioUnlockPromise: null, nodes: new Set(), nextScheduledIndex: 0, contextStart: 0, timelineStart: 0, baseTempoBPM: 120, tempoBPM: 120, animationFrame: null,
   lastFollowedSystemIndex: null, pageCanvases: new Map(), transposeRequestID: 0, printing: false, samples: null, activeDrawer: null,
   companionOrigin: usesLoopbackCompanion ? location.origin : null,
   hasAppliedInitialFitWidth: false,
@@ -60,7 +60,12 @@ controls.previous.addEventListener("click", () => move(-1));
 controls.next.addEventListener("click", () => move(1));
 controls.jump.addEventListener("click", jumpToMeasure);
 controls.measure.addEventListener("keydown", (event) => { if (event.key === "Enter") jumpToMeasure(); });
-controls.play.addEventListener("click", play);
+// iOS Safari associates Web Audio output permission with the initial touch,
+// not an async continuation of its click handler. Prime the output while that
+// gesture is still active, then let `play` wait for the context to run.
+controls.play.addEventListener("pointerdown", primeAudioFromGesture, { passive: true });
+controls.play.addEventListener("touchstart", primeAudioFromGesture, { passive: true });
+controls.play.addEventListener("click", () => { void play(); });
 controls.stop.addEventListener("click", stop);
 addEventListener("resize", () => requestAnimationFrame(redraw));
 addEventListener("keydown", (event) => { if (event.key === "Escape") closeDrawer(); });
@@ -476,16 +481,61 @@ function jumpToMeasure() {
 
 async function play() {
   if (state.playing || !events().length) return;
-  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContextClass) { info("このブラウザではWeb Audio再生を利用できません。"); return; }
-  state.context ??= new AudioContextClass();
-  await state.context.resume();
+  let context;
+  try {
+    context = await ensureAudioReady();
+  } catch (error) {
+    info(`音声を開始できません: ${error.message}`);
+    return;
+  }
   state.playing = true;
-  state.contextStart = state.context.currentTime;
+  state.contextStart = context.currentTime;
   state.timelineStart = events()[state.currentIndex].startSeconds;
   state.nextScheduledIndex = state.currentIndex;
   setEvent(state.currentIndex, true);
   tick();
+}
+
+function audioContext() {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return null;
+  state.context ??= new AudioContextClass();
+  return state.context;
+}
+
+function primeAudioFromGesture() {
+  const context = audioContext();
+  if (!context || context.state === "running" || state.audioUnlockPromise) return;
+
+  // A silent source started during the direct touch is the Safari-compatible
+  // unlock. It is intentionally not part of playback state and never becomes
+  // audible; actual notes are scheduled only after `resume()` settles.
+  try {
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    gain.gain.setValueAtTime(0, context.currentTime);
+    oscillator.connect(gain).connect(context.destination);
+    oscillator.start(context.currentTime);
+    oscillator.stop(context.currentTime + 0.02);
+  } catch {
+    // `resume()` below still covers browsers that do not need a silent source.
+  }
+
+  state.audioUnlockPromise = Promise.resolve(context.resume())
+    .then(() => {
+      if (context.state !== "running") throw new Error("音声出力が許可されていません。もう一度再生をタップしてください。");
+      return context;
+    })
+    .finally(() => { state.audioUnlockPromise = null; });
+}
+
+async function ensureAudioReady() {
+  const context = audioContext();
+  if (!context) throw new Error("このブラウザではWeb Audio再生を利用できません。");
+  if (context.state === "running") return context;
+  primeAudioFromGesture();
+  if (!state.audioUnlockPromise) throw new Error("音声出力を初期化できません。");
+  return state.audioUnlockPromise;
 }
 
 function stop() {

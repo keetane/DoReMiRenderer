@@ -107,6 +107,11 @@ portrait pages at 1:1 size. It prints score pages only: the toolbar, palette,
 keyboard, playback guide, next-note guide, and selected-note highlight are
 excluded. Keep the browser print dialog at A4 portrait and 100% scale; the
 viewer restores its interactive controls and zoom after printing.
+
+On iPhone and iPad, the first **Play** touch primes and resumes Web Audio while
+the touch gesture is still active, then schedules score events after the output
+context is running. This is required by iOS Safari's audio permission model;
+if iOS has interrupted audio output, tap **Play** again to resume it.
 Selecting a transpose variant always changes the score through an SDK-generated
 `ScoreLayout`; an imported score asks the loopback server for the chosen plan on
 demand and caches it only for the active browser session. There is no separate
