@@ -400,32 +400,41 @@ struct ScoreLayoutEngine: Sendable {
             manualBreakBeforeIndices: manualSystemBreakPlanIndices
         )
         if shouldRepeatSystemPrefix {
-            for index in systemGroups.compactMap(\.first) {
-                guard measurePlans.indices.contains(index) else { continue }
-                let plan = measurePlans[index]
-                let measureCount = measureCountByPart[plan.partIndex] ?? score.parts[plan.partIndex].measures.count
-                layoutMeasureWidths[index] = min(contentWidth, max(
-                    layoutMeasureWidths[index],
-                    width(
-                        for: plan.measure,
-                        measureIndex: plan.measureIndex,
-                        measureCount: measureCount,
-                        displayedKeySignature: plan.effectiveDisplayedKeySignature,
-                        forceClefPrefix: true,
-                        options: options,
-                        metrics: metrics
-                    )
-                ))
+            // Prefix reservation can push another measure to the next system.
+            // Repeat until every newly created system start has been budgeted.
+            // Widths only grow, so at most one reservation per measure is needed.
+            var reservedSystemStarts = Set<Int>()
+            while true {
+                let newStarts = Set(systemGroups.compactMap(\.first)).subtracting(reservedSystemStarts)
+                guard !newStarts.isEmpty else { break }
+                reservedSystemStarts.formUnion(newStarts)
+                for index in newStarts.sorted() {
+                    guard measurePlans.indices.contains(index) else { continue }
+                    let plan = measurePlans[index]
+                    let measureCount = measureCountByPart[plan.partIndex] ?? score.parts[plan.partIndex].measures.count
+                    layoutMeasureWidths[index] = min(contentWidth, max(
+                        layoutMeasureWidths[index],
+                        width(
+                            for: plan.measure,
+                            measureIndex: plan.measureIndex,
+                            measureCount: measureCount,
+                            displayedKeySignature: plan.effectiveDisplayedKeySignature,
+                            forceClefPrefix: true,
+                            options: options,
+                            metrics: metrics
+                        )
+                    ))
+                }
+                systemGroups = printSystemGroups(
+                    layoutMeasureWidths,
+                    shouldWrapSystems: shouldWrapSystems,
+                    contentWidth: contentWidth,
+                    measureSpacing: options.measureSpacing,
+                    maximumMeasuresPerSystem: options.maximumMeasuresPerSystem,
+                    perMeasureMaximumMeasuresPerSystem: printMeasureDensityLimits,
+                    manualBreakBeforeIndices: manualSystemBreakPlanIndices
+                )
             }
-            systemGroups = printSystemGroups(
-                layoutMeasureWidths,
-                shouldWrapSystems: shouldWrapSystems,
-                contentWidth: contentWidth,
-                measureSpacing: options.measureSpacing,
-                maximumMeasuresPerSystem: options.maximumMeasuresPerSystem,
-                perMeasureMaximumMeasuresPerSystem: printMeasureDensityLimits,
-                manualBreakBeforeIndices: manualSystemBreakPlanIndices
-            )
         }
         let systemStartPlanIndices = Set(systemGroups.compactMap(\.first))
         let systemIndexByPlanIndex = systemIndexLookup(for: systemGroups)

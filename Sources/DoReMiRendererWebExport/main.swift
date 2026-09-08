@@ -63,7 +63,9 @@ struct DoReMiRendererWebExportCommand {
             var options = renderer.webLayoutOptions(containerWidth: arguments.width)
             options.displayTransposeSemitones = semitones
             let layout = try renderer.layout(score: score, options: options)
-            let plan = renderer.makeWebRenderPlan(score: score, layout: layout)
+            var style = ScoreStyle()
+            style.measureNumberDisplayMode = .systemLeading
+            let plan = renderer.makeWebRenderPlan(score: score, layout: layout, style: style)
             try encoder.encode(plan).write(to: outputURL, options: .atomic)
             print("Wrote \(outputURL.path) commands=\(plan.commands.count) noteAnchors=\(plan.noteAnchors.count) transposeSemitones=\(semitones)")
         } else {
