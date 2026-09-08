@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-08 - Canon Web layout regression
+
+- Resolve cascading system breaks until all new system starts reserve clef/key
+  prefix width. Canon measure 20 previously overflowed by 4.67pt; measures 92,
+  97 and 100 were affected too. All 102 measures now pass notehead containment.
+- Enable system-leading measure numbers in primary-only and transpose exports,
+  matching the full Web bundle path.
+- Added a self-contained repeated-system-break test and a local Canon audit
+  (enabled only when the development sample is present). Verified measure 20
+  in the local browser. No changes to glyph recoloring: it already preserves
+  the original SMuFL filled/open notehead shape.
+
 ## 0.1.0-mvp0 - 2026-05-02
 
 Initial experimental MVP0 release.
