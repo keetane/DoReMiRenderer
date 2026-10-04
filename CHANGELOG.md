@@ -1,5 +1,11 @@
 # Changelog
 
+- Regenerate every GitHub Pages sample render plan with the current SDK. This
+  brings Canon in D measure containment, opposite-beam slur placement, and
+  system-leading measure numbers in line with the local companion. Pages now
+  rebuilds the static sample catalog whenever renderer, exporter, sample, or
+  generation inputs change, preventing stale plans from being published.
+
 - Remove the redundant Web score-header row between the toolbar and score. The
   displayed-score name, note count, and current-note text no longer consume
   vertical score space; playback guidance remains on the score and keyboard.
