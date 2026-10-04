@@ -1,5 +1,52 @@
 # Changelog
 
+- Remove the redundant Web score-header row between the toolbar and score. The
+  displayed-score name, note count, and current-note text no longer consume
+  vertical score space; playback guidance remains on the score and keyboard.
+
+- Simplify the Web toolbar: keep only page-width fit for zoom, remove note-step
+  controls, and move the source-tempo BPM field to the top of the sample drawer.
+  The currently displayed bundled sample is now highlighted when the drawer is
+  reopened.
+
+- Add a Web palette grand-staff preview covering all 49 chromatic pitches from
+  C2 through C6. The preview is SDK-laid-out and shares the active note-colour,
+  staff-line-colour, and pitch-enabled state with the main score.
+
+- Reorganize the Web viewer controls: next-note guidance now defaults off,
+  current-measure display and Jump share one editable field, transpose and zoom
+  live in the palette drawer, and file import lives in the sample drawer. Add a
+  double-clickable macOS launcher for the local SDK companion and browser app.
+
+- Consolidate chord ties/slurs into one outer visual curve per staff, voice, and pair of onset positions. Preserve source tie data for every sounding pitch. Canon measures 100-102 now show four curves instead of ten.
+
+- Inset tie/slur endpoints by 20% of each notehead width (2pt at the current Web scale). Taper quadratic strokes smoothly toward both tips while preserving the middle thickness and opposite-stem placement.
+
+- Correct Canon measure 24 slur placement: slurs now use final stem geometry and outer notehead edges like ties. Downward curves use the lower endpoint for their control height, keeping the arch outside both heads. Added a regression against the actual measure 24 beam and slur.
+
+- Web A4: reserve chord displacement only for adjacent diatonic pitches. Canon now fits every system into three or four measures, including 82–84. Ties use final rendered stem direction rather than pitch-only direction, span the outer notehead edges, and clear the notehead vertically; slur endpoints remain unchanged.
+- Resolve same-system cross-measure ties after all endpoint layouts exist (Canon ending: ten ties). Cross-system tie splitting remains unsupported. Verified with 311 package tests, including outer-edge anchors and opposite rendered-stem orientation.
+
+- Web A4: include ten-onset mixed eighth/sixteenth passages in compact beamed spacing, and inherit beam membership for chord tones when reserving flag clearance. Canon measures 70–72 and 73–75 now share systems without measure-number-specific rules; retain the 11pt short-note minimum and all-measure containment checks.
+
+## 2026-09-09 - Web candidate-system spacing
+
+- Dense Web measures (12 or more onsets) no longer budget standalone flag
+  clearance for explicitly beamed notes. Their symmetric edge allowance uses
+  0.9 staff spaces rather than 2, while retaining the trailing notation guard.
+  Width planning and onset placement share the same inset calculation. Canon
+  measures 36-50 now form five full-width, three-measure rows; the 11pt short
+  onset floor is unchanged.
+
+- Web A4 now evaluates each candidate row with its actual leading clef/key
+  prefix rather than retaining prefixes from abandoned line breaks. Available
+  spacing can contract by up to 20%, limited by the onset-envelope budget;
+  accepted nonfinal rows still justify to the full page width.
+- Calculate simultaneous onset envelopes separately per staff, avoiding false
+  chord-displacement allowance between the two staves. Canon measures 18-20
+  now share one full-width row, with all 102 measures passing containment.
+- Native print profiles retain the existing system grouping policy.
+
 ## 2026-09-08 - Canon Web layout regression
 
 - Resolve cascading system breaks until all new system starts reserve clef/key

@@ -748,7 +748,22 @@ struct ScorePainter: Sendable {
             let resolved = style.colorResolver.resolvedStyle(for: element, score: score, layout: layout, style: style, selection: selection)
             let color = resolved.strokeColor ?? resolved.fillColor ?? style.defaultInkColor
             let lineWidth: CGFloat = curve.kind == .tie ? 1.6 : 1.3
-            context.strokeQuadCurve(from: curve.start, control: curve.control, to: curve.end, color: color, lineWidth: lineWidth)
+            // Exact quadratic subsegments retain the curve while tapering its tips.
+            let segments = 48
+            func point(_ t: CGFloat) -> CGPoint {
+                let u = 1 - t
+                return CGPoint(x: u * u * curve.start.x + 2 * u * t * curve.control.x + t * t * curve.end.x,
+                               y: u * u * curve.start.y + 2 * u * t * curve.control.y + t * t * curve.end.y)
+            }
+            for index in 0..<segments {
+                let t = CGFloat(index) / CGFloat(segments)
+                let dt = 1 / CGFloat(segments)
+                let start = point(t)
+                let control = CGPoint(x: start.x + dt * ((1 - t) * (curve.control.x - curve.start.x) + t * (curve.end.x - curve.control.x)),
+                                      y: start.y + dt * ((1 - t) * (curve.control.y - curve.start.y) + t * (curve.end.y - curve.control.y)))
+                let taper = sin(.pi * (t + dt / 2))
+                context.strokeQuadCurve(from: start, control: control, to: point(t + dt), color: color, lineWidth: lineWidth * (0.06 + 0.94 * taper))
+            }
         }
     }
 

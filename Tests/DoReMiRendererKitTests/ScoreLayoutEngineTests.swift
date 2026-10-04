@@ -899,6 +899,10 @@ import Testing
 
     #expect(tieStart.staffPosition?.stepsFromMiddleLine ?? 0 < 0)
     #expect(tie.control.y > tieStart.noteheadCenter.y)
+    let tieEnd = try #require(layout.noteLayout(for: NoteID(rawValue: "tie-b")))
+    #expect(tie.start.x == tieStart.noteheadFrame.minX + tieStart.noteheadFrame.width * 0.2)
+    #expect(tie.end.x == tieEnd.noteheadFrame.maxX - tieEnd.noteheadFrame.width * 0.2)
+    #expect(tie.start.y > tieStart.noteheadFrame.maxY)
     #expect(slurStart.staffPosition?.stepsFromMiddleLine ?? 0 > 0)
     #expect(slur.control.y < slurStart.noteheadCenter.y)
     #expect(abs(slur.control.y - slur.start.y) > abs(tie.control.y - tie.start.y))

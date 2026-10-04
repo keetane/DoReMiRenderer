@@ -399,7 +399,67 @@ struct ScoreLayoutEngine: Sendable {
             perMeasureMaximumMeasuresPerSystem: printMeasureDensityLimits,
             manualBreakBeforeIndices: manualSystemBreakPlanIndices
         )
-        if shouldRepeatSystemPrefix {
+        if shouldRepeatSystemPrefix && options.usesDurationSensitiveShortNoteSpacing && !options.showPageMargins {
+            // Evaluate each candidate with only its actual leading prefix.
+            // Do not carry a former system-start reservation into its interior.
+            systemGroups = []
+            var nextIndex = 0
+            while nextIndex < measurePlans.count {
+                var accepted: [Int] = []
+                var acceptedWidths: [CGFloat] = []
+                for end in nextIndex..<min(measurePlans.count, nextIndex + max(1, options.maximumMeasuresPerSystem)) {
+                    if end > nextIndex && manualSystemBreakPlanIndices.contains(end) { break }
+                    let candidate = Array(nextIndex...end)
+                    let natural = candidate.map { index -> CGFloat in
+                        let plan = measurePlans[index]
+                        return min(contentWidth, width(
+                            for: plan.measure,
+                            measureIndex: plan.measureIndex,
+                            measureCount: measureCountByPart[plan.partIndex] ?? score.parts[plan.partIndex].measures.count,
+                            displayedKeySignature: index == nextIndex ? plan.effectiveDisplayedKeySignature : plan.displayedKeySignature,
+                            forceClefPrefix: index == nextIndex,
+                            options: options,
+                            metrics: metrics
+                        ))
+                    }
+                    let available = contentWidth - CGFloat(candidate.count - 1) * options.measureSpacing
+                    let total = natural.reduce(0, +)
+                    var fitted = natural
+                    if total > available {
+                        let floors = candidate.enumerated().map { offset, index -> CGFloat in
+                            let plan = measurePlans[index]
+                            let onsets = Array(Set(plan.measure.notes.map(\.onset))).sorted()
+                            let prefix = prefixNoteStartOffset(
+                                for: plan.measure,
+                                displayedKeySignature: index == nextIndex ? plan.effectiveDisplayedKeySignature : plan.displayedKeySignature,
+                                forceClefPrefix: index == nextIndex,
+                                metrics: metrics
+                            )
+                            let terminal = symmetricShortTerminalInset(for: plan.measure, metrics: metrics)
+                            let start = index != nextIndex && usesSymmetricShortTerminalInsets(plan.measure, metrics: metrics)
+                                ? max(prefix, terminal) : prefix
+                            let required = start + terminal
+                                + durationSensitiveOnsetGaps(for: plan.measure, onsets: onsets, metrics: metrics).reduce(0, +)
+                                + midMeasureClefSpacingWidth(for: plan.measure, metrics: metrics)
+                            return min(natural[offset], max(natural[offset] * 0.8, required))
+                        }
+                        let capacity = zip(natural, floors).map { $0 - $1 }
+                        let totalCapacity = capacity.reduce(0, +)
+                        guard total - available <= totalCapacity + 0.001 && totalCapacity > 0 else { break }
+                        fitted = zip(natural, capacity).map { $0 - (total - available) * $1 / totalCapacity }
+                    }
+                    accepted = candidate
+                    acceptedWidths = fitted
+                }
+                if accepted.isEmpty {
+                    accepted = [nextIndex]
+                    acceptedWidths = [layoutMeasureWidths[nextIndex]]
+                }
+                for (index, value) in zip(accepted, acceptedWidths) { layoutMeasureWidths[index] = value }
+                systemGroups.append(accepted)
+                nextIndex = accepted.last! + 1
+            }
+        } else if shouldRepeatSystemPrefix {
             // Prefix reservation can push another measure to the next system.
             // Repeat until every newly created system start has been budgeted.
             // Widths only grow, so at most one reservation per measure is needed.
@@ -891,6 +951,7 @@ struct ScoreLayoutEngine: Sendable {
             elements.append(contentsOf: tieAndSlurElements(
                 measure: item.measure,
                 noteByID: noteByID,
+                elements: elements,
                 metrics: metrics
             ))
             elements.append(contentsOf: tupletElements(
@@ -967,6 +1028,62 @@ struct ScoreLayoutEngine: Sendable {
 
             measureX += measureWidth + options.measureSpacing
         }
+        // Resolve cross-measure ties after both endpoint layouts exist.
+        // Cross-system segments require separate edge anchors and remain out of scope.
+        let systemByMeasure = Dictionary(measures.map { ($0.measureID, $0.systemIndex) }, uniquingKeysWith: { first, _ in first })
+        for part in score.parts {
+            var pending: [ScoreNote] = []
+            for measure in part.measures {
+                for note in measure.notes.sorted(by: { $0.onset < $1.onset }) where note.pitch != nil {
+                    if note.ties.contains(.stop), let index = pending.firstIndex(where: {
+                        $0.pitch == note.pitch && $0.staffID == note.staffID && $0.voiceID == note.voiceID
+                    }) {
+                        let start = pending.remove(at: index)
+                        if let startLayout = noteByID[start.id], let endLayout = noteByID[note.id],
+                           let startMeasureID = startLayout.measureID, let endMeasureID = endLayout.measureID,
+                           startMeasureID != endMeasureID,
+                           let startSystem = systemByMeasure[startMeasureID], startSystem == systemByMeasure[endMeasureID],
+                           let sourceMeasure = part.measures.first(where: { $0.id == startLayout.measureID }),
+                           let curve = curveElement(kind: .tie, measure: sourceMeasure, startNote: start, endNote: note, noteByID: noteByID, elements: elements, metrics: metrics) {
+                            elements.append(curve)
+                        }
+                    }
+                    if note.ties.contains(.start) { pending.append(note) }
+                }
+            }
+        }
+        // Collapse only visual duplicates between the same chord occurrences.
+        // Source ties remain intact so every tied pitch keeps its playback sustain.
+        struct ChordCurveKey: Hashable {
+            let kind: NotationCurveKind
+            let startMeasure: MeasureID
+            let endMeasure: MeasureID
+            let startOnset: MusicalTime
+            let endOnset: MusicalTime
+            let staff: StaffID
+            let voice: VoiceID
+        }
+        let sourceNotes = Dictionary(score.parts.flatMap { $0.measures.flatMap(\.notes) }.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        var representatives: [ChordCurveKey: Int] = [:]
+        var redundantCurves: Set<Int> = []
+        for (index, element) in elements.enumerated() {
+            guard let curve = element.curve,
+                  let start = sourceNotes[curve.startNoteID], let end = sourceNotes[curve.endNoteID],
+                  let startMeasure = noteByID[start.id]?.measureID,
+                  let endMeasure = noteByID[end.id]?.measureID,
+                  start.staffID == end.staffID, start.voiceID == end.voiceID else { continue }
+            let key = ChordCurveKey(kind: curve.kind, startMeasure: startMeasure, endMeasure: endMeasure,
+                                    startOnset: start.onset, endOnset: end.onset, staff: start.staffID, voice: start.voiceID)
+            if let previous = representatives[key], let previousCurve = elements[previous].curve {
+                let below = curve.control.y > (curve.start.y + curve.end.y) / 2
+                let isOuter = below ? curve.control.y > previousCurve.control.y : curve.control.y < previousCurve.control.y
+                redundantCurves.insert(isOuter ? previous : index)
+                if isOuter { representatives[key] = index }
+            } else {
+                representatives[key] = index
+            }
+        }
+        elements = elements.enumerated().filter { !redundantCurves.contains($0.offset) }.map(\.element)
         elements.append(contentsOf: flushPendingWedges(
             &pendingWedges,
             endX: max(metrics.leftMargin, measureX - options.measureSpacing - metrics.staffSpace * 0.9),
@@ -2715,6 +2832,7 @@ struct ScoreLayoutEngine: Sendable {
     private func tieAndSlurElements(
         measure: Measure,
         noteByID: [NoteID: NoteLayout],
+        elements: [ElementLayout],
         metrics: LayoutMetrics
     ) -> [ElementLayout] {
         let notes = measure.notes.sorted { lhs, rhs in
@@ -2731,7 +2849,7 @@ struct ScoreLayoutEngine: Sendable {
                     && $0.voiceID == startNote.voiceID
                     && $0.onset >= startNote.onset
                     && $0.ties.contains(.stop)
-            }), let element = curveElement(kind: .tie, measure: measure, startNote: startNote, endNote: endNote, noteByID: noteByID, metrics: metrics) {
+            }), let element = curveElement(kind: .tie, measure: measure, startNote: startNote, endNote: endNote, noteByID: noteByID, elements: elements, metrics: metrics) {
                 result.append(element)
             }
         }
@@ -2743,7 +2861,7 @@ struct ScoreLayoutEngine: Sendable {
                 slurStarts[key] = note
             }
             if note.slurs.contains(.stop), let start = slurStarts[key], start.id != note.id {
-                if let element = curveElement(kind: .slur, measure: measure, startNote: start, endNote: note, noteByID: noteByID, metrics: metrics) {
+                if let element = curveElement(kind: .slur, measure: measure, startNote: start, endNote: note, noteByID: noteByID, elements: elements, metrics: metrics) {
                     result.append(element)
                 }
                 slurStarts[key] = nil
@@ -2758,6 +2876,7 @@ struct ScoreLayoutEngine: Sendable {
         startNote: ScoreNote,
         endNote: ScoreNote,
         noteByID: [NoteID: NoteLayout],
+        elements: [ElementLayout],
         metrics: LayoutMetrics
     ) -> ElementLayout? {
         guard let startLayout = noteByID[startNote.id],
@@ -2765,11 +2884,25 @@ struct ScoreLayoutEngine: Sendable {
         else {
             return nil
         }
-        let direction = curveDirection(startLayout: startLayout, endLayout: endLayout)
+        var direction = curveDirection(startLayout: startLayout, endLayout: endLayout)
+        do {
+            // Use the final stem geometry, including beam/chord adjustments.
+            var onsetIDs = Set(measure.notes.filter {
+                $0.onset == startNote.onset && $0.staffID == startNote.staffID && $0.voiceID == startNote.voiceID
+            }.map(\.id))
+            if startLayout.measureID != measure.id { onsetIDs = [startNote.id] }
+            if let stem = elements.first(where: { $0.kind == .stem && $0.noteID.map(onsetIDs.contains) == true }),
+               let stemNote = stem.noteID.flatMap({ noteByID[$0] }) {
+                direction = stem.frame.midY < stemNote.noteheadCenter.y ? 1 : -1
+            }
+        }
         let lift = (kind == .tie ? metrics.noteheadSize.height * 0.55 : metrics.noteheadSize.height * 1.25) * direction
-        let start = CGPoint(x: startLayout.noteheadFrame.maxX, y: startLayout.noteheadCenter.y + lift * 0.25)
-        let end = CGPoint(x: endLayout.noteheadFrame.minX, y: endLayout.noteheadCenter.y + lift * 0.25)
-        let control = CGPoint(x: (start.x + end.x) / 2, y: min(start.y, end.y) + lift)
+        let clearance = metrics.staffSpace * 0.2
+        let startY = direction > 0 ? startLayout.noteheadFrame.maxY + clearance : startLayout.noteheadFrame.minY - clearance
+        let endY = direction > 0 ? endLayout.noteheadFrame.maxY + clearance : endLayout.noteheadFrame.minY - clearance
+        let start = CGPoint(x: startLayout.noteheadFrame.minX + startLayout.noteheadFrame.width * 0.2, y: startY)
+        let end = CGPoint(x: endLayout.noteheadFrame.maxX - endLayout.noteheadFrame.width * 0.2, y: endY)
+        let control = CGPoint(x: (start.x + end.x) / 2, y: (direction > 0 ? max(start.y, end.y) : min(start.y, end.y)) + lift)
         let minX = min(start.x, end.x, control.x)
         let minY = min(start.y, end.y, control.y)
         let maxX = max(start.x, end.x, control.x)
@@ -4825,10 +4958,7 @@ private func width(
         forceClefPrefix: forceClefPrefix,
         metrics: metrics
     ) > 0
-    let symmetricTerminalInset = max(
-        trailingInset,
-        metrics.noteheadSize.width / 2 + max(metrics.staffSpace * 2, 6 * metrics.notationScale)
-    )
+    let symmetricTerminalInset = symmetricShortTerminalInset(for: measure, metrics: metrics)
     // `xCoordinatesByOnset` reserves this inset on both barlines for a
     // prefix-free short-value measure. Include precisely that reservation in
     // the line-break budget, otherwise its minimum onset gaps would be scaled
@@ -5372,8 +5502,9 @@ private func durationSensitiveOnsetGaps(
         ) {
             return compactBeamedGap
         }
-        let currentEnvelope = onsetVisualEnvelope(for: currentNotes, metrics: metrics)
-        let nextEnvelope = onsetVisualEnvelope(for: nextNotes, metrics: metrics)
+        let compactBeamed = metrics.allowsAggressiveShortNoteCompression && onsets.count >= 10
+        let currentEnvelope = onsetVisualEnvelope(for: currentNotes, metrics: metrics, compactBeamed: compactBeamed)
+        let nextEnvelope = onsetVisualEnvelope(for: nextNotes, metrics: metrics, compactBeamed: compactBeamed)
         let visualGap = currentEnvelope.trailing + nextEnvelope.leading + metrics.staffSpace * 0.35
         return max(durationGap, visualGap)
     }
@@ -5555,8 +5686,18 @@ private func compactBeamedShortNoteGap(
 
 private func onsetVisualEnvelope(
     for notes: [ScoreNote],
-    metrics: LayoutMetrics
+    metrics: LayoutMetrics,
+    compactBeamed: Bool = false
 ) -> (leading: CGFloat, trailing: CGFloat) {
+    if metrics.allowsAggressiveShortNoteCompression {
+        let staffGroups = Dictionary(grouping: notes, by: \.staffID)
+        if staffGroups.count > 1 {
+            // Simultaneous notes on separate staves are not a displaced chord.
+            // Each staff needs its own envelope; only the widest determines x.
+            let envelopes = staffGroups.values.map { onsetVisualEnvelope(for: $0, metrics: metrics, compactBeamed: compactBeamed) }
+            return (envelopes.map(\.leading).max() ?? 0, envelopes.map(\.trailing).max() ?? 0)
+        }
+    }
     let halfNotehead = metrics.noteheadSize.width / 2
     guard !notes.isEmpty else {
         return (halfNotehead, halfNotehead)
@@ -5578,14 +5719,22 @@ private func onsetVisualEnvelope(
     // wider than a notehead frame. Use the same frame that element layout and
     // painting use rather than a synthetic compact-rest estimate.
     let baseHalfWidth = max(containsPitchedNote ? halfNotehead : 0, widestRestHalfWidth)
-    let chordOffset = containsPitchedNote && notes.count > 1 ? metrics.noteheadSize.width * 0.42 : 0
+    let pitches = notes.compactMap(\.pitch).map { diatonicPitchValue($0) }.sorted()
+    let displacedChord = zip(pitches, pitches.dropFirst()).contains { $1 - $0 == 1 }
+    let needsChordOffset = metrics.allowsAggressiveShortNoteCompression ? displacedChord : containsPitchedNote && notes.count > 1
+    let chordOffset = needsChordOffset ? metrics.noteheadSize.width * 0.42 : 0
     let accidentalAllowance = notes.contains { $0.accidental != nil }
         ? metrics.noteheadSize.width * 0.95 + metrics.staffSpace * 0.22
         : 0
     let dotAllowance = notes.map(\.dotCount).max() ?? 0 > 0
         ? metrics.noteheadSize.width * 0.72
         : 0
-    let flagAllowance = containsPitchedNote && notes.contains { $0.noteValueKind.flagCount > 0 }
+    let flagAllowance = containsPitchedNote && notes.contains { note in
+        let sharesBeam = !note.beams.isEmpty || (note.isChordTone && notes.contains {
+            $0.voiceID == note.voiceID && !$0.beams.isEmpty
+        })
+        return note.noteValueKind.flagCount > 0 && (!compactBeamed || !sharesBeam)
+    }
         ? metrics.noteheadSize.width * 0.20
         : 0
 
@@ -5659,10 +5808,7 @@ private func xCoordinatesByOnset(
             forceClefPrefix: forceClefPrefix,
             metrics: metrics
         ) > 0
-        let terminalInset = max(
-            trailingNotationInsetWidth(for: measure, metrics: metrics),
-            metrics.noteheadSize.width / 2 + max(metrics.staffSpace * 2, 6 * metrics.notationScale)
-        )
+        let terminalInset = symmetricShortTerminalInset(for: measure, metrics: metrics)
         let leadingX = usesSymmetricInsets && !hasPrefix ? measureX + terminalInset : startX
         let terminalX = usesSymmetricInsets
             // The following offset application advances all events after a
@@ -5723,10 +5869,7 @@ private func xCoordinatesByOnset(
             // gap stays compact while remaining readable. `startX` already
             // contains any clef/key/time/repeat clearance, so that extra
             // prefix width is not mirrored as unnecessary tail whitespace.
-            let terminalInset = max(
-                trailingNotationInsetWidth(for: measure, metrics: metrics),
-                metrics.noteheadSize.width / 2 + max(metrics.staffSpace * 2, 6 * metrics.notationScale)
-            )
+            let terminalInset = symmetricShortTerminalInset(for: measure, metrics: metrics)
             let hasPrefix = measurePrefixContentWidth(
                 for: measure,
                 displayedKeySignature: displayedKeySignature ?? measure.keySignature,
@@ -5873,6 +6016,15 @@ private func durationSensitiveJustificationExtraDistribution(
         activeIndices = nextActiveIndices
     }
     return additions
+}
+
+private func symmetricShortTerminalInset(for measure: Measure, metrics: LayoutMetrics) -> CGFloat {
+    let dense = metrics.allowsAggressiveShortNoteCompression
+        && Set(measure.notes.map(\.onset)).count >= 12
+    return max(
+        trailingNotationInsetWidth(for: measure, metrics: metrics),
+        metrics.noteheadSize.width / 2 + max(metrics.staffSpace * (dense ? 0.9 : 2), 6 * metrics.notationScale)
+    )
 }
 
 private func trailingNotationInsetWidth(for measure: Measure, metrics: LayoutMetrics) -> CGFloat {

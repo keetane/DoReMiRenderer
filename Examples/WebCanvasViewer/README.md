@@ -28,7 +28,7 @@ when hosting this example, and preserve the accompanying SIL OFL notice.
 For a static demonstration of an already-exported plan, including GitHub Pages,
 any static HTTP server is sufficient. GitHub Pages publishes the bundled
 `score-web.json` and a static SDK Render Plan for every MXL currently in the
-web sample catalog. It supports playback, palette controls, keyboard, zoom,
+web sample catalog. It supports playback, palette controls, keyboard, page-width fitting,
 and A4 printing. To open a local MusicXML or MXL file from the published page,
 start the loopback companion below on the same Mac. The page detects the
 default `http://127.0.0.1:8765` companion (and the development port `8767`)
@@ -70,8 +70,10 @@ started. Direct MusicXML/MXL import remains a server responsibility: the
 browser does not parse notation or manufacture layout coordinates. The exported anchors
 include pitched MIDI values, so palette note colours and keyboard selection use
 the same stable note identity as the score.
-The `♪` toolbar button opens the sample-library drawer from the right, and the
-palette button opens the matching right-side colour drawer. GitHub Pages includes
+The `♪` toolbar button opens the sample-library drawer from the right. File import
+is grouped at the top of that drawer. The palette button opens the matching
+right-side colour drawer, which contains colouring and transpose
+controls. GitHub Pages includes
 pre-generated SDK render plans for every MXL currently registered in the static
 sample catalog, so the catalog works on mobile without a local process. The
 local companion instead lists the development catalogue in `sample/app-bundle-hold`.
@@ -90,23 +92,38 @@ B-flat in F major uses the B colour family and F-sharp in G major uses the F
 colour family. Out-of-scale keys remain uncoloured, while an out-of-scale
 played note still receives its original pitch-class guide colour. The palette
 also provides a top/bottom keyboard-colour placement control and an optional
-next-note guide. The next note is a pale circular marker with a darker outline
+next-note guide, which is off by default. The next note is a pale circular marker with a darker outline
 in its pitch-class colour, distinct from the filled current-note key. Black-key
 colour bands cover a flat 5% strip at the selected top or bottom edge. Defaults
 match iOS: note and keyboard colours are on, while staff-line colours are off.
+The palette drawer also renders an SDK-generated grand-staff preview containing
+all 49 chromatic pitches from C2 through C6. It uses the same note-colour,
+staff-line-colour, and enabled-pitch-class state as the loaded score, so palette
+changes can be checked without leaving the drawer. The preview is generated from
+`Fixtures/palette-preview-c2-c6.musicxml`; its Canvas consumes only the exported
+ScoreLayout coordinates in `palette-preview-c2-c6.json`.
 
-The toolbar provides a natural-sign original-scale reset button, compact scale
-labels (`C / Am`, `F / Dm`), one chromatic octave of transpose choices (`-6...+5`), score-only zoom
-from 50% to 300% with editable numeric input and 10% step controls, plus a `↔` button that fits the
-rendered A4 page width to the score canvas,
-Play/Stop/Reset, an editable 30–300 BPM tempo control, Previous/Next immediately
-after Reset, and direct measure Jump. The BPM field uses the source tempo exported
-by the SDK as its initial value and scales timing without changing layout.
+The palette drawer provides a natural-sign original-scale reset button, compact scale
+labels (`C / Am`, `F / Dm`), and one chromatic octave of transpose choices (`-6...+5`).
+The main toolbar keeps Play/Stop/Reset, direct measure Jump, and a single `↔`
+button that fits the rendered A4 page width to the score canvas. Previous/Next
+note stepping and manual percentage zoom are intentionally omitted from the Web
+toolbar. The current measure and jump destination
+share one field: playback updates it when it is not being edited, and entering a
+value followed by Enter or Jump moves to that measure. The sample drawer starts
+with an editable 30–300 BPM field. It uses the displayed score's source tempo
+exported by the SDK as its default and scales timing without changing layout.
+When a bundled sample is displayed, its row remains highlighted in the drawer.
+
+On macOS, double-click `Launch_DoReMi_Palette_Web.command` at the repository root
+to start the loopback companion on port 8767 and open the app in the default
+browser. The launcher reuses an already-running healthy companion and writes its
+background server log to `/tmp/DoReMiPaletteWeb.log`.
 The printer button opens the browser print dialog using the SDK-exported A4
 portrait pages at 1:1 size. It prints score pages only: the toolbar, palette,
 keyboard, playback guide, next-note guide, and selected-note highlight are
 excluded. Keep the browser print dialog at A4 portrait and 100% scale; the
-viewer restores its interactive controls and zoom after printing.
+viewer restores its interactive controls and fitted display after printing.
 
 On iPhone and iPad, the first **Play** touch primes and resumes Web Audio while
 the touch gesture is still active, then schedules score events after the output
