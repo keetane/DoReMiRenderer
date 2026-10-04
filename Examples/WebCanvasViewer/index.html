@@ -20,15 +20,19 @@
       .toolbar .primary { border-color:#1677e8; background:#1677e8; color:#fff; }
       .toolbar .active { border-color:#1677e8; background:#eaf4ff; color:#075ebc; }
       .toolbar select { min-height:36px; border:1px solid #d5dbe5; border-radius:7px; padding:6px 9px; background:#fff; color:#273243; font-weight:600; }
-      .tempo-control,.zoom-control { display:inline-flex; align-items:center; gap:5px; }
-      .tempo-control input,.zoom-control input { width:58px; min-height:24px; padding:2px 3px; border:0; outline:0; background:transparent; color:#273243; font-weight:700; text-align:center; font-variant-numeric:tabular-nums; }
-      .tempo-control input:disabled,.zoom-control input:disabled { opacity:.45; cursor:not-allowed; }
+      .tempo-control { display:inline-flex; align-items:center; gap:5px; }
+      .tempo-control input { width:58px; min-height:24px; padding:2px 3px; border:0; outline:0; background:transparent; color:#273243; font-weight:700; text-align:center; font-variant-numeric:tabular-nums; }
+      .tempo-control input:disabled { opacity:.45; cursor:not-allowed; }
       .transport { display:flex; flex-wrap:wrap; align-items:center; gap:7px; width:100%; padding-top:8px; border-top:1px solid #edf0f4; }
       .transport button,.transport label { min-height:32px; border:1px solid #d5dbe5; border-radius:6px; padding:5px 9px; background:#fff; color:#273243; font-size:13px; font-weight:650; }
       .transport button.primary { border-color:#1677e8; background:#1677e8; color:#fff; }
       .transport button:disabled,.transport input:disabled { opacity:.45; cursor:not-allowed; }
       .transport input { width:54px; min-height:32px; border:1px solid #d5dbe5; border-radius:6px; padding:4px 7px; text-align:center; }
       .transport .measure-status { color:var(--muted); font-size:13px; font-variant-numeric:tabular-nums; }
+      .transport .measure-navigation { display:inline-flex; align-items:center; min-height:32px; overflow:hidden; border:1px solid #d5dbe5; border-radius:6px; padding:0; background:#fff; color:var(--muted); font-size:13px; }
+      .measure-navigation > span:first-child { padding-left:8px; }
+      .measure-navigation input { width:48px; min-height:30px; border:0; border-radius:0; padding:3px 4px; color:#273243; font-weight:700; }
+      .measure-navigation .measure-status { min-width:42px; padding-right:8px; }
       #file-input { display:none; }
       .workspace { display:grid; grid-template-columns:minmax(0,1fr); gap:18px; max-width:1540px; width:100%; margin:0 auto; padding:20px clamp(14px,3vw,38px) 28px; }
       .drawer-backdrop { position:fixed; z-index:29; inset:0; visibility:hidden; background:#18223042; opacity:0; transition:opacity .2s ease,visibility 0s linear .2s; }
@@ -52,19 +56,34 @@
       .palette-options .check-toggle::before { content:"✓"; display:inline-grid; place-items:center; width:15px; height:15px; margin-right:6px; border:1px solid #aeb7c5; border-radius:4px; color:transparent; font-size:11px; line-height:1; vertical-align:-1px; }
       .palette-options .check-toggle.is-active { border-color:#8dbce9; background:#eef7ff; color:#075ebc; }
       .palette-options .check-toggle.is-active::before { border-color:#1677e8; background:#1677e8; color:#fff; }
+      .palette-score-preview { display:grid; gap:8px; border-top:1px solid #edf0f4; padding-top:12px; }
+      .palette-score-preview h3 { margin:0; color:#4b5565; font-size:13px; }
+      .palette-score-preview p { margin:0; }
+      .palette-preview-viewport { overflow:hidden; border:1px solid #dfe3ea; border-radius:7px; background:#f1f3f7; }
+      .palette-preview-stack { display:grid; gap:6px; width:100%; padding:8px; box-sizing:border-box; }
+      .palette-preview-system { display:block; width:100%; min-width:0; background:#fff; }
+      .palette-preview-message { padding:18px 12px; color:var(--muted); font-size:13px; }
+      .drawer-control-group { display:grid; gap:9px; border-top:1px solid #edf0f4; padding-top:12px; }
+      .drawer-control-group h3 { margin:0; color:#4b5565; font-size:13px; }
+      .drawer-control-row { display:flex; align-items:center; gap:8px; }
+      .drawer-control-row > select { flex:1; min-width:0; min-height:36px; border:1px solid #d5dbe5; border-radius:7px; padding:6px 9px; background:#fff; color:#273243; font-weight:650; }
+      .drawer-control-row > button,.drawer-action { min-height:36px; border:1px solid #d5dbe5; border-radius:7px; padding:7px 11px; background:#fff; color:#273243; font-weight:650; text-align:center; }
+      .drawer-action { display:block; cursor:pointer; }
+      .drawer-action.primary { border-color:#1677e8; background:#1677e8; color:#fff; }
+      .sample-library-actions { display:grid; gap:8px; }
       .sample-library-heading { display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
       .sample-library h2 { margin:0; font-size:16px; }.sample-library p { margin:4px 0 0; color:var(--muted); font-size:13px; }
+      .sample-tempo { display:flex; align-items:center; justify-content:space-between; gap:12px; border-bottom:1px solid #edf0f4; padding:0 0 12px; }
+      .sample-tempo > span { color:#4b5565; font-size:13px; font-weight:700; }
+      .sample-tempo .tempo-control { min-height:36px; border:1px solid #d5dbe5; border-radius:7px; padding:5px 9px; background:#fff; }
       .sample-list { display:grid; grid-template-columns:minmax(0,1fr); gap:8px; }
       .sample-list button { min-height:38px; overflow:hidden; border:1px solid #d9dee6; border-radius:6px; padding:7px 10px; background:#fff; color:#273243; font-size:13px; font-weight:650; text-align:left; text-overflow:ellipsis; white-space:nowrap; }
       .sample-list button:hover { border-color:#8fb9ec; background:#f6faff; }.sample-list .sample-library-message { color:var(--muted); font-size:13px; }
+      .sample-list button.is-current { border-color:#69a8e8; background:#eaf4ff; color:#075ebc; box-shadow:inset 3px 0 #1677e8; }
       .sample-library-source { margin:6px 0 0; padding-top:14px; border-top:1px solid #edf0f4; color:var(--muted); font-size:12px; }
       .sample-library-source a { color:#075ebc; font-weight:650; text-decoration:none; }.sample-library-source a:hover { text-decoration:underline; }
       .score-card { overflow:hidden; border:1px solid var(--line); border-radius:8px; background:var(--panel); box-shadow:0 6px 25px #1a31420d; }
-      .score-header { display:flex; align-items:center; justify-content:space-between; gap:16px; min-height:45px; padding:9px 14px; border-bottom:1px solid #e7ebf0; }
-      .score-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; font-weight:700; }
-      .score-meta { color:var(--muted); font-size:12px; white-space:nowrap; }
-      .current-note { margin-left:auto; color:#1f4f91; font-size:13px; font-weight:700; white-space:nowrap; }
-      .score-scroll { overflow:auto; max-height:calc(100vh - 238px); background:#e7eaf0; }
+      .score-scroll { overflow:auto; max-height:calc(100vh - 193px); background:#e7eaf0; }
       .canvas-wrap { position:relative; min-width:680px; min-height:100%; background:#e7eaf0; }
       .page-stack { display:grid; gap:24px; width:595px; margin:0 auto; padding:24px 0; }
       .score-page { display:block; width:100%; background:#fff; box-shadow:0 2px 10px #1a31422e; }
@@ -80,7 +99,7 @@
       .white-key.is-next-guide::after,.black-key.is-next-guide::after { content:""; position:absolute; z-index:4; left:50%; width:25px; height:25px; transform:translate(-50%,-50%); border:2px solid color-mix(in srgb,var(--key-color) 78%,#182230); border-radius:50%; background:color-mix(in srgb,var(--key-color) 22%,#fff); box-shadow:0 1px 2px #17294f30; pointer-events:none; }.white-key.is-next-guide::after { top:78%; }.black-key.is-next-guide { z-index:3; }.black-key.is-next-guide::after { top:58%; width:19px; height:19px; background:color-mix(in srgb,var(--key-color) 32%,#fff); }
       .keyboard-caption { display:flex; justify-content:space-between; max-width:1480px; margin:0 auto 7px; color:var(--muted); font-size:12px; }
       /* Printing uses the SDK's A4 page frames directly, rather than a browser-derived reflow. */
-      body.is-printing .toolbar,body.is-printing .right-drawer,body.is-printing .drawer-backdrop,body.is-printing .score-header,body.is-printing #status,body.is-printing .keyboard-dock { display:none !important; }
+      body.is-printing .toolbar,body.is-printing .right-drawer,body.is-printing .drawer-backdrop,body.is-printing #status,body.is-printing .keyboard-dock { display:none !important; }
       body.is-printing .app-shell,body.is-printing .workspace,body.is-printing .score-card,body.is-printing .score-scroll,body.is-printing .canvas-wrap { display:block; min-height:0; max-height:none; margin:0; padding:0; overflow:visible; background:#fff; border:0; box-shadow:none; }
       body.is-printing .workspace { width:595pt; max-width:none; }
       body.is-printing .page-stack { display:block; width:595pt !important; margin:0; padding:0; }
@@ -88,45 +107,35 @@
       @page { size:A4 portrait; margin:0; }
       @media print {
         html,body { width:595pt; margin:0; background:#fff; }
-        .toolbar,.right-drawer,.drawer-backdrop,.score-header,#status,.keyboard-dock { display:none !important; }
+        .toolbar,.right-drawer,.drawer-backdrop,#status,.keyboard-dock { display:none !important; }
         .app-shell,.workspace,.score-card,.score-scroll,.canvas-wrap { display:block; min-height:0; max-height:none; margin:0; padding:0; overflow:visible; background:#fff; border:0; box-shadow:none; }
         .workspace { width:595pt; max-width:none; }
         .page-stack { display:block; width:595pt !important; margin:0; padding:0; }
         .score-page { display:block; width:595pt !important; height:842pt !important; margin:0; box-shadow:none; break-after:page; page-break-after:always; }
         .score-page:last-child { break-after:auto; page-break-after:auto; }
       }
-      @media (max-width:780px) { .toolbar { flex-wrap:wrap; gap:7px; }.brand { width:100%; }.toolbar button,.toolbar label { min-height:34px; padding:6px 9px; font-size:13px; }.workspace { padding-top:12px; }.score-scroll { max-height:calc(100vh - 354px); }.right-drawer { padding:16px; }.keyboard { height:104px; }.black-key { height:60px; }.keyboard-dock { padding-bottom:8px; } }
+      @media (max-width:780px) { .toolbar { flex-wrap:wrap; gap:7px; }.brand { width:100%; }.toolbar button,.toolbar label { min-height:34px; padding:6px 9px; font-size:13px; }.workspace { padding-top:12px; }.score-scroll { max-height:calc(100vh - 309px); }.right-drawer { padding:16px; }.keyboard { height:104px; }.black-key { height:60px; }.keyboard-dock { padding-bottom:8px; } }
     </style>
   </head>
   <body>
     <div class="app-shell">
       <header class="toolbar" aria-label="DoReMi Palette tools">
         <div class="brand"><img class="brand-icon" src="./DoReMi_icon.png" alt="">DoReMi Palette <small>Web</small></div>
-        <label for="file-input" class="primary" title="スコアを開く" aria-label="スコアを開く">&#10548;</label>
-        <input id="file-input" type="file" accept="application/json,.json,application/vnd.recordare.musicxml,application/xml,text/xml,.musicxml,.xml,.mxl" aria-label="MusicXML、MXL、またはWeb Render Planを開く">
         <button id="sample-library-button" type="button" aria-expanded="false" title="サンプル曲" aria-label="サンプル曲">&#9835;</button>
         <button id="print-button" type="button" disabled title="A4で印刷" aria-label="A4で印刷">&#128424;</button>
+        <button id="fit-width-button" type="button" disabled title="横幅を画面に合わせる" aria-label="横幅を画面に合わせる">&#8596;</button>
         <button id="palette-button" type="button" aria-expanded="false" title="カラーパレット" aria-label="カラーパレット">&#127912;</button>
         <button id="keyboard-button" type="button" class="active" aria-pressed="true" title="鍵盤を表示" aria-label="鍵盤を表示">&#127929;</button>
-        <button id="original-scale-button" type="button" title="原曲のスケールへ戻す" aria-label="原曲のスケールへ戻す">&#9838;</button>
-        <select id="transpose-select" aria-label="移調"></select>
-        <label class="tempo-control" title="再生テンポ" aria-label="再生テンポ"><span>&#9833;</span><input id="tempo-input" type="number" min="30" max="300" step="1" inputmode="numeric" aria-label="テンポ BPM"><span>BPM</span></label>
-        <label class="zoom-control" title="譜面の拡大率" aria-label="譜面の拡大率"><span>&#128269;</span><input id="zoom-input" type="number" min="50" max="300" step="10" inputmode="numeric" aria-label="譜面の拡大率"><span>%</span></label>
-        <button id="fit-width-button" type="button" disabled title="横幅をキャンバスに合わせる" aria-label="横幅をキャンバスに合わせる">&#8596;</button>
         <div class="transport" aria-label="再生と小節移動">
           <button id="reset-button" type="button" disabled title="先頭へ戻る" aria-label="先頭へ戻る">&#8634;</button>
-          <button id="previous-button" type="button" disabled title="前の音" aria-label="前の音">&#9665;</button>
-          <button id="next-button" type="button" disabled title="次の音" aria-label="次の音">&#9655;</button>
           <button id="play-button" type="button" class="primary" disabled title="再生" aria-label="再生">&#9654;</button>
           <button id="stop-button" type="button" disabled title="停止" aria-label="停止">&#9632;</button>
-          <input id="measure-input" type="number" min="1" inputmode="numeric" aria-label="移動先の小節">
+          <label class="measure-navigation" for="measure-input"><span>小節</span><input id="measure-input" type="number" min="1" inputmode="numeric" aria-label="現在の小節、または移動先の小節"><span id="measure-status" class="measure-status">/ -</span></label>
           <button id="jump-button" type="button" disabled title="小節へ移動" aria-label="小節へ移動">&#8627;</button>
-          <span id="measure-status" class="measure-status">-/ -</span>
         </div>
       </header>
       <main class="workspace">
         <section class="score-card" aria-label="楽譜">
-          <div class="score-header"><span id="score-name" class="score-name">Loading score…</span><span id="score-meta" class="score-meta"></span><span id="current-note" class="current-note">-</span></div>
           <p id="status" role="status">Notation font and score are loading…</p>
           <div id="score-scroll" class="score-scroll"><div id="canvas-wrap" class="canvas-wrap"><div id="page-stack" class="page-stack" aria-label="Rendered music score"></div></div></div>
         </section>
@@ -142,18 +151,42 @@
             <button id="staff-colors" type="button" class="check-toggle" aria-pressed="false">五線の色</button>
             <button id="keyboard-colors" type="button" class="check-toggle is-active" aria-pressed="true">鍵盤の色</button>
             <button id="keyboard-color-position" type="button" aria-pressed="false">鍵盤色: 上</button>
-            <button id="next-note-guide" type="button" class="check-toggle is-active" aria-pressed="true">次の音</button>
+            <button id="next-note-guide" type="button" class="check-toggle" aria-pressed="false">次の音</button>
             <button id="all-pitches" type="button" class="check-toggle is-active" aria-pressed="true">全音を有効</button>
+          </div>
+          <div class="palette-score-preview" aria-label="C2からC6のカラープレビュー">
+            <h3>C2–C6 カラーサンプル</h3>
+            <p>半音ずつ並べた大譜表です。音符と五線の設定がここにも反映されます。</p>
+            <div class="palette-preview-viewport">
+              <div id="palette-preview-stack" class="palette-preview-stack" aria-live="polite">
+                <span id="palette-preview-message" class="palette-preview-message">プレビューを読み込んでいます…</span>
+              </div>
+            </div>
+          </div>
+          <div class="drawer-control-group" aria-label="移調">
+            <h3>移調</h3>
+            <div class="drawer-control-row">
+              <button id="original-scale-button" type="button" title="原曲のスケールへ戻す" aria-label="原曲のスケールへ戻す">&#9838;</button>
+              <select id="transpose-select" aria-label="移調"></select>
+            </div>
           </div>
         </section>
         <section id="sample-library" class="drawer-panel sample-library" aria-label="サンプル曲">
+          <div class="sample-tempo" aria-label="表示曲のテンポ">
+            <span>表示曲のテンポ</span>
+            <label class="tempo-control" title="再生テンポ" aria-label="再生テンポ"><span>&#9833;</span><input id="tempo-input" type="number" min="30" max="300" step="1" inputmode="numeric" aria-label="テンポ BPM"><span>BPM</span></label>
+          </div>
           <div class="sample-library-heading"><p>公開済みの学習用サンプルを開きます。</p></div>
+          <div class="sample-library-actions">
+            <label for="file-input" class="drawer-action primary" title="スコアを開く">&#10548; ファイルを開く</label>
+            <input id="file-input" type="file" accept="application/json,.json,application/vnd.recordare.musicxml,application/xml,text/xml,.musicxml,.xml,.mxl" aria-label="MusicXML、MXL、またはWeb Render Planを開く">
+          </div>
           <div id="sample-list" class="sample-list" aria-live="polite"></div>
           <p class="sample-library-source">データソース: <a href="https://github.com/musetrainer/library" target="_blank" rel="noreferrer">musetrainer/library</a></p>
         </section>
       </aside>
       <section id="keyboard-dock" class="keyboard-dock" aria-label="ピアノ鍵盤"><div class="keyboard-caption"><span>鍵盤</span><span id="selected-note">音符を選択してください</span></div><div id="keyboard" class="keyboard"></div></section>
     </div>
-  <script type="module" src="./palette-app.js?v=palette-23"></script>
+  <script type="module" src="./palette-app.js?v=palette-27"></script>
   </body>
 </html>

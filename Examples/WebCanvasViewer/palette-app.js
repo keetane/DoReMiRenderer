@@ -12,10 +12,12 @@ const usesLoopbackCompanion = ["127.0.0.1", "localhost", "::1"].includes(locatio
 const loopbackCompanionOrigins = ["http://127.0.0.1:8767", "http://127.0.0.1:8765"];
 const state = {
   source: null, plan: null, sourceName: "score-web.json", transpose: 0, scoreZoom: 1,
-  noteColors: true, staffColors: false, keyboardColors: true, keyboardColorPosition: "top", nextNoteGuide: true, keyboardVisible: true, enabled: allPitchClasses(),
+  noteColors: true, staffColors: false, keyboardColors: true, keyboardColorPosition: "top", nextNoteGuide: false, keyboardVisible: true, enabled: allPitchClasses(),
   selectedNoteID: null, selectedMidi: null, currentIndex: 0, activeMIDIs: new Set(), nextMIDIs: new Set(), playing: false,
   context: null, audioUnlockPromise: null, nodes: new Set(), nextScheduledIndex: 0, contextStart: 0, timelineStart: 0, baseTempoBPM: 120, tempoBPM: 120, animationFrame: null,
   lastFollowedSystemIndex: null, pageCanvases: new Map(), transposeRequestID: 0, printing: false, samples: null, activeDrawer: null,
+  palettePreviewPlan: null, palettePreviewCanvases: new Map(),
+  activeSampleID: null,
   companionOrigin: usesLoopbackCompanion ? location.origin : null,
   hasAppliedInitialFitWidth: false,
 };
@@ -23,11 +25,12 @@ const $ = (selector) => document.querySelector(selector);
 const pageStack = $("#page-stack");
 const controls = {
   status: $("#status"), palette: $("#palette"), paletteButton: $("#palette-button"), drawer: $("#right-drawer"), drawerBackdrop: $("#drawer-backdrop"), drawerClose: $("#drawer-close"), drawerTitle: $("#drawer-title"), noteColors: $("#note-colors"),
-  keyboard: $("#keyboard-button"), dock: $("#keyboard-dock"), file: $("#file-input"), sampleLibraryButton: $("#sample-library-button"), sampleLibrary: $("#sample-library"), sampleList: $("#sample-list"), print: $("#print-button"), sourceName: $("#score-name"),
-  sourceMeta: $("#score-meta"), selected: $("#selected-note"), current: $("#current-note"), transpose: $("#transpose-select"), originalScale: $("#original-scale-button"), keyboardElement: $("#keyboard"),
+  keyboard: $("#keyboard-button"), dock: $("#keyboard-dock"), file: $("#file-input"), sampleLibraryButton: $("#sample-library-button"), sampleLibrary: $("#sample-library"), sampleList: $("#sample-list"), print: $("#print-button"),
+  selected: $("#selected-note"), transpose: $("#transpose-select"), originalScale: $("#original-scale-button"), keyboardElement: $("#keyboard"),
   staffColors: $("#staff-colors"), keyboardColors: $("#keyboard-colors"), keyboardColorPosition: $("#keyboard-color-position"), nextNoteGuide: $("#next-note-guide"), allPitches: $("#all-pitches"),
-  tempo: $("#tempo-input"), zoom: $("#zoom-input"), fitWidth: $("#fit-width-button"), reset: $("#reset-button"), previous: $("#previous-button"), play: $("#play-button"),
-  stop: $("#stop-button"), next: $("#next-button"), jump: $("#jump-button"), measure: $("#measure-input"), measureStatus: $("#measure-status"),
+  tempo: $("#tempo-input"), fitWidth: $("#fit-width-button"), reset: $("#reset-button"), play: $("#play-button"),
+  stop: $("#stop-button"), jump: $("#jump-button"), measure: $("#measure-input"), measureStatus: $("#measure-status"),
+  palettePreviewStack: $("#palette-preview-stack"), palettePreviewMessage: $("#palette-preview-message"),
 };
 
 buildPalette();
@@ -39,27 +42,24 @@ controls.drawerClose.addEventListener("click", closeDrawer);
 controls.drawerBackdrop.addEventListener("click", closeDrawer);
 controls.noteColors.addEventListener("click", () => { state.noteColors = !state.noteColors; sync(); redraw(); });
 controls.keyboard.addEventListener("click", () => { state.keyboardVisible = !state.keyboardVisible; sync(); });
-$("#palette-reset").addEventListener("click", () => { state.enabled = allPitchClasses(); state.noteColors = true; state.staffColors = false; state.keyboardColors = true; state.keyboardColorPosition = "top"; state.nextNoteGuide = true; sync(); redraw(); });
+$("#palette-reset").addEventListener("click", () => { state.enabled = allPitchClasses(); state.noteColors = true; state.staffColors = false; state.keyboardColors = true; state.keyboardColorPosition = "top"; state.nextNoteGuide = false; sync(); redraw(); });
 controls.staffColors.addEventListener("click", () => { state.staffColors = !state.staffColors; sync(); redraw(); });
 controls.keyboardColors.addEventListener("click", () => { state.keyboardColors = !state.keyboardColors; sync(); updateKeyboard(); });
 controls.keyboardColorPosition.addEventListener("click", () => { state.keyboardColorPosition = state.keyboardColorPosition === "top" ? "bottom" : "top"; sync(); updateKeyboard(); });
 controls.nextNoteGuide.addEventListener("click", () => { state.nextNoteGuide = !state.nextNoteGuide; sync(); redraw(); });
 controls.allPitches.addEventListener("click", () => { state.enabled = state.enabled.size === 12 ? new Set() : allPitchClasses(); sync(); redraw(); });
-controls.file.addEventListener("change", async (event) => { const file = event.target.files?.[0]; if (!file) return; try { await loadFile(file); } catch (error) { fail(`スコアを開けません: ${error.message}`); } finally { controls.file.value = ""; } });
+controls.file.addEventListener("change", async (event) => { const file = event.target.files?.[0]; if (!file) return; try { await loadFile(file); closeDrawer(); } catch (error) { fail(`スコアを開けません: ${error.message}`); } finally { controls.file.value = ""; } });
 controls.sampleLibraryButton.addEventListener("click", () => { void toggleSampleLibrary(); });
 controls.print.addEventListener("click", printScore);
 controls.transpose.addEventListener("change", () => { state.transpose = Number(controls.transpose.value); void applyTranspose(); });
 controls.originalScale.addEventListener("click", () => { state.transpose = 0; void applyTranspose(); });
 controls.tempo.addEventListener("change", updateTempoFromInput);
 controls.tempo.addEventListener("keydown", (event) => { if (event.key === "Enter") { event.preventDefault(); updateTempoFromInput(); controls.tempo.blur(); } });
-controls.zoom.addEventListener("change", updateZoomFromInput);
-controls.zoom.addEventListener("keydown", (event) => { if (event.key === "Enter") { event.preventDefault(); updateZoomFromInput(); controls.zoom.blur(); } });
 controls.fitWidth.addEventListener("click", fitScoreToWidth);
 controls.reset.addEventListener("click", () => setEvent(0, true));
-controls.previous.addEventListener("click", () => move(-1));
-controls.next.addEventListener("click", () => move(1));
 controls.jump.addEventListener("click", jumpToMeasure);
 controls.measure.addEventListener("keydown", (event) => { if (event.key === "Enter") jumpToMeasure(); });
+controls.measure.addEventListener("blur", sync);
 // iOS Safari associates Web Audio output permission with the initial touch,
 // not an async continuation of its click handler. Prime the output while that
 // gesture is still active, then let `play` wait for the context to run.
@@ -75,14 +75,30 @@ try {
   const [response] = await Promise.all([fetch("./score-web.json"), ensureSMuFLFont()]);
   if (!response.ok) throw new Error(`score-web.json (${response.status})`);
   load(await response.json(), "score-web.json");
+  void loadPalettePreview();
 } catch (error) { fail(`Score viewer could not start: ${error.message}`); }
 
-function load(document, sourceName) {
+async function loadPalettePreview() {
+  try {
+    const response = await fetch("./palette-preview-c2-c6.json");
+    if (!response.ok) throw new Error(`palette-preview-c2-c6.json (${response.status})`);
+    const plan = await response.json();
+    validate(plan);
+    state.palettePreviewPlan = plan;
+    controls.palettePreviewMessage?.remove();
+    drawPalettePreview();
+  } catch (error) {
+    if (controls.palettePreviewMessage) controls.palettePreviewMessage.textContent = `プレビューを読み込めません: ${error.message}`;
+  }
+}
+
+function load(document, sourceName, activeSampleID = null) {
   stop();
   const source = normalize(document);
   validate(source.primaryPlan);
   state.source = source;
   state.sourceName = sourceName;
+  state.activeSampleID = activeSampleID;
   state.transpose = 0;
   // scoreZoom is a viewer preference and intentionally survives score changes.
   state.baseTempoBPM = sourceTempoBPM(source.events);
@@ -94,9 +110,8 @@ function load(document, sourceName) {
   state.selectedNoteID = null;
   state.selectedMidi = null;
   state.nextMIDIs = new Set();
-  controls.sourceName.textContent = sourceName.replace(/\.json$/i, "");
-  controls.sourceMeta.textContent = `${source.primaryPlan.noteAnchors.length} notes`;
   controls.status.hidden = true;
+  syncSampleSelection();
   buildTranspose();
   void applyTranspose(true).then(() => {
     if (state.hasAppliedInitialFitWidth) return;
@@ -156,9 +171,20 @@ function renderSampleLibrary() {
     button.type = "button";
     button.textContent = sample.name;
     button.title = sample.name;
+    button.dataset.sampleId = sample.id;
     button.addEventListener("click", () => { void loadBundledSample(sample); });
     return button;
   }));
+  syncSampleSelection();
+}
+
+function syncSampleSelection() {
+  for (const button of controls.sampleList.querySelectorAll("button[data-sample-id]")) {
+    const isCurrent = button.dataset.sampleId === state.activeSampleID;
+    button.classList.toggle("is-current", isCurrent);
+    if (isCurrent) button.setAttribute("aria-current", "true");
+    else button.removeAttribute("aria-current");
+  }
 }
 
 function sampleLibraryMessage(message) {
@@ -173,7 +199,7 @@ async function loadBundledSample(sample) {
   try {
     const response = await fetch(sample.plan ?? companionAPI(`/api/sample?id=${encodeURIComponent(sample.id)}`));
     if (!response.ok) throw new Error(await responseDetail(response));
-    load(await response.json(), sample.name);
+    load(await response.json(), sample.name, sample.id);
     closeDrawer();
   } catch (error) {
     fail(`サンプル曲を開けません: ${error.message}`);
@@ -261,6 +287,48 @@ function redraw() {
     });
   }
   updateKeyboard();
+  drawPalettePreview();
+}
+
+function drawPalettePreview() {
+  const plan = state.palettePreviewPlan;
+  const stack = controls.palettePreviewStack;
+  if (!plan || !stack || state.activeDrawer !== "palette") return;
+
+  const systems = plan.systems ?? [];
+  const wanted = new Set(systems.map((system) => system.index));
+  for (const [index, canvas] of state.palettePreviewCanvases) {
+    if (!wanted.has(index)) { canvas.remove(); state.palettePreviewCanvases.delete(index); }
+  }
+
+  for (const system of systems) {
+    let canvas = state.palettePreviewCanvases.get(system.index);
+    if (!canvas) {
+      canvas = document.createElement("canvas");
+      canvas.className = "palette-preview-system";
+      canvas.setAttribute("aria-label", `C2からC6のカラープレビュー ${system.index + 1}`);
+      state.palettePreviewCanvases.set(system.index, canvas);
+    }
+    stack.append(canvas);
+    const paddingX = 10;
+    const paddingY = 18;
+    drawScoreCanvas(canvas, plan, {
+      pageFrame: {
+        x: Math.max(plan.canvas.x, system.frame.x - paddingX),
+        y: Math.max(plan.canvas.y, system.frame.y - paddingY),
+        width: Math.min(plan.canvas.width, system.frame.width + paddingX * 2),
+        height: system.frame.height + paddingY * 2,
+      },
+      pageIndex: system.index,
+      noteColors: state.noteColors,
+      staffColors: state.staffColors,
+      enabledPitchClasses: state.enabled,
+      noteColorForPitchClass: (pitchClass) => COLORS.get(pitchClass),
+      staffColorForPitchClass: (pitchClass) => COLORS.get(pitchClass),
+      currentNoteIDs: new Set(),
+      nextNoteIDs: new Set(),
+    });
+  }
 }
 
 function pageFrames(plan) {
@@ -310,19 +378,17 @@ function sync() {
   controls.originalScale.disabled = state.transpose === 0;
   controls.tempo.value = String(Math.round(state.tempoBPM));
   controls.tempo.disabled = !hasTimeline;
-  controls.zoom.value = String(Math.round(state.scoreZoom * 100));
-  controls.zoom.disabled = !state.plan;
   controls.fitWidth.disabled = !state.plan;
   controls.print.disabled = !state.plan || state.printing;
   for (const button of document.querySelectorAll("#pitch-controls button")) {
     const classes = button.dataset.classes.split(",").map(Number);
     button.classList.toggle("is-active", classes.every((pitchClass) => state.enabled.has(pitchClass)));
   }
-  for (const button of [controls.reset, controls.previous, controls.play, controls.stop, controls.next, controls.jump]) button.disabled = !hasTimeline;
+  for (const button of [controls.reset, controls.play, controls.stop, controls.jump]) button.disabled = !hasTimeline;
   controls.measure.disabled = !hasTimeline;
   const event = events()[state.currentIndex];
-  controls.measureStatus.textContent = event ? `${event.measureNumber} / ${new Set(events().map((item) => item.measureNumber)).size}` : "-/ -";
-  if (event) controls.measure.value = event.measureNumber;
+  controls.measureStatus.textContent = event ? `/ ${new Set(events().map((item) => item.measureNumber)).size}` : "/ -";
+  if (event && document.activeElement !== controls.measure) controls.measure.value = event.measureNumber;
 }
 
 function printScore() {
@@ -456,17 +522,9 @@ function setEvent(index, shouldFollow) {
   state.selectedMidi = transposedPitches(event)[0] ?? null;
   state.activeMIDIs = state.playing ? new Set(transposedPitches(event)) : new Set();
   state.nextMIDIs = new Set(transposedPitches(timeline[state.currentIndex + 1] ?? { midiPitches: [] }));
-  controls.current.textContent = state.selectedMidi == null ? "-" : `現在の音: ${transposedPitches(event).map(midiLabel).join(" · ")}`;
   sync();
   redraw();
   if (shouldFollow) follow(event);
-}
-
-function move(delta) {
-  const wasPlaying = state.playing;
-  if (wasPlaying) stop();
-  setEvent(state.currentIndex + delta, true);
-  if (wasPlaying) play();
 }
 
 function jumpToMeasure() {
@@ -618,12 +676,6 @@ function updateTempoFromInput() {
   if (resume) play();
 }
 
-function updateZoomFromInput() {
-  const value = Number(controls.zoom.value);
-  if (!Number.isFinite(value)) { sync(); return; }
-  setScoreZoom(value / 100);
-}
-
 function fitScoreToWidth() {
   const page = pageFrames(state.plan)[0];
   const scroll = $("#score-scroll");
@@ -736,6 +788,7 @@ function setActiveDrawer(kind) {
   controls.paletteButton.setAttribute("aria-expanded", String(paletteOpen));
   controls.sampleLibraryButton.setAttribute("aria-expanded", String(samplesOpen));
   controls.drawerTitle.textContent = paletteOpen ? "カラーパレット" : "サンプル曲";
+  if (paletteOpen) requestAnimationFrame(drawPalettePreview);
 }
 function companionAPI(path) {
   return state.companionOrigin ? `${state.companionOrigin}${path}` : path;
@@ -750,7 +803,7 @@ function sampleCatalogURL() {
 async function configureStaticHosting() {
   if (usesLoopbackCompanion) return;
   controls.sampleLibraryButton.title = "サンプル曲";
-  controls.file.closest("label")?.setAttribute("title", "MusicXML、MXL、またはWeb Render Planを開く");
+  document.querySelector('label[for="file-input"]')?.setAttribute("title", "MusicXML、MXL、またはWeb Render Planを開く");
   for (const origin of loopbackCompanionOrigins) {
     try {
       const response = await fetch(`${origin}/api/health`, { cache: "no-store" });
