@@ -5,6 +5,12 @@ on:
     branches: [main]
     paths:
       - "Examples/WebCanvasViewer/**"
+      - "Apps/DoReMiPalette/DoReMiPalette/Resources/Samples/**"
+      - "Sources/DoReMiRendererKit/**"
+      - "Sources/DoReMiRendererWebExport/**"
+      - "Scripts/generate-web-sample-catalog.sh"
+      - "Package.swift"
+      - "Package.resolved"
       - ".github/workflows/deploy-web-pages.yml"
   workflow_dispatch:
 
@@ -18,20 +24,29 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+  build:
+    runs-on: macos-latest
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+      - name: Show Swift version
+        run: swift --version
+      - name: Regenerate Web sample render plans
+        run: Scripts/generate-web-sample-catalog.sh
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload Web Viewer
         uses: actions/upload-pages-artifact@v3
         with:
           path: Examples/WebCanvasViewer
+
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
