@@ -19,7 +19,7 @@ CATALOG_PATH="$OUTPUT_DIR/catalog.json"
 SOURCE_LIST="$(mktemp)"
 CATALOG_TEMPORARY="$(mktemp)"
 trap 'rm -f "$SOURCE_LIST" "$CATALOG_TEMPORARY"' EXIT HUP INT TERM
-rg --files "$SOURCE_DIR" | rg '\.mxl$' | sort > "$SOURCE_LIST"
+find "$SOURCE_DIR" -type f -name '*.mxl' -print | sort > "$SOURCE_LIST"
 printf '[]\n' > "$CATALOG_TEMPORARY"
 
 while IFS= read -r input_path; do
