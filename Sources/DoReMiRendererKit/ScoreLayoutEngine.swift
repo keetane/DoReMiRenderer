@@ -5906,6 +5906,16 @@ private func durationSensitiveOnsetXCoordinates(
         return onsets.first.map { [$0: startX] } ?? [:]
     }
 
+    if let balancedCoordinates = rhythmicallyBalancedMixedValueXCoordinates(
+        for: measure,
+        onsets: onsets,
+        startX: startX,
+        availableWidth: availableWidth,
+        metrics: metrics
+    ) {
+        return balancedCoordinates
+    }
+
     let minimumGaps = durationSensitiveOnsetGaps(for: measure, onsets: onsets, metrics: metrics)
     let naturalWidth = minimumGaps.reduce(0, +)
     guard naturalWidth > 0 else {
@@ -5934,6 +5944,102 @@ private func durationSensitiveOnsetXCoordinates(
         gaps = zip(minimumGaps, extraDistribution).map { minimumGap, extra in
             minimumGap + extra
         }
+    }
+
+    var coordinates: [MusicalTime: CGFloat] = [onsets[0]: startX]
+    var x = startX
+    for (index, gap) in gaps.enumerated() {
+        x += gap
+        coordinates[onsets[index + 1]] = x
+    }
+    return coordinates
+}
+
+/// Keeps the ordinary-value portion of a mostly eighth-note measure on one
+/// rhythmic grid when only one or two subdivisions use a shorter value.
+///
+/// Without this path, a single sixteenth note switches the entire measure to
+/// envelope-based spacing. An accidental on an earlier eighth note can then
+/// make only that interval wider even though the surrounding rhythm is even.
+/// Dense short-note passages, rests, and same-staff chords retain the full
+/// envelope-aware layout above.
+private func rhythmicallyBalancedMixedValueXCoordinates(
+    for measure: Measure,
+    onsets: [MusicalTime],
+    startX: CGFloat,
+    availableWidth: CGFloat,
+    metrics: LayoutMetrics
+) -> [MusicalTime: CGFloat]? {
+    guard metrics.allowsAggressiveShortNoteCompression,
+          onsets.count > 2,
+          availableWidth > 0,
+          measure.notes.allSatisfy({ $0.pitch != nil })
+    else {
+        return nil
+    }
+
+    let notesByOnset = Dictionary(grouping: measure.notes, by: \.onset)
+    let hasSameStaffChord = notesByOnset.values.contains { notes in
+        Dictionary(grouping: notes, by: \.staffID).values.contains { $0.count > 1 }
+    }
+    guard !hasSameStaffChord else {
+        return nil
+    }
+
+    let durationWeights = zip(onsets, onsets.dropFirst()).map {
+        musicalTimeValue($0.1 - $0.0)
+    }
+    let shortGapIndices = durationWeights.indices.filter { durationWeights[$0] < 0.5 }
+    guard !shortGapIndices.isEmpty,
+          shortGapIndices.count <= 2,
+          shortGapIndices.count * 2 < durationWeights.count,
+          durationWeights.allSatisfy({ $0 > 0 })
+    else {
+        return nil
+    }
+
+    let minimumGaps = zip(onsets, onsets.dropFirst()).map { _, nextOnset in
+        let nextNotes = notesByOnset[nextOnset] ?? []
+        var minimum = metrics.noteheadSize.width + metrics.staffSpace * 0.35
+        if nextNotes.contains(where: { $0.accidental != nil }) {
+            // The accidental sits before the following notehead. This compact
+            // allowance leaves visible ink clearance without turning that one
+            // rhythmic interval into a false pause.
+            minimum = max(
+                minimum,
+                metrics.noteheadSize.width * 1.35 + metrics.staffSpace * 0.35
+            )
+        }
+        return minimum
+    }
+    guard minimumGaps.reduce(0, +) <= availableWidth else {
+        return nil
+    }
+
+    var gaps = Array(repeating: CGFloat(0), count: durationWeights.count)
+    var activeIndices = Array(durationWeights.indices)
+    var remainingWidth = availableWidth
+    let tolerance = CGFloat(0.001)
+
+    while !activeIndices.isEmpty {
+        let totalWeight = activeIndices.reduce(CGFloat(0)) { $0 + durationWeights[$1] }
+        guard totalWeight > 0 else { return nil }
+
+        let constrained = activeIndices.filter { index in
+            remainingWidth * durationWeights[index] / totalWeight + tolerance < minimumGaps[index]
+        }
+        if constrained.isEmpty {
+            for index in activeIndices {
+                gaps[index] = remainingWidth * durationWeights[index] / totalWeight
+            }
+            break
+        }
+        for index in constrained {
+            gaps[index] = minimumGaps[index]
+            remainingWidth -= minimumGaps[index]
+        }
+        activeIndices.removeAll { constrained.contains($0) }
+        guard remainingWidth >= -tolerance else { return nil }
     }
 
     var coordinates: [MusicalTime: CGFloat] = [onsets[0]: startX]
