@@ -1,4 +1,614 @@
 {
+  "accidentals" : [
+    {
+      "colorPitchClass" : 9,
+      "noteID" : "0.0.1.23.5.2.0.480.1",
+      "point" : {
+        "x" : 212.58757509881423,
+        "y" : 243.1721739130435
+      }
+    },
+    {
+      "colorPitchClass" : 9,
+      "noteID" : "0.0.5.78.6.2.1440.480.0",
+      "point" : {
+        "x" : 352.0839525691699,
+        "y" : 411.7139130434783
+      }
+    },
+    {
+      "colorPitchClass" : 0,
+      "noteID" : "0.0.12.201.5.2.240.480.1",
+      "point" : {
+        "x" : 247.6764407114625,
+        "y" : 745.9467391304349
+      }
+    },
+    {
+      "colorPitchClass" : 0,
+      "noteID" : "0.0.12.202.5.2.720.480.0",
+      "point" : {
+        "x" : 302.404289196311,
+        "y" : 745.9467391304349
+      }
+    },
+    {
+      "colorPitchClass" : 9,
+      "noteID" : "0.0.19.448.1.1.1200.480.0",
+      "point" : {
+        "x" : 428.7581930171278,
+        "y" : 1120.3106521739135
+      }
+    },
+    {
+      "colorPitchClass" : 9,
+      "noteID" : "0.0.19.451.1.1.1200.480.3",
+      "point" : {
+        "x" : 428.7581930171278,
+        "y" : 1102.962826086957
+      }
+    },
+    {
+      "colorPitchClass" : 9,
+      "noteID" : "0.0.19.469.5.2.1200.480.0",
+      "point" : {
+        "x" : 428.7581930171278,
+        "y" : 1176.65847826087
+      }
+    },
+    {
+      "colorPitchClass" : 9,
+      "noteID" : "0.0.19.475.6.2.0.480.0",
+      "point" : {
+        "x" : 315.86774703557313,
+        "y" : 1211.354130434783
+      }
+    },
+    {
+      "colorPitchClass" : 9,
+      "noteID" : "0.0.19.476.6.2.0.480.1",
+      "point" : {
+        "x" : 315.86774703557313,
+        "y" : 1194.0063043478265
+      }
+    },
+    {
+      "colorPitchClass" : 5,
+      "noteID" : "0.0.24.641.5.2.1440.480.0",
+      "point" : {
+        "x" : 257.9822134387352,
+        "y" : 1590.406521739131
+      }
+    },
+    {
+      "colorPitchClass" : 5,
+      "noteID" : "0.0.24.645.5.2.1440.480.4",
+      "point" : {
+        "x" : 257.9822134387352,
+        "y" : 1573.0586956521745
+      }
+    },
+    {
+      "colorPitchClass" : 0,
+      "noteID" : "0.0.26.693.1.1.1440.480.0",
+      "point" : {
+        "x" : 226.05179028132994,
+        "y" : 1720.9754347826085
+      }
+    },
+    {
+      "colorPitchClass" : 5,
+      "noteID" : "0.0.26.709.5.2.1560.480.0",
+      "point" : {
+        "x" : 238.02917926063708,
+        "y" : 1787.2363043478258
+      }
+    },
+    {
+      "colorPitchClass" : 0,
+      "noteID" : "0.0.26.711.5.1.1800.480.0",
+      "point" : {
+        "x" : 274.20134852359917,
+        "y" : 1738.323260869565
+      }
+    },
+    {
+      "colorPitchClass" : 5,
+      "noteID" : "0.0.26.712.5.1.1920.480.0",
+      "point" : {
+        "x" : 286.1787375029063,
+        "y" : 1730.8884782608695
+      }
+    },
+    {
+      "colorPitchClass" : 5,
+      "noteID" : "0.0.27.717.1.1.0.480.0",
+      "point" : {
+        "x" : 319.89525691699606,
+        "y" : 1730.8884782608695
+      }
+    },
+    {
+      "colorPitchClass" : 0,
+      "noteID" : "0.0.27.720.1.1.1440.480.1",
+      "point" : {
+        "x" : 481.2236689142062,
+        "y" : 1720.9754347826085
+      }
+    },
+    {
+      "colorPitchClass" : 5,
+      "noteID" : "0.0.27.735.5.2.1560.480.0",
+      "point" : {
+        "x" : 493.32893513136503,
+        "y" : 1787.2363043478258
+      }
+    },
+    {
+      "colorPitchClass" : 0,
+      "noteID" : "0.0.27.737.5.1.1800.480.0",
+      "point" : {
+        "x" : 529.7568588700304,
+        "y" : 1738.323260869565
+      }
+    },
+    {
+      "colorPitchClass" : 5,
+      "noteID" : "0.0.27.739.5.1.2040.480.0",
+      "point" : {
+        "x" : 553.9673913043481,
+        "y" : 1730.8884782608695
+      }
+    },
+    {
+      "colorPitchClass" : 7,
+      "noteID" : "0.0.29.772.1.1.0.480.1",
+      "point" : {
+        "x" : 319.89525691699606,
+        "y" : 1873.972608695652
+      }
+    },
+    {
+      "colorPitchClass" : 7,
+      "noteID" : "0.0.29.781.2.2.720.480.0",
+      "point" : {
+        "x" : 402.5089514066496,
+        "y" : 1930.3204347826086
+      }
+    },
+    {
+      "colorPitchClass" : 7,
+      "noteID" : "0.0.29.789.5.2.360.480.0",
+      "point" : {
+        "x" : 361.20210416182283,
+        "y" : 1947.668260869565
+      }
+    },
+    {
+      "colorPitchClass" : 7,
+      "noteID" : "0.0.29.792.5.2.720.480.0",
+      "point" : {
+        "x" : 402.5089514066496,
+        "y" : 1930.3204347826086
+      }
+    },
+    {
+      "colorPitchClass" : 2,
+      "noteID" : "0.0.32.857.1.1.1440.480.0",
+      "point" : {
+        "x" : 223.14200186003262,
+        "y" : 2230.027608695651
+      }
+    },
+    {
+      "colorPitchClass" : 2,
+      "noteID" : "0.0.32.879.5.2.1440.480.0",
+      "point" : {
+        "x" : 223.14200186003262,
+        "y" : 2286.375434782608
+      }
+    },
+    {
+      "colorPitchClass" : 2,
+      "noteID" : "0.0.33.884.5.2.0.480.0",
+      "point" : {
+        "x" : 325.30187747035575,
+        "y" : 2316.11456521739
+      }
+    },
+    {
+      "colorPitchClass" : 4,
+      "noteID" : "0.0.33.897.5.2.1560.480.0",
+      "point" : {
+        "x" : 500.3900837014649,
+        "y" : 2313.636304347825
+      }
+    },
+    {
+      "colorPitchClass" : 4,
+      "noteID" : "0.0.33.900.5.1.1920.480.0",
+      "point" : {
+        "x" : 540.8937165775402,
+        "y" : 2227.549347826086
+      }
+    },
+    {
+      "colorPitchClass" : 9,
+      "noteID" : "0.0.34.907.1.1.1440.480.0",
+      "point" : {
+        "x" : 226.05179028132994,
+        "y" : 2567.9319565217384
+      }
+    },
+    {
+      "colorPitchClass" : 0,
+      "noteID" : "0.0.34.908.1.1.1440.480.1",
+      "point" : {
+        "x" : 226.05179028132994,
+        "y" : 2562.9754347826083
+      }
+    },
+    {
+      "colorPitchClass" : 0,
+      "noteID" : "0.0.34.922.5.2.1440.480.0",
+      "point" : {
+        "x" : 226.05179028132994,
+        "y" : 2636.6710869565213
+      }
+    },
+    {
+      "colorPitchClass" : 5,
+      "noteID" : "0.0.34.923.5.2.1560.480.0",
+      "point" : {
+        "x" : 238.02917926063708,
+        "y" : 2629.2363043478254
+      }
+    },
+    {
+      "colorPitchClass" : 0,
+      "noteID" : "0.0.34.925.5.1.1800.480.0",
+      "point" : {
+        "x" : 274.20134852359917,
+        "y" : 2580.3232608695644
+      }
+    },
+    {
+      "colorPitchClass" : 5,
+      "noteID" : "0.0.34.926.5.1.1920.480.0",
+      "point" : {
+        "x" : 286.1787375029063,
+        "y" : 2572.8884782608693
+      }
+    },
+    {
+      "colorPitchClass" : 5,
+      "noteID" : "0.0.35.931.1.1.0.480.0",
+      "point" : {
+        "x" : 319.89525691699606,
+        "y" : 2572.8884782608693
+      }
+    },
+    {
+      "colorPitchClass" : 7,
+      "noteID" : "0.0.35.933.1.1.1440.480.0",
+      "point" : {
+        "x" : 481.2236689142062,
+        "y" : 2570.410217391304
+      }
+    },
+    {
+      "colorPitchClass" : 11,
+      "noteID" : "0.0.35.934.1.1.1440.480.1",
+      "point" : {
+        "x" : 481.2236689142062,
+        "y" : 2565.4536956521733
+      }
+    },
+    {
+      "colorPitchClass" : 7,
+      "noteID" : "0.0.35.935.1.1.1920.480.0",
+      "point" : {
+        "x" : 541.8621250871893,
+        "y" : 2570.410217391304
+      }
+    },
+    {
+      "colorPitchClass" : 11,
+      "noteID" : "0.0.35.948.5.2.1440.480.0",
+      "point" : {
+        "x" : 481.2236689142062,
+        "y" : 2639.1493478260863
+      }
+    },
+    {
+      "colorPitchClass" : 4,
+      "noteID" : "0.0.35.949.5.2.1560.480.0",
+      "point" : {
+        "x" : 493.32893513136503,
+        "y" : 2631.7145652173904
+      }
+    },
+    {
+      "colorPitchClass" : 7,
+      "noteID" : "0.0.35.950.5.2.1680.480.0",
+      "point" : {
+        "x" : 505.43420134852386,
+        "y" : 2626.7580434782603
+      }
+    },
+    {
+      "colorPitchClass" : 11,
+      "noteID" : "0.0.35.951.5.1.1800.480.0",
+      "point" : {
+        "x" : 529.7568588700304,
+        "y" : 2582.80152173913
+      }
+    },
+    {
+      "colorPitchClass" : 7,
+      "noteID" : "0.0.35.952.5.1.1920.480.0",
+      "point" : {
+        "x" : 541.8621250871893,
+        "y" : 2570.410217391304
+      }
+    },
+    {
+      "colorPitchClass" : 4,
+      "noteID" : "0.0.35.953.5.1.2040.480.0",
+      "point" : {
+        "x" : 553.9673913043481,
+        "y" : 2575.3667391304343
+      }
+    },
+    {
+      "colorPitchClass" : 7,
+      "noteID" : "0.0.35.956.6.2.1440.480.0",
+      "point" : {
+        "x" : 481.2236689142062,
+        "y" : 2644.1058695652164
+      }
+    },
+    {
+      "colorPitchClass" : 4,
+      "noteID" : "0.0.37.1012.6.2.1440.480.0",
+      "point" : {
+        "x" : 487.4135375494073,
+        "y" : 2914.8204347826077
+      }
+    },
+    {
+      "colorPitchClass" : 4,
+      "noteID" : "0.0.38.1034.6.2.0.480.0",
+      "point" : {
+        "x" : 62.596837944664045,
+        "y" : 3109.24956521739
+      }
+    },
+    {
+      "colorPitchClass" : 9,
+      "noteID" : "0.0.49.1348.5.2.120.480.0",
+      "point" : {
+        "x" : 333.28696814694257,
+        "y" : 3980.9887747035555
+      }
+    },
+    {
+      "colorPitchClass" : 9,
+      "noteID" : "0.0.49.1352.5.1.600.480.0",
+      "point" : {
+        "x" : 388.1364217623808,
+        "y" : 3894.9018181818165
+      }
+    },
+    {
+      "colorPitchClass" : 0,
+      "noteID" : "0.0.49.1358.5.1.1320.480.0",
+      "point" : {
+        "x" : 471.0519065333642,
+        "y" : 3889.9452964426864
+      }
+    },
+    {
+      "colorPitchClass" : 9,
+      "noteID" : "0.0.51.1392.5.2.120.480.0",
+      "point" : {
+        "x" : 339.6149333544137,
+        "y" : 4146.159861660078
+      }
+    },
+    {
+      "colorPitchClass" : 9,
+      "noteID" : "0.0.51.1396.5.2.600.480.0",
+      "point" : {
+        "x" : 404.9479834519104,
+        "y" : 4128.812035573121
+      }
+    },
+    {
+      "colorPitchClass" : 9,
+      "noteID" : "0.0.52.1418.5.2.120.480.0",
+      "point" : {
+        "x" : 82.55385751778658,
+        "y" : 4343.608695652173
+      }
+    },
+    {
+      "colorPitchClass" : 9,
+      "noteID" : "0.0.55.1489.1.1.1440.480.0",
+      "point" : {
+        "x" : 551.7934782608695,
+        "y" : 4450.365
+      }
+    },
+    {
+      "colorPitchClass" : 9,
+      "noteID" : "0.0.56.1515.5.2.0.480.0",
+      "point" : {
+        "x" : 66.25790513833994,
+        "y" : 4709.4691304347825
+      }
+    },
+    {
+      "colorPitchClass" : 0,
+      "noteID" : "0.0.58.1563.6.2.720.480.0",
+      "point" : {
+        "x" : 509.85284321475626,
+        "y" : 4704.5126086956525
+      }
+    },
+    {
+      "colorPitchClass" : 0,
+      "noteID" : "0.0.60.1609.8.2.720.480.0",
+      "point" : {
+        "x" : 239.42778853754942,
+        "y" : 4850.268913043477
+      }
+    },
+    {
+      "colorPitchClass" : 0,
+      "noteID" : "0.0.66.1695.1.1.720.480.0",
+      "point" : {
+        "x" : 173.38092885375494,
+        "y" : 5447.820434782609
+      }
+    },
+    {
+      "colorPitchClass" : 5,
+      "noteID" : "0.0.66.1698.2.1.1440.480.0",
+      "point" : {
+        "x" : 279.22134387351775,
+        "y" : 5457.73347826087
+      }
+    },
+    {
+      "colorPitchClass" : 5,
+      "noteID" : "0.0.66.1706.5.2.840.480.0",
+      "point" : {
+        "x" : 189.20553359683794,
+        "y" : 5514.081304347826
+      }
+    },
+    {
+      "colorPitchClass" : 0,
+      "noteID" : "0.0.66.1708.5.2.1080.480.0",
+      "point" : {
+        "x" : 220.85474308300394,
+        "y" : 5504.168260869565
+      }
+    },
+    {
+      "colorPitchClass" : 5,
+      "noteID" : "0.0.66.1709.5.2.1200.480.0",
+      "point" : {
+        "x" : 236.67934782608694,
+        "y" : 5496.73347826087
+      }
+    },
+    {
+      "colorPitchClass" : 7,
+      "noteID" : "0.0.66.1710.5.2.1320.480.0",
+      "point" : {
+        "x" : 252.50395256916994,
+        "y" : 5494.255217391304
+      }
+    },
+    {
+      "colorPitchClass" : 0,
+      "noteID" : "0.0.68.1738.1.1.720.480.0",
+      "point" : {
+        "x" : 206.96245059288538,
+        "y" : 5610.032173913042
+      }
+    },
+    {
+      "colorPitchClass" : 0,
+      "noteID" : "0.0.68.1748.5.2.840.480.0",
+      "point" : {
+        "x" : 225.44683794466403,
+        "y" : 5713.466956521738
+      }
+    },
+    {
+      "colorPitchClass" : 5,
+      "noteID" : "0.0.68.1749.5.2.960.480.0",
+      "point" : {
+        "x" : 243.93122529644268,
+        "y" : 5706.032173913042
+      }
+    },
+    {
+      "colorPitchClass" : 0,
+      "noteID" : "0.0.68.1751.5.2.1200.480.0",
+      "point" : {
+        "x" : 280.9,
+        "y" : 5696.119130434782
+      }
+    },
+    {
+      "colorPitchClass" : 5,
+      "noteID" : "0.0.68.1752.5.2.1320.480.0",
+      "point" : {
+        "x" : 299.3843873517786,
+        "y" : 5688.684347826086
+      }
+    },
+    {
+      "colorPitchClass" : 0,
+      "noteID" : "0.0.69.1756.1.1.0.480.0",
+      "point" : {
+        "x" : 341.25395256916994,
+        "y" : 5610.032173913042
+      }
+    },
+    {
+      "colorPitchClass" : 5,
+      "noteID" : "0.0.69.1758.1.1.1440.480.0",
+      "point" : {
+        "x" : 551.7934782608695,
+        "y" : 5602.597391304346
+      }
+    },
+    {
+      "colorPitchClass" : 0,
+      "noteID" : "0.0.69.1761.5.2.120.480.0",
+      "point" : {
+        "x" : 359.3761228889687,
+        "y" : 5713.466956521738
+      }
+    },
+    {
+      "colorPitchClass" : 5,
+      "noteID" : "0.0.69.1762.5.2.240.480.0",
+      "point" : {
+        "x" : 377.4982932087675,
+        "y" : 5706.032173913042
+      }
+    },
+    {
+      "colorPitchClass" : 0,
+      "noteID" : "0.0.69.1764.5.2.480.480.0",
+      "point" : {
+        "x" : 413.7426338483651,
+        "y" : 5696.119130434782
+      }
+    },
+    {
+      "colorPitchClass" : 5,
+      "noteID" : "0.0.69.1765.5.2.600.480.0",
+      "point" : {
+        "x" : 431.86480416816386,
+        "y" : 5688.684347826086
+      }
+    },
+    {
+      "colorPitchClass" : 5,
+      "noteID" : "0.0.70.1769.1.1.0.480.0",
+      "point" : {
+        "x" : 66.25790513833994,
+        "y" : 5926.499999999999
+      }
+    }
+  ],
   "canvas" : {
     "height" : 6736,
     "width" : 595,
@@ -214547,26 +215157,6 @@
         "red" : 0
       },
       "end" : {
-        "x" : 174.5100533596838,
-        "y" : 590.9902173913044
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 163.4426671936759,
-        "y" : 588.998087881423
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
         "x" : 114.87601422924902,
         "y" : 491.4513043478262
       },
@@ -214577,6 +215167,26 @@
       "start" : {
         "x" : 75.0209486166008,
         "y" : 491.4513043478262
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 174.5100533596838,
+        "y" : 590.9902173913044
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 163.4426671936759,
+        "y" : 588.998087881423
       }
     },
     {
@@ -217122,6 +217732,26 @@
         "red" : 0
       },
       "end" : {
+        "x" : 518.5884859025034,
+        "y" : 726.3626086956523
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 504.387076679842,
+        "y" : 723.884347826087
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
         "x" : 485.9701951690822,
         "y" : 665.0582608695653
       },
@@ -217172,26 +217802,6 @@
       "start" : {
         "x" : 541.3551125164691,
         "y" : 670.9484782608697
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 518.5884859025034,
-        "y" : 726.3626086956523
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 504.387076679842,
-        "y" : 723.884347826087
       }
     },
     {
@@ -221150,66 +221760,6 @@
         "red" : 0
       },
       "end" : {
-        "x" : 111.5776139657444,
-        "y" : 1163.8191480632413
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 75.0209486166008,
-        "y" : 1170.3993478260873
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 161.7321413043478,
-        "y" : 1165.4176327865616
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 134.0559466403162,
-        "y" : 1170.3993478260873
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 93.2992812911726,
-        "y" : 1167.1092479446643
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 75.0209486166008,
-        "y" : 1170.3993478260873
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
         "x" : 106.55152700922267,
         "y" : 1129.0480434782612
       },
@@ -221260,6 +221810,66 @@
       "start" : {
         "x" : 69.99486166007907,
         "y" : 1135.6282432411072
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 111.5776139657444,
+        "y" : 1163.8191480632413
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 75.0209486166008,
+        "y" : 1170.3993478260873
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 161.7321413043478,
+        "y" : 1165.4176327865616
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 134.0559466403162,
+        "y" : 1170.3993478260873
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 93.2992812911726,
+        "y" : 1167.1092479446643
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 75.0209486166008,
+        "y" : 1170.3993478260873
       }
     },
     {
@@ -221791,15 +222401,15 @@
       },
       "end" : {
         "x" : 288.51774703557305,
-        "y" : 1138.961086956522
+        "y" : 1196.2426086956525
       },
       "kind" : "strokeLine",
       "lineWidth" : 1.8260869565217395,
       "mirroredHorizontally" : false,
       "mirroredVertically" : false,
       "start" : {
-        "x" : 218.23027272727273,
-        "y" : 1147.1132608695655
+        "x" : 230.55844584980238,
+        "y" : 1196.2426086956525
       }
     },
     {
@@ -221811,15 +222421,15 @@
       },
       "end" : {
         "x" : 288.51774703557305,
-        "y" : 1196.2426086956525
+        "y" : 1138.961086956522
       },
       "kind" : "strokeLine",
       "lineWidth" : 1.8260869565217395,
       "mirroredHorizontally" : false,
       "mirroredVertically" : false,
       "start" : {
-        "x" : 230.55844584980238,
-        "y" : 1196.2426086956525
+        "x" : 218.23027272727273,
+        "y" : 1147.1132608695655
       }
     },
     {
@@ -222711,86 +223321,6 @@
       },
       "end" : {
         "x" : 366.72536890645586,
-        "y" : 1195.3089130434787
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 348.44703623188406,
-        "y" : 1198.5990129249017
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 432.4951495388669,
-        "y" : 1192.8306521739132
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 385.00370158102766,
-        "y" : 1200.9828260869567
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 385.00370158102766,
-        "y" : 1199.7909195059292
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 366.72536890645586,
-        "y" : 1196.5008196245062
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 432.4951495388669,
-        "y" : 1192.8306521739132
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 403.28203425559946,
-        "y" : 1197.8452475710133
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 366.72536890645586,
         "y" : 1138.961086956522
       },
       "kind" : "strokeLine",
@@ -222860,6 +223390,86 @@
       "start" : {
         "x" : 403.28203425559946,
         "y" : 1141.4974214840568
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 366.72536890645586,
+        "y" : 1195.3089130434787
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 348.44703623188406,
+        "y" : 1198.5990129249017
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 432.4951495388669,
+        "y" : 1192.8306521739132
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 385.00370158102766,
+        "y" : 1200.9828260869567
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 385.00370158102766,
+        "y" : 1199.7909195059292
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 366.72536890645586,
+        "y" : 1196.5008196245062
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 432.4951495388669,
+        "y" : 1192.8306521739132
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 403.28203425559946,
+        "y" : 1197.8452475710133
       }
     },
     {
@@ -224251,86 +224861,6 @@
       },
       "end" : {
         "x" : 122.82395432586739,
-        "y" : 1403.79347826087
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 101.69140799297323,
-        "y" : 1407.5973366007906
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 186.22159332454984,
-        "y" : 1401.3152173913045
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 143.95650065876154,
-        "y" : 1408.9229340711463
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 143.95650065876154,
-        "y" : 1408.2601353359687
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 122.82395432586739,
-        "y" : 1404.4562769960476
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 186.22159332454984,
-        "y" : 1401.3152173913045
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 165.0890469916557,
-        "y" : 1405.1190757312256
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 122.82395432586739,
         "y" : 1347.4456521739132
       },
       "kind" : "strokeLine",
@@ -224400,6 +224930,86 @@
       "start" : {
         "x" : 165.0890469916557,
         "y" : 1348.7712496442691
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 122.82395432586739,
+        "y" : 1403.79347826087
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 101.69140799297323,
+        "y" : 1407.5973366007906
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 186.22159332454984,
+        "y" : 1401.3152173913045
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 143.95650065876154,
+        "y" : 1408.9229340711463
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 143.95650065876154,
+        "y" : 1408.2601353359687
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 122.82395432586739,
+        "y" : 1404.4562769960476
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 186.22159332454984,
+        "y" : 1401.3152173913045
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 165.0890469916557,
+        "y" : 1405.1190757312256
       }
     },
     {
@@ -224910,26 +225520,6 @@
         "red" : 0
       },
       "end" : {
-        "x" : 324.236374176548,
-        "y" : 1399.7706521739133
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 254.00015177865615,
-        "y" : 1404.7271739130438
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
         "x" : 329.2624611330698,
         "y" : 1281.286086956522
       },
@@ -224940,6 +225530,26 @@
       "start" : {
         "x" : 259.0262387351779,
         "y" : 1289.4382608695655
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 324.236374176548,
+        "y" : 1399.7706521739133
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 254.00015177865615,
+        "y" : 1404.7271739130438
       }
     },
     {
@@ -225951,126 +226561,6 @@
       },
       "end" : {
         "x" : 410.7274545454545,
-        "y" : 1342.489130434783
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 390.80739262187086,
-        "y" : 1346.0747415810279
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 470.4876403162055,
-        "y" : 1340.0108695652175
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 430.6475164690382,
-        "y" : 1347.1820918577077
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 550.5304347826087,
-        "y" : 1335.0543478260872
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 490.40770223978916,
-        "y" : 1343.2065217391307
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 430.6475164690382,
-        "y" : 1346.6284167193678
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 410.7274545454545,
-        "y" : 1343.0428055731227
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 470.4876403162055,
-        "y" : 1340.0108695652175
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 450.56757839262184,
-        "y" : 1343.5964807114626
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 530.610372859025,
-        "y" : 1337.7553529582806
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 490.40770223978916,
-        "y" : 1343.2065217391305
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 410.7274545454545,
         "y" : 1398.8369565217395
       },
       "kind" : "strokeLine",
@@ -226180,6 +226670,126 @@
       "start" : {
         "x" : 490.40770223978916,
         "y" : 1418.1683964365416
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 410.7274545454545,
+        "y" : 1342.489130434783
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 390.80739262187086,
+        "y" : 1346.0747415810279
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 470.4876403162055,
+        "y" : 1340.0108695652175
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 430.6475164690382,
+        "y" : 1347.1820918577077
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 550.5304347826087,
+        "y" : 1335.0543478260872
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 490.40770223978916,
+        "y" : 1343.2065217391307
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 430.6475164690382,
+        "y" : 1346.6284167193678
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 410.7274545454545,
+        "y" : 1343.0428055731227
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 470.4876403162055,
+        "y" : 1340.0108695652175
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 450.56757839262184,
+        "y" : 1343.5964807114626
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 530.610372859025,
+        "y" : 1337.7553529582806
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 490.40770223978916,
+        "y" : 1343.2065217391305
       }
     },
     {
@@ -228047,126 +228657,6 @@
         "red" : 0
       },
       "end" : {
-        "x" : 110.95311555452221,
-        "y" : 1771.0641304347823
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 75.0209486166008,
-        "y" : 1777.5319204836082
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 110.95311555452221,
-        "y" : 1773.7119565217388
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 75.0209486166008,
-        "y" : 1780.1797465705647
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 173.40527784236227,
-        "y" : 1771.0641304347823
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 149.450499883748,
-        "y" : 1775.375990467333
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 173.40527784236227,
-        "y" : 1773.7119565217388
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 149.450499883748,
-        "y" : 1778.0238165542894
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 258.7696117182051,
-        "y" : 1766.107608695652
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 234.8148337595908,
-        "y" : 1770.4194687282027
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 258.7696117182051,
-        "y" : 1768.7554347826085
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 234.8148337595908,
-        "y" : 1773.0672948151591
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
         "x" : 131.16441525226693,
         "y" : 1757.2960265054637
       },
@@ -228277,6 +228767,126 @@
       "start" : {
         "x" : 277.93830504533827,
         "y" : 1751.847608695652
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 110.95311555452221,
+        "y" : 1771.0641304347823
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 75.0209486166008,
+        "y" : 1777.5319204836082
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 110.95311555452221,
+        "y" : 1773.7119565217388
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 75.0209486166008,
+        "y" : 1780.1797465705647
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 173.40527784236227,
+        "y" : 1771.0641304347823
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 149.450499883748,
+        "y" : 1775.375990467333
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 173.40527784236227,
+        "y" : 1773.7119565217388
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 149.450499883748,
+        "y" : 1778.0238165542894
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 258.7696117182051,
+        "y" : 1766.107608695652
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 234.8148337595908,
+        "y" : 1770.4194687282027
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 258.7696117182051,
+        "y" : 1768.7554347826085
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 234.8148337595908,
+        "y" : 1773.0672948151591
       }
     },
     {
@@ -228826,126 +229436,6 @@
         "red" : 0
       },
       "end" : {
-        "x" : 385.44115322018143,
-        "y" : 1757.2730086026506
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 373.3358870030226,
-        "y" : 1759.451956521739
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 385.44115322018143,
-        "y" : 1754.6251825156942
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 373.3358870030226,
-        "y" : 1756.8041304347826
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 460.63796791443866,
-        "y" : 1755.0940606835618
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 436.427435480121,
-        "y" : 1759.451956521739
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 460.63796791443866,
-        "y" : 1752.4462345966053
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 436.427435480121,
-        "y" : 1756.8041304347826
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 557.7043478260872,
-        "y" : 1750.1375389444313
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 533.4938153917695,
-        "y" : 1754.4954347826085
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 557.7043478260872,
-        "y" : 1747.4897128574748
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 533.4938153917695,
-        "y" : 1751.847608695652
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
         "x" : 364.97409904673344,
         "y" : 1771.0641304347823
       },
@@ -229056,6 +229546,126 @@
       "start" : {
         "x" : 489.9867123924671,
         "y" : 1773.1133306207857
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 385.44115322018143,
+        "y" : 1757.2730086026506
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 373.3358870030226,
+        "y" : 1759.451956521739
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 385.44115322018143,
+        "y" : 1754.6251825156942
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 373.3358870030226,
+        "y" : 1756.8041304347826
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 460.63796791443866,
+        "y" : 1755.0940606835618
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 436.427435480121,
+        "y" : 1759.451956521739
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 460.63796791443866,
+        "y" : 1752.4462345966053
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 436.427435480121,
+        "y" : 1756.8041304347826
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 557.7043478260872,
+        "y" : 1750.1375389444313
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 533.4938153917695,
+        "y" : 1754.4954347826085
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 557.7043478260872,
+        "y" : 1747.4897128574748
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 533.4938153917695,
+        "y" : 1751.847608695652
       }
     },
     {
@@ -230461,6 +231071,86 @@
         "red" : 0
       },
       "end" : {
+        "x" : 461.3217042548244,
+        "y" : 1915.8610869565211
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 433.78380609160655,
+        "y" : 1910.904565217391
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 530.1664496628691,
+        "y" : 1920.8176086956519
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 488.85960241804224,
+        "y" : 1915.8610869565214
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 378.70800976517086,
+        "y" : 1902.5360869565216
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 323.63221343873516,
+        "y" : 1900.0578260869565
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 351.170111601953,
+        "y" : 1901.296956521739
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 323.63221343873516,
+        "y" : 1900.0578260869565
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
         "x" : 392.4769588467798,
         "y" : 1977.992608695652
       },
@@ -230571,86 +231261,6 @@
       "start" : {
         "x" : 488.85960241804224,
         "y" : 1983.5502173913044
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 461.3217042548244,
-        "y" : 1915.8610869565211
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 433.78380609160655,
-        "y" : 1910.904565217391
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 530.1664496628691,
-        "y" : 1920.8176086956519
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 488.85960241804224,
-        "y" : 1915.8610869565214
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 378.70800976517086,
-        "y" : 1902.5360869565216
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 323.63221343873516,
-        "y" : 1900.0578260869565
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 351.170111601953,
-        "y" : 1901.296956521739
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 323.63221343873516,
-        "y" : 1900.0578260869565
       }
     },
     {
@@ -231220,6 +231830,86 @@
         "red" : 0
       },
       "end" : {
+        "x" : 137.0084050220879,
+        "y" : 2083.099990699837
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 123.86221808881659,
+        "y" : 2085.466304347826
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 137.0084050220879,
+        "y" : 2080.4521646128806
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 123.86221808881659,
+        "y" : 2082.8184782608696
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 218.45074401302026,
+        "y" : 2080.6217298302718
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 205.30455707974892,
+        "y" : 2082.988043478261
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 218.45074401302026,
+        "y" : 2077.9739037433155
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 205.30455707974892,
+        "y" : 2080.3402173913046
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
         "x" : 114.45950941641482,
         "y" : 2094.6002173913043
       },
@@ -231330,86 +232020,6 @@
       "start" : {
         "x" : 237.9056265984655,
         "y" : 2102.921956521739
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 137.0084050220879,
-        "y" : 2083.099990699837
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 123.86221808881659,
-        "y" : 2085.466304347826
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 137.0084050220879,
-        "y" : 2080.4521646128806
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 123.86221808881659,
-        "y" : 2082.8184782608696
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 218.45074401302026,
-        "y" : 2080.6217298302718
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 205.30455707974892,
-        "y" : 2082.988043478261
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 218.45074401302026,
-        "y" : 2077.9739037433155
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 205.30455707974892,
-        "y" : 2080.3402173913046
       }
     },
     {
@@ -231939,46 +232549,6 @@
         "red" : 0
       },
       "end" : {
-        "x" : 557.7043478260867,
-        "y" : 2078.0315217391308
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 544.4302836549638,
-        "y" : 2075.6421901883286
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 557.7043478260867,
-        "y" : 2075.383695652174
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 544.4302836549638,
-        "y" : 2072.994364101372
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
         "x" : 368.4804929086259,
         "y" : 2094.6002173913043
       },
@@ -232089,6 +232659,46 @@
       "start" : {
         "x" : 493.0775052313414,
         "y" : 2102.921956521739
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 557.7043478260867,
+        "y" : 2078.0315217391308
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 544.4302836549638,
+        "y" : 2075.6421901883286
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 557.7043478260867,
+        "y" : 2075.383695652174
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 544.4302836549638,
+        "y" : 2072.994364101372
       }
     },
     {
@@ -232739,186 +233349,6 @@
         "red" : 0
       },
       "end" : {
-        "x" : 271.1260695187167,
-        "y" : 2210.4434782608687
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 153.46299697744715,
-        "y" : 2205.4869565217386
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 174.58425947454086,
-        "y" : 2258.4660875377813
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 148.4369100209254,
-        "y" : 2253.7595646361306
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 174.58425947454086,
-        "y" : 2255.8182614508246
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 148.4369100209254,
-        "y" : 2251.111738549174
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 213.80528365496403,
-        "y" : 2258.4660875377813
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 187.65793420134858,
-        "y" : 2253.7595646361306
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 213.80528365496403,
-        "y" : 2255.8182614508246
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 187.65793420134858,
-        "y" : 2251.111738549174
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 253.0263078353872,
-        "y" : 2258.4660875377813
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 226.87895838177175,
-        "y" : 2253.7595646361306
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 253.0263078353872,
-        "y" : 2255.8182614508246
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 226.87895838177175,
-        "y" : 2251.111738549174
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 292.24733201581034,
-        "y" : 2258.4660875377813
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 266.0999825621949,
-        "y" : 2253.7595646361306
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 292.24733201581034,
-        "y" : 2255.8182614508246
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 266.0999825621949,
-        "y" : 2251.111738549174
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
         "x" : 140.38932225063942,
         "y" : 2267.7249999999995
       },
@@ -232969,6 +233399,186 @@
       "start" : {
         "x" : 148.4369100209254,
         "y" : 2299.2432608695644
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 174.58425947454086,
+        "y" : 2258.4660875377813
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 148.4369100209254,
+        "y" : 2253.7595646361306
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 174.58425947454086,
+        "y" : 2255.8182614508246
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 148.4369100209254,
+        "y" : 2251.111738549174
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 213.80528365496403,
+        "y" : 2258.4660875377813
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 187.65793420134858,
+        "y" : 2253.7595646361306
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 213.80528365496403,
+        "y" : 2255.8182614508246
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 187.65793420134858,
+        "y" : 2251.111738549174
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 253.0263078353872,
+        "y" : 2258.4660875377813
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 226.87895838177175,
+        "y" : 2253.7595646361306
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 253.0263078353872,
+        "y" : 2255.8182614508246
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 226.87895838177175,
+        "y" : 2251.111738549174
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 292.24733201581034,
+        "y" : 2258.4660875377813
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 266.0999825621949,
+        "y" : 2253.7595646361306
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 292.24733201581034,
+        "y" : 2255.8182614508246
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 266.0999825621949,
+        "y" : 2251.111738549174
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 271.1260695187167,
+        "y" : 2210.4434782608687
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 153.46299697744715,
+        "y" : 2205.4869565217386
       }
     },
     {
@@ -233439,126 +234049,6 @@
         "red" : 0
       },
       "end" : {
-        "x" : 395.68981632178566,
-        "y" : 2246.4497814461747
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 369.5424668681702,
-        "y" : 2251.1563043478254
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 395.68981632178566,
-        "y" : 2243.801955359218
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 369.5424668681702,
-        "y" : 2248.5084782608687
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 476.6970820739364,
-        "y" : 2246.4497814461747
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 450.5497326203209,
-        "y" : 2251.1563043478254
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 476.6970820739364,
-        "y" : 2243.801955359218
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 450.5497326203209,
-        "y" : 2248.5084782608687
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 557.704347826087,
-        "y" : 2243.9715205766092
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 531.5569983724716,
-        "y" : 2248.67804347826
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 557.704347826087,
-        "y" : 2241.3236944896526
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 531.5569983724716,
-        "y" : 2246.0302173913033
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
         "x" : 360.2122704022321,
         "y" : 2287.551086956521
       },
@@ -233669,6 +234159,126 @@
       "start" : {
         "x" : 496.0794524529181,
         "y" : 2297.3836968146934
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 395.68981632178566,
+        "y" : 2246.4497814461747
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 369.5424668681702,
+        "y" : 2251.1563043478254
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 395.68981632178566,
+        "y" : 2243.801955359218
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 369.5424668681702,
+        "y" : 2248.5084782608687
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 476.6970820739364,
+        "y" : 2246.4497814461747
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 450.5497326203209,
+        "y" : 2251.1563043478254
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 476.6970820739364,
+        "y" : 2243.801955359218
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 450.5497326203209,
+        "y" : 2248.5084782608687
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 557.704347826087,
+        "y" : 2243.9715205766092
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 531.5569983724716,
+        "y" : 2248.67804347826
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 557.704347826087,
+        "y" : 2241.3236944896526
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 531.5569983724716,
+        "y" : 2246.0302173913033
       }
     },
     {
@@ -234218,126 +234828,6 @@
         "red" : 0
       },
       "end" : {
-        "x" : 110.95311555452221,
-        "y" : 2613.064130434782
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 75.0209486166008,
-        "y" : 2619.531920483608
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 110.95311555452221,
-        "y" : 2615.7119565217386
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 75.0209486166008,
-        "y" : 2622.1797465705645
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 173.40527784236227,
-        "y" : 2613.064130434782
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 149.450499883748,
-        "y" : 2617.3759904673325
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 173.40527784236227,
-        "y" : 2615.7119565217386
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 149.450499883748,
-        "y" : 2620.023816554289
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 258.7696117182051,
-        "y" : 2608.107608695652
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 234.8148337595908,
-        "y" : 2612.4194687282024
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 258.7696117182051,
-        "y" : 2610.755434782608
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 234.8148337595908,
-        "y" : 2615.0672948151587
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
         "x" : 131.16441525226693,
         "y" : 2599.2960265054635
       },
@@ -234448,6 +234938,126 @@
       "start" : {
         "x" : 277.93830504533827,
         "y" : 2593.8476086956516
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 110.95311555452221,
+        "y" : 2613.064130434782
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 75.0209486166008,
+        "y" : 2619.531920483608
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 110.95311555452221,
+        "y" : 2615.7119565217386
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 75.0209486166008,
+        "y" : 2622.1797465705645
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 173.40527784236227,
+        "y" : 2613.064130434782
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 149.450499883748,
+        "y" : 2617.3759904673325
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 173.40527784236227,
+        "y" : 2615.7119565217386
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 149.450499883748,
+        "y" : 2620.023816554289
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 258.7696117182051,
+        "y" : 2608.107608695652
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 234.8148337595908,
+        "y" : 2612.4194687282024
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 258.7696117182051,
+        "y" : 2610.755434782608
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 234.8148337595908,
+        "y" : 2615.0672948151587
       }
     },
     {
@@ -234997,126 +235607,6 @@
         "red" : 0
       },
       "end" : {
-        "x" : 364.97409904673344,
-        "y" : 2613.064130434782
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 328.65830039525696,
-        "y" : 2619.600974192048
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 364.97409904673344,
-        "y" : 2615.7119565217386
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 328.65830039525696,
-        "y" : 2622.248800279004
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 428.06564752383184,
-        "y" : 2613.064130434782
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 403.8551150895142,
-        "y" : 2617.4220262729596
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 428.06564752383184,
-        "y" : 2615.7119565217386
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 403.8551150895142,
-        "y" : 2620.069852359916
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 514.1972448267848,
-        "y" : 2610.585869565217
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 489.9867123924671,
-        "y" : 2614.943765403394
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 514.1972448267848,
-        "y" : 2613.233695652173
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 489.9867123924671,
-        "y" : 2617.5915914903508
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
         "x" : 385.44115322018143,
         "y" : 2599.2730086026504
       },
@@ -235227,6 +235717,126 @@
       "start" : {
         "x" : 533.4938153917695,
         "y" : 2596.325869565217
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 364.97409904673344,
+        "y" : 2613.064130434782
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 328.65830039525696,
+        "y" : 2619.600974192048
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 364.97409904673344,
+        "y" : 2615.7119565217386
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 328.65830039525696,
+        "y" : 2622.248800279004
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 428.06564752383184,
+        "y" : 2613.064130434782
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 403.8551150895142,
+        "y" : 2617.4220262729596
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 428.06564752383184,
+        "y" : 2615.7119565217386
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 403.8551150895142,
+        "y" : 2620.069852359916
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 514.1972448267848,
+        "y" : 2610.585869565217
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 489.9867123924671,
+        "y" : 2614.943765403394
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 514.1972448267848,
+        "y" : 2613.233695652173
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 489.9867123924671,
+        "y" : 2617.5915914903508
       }
     },
     {
@@ -235954,126 +236564,6 @@
         "red" : 0
       },
       "end" : {
-        "x" : 132.24826203208556,
-        "y" : 2853.0595912527597
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 66.33379446640318,
-        "y" : 2844.9074173397157
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 132.24826203208556,
-        "y" : 2850.411765165803
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 106.39551848407348,
-        "y" : 2847.214347826086
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 212.3717100674262,
-        "y" : 2848.1030695136287
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 146.4572425017438,
-        "y" : 2839.9508956005857
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 212.3717100674262,
-        "y" : 2845.4552434266725
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 186.5189665194141,
-        "y" : 2842.257826086956
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 292.49515810276677,
-        "y" : 2843.1465477744987
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 226.58069053708442,
-        "y" : 2834.994373861455
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 292.49515810276677,
-        "y" : 2840.4987216875425
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 266.6424145547547,
-        "y" : 2837.3013043478254
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
         "x" : 111.42160544059521,
         "y" : 2888.7352173913036
       },
@@ -236184,6 +236674,126 @@
       "start" : {
         "x" : 231.60677749360616,
         "y" : 2891.159371192745
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 132.24826203208556,
+        "y" : 2853.0595912527597
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 66.33379446640318,
+        "y" : 2844.9074173397157
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 132.24826203208556,
+        "y" : 2850.411765165803
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 106.39551848407348,
+        "y" : 2847.214347826086
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 212.3717100674262,
+        "y" : 2848.1030695136287
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 146.4572425017438,
+        "y" : 2839.9508956005857
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 212.3717100674262,
+        "y" : 2845.4552434266725
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 186.5189665194141,
+        "y" : 2842.257826086956
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 292.49515810276677,
+        "y" : 2843.1465477744987
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 226.58069053708442,
+        "y" : 2834.994373861455
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 292.49515810276677,
+        "y" : 2840.4987216875425
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 266.6424145547547,
+        "y" : 2837.3013043478254
       }
     },
     {
@@ -236654,6 +237264,126 @@
         "red" : 0
       },
       "end" : {
+        "x" : 345.36887351778665,
+        "y" : 2886.256956521738
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 319.2603754940712,
+        "y" : 2890.9564861660074
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 345.36887351778665,
+        "y" : 2888.904782608695
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 319.2603754940712,
+        "y" : 2893.6043122529636
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 426.2595849802373,
+        "y" : 2886.256956521738
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 400.15108695652185,
+        "y" : 2890.9564861660074
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 426.2595849802373,
+        "y" : 2888.904782608695
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 400.15108695652185,
+        "y" : 2893.6043122529636
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 522.2850790513836,
+        "y" : 2886.256956521738
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 496.1765810276682,
+        "y" : 2890.9564861660074
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 522.2850790513836,
+        "y" : 2888.904782608695
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 496.1765810276682,
+        "y" : 2893.6043122529636
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
         "x" : 380.7881422924902,
         "y" : 2838.4045652173904
       },
@@ -236764,126 +237494,6 @@
       "start" : {
         "x" : 531.5958498023717,
         "y" : 2840.5847648221334
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 345.36887351778665,
-        "y" : 2886.256956521738
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 319.2603754940712,
-        "y" : 2890.9564861660074
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 345.36887351778665,
-        "y" : 2888.904782608695
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 319.2603754940712,
-        "y" : 2893.6043122529636
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 426.2595849802373,
-        "y" : 2886.256956521738
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 400.15108695652185,
-        "y" : 2890.9564861660074
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 426.2595849802373,
-        "y" : 2888.904782608695
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 400.15108695652185,
-        "y" : 2893.6043122529636
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 522.2850790513836,
-        "y" : 2886.256956521738
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 496.1765810276682,
-        "y" : 2890.9564861660074
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 522.2850790513836,
-        "y" : 2888.904782608695
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 496.1765810276682,
-        "y" : 2893.6043122529636
       }
     },
     {
@@ -237393,126 +238003,6 @@
         "red" : 0
       },
       "end" : {
-        "x" : 97.86761218321321,
-        "y" : 3080.6860869565207
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 71.35988142292491,
-        "y" : 3085.4574784933725
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 97.86761218321321,
-        "y" : 3083.333913043477
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 71.35988142292491,
-        "y" : 3088.105304580329
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 179.9560218553825,
-        "y" : 3080.6860869565207
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 153.44829109509416,
-        "y" : 3085.4574784933725
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 179.9560218553825,
-        "y" : 3083.333913043477
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 153.44829109509416,
-        "y" : 3088.105304580329
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 275.29829690769594,
-        "y" : 3075.7295652173902
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 235.53670076726345,
-        "y" : 3082.886652522668
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 275.29829690769594,
-        "y" : 3078.377391304347
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 235.53670076726345,
-        "y" : 3085.534478609625
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
         "x" : 133.8857300627761,
         "y" : 3032.9262607533124
       },
@@ -237623,6 +238113,126 @@
       "start" : {
         "x" : 286.80868402697047,
         "y" : 3021.909956405486
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 97.86761218321321,
+        "y" : 3080.6860869565207
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 71.35988142292491,
+        "y" : 3085.4574784933725
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 97.86761218321321,
+        "y" : 3083.333913043477
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 71.35988142292491,
+        "y" : 3088.105304580329
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 179.9560218553825,
+        "y" : 3080.6860869565207
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 153.44829109509416,
+        "y" : 3085.4574784933725
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 179.9560218553825,
+        "y" : 3083.333913043477
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 153.44829109509416,
+        "y" : 3088.105304580329
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 275.29829690769594,
+        "y" : 3075.7295652173902
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 235.53670076726345,
+        "y" : 3082.886652522668
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 275.29829690769594,
+        "y" : 3078.377391304347
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 235.53670076726345,
+        "y" : 3085.534478609625
       }
     },
     {
@@ -238132,126 +238742,6 @@
         "red" : 0
       },
       "end" : {
-        "x" : 389.99300162752854,
-        "y" : 3050.251068937456
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 363.2295163915369,
-        "y" : 3055.068496279934
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 389.99300162752854,
-        "y" : 3047.603242850499
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 363.2295163915369,
-        "y" : 3052.4206701929775
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 472.8486747268079,
-        "y" : 3050.251068937456
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 446.0851894908162,
-        "y" : 3055.068496279934
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 472.8486747268079,
-        "y" : 3047.603242850499
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 446.0851894908162,
-        "y" : 3052.4206701929775
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 557.7043478260871,
-        "y" : 3036.9260689374555
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 544.3226052080913,
-        "y" : 3039.3347826086947
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 557.7043478260871,
-        "y" : 3034.278242850499
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 544.3226052080913,
-        "y" : 3036.6869565217385
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
         "x" : 353.5912520344107,
         "y" : 3090.5991304347817
       },
@@ -238362,6 +238852,126 @@
       "start" : {
         "x" : 492.5391129969777,
         "y" : 3095.516575796325
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 389.99300162752854,
+        "y" : 3050.251068937456
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 363.2295163915369,
+        "y" : 3055.068496279934
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 389.99300162752854,
+        "y" : 3047.603242850499
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 363.2295163915369,
+        "y" : 3052.4206701929775
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 472.8486747268079,
+        "y" : 3050.251068937456
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 446.0851894908162,
+        "y" : 3055.068496279934
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 472.8486747268079,
+        "y" : 3047.603242850499
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 446.0851894908162,
+        "y" : 3052.4206701929775
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 557.7043478260871,
+        "y" : 3036.9260689374555
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 544.3226052080913,
+        "y" : 3039.3347826086947
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 557.7043478260871,
+        "y" : 3034.278242850499
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 544.3226052080913,
+        "y" : 3036.6869565217385
       }
     },
     {
@@ -240052,126 +240662,6 @@
         "red" : 0
       },
       "end" : {
-        "x" : 383.8947105324344,
-        "y" : 3229.5058695652156
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 330.41482213438735,
-        "y" : 3229.5058695652156
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 469.1406300860267,
-        "y" : 3194.6832608695636
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 415.6607416879797,
-        "y" : 3194.6832608695636
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 549.3604626830972,
-        "y" : 3199.639782608694
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 495.8805742850502,
-        "y" : 3199.639782608694
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 357.15476633341086,
-        "y" : 3229.5058695652156
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 330.41482213438735,
-        "y" : 3229.5058695652156
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 469.1406300860267,
-        "y" : 3194.6832608695636
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 442.4006858870032,
-        "y" : 3194.6832608695636
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 522.6205184840737,
-        "y" : 3199.639782608694
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 495.8805742850502,
-        "y" : 3199.639782608694
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
         "x" : 397.26468263194613,
         "y" : 3300.005869565216
       },
@@ -240282,6 +240772,126 @@
       "start" : {
         "x" : 495.8805742850502,
         "y" : 3270.1789130434763
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 383.8947105324344,
+        "y" : 3229.5058695652156
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 330.41482213438735,
+        "y" : 3229.5058695652156
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 469.1406300860267,
+        "y" : 3194.6832608695636
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 415.6607416879797,
+        "y" : 3194.6832608695636
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 549.3604626830972,
+        "y" : 3199.639782608694
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 495.8805742850502,
+        "y" : 3199.639782608694
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 357.15476633341086,
+        "y" : 3229.5058695652156
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 330.41482213438735,
+        "y" : 3229.5058695652156
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 469.1406300860267,
+        "y" : 3194.6832608695636
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 442.4006858870032,
+        "y" : 3194.6832608695636
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 522.6205184840737,
+        "y" : 3199.639782608694
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 495.8805742850502,
+        "y" : 3199.639782608694
       }
     },
     {
@@ -242662,46 +243272,6 @@
         "red" : 0
       },
       "end" : {
-        "x" : 206.40558009765167,
-        "y" : 3605.6549999999993
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 151.84129272262263,
-        "y" : 3605.6549999999993
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 288.25201116019525,
-        "y" : 3599.4593478260863
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 233.68772378516618,
-        "y" : 3606.894130434782
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
         "x" : 138.20022087886537,
         "y" : 3665.3941304347823
       },
@@ -242852,6 +243422,46 @@
       "start" : {
         "x" : 75.0209486166008,
         "y" : 3550.1258695652164
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 206.40558009765167,
+        "y" : 3605.6549999999993
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 151.84129272262263,
+        "y" : 3605.6549999999993
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 288.25201116019525,
+        "y" : 3599.4593478260863
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 233.68772378516618,
+        "y" : 3606.894130434782
       }
     },
     {
@@ -243602,6 +244212,46 @@
         "red" : 0
       },
       "end" : {
+        "x" : 383.73409672169265,
+        "y" : 3541.9736956521733
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 328.65830039525696,
+        "y" : 3550.1258695652164
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 356.1961985584748,
+        "y" : 3546.0497826086944
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 328.65830039525696,
+        "y" : 3550.1258695652164
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
         "x" : 392.4769588467798,
         "y" : 3665.3941304347823
       },
@@ -243712,46 +244362,6 @@
       "start" : {
         "x" : 488.85960241804224,
         "y" : 3650.4332608695645
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 383.73409672169265,
-        "y" : 3541.9736956521733
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 328.65830039525696,
-        "y" : 3550.1258695652164
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 356.1961985584748,
-        "y" : 3546.0497826086944
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 328.65830039525696,
-        "y" : 3550.1258695652164
       }
     },
     {
@@ -244419,46 +245029,6 @@
         "red" : 0
       },
       "end" : {
-        "x" : 301.8930830039525,
-        "y" : 3758.0694664031616
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 288.52055335968373,
-        "y" : 3760.4765217391296
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 301.8930830039525,
-        "y" : 3755.421640316205
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 288.52055335968373,
-        "y" : 3757.828695652173
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
         "x" : 136.8575098814229,
         "y" : 3779.38956521739
       },
@@ -244529,6 +245099,46 @@
       "start" : {
         "x" : 163.60256916996047,
         "y" : 3771.1536956521727
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 301.8930830039525,
+        "y" : 3758.0694664031616
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 288.52055335968373,
+        "y" : 3760.4765217391296
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 301.8930830039525,
+        "y" : 3755.421640316205
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 288.52055335968373,
+        "y" : 3757.828695652173
       }
     },
     {
@@ -245116,86 +245726,6 @@
         "red" : 0
       },
       "end" : {
-        "x" : 557.704347826087,
-        "y" : 3758.0464485003477
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 544.2039409439666,
-        "y" : 3760.4765217391296
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 557.704347826087,
-        "y" : 3755.398622413391
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 544.2039409439666,
-        "y" : 3757.828695652173
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 532.4470123227158,
-        "y" : 3769.6104347826076
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 491.9457916763545,
-        "y" : 3776.9006544989525
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 532.4470123227158,
-        "y" : 3772.2582608695643
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 491.9457916763545,
-        "y" : 3779.548480585909
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
         "x" : 391.1342478493374,
         "y" : 3779.38956521739
       },
@@ -245266,6 +245796,86 @@
       "start" : {
         "x" : 418.1350616135783,
         "y" : 3771.1536956521727
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 532.4470123227158,
+        "y" : 3769.6104347826076
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 491.9457916763545,
+        "y" : 3776.9006544989525
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 532.4470123227158,
+        "y" : 3772.2582608695643
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 491.9457916763545,
+        "y" : 3779.548480585909
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 557.704347826087,
+        "y" : 3758.0464485003477
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 544.2039409439666,
+        "y" : 3760.4765217391296
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 557.704347826087,
+        "y" : 3755.398622413391
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 544.2039409439666,
+        "y" : 3757.828695652173
       }
     },
     {
@@ -246416,126 +247026,6 @@
         "red" : 0
       },
       "end" : {
-        "x" : 355.44172285515,
-        "y" : 3957.3818181818165
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 328.65830039525696,
-        "y" : 3962.202834224597
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 355.44172285515,
-        "y" : 3960.029644268773
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 328.65830039525696,
-        "y" : 3964.850660311554
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 438.3572076261334,
-        "y" : 3957.3818181818165
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 411.5737851662404,
-        "y" : 3962.202834224597
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 438.3572076261334,
-        "y" : 3960.029644268773
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 411.5737851662404,
-        "y" : 3964.850660311554
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 521.2726923971169,
-        "y" : 3957.3818181818165
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 494.4892699372238,
-        "y" : 3962.202834224597
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 521.2726923971169,
-        "y" : 3960.029644268773
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 494.4892699372238,
-        "y" : 3964.850660311554
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
         "x" : 391.8733782841199,
         "y" : 3913.687758660775
       },
@@ -246646,6 +247136,126 @@
       "start" : {
         "x" : 530.9209253661938,
         "y" : 3915.860948616599
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 355.44172285515,
+        "y" : 3957.3818181818165
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 328.65830039525696,
+        "y" : 3962.202834224597
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 355.44172285515,
+        "y" : 3960.029644268773
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 328.65830039525696,
+        "y" : 3964.850660311554
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 438.3572076261334,
+        "y" : 3957.3818181818165
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 411.5737851662404,
+        "y" : 3962.202834224597
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 438.3572076261334,
+        "y" : 3960.029644268773
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 411.5737851662404,
+        "y" : 3964.850660311554
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 521.2726923971169,
+        "y" : 3957.3818181818165
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 494.4892699372238,
+        "y" : 3962.202834224597
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 521.2726923971169,
+        "y" : 3960.029644268773
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 494.4892699372238,
+        "y" : 3964.850660311554
       }
     },
     {
@@ -247216,26 +247826,6 @@
         "red" : 0
       },
       "end" : {
-        "x" : 392.3516774492753,
-        "y" : 4071.2885573122517
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 327.01862735177866,
-        "y" : 4071.2885573122517
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
         "x" : 413.7110269301713,
         "y" : 4112.639861660077
       },
@@ -247266,6 +247856,26 @@
       "start" : {
         "x" : 332.04471430830046,
         "y" : 4123.439861660077
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 392.3516774492753,
+        "y" : 4071.2885573122517
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 327.01862735177866,
+        "y" : 4071.2885573122517
       }
     },
     {
@@ -249336,46 +249946,6 @@
         "red" : 0
       },
       "end" : {
-        "x" : 433.5101908012935,
-        "y" : 4454.145869565218
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 358.59179051383404,
-        "y" : 4459.102391304348
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 396.0509906575638,
-        "y" : 4456.624130434782
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 358.59179051383404,
-        "y" : 4459.102391304348
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
         "x" : 457.26587782968016,
         "y" : 4475.671086956521
       },
@@ -249406,6 +249976,46 @@
       "start" : {
         "x" : 363.61787747035584,
         "y" : 4486.4710869565215
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 433.5101908012935,
+        "y" : 4454.145869565218
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 358.59179051383404,
+        "y" : 4459.102391304348
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 396.0509906575638,
+        "y" : 4456.624130434782
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 358.59179051383404,
+        "y" : 4459.102391304348
       }
     },
     {
@@ -250396,46 +251006,6 @@
         "red" : 0
       },
       "end" : {
-        "x" : 398.44455599472985,
-        "y" : 4713.25
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 387.3871715415019,
-        "y" : 4711.259670798419
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 324.78918981115504,
-        "y" : 4596.363260869566
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 280.7126772068512,
-        "y" : 4596.363260869566
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
         "x" : 335.808317962231,
         "y" : 4646.21
       },
@@ -250466,6 +251036,46 @@
       "start" : {
         "x" : 280.7126772068512,
         "y" : 4657.01
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 324.78918981115504,
+        "y" : 4596.363260869566
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 280.7126772068512,
+        "y" : 4596.363260869566
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 398.44455599472985,
+        "y" : 4713.25
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 387.3871715415019,
+        "y" : 4711.259670798419
       }
     },
     {
@@ -253294,126 +253904,6 @@
         "red" : 0
       },
       "end" : {
-        "x" : 400.2750600635512,
-        "y" : 5144.020652173913
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 366.83741765480903,
-        "y" : 5150.039427807486
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 400.2750600635512,
-        "y" : 5146.66847826087
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 366.83741765480903,
-        "y" : 5152.687253894443
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 458.5696814694259,
-        "y" : 5144.020652173913
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 436.2779198635978,
-        "y" : 5148.033169262962
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 458.5696814694259,
-        "y" : 5146.66847826087
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 436.2779198635978,
-        "y" : 5150.680995349918
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 539.1560644811286,
-        "y" : 5144.020652173913
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 505.71842207238655,
-        "y" : 5150.039427807486
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 539.1560644811286,
-        "y" : 5146.66847826087
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 505.71842207238655,
-        "y" : 5152.687253894443
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
         "x" : 418.82334340850974,
         "y" : 5130.402219716345
       },
@@ -253524,6 +254014,126 @@
       "start" : {
         "x" : 546.5584670231731,
         "y" : 5129.760652173913
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 400.2750600635512,
+        "y" : 5144.020652173913
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 366.83741765480903,
+        "y" : 5150.039427807486
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 400.2750600635512,
+        "y" : 5146.66847826087
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 366.83741765480903,
+        "y" : 5152.687253894443
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 458.5696814694259,
+        "y" : 5144.020652173913
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 436.2779198635978,
+        "y" : 5148.033169262962
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 458.5696814694259,
+        "y" : 5146.66847826087
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 436.2779198635978,
+        "y" : 5150.680995349918
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 539.1560644811286,
+        "y" : 5144.020652173913
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 505.71842207238655,
+        "y" : 5150.039427807486
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 539.1560644811286,
+        "y" : 5146.66847826087
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 505.71842207238655,
+        "y" : 5152.687253894443
       }
     },
     {
@@ -253914,6 +254524,46 @@
         "red" : 0
       },
       "end" : {
+        "x" : 150.40049407114626,
+        "y" : 5480.60009881423
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 118.75128458498025,
+        "y" : 5486.296956521739
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 150.40049407114626,
+        "y" : 5477.952272727272
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 118.75128458498025,
+        "y" : 5483.649130434782
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
         "x" : 106.6701581027668,
         "y" : 5497.909130434782
       },
@@ -253984,46 +254634,6 @@
       "start" : {
         "x" : 182.1439723320158,
         "y" : 5488.88304347826
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 150.40049407114626,
-        "y" : 5480.60009881423
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 118.75128458498025,
-        "y" : 5486.296956521739
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 150.40049407114626,
-        "y" : 5477.952272727272
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 118.75128458498025,
-        "y" : 5483.649130434782
       }
     },
     {
@@ -255054,46 +255664,6 @@
         "red" : 0
       },
       "end" : {
-        "x" : 163.6994071146245,
-        "y" : 5641.854316205532
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 126.7306324110672,
-        "y" : 5648.508695652173
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 163.6994071146245,
-        "y" : 5639.206490118575
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1.8260869565217395,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 126.7306324110672,
-        "y" : 5645.8608695652165
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
         "x" : 111.9897233201581,
         "y" : 5660.120869565217
       },
@@ -255164,6 +255734,46 @@
       "start" : {
         "x" : 215.72549407114624,
         "y" : 5683.312173913042
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 163.6994071146245,
+        "y" : 5641.854316205532
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 126.7306324110672,
+        "y" : 5648.508695652173
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 163.6994071146245,
+        "y" : 5639.206490118575
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1.8260869565217395,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 126.7306324110672,
+        "y" : 5645.8608695652165
       }
     },
     {
@@ -297545,104 +298155,6 @@
         "red" : 0
       },
       "end" : {
-        "x" : 131.54290316205532,
-        "y" : 1153.2437197430831
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 131.54290316205532,
-        "y" : 1155.8306762648224
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 140.57665266798418,
-        "y" : 1153.2437197430831
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 131.54290316205532,
-        "y" : 1153.2437197430831
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 159.21909782608694,
-        "y" : 1153.2437197430831
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 150.1853483201581,
-        "y" : 1153.2437197430831
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 159.21909782608694,
-        "y" : 1155.8306762648224
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 159.21909782608694,
-        "y" : 1153.2437197430831
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "fontRole" : "sansSerif",
-      "fontSize" : 5.543478260869566,
-      "kind" : "drawText",
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "point" : {
-        "x" : 145.38100049407115,
-        "y" : 1153.2437197430831
-      },
-      "text" : "2"
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
         "x" : 126.51681620553359,
         "y" : 1081.4845652173915
       },
@@ -297741,16 +298253,16 @@
         "red" : 0
       },
       "end" : {
-        "x" : 220.7433162055336,
-        "y" : 1083.9628260869567
+        "x" : 131.54290316205532,
+        "y" : 1153.2437197430831
       },
       "kind" : "strokeLine",
       "lineWidth" : 1,
       "mirroredHorizontally" : false,
       "mirroredVertically" : false,
       "start" : {
-        "x" : 220.7433162055336,
-        "y" : 1086.549782608696
+        "x" : 131.54290316205532,
+        "y" : 1155.8306762648224
       }
     },
     {
@@ -297761,16 +298273,16 @@
         "red" : 0
       },
       "end" : {
-        "x" : 251.0827055335968,
-        "y" : 1083.9628260869567
+        "x" : 140.57665266798418,
+        "y" : 1153.2437197430831
       },
       "kind" : "strokeLine",
       "lineWidth" : 1,
       "mirroredHorizontally" : false,
       "mirroredVertically" : false,
       "start" : {
-        "x" : 220.7433162055336,
-        "y" : 1083.9628260869567
+        "x" : 131.54290316205532,
+        "y" : 1153.2437197430831
       }
     },
     {
@@ -297781,16 +298293,16 @@
         "red" : 0
       },
       "end" : {
-        "x" : 291.03079051383395,
-        "y" : 1083.9628260869567
+        "x" : 159.21909782608694,
+        "y" : 1153.2437197430831
       },
       "kind" : "strokeLine",
       "lineWidth" : 1,
       "mirroredHorizontally" : false,
       "mirroredVertically" : false,
       "start" : {
-        "x" : 260.6914011857707,
-        "y" : 1083.9628260869567
+        "x" : 150.1853483201581,
+        "y" : 1153.2437197430831
       }
     },
     {
@@ -297801,16 +298313,16 @@
         "red" : 0
       },
       "end" : {
-        "x" : 291.03079051383395,
-        "y" : 1086.549782608696
+        "x" : 159.21909782608694,
+        "y" : 1155.8306762648224
       },
       "kind" : "strokeLine",
       "lineWidth" : 1,
       "mirroredHorizontally" : false,
       "mirroredVertically" : false,
       "start" : {
-        "x" : 291.03079051383395,
-        "y" : 1083.9628260869567
+        "x" : 159.21909782608694,
+        "y" : 1153.2437197430831
       }
     },
     {
@@ -297826,10 +298338,10 @@
       "mirroredHorizontally" : false,
       "mirroredVertically" : false,
       "point" : {
-        "x" : 255.88705335968376,
-        "y" : 1083.9628260869567
+        "x" : 145.38100049407115,
+        "y" : 1153.2437197430831
       },
-      "text" : "6"
+      "text" : "2"
     },
     {
       "color" : {
@@ -297926,6 +298438,104 @@
       "point" : {
         "x" : 262.0511399209486,
         "y" : 1157.6584782608697
+      },
+      "text" : "6"
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 220.7433162055336,
+        "y" : 1083.9628260869567
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 220.7433162055336,
+        "y" : 1086.549782608696
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 251.0827055335968,
+        "y" : 1083.9628260869567
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 220.7433162055336,
+        "y" : 1083.9628260869567
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 291.03079051383395,
+        "y" : 1083.9628260869567
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 260.6914011857707,
+        "y" : 1083.9628260869567
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 291.03079051383395,
+        "y" : 1086.549782608696
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 291.03079051383395,
+        "y" : 1083.9628260869567
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontRole" : "sansSerif",
+      "fontSize" : 5.543478260869566,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 255.88705335968376,
+        "y" : 1083.9628260869567
       },
       "text" : "6"
     },
@@ -298232,6 +298842,202 @@
       },
       "end" : {
         "x" : 256.513195256917,
+        "y" : 1294.9256521739132
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 256.513195256917,
+        "y" : 1297.5126086956525
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 278.04743083003956,
+        "y" : 1294.9256521739132
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 256.513195256917,
+        "y" : 1294.9256521739132
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 309.1903620553359,
+        "y" : 1294.9256521739132
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 287.65612648221344,
+        "y" : 1294.9256521739132
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 309.1903620553359,
+        "y" : 1297.5126086956525
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 309.1903620553359,
+        "y" : 1294.9256521739132
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontRole" : "sansSerif",
+      "fontSize" : 5.543478260869566,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 282.8517786561265,
+        "y" : 1294.9256521739132
+      },
+      "text" : "12"
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 256.513195256917,
+        "y" : 1337.8632608695652
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 256.513195256917,
+        "y" : 1340.4502173913045
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 278.04743083003956,
+        "y" : 1337.8632608695652
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 256.513195256917,
+        "y" : 1337.8632608695652
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 309.1903620553359,
+        "y" : 1337.8632608695652
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 287.65612648221344,
+        "y" : 1337.8632608695652
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 309.1903620553359,
+        "y" : 1340.4502173913045
+      },
+      "kind" : "strokeLine",
+      "lineWidth" : 1,
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "start" : {
+        "x" : 309.1903620553359,
+        "y" : 1337.8632608695652
+      }
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "fontRole" : "sansSerif",
+      "fontSize" : 5.543478260869566,
+      "kind" : "drawText",
+      "mirroredHorizontally" : false,
+      "mirroredVertically" : false,
+      "point" : {
+        "x" : 282.8517786561265,
+        "y" : 1337.8632608695652
+      },
+      "text" : "12"
+    },
+    {
+      "color" : {
+        "alpha" : 1,
+        "blue" : 0,
+        "green" : 0,
+        "red" : 0
+      },
+      "end" : {
+        "x" : 256.513195256917,
         "y" : 1269.1121739130435
       },
       "kind" : "strokeLine",
@@ -298320,202 +299126,6 @@
         "y" : 1269.1121739130435
       },
       "text" : "6"
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 256.513195256917,
-        "y" : 1337.8632608695652
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 256.513195256917,
-        "y" : 1340.4502173913045
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 278.04743083003956,
-        "y" : 1337.8632608695652
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 256.513195256917,
-        "y" : 1337.8632608695652
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 309.1903620553359,
-        "y" : 1337.8632608695652
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 287.65612648221344,
-        "y" : 1337.8632608695652
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 309.1903620553359,
-        "y" : 1340.4502173913045
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 309.1903620553359,
-        "y" : 1337.8632608695652
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "fontRole" : "sansSerif",
-      "fontSize" : 5.543478260869566,
-      "kind" : "drawText",
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "point" : {
-        "x" : 282.8517786561265,
-        "y" : 1337.8632608695652
-      },
-      "text" : "12"
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 256.513195256917,
-        "y" : 1294.9256521739132
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 256.513195256917,
-        "y" : 1297.5126086956525
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 278.04743083003956,
-        "y" : 1294.9256521739132
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 256.513195256917,
-        "y" : 1294.9256521739132
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 309.1903620553359,
-        "y" : 1294.9256521739132
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 287.65612648221344,
-        "y" : 1294.9256521739132
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "end" : {
-        "x" : 309.1903620553359,
-        "y" : 1297.5126086956525
-      },
-      "kind" : "strokeLine",
-      "lineWidth" : 1,
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "start" : {
-        "x" : 309.1903620553359,
-        "y" : 1294.9256521739132
-      }
-    },
-    {
-      "color" : {
-        "alpha" : 1,
-        "blue" : 0,
-        "green" : 0,
-        "red" : 0
-      },
-      "fontRole" : "sansSerif",
-      "fontSize" : 5.543478260869566,
-      "kind" : "drawText",
-      "mirroredHorizontally" : false,
-      "mirroredVertically" : false,
-      "point" : {
-        "x" : 282.8517786561265,
-        "y" : 1294.9256521739132
-      },
-      "text" : "12"
     },
     {
       "color" : {
@@ -298722,7 +299332,7 @@
       },
       "end" : {
         "x" : 150.94995349918628,
-        "y" : 2193.3130434782606
+        "y" : 2264.897173913043
       },
       "kind" : "strokeLine",
       "lineWidth" : 1,
@@ -298730,7 +299340,7 @@
       "mirroredVertically" : false,
       "start" : {
         "x" : 150.94995349918628,
-        "y" : 2195.8999999999996
+        "y" : 2267.484130434782
       }
     },
     {
@@ -298742,7 +299352,7 @@
       },
       "end" : {
         "x" : 204.97714194373407,
-        "y" : 2193.3130434782606
+        "y" : 2264.897173913043
       },
       "kind" : "strokeLine",
       "lineWidth" : 1,
@@ -298750,7 +299360,7 @@
       "mirroredVertically" : false,
       "start" : {
         "x" : 150.94995349918628,
-        "y" : 2193.3130434782606
+        "y" : 2264.897173913043
       }
     },
     {
@@ -298762,7 +299372,7 @@
       },
       "end" : {
         "x" : 268.6130260404558,
-        "y" : 2193.3130434782606
+        "y" : 2264.897173913043
       },
       "kind" : "strokeLine",
       "lineWidth" : 1,
@@ -298770,7 +299380,7 @@
       "mirroredVertically" : false,
       "start" : {
         "x" : 214.585837595908,
-        "y" : 2193.3130434782606
+        "y" : 2264.897173913043
       }
     },
     {
@@ -298782,7 +299392,7 @@
       },
       "end" : {
         "x" : 268.6130260404558,
-        "y" : 2195.8999999999996
+        "y" : 2267.484130434782
       },
       "kind" : "strokeLine",
       "lineWidth" : 1,
@@ -298790,7 +299400,7 @@
       "mirroredVertically" : false,
       "start" : {
         "x" : 268.6130260404558,
-        "y" : 2193.3130434782606
+        "y" : 2264.897173913043
       }
     },
     {
@@ -298807,7 +299417,7 @@
       "mirroredVertically" : false,
       "point" : {
         "x" : 209.78148976982104,
-        "y" : 2193.3130434782606
+        "y" : 2264.897173913043
       },
       "text" : "2"
     },
@@ -298820,7 +299430,7 @@
       },
       "end" : {
         "x" : 150.94995349918628,
-        "y" : 2264.897173913043
+        "y" : 2193.3130434782606
       },
       "kind" : "strokeLine",
       "lineWidth" : 1,
@@ -298828,7 +299438,7 @@
       "mirroredVertically" : false,
       "start" : {
         "x" : 150.94995349918628,
-        "y" : 2267.484130434782
+        "y" : 2195.8999999999996
       }
     },
     {
@@ -298840,7 +299450,7 @@
       },
       "end" : {
         "x" : 204.97714194373407,
-        "y" : 2264.897173913043
+        "y" : 2193.3130434782606
       },
       "kind" : "strokeLine",
       "lineWidth" : 1,
@@ -298848,7 +299458,7 @@
       "mirroredVertically" : false,
       "start" : {
         "x" : 150.94995349918628,
-        "y" : 2264.897173913043
+        "y" : 2193.3130434782606
       }
     },
     {
@@ -298860,7 +299470,7 @@
       },
       "end" : {
         "x" : 268.6130260404558,
-        "y" : 2264.897173913043
+        "y" : 2193.3130434782606
       },
       "kind" : "strokeLine",
       "lineWidth" : 1,
@@ -298868,7 +299478,7 @@
       "mirroredVertically" : false,
       "start" : {
         "x" : 214.585837595908,
-        "y" : 2264.897173913043
+        "y" : 2193.3130434782606
       }
     },
     {
@@ -298880,7 +299490,7 @@
       },
       "end" : {
         "x" : 268.6130260404558,
-        "y" : 2267.484130434782
+        "y" : 2195.8999999999996
       },
       "kind" : "strokeLine",
       "lineWidth" : 1,
@@ -298888,7 +299498,7 @@
       "mirroredVertically" : false,
       "start" : {
         "x" : 268.6130260404558,
-        "y" : 2264.897173913043
+        "y" : 2193.3130434782606
       }
     },
     {
@@ -298905,7 +299515,7 @@
       "mirroredVertically" : false,
       "point" : {
         "x" : 209.78148976982104,
-        "y" : 2264.897173913043
+        "y" : 2193.3130434782606
       },
       "text" : "2"
     },
@@ -303137,7 +303747,7 @@
       "text" : "71"
     }
   ],
-  "formatVersion" : 7,
+  "formatVersion" : 8,
   "initialKeySignature" : {
     "fifths" : -5
   },

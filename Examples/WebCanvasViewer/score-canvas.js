@@ -1,5 +1,7 @@
 const SMUFL_FONT_FAMILY = "Bravura";
 const SMUFL_PROBE = "\uE0A4";
+const SMUFL_NOTEHEADS = new Set(["\uE0A2", "\uE0A3", "\uE0A4"]);
+const SMUFL_ACCIDENTALS = new Set(["\uE260", "\uE261", "\uE262", "\uE263", "\uE264"]);
 
 export async function ensureSMuFLFont() {
   if (!document.fonts) {
@@ -51,11 +53,13 @@ export function drawScoreCanvas(canvas, plan, options = {}) {
   for (const index of ledgerCommandIndexes) drawCommand(context, plan.commands[index], cssColor(plan.commands[index].color));
   drawPaletteBackground(context, canvas, plan, options);
   const noteheadColors = noteheadCommandColors(plan, options);
+  const accidentalColors = accidentalCommandColors(plan, options);
   canvas.dataset.paletteNoteCount = String(noteheadColors.size);
+  canvas.dataset.paletteAccidentalCount = String(accidentalColors.size);
 
   for (const [commandIndex, command] of plan.commands.entries()) {
     if (backgroundCommandIndexes.has(commandIndex) || staffCommandIndexes.has(commandIndex) || ledgerCommandIndexes.has(commandIndex)) continue;
-    drawCommand(context, command, noteheadColors.get(commandIndex) ?? cssColor(command.color));
+    drawCommand(context, command, noteheadColors.get(commandIndex) ?? accidentalColors.get(commandIndex) ?? cssColor(command.color));
   }
   // The playback bar intentionally sits above barlines and note ink. A guide
   // behind notation can disappear entirely when an onset coincides with a
@@ -208,7 +212,8 @@ function noteheadCommandColors(plan, options) {
   }
   const anchors = (plan.noteAnchors ?? []).filter((anchor) => anchor.midiNumber != null);
   for (const [index, command] of plan.commands.entries()) {
-    if (command.kind !== "drawText" || command.fontRole !== "smufl" || !command.point) continue;
+    if (command.kind !== "drawText" || command.fontRole !== "smufl" || !command.point
+      || !SMUFL_NOTEHEADS.has(command.text)) continue;
     const anchor = anchors.find((item) => commandMatchesNotehead(command, item));
     if (!anchor) continue;
     const pitchClass = anchor.colorPitchClass ?? modulo(anchor.midiNumber, 12);
@@ -216,6 +221,25 @@ function noteheadCommandColors(plan, options) {
     const color = colorForPitchClass(pitchClass);
     if (!color) continue;
     result.set(index, color);
+  }
+  return result;
+}
+
+function accidentalCommandColors(plan, options) {
+  const enabledPitchClasses = options.enabledPitchClasses ?? new Set();
+  const colorForPitchClass = options.noteColorForPitchClass ?? (() => null);
+  const result = new Map();
+
+  if (!options.noteColors) return result;
+  const accidentals = plan.accidentals ?? [];
+  for (const [index, command] of plan.commands.entries()) {
+    if (command.kind !== "drawText" || command.fontRole !== "smufl" || !command.point
+      || !SMUFL_ACCIDENTALS.has(command.text)) continue;
+    const accidental = accidentals.find((item) => pointsMatch(command.point, item.point));
+    const pitchClass = accidental?.colorPitchClass;
+    if (!Number.isInteger(pitchClass) || !enabledPitchClasses.has(pitchClass)) continue;
+    const color = colorForPitchClass(pitchClass);
+    if (color) result.set(index, color);
   }
   return result;
 }
@@ -246,6 +270,10 @@ function commandMatchesNotehead(command, anchor) {
   const verticalTolerance = Math.max(1.5, frame.height * 0.58);
   return Math.abs(command.point.x - anchor.center.x) <= horizontalTolerance
     && Math.abs(command.point.y - anchor.center.y) <= verticalTolerance;
+}
+
+function pointsMatch(lhs, rhs) {
+  return rhs && Math.abs(lhs.x - rhs.x) < 0.01 && Math.abs(lhs.y - rhs.y) < 0.01;
 }
 
 

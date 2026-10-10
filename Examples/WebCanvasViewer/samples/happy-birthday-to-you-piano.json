@@ -1,4 +1,46 @@
 {
+  "accidentals" : [
+    {
+      "colorPitchClass" : 7,
+      "noteID" : "0.0.8.64.1.1.11.4.0",
+      "point" : {
+        "x" : 159.1501482213439,
+        "y" : 428.38
+      }
+    },
+    {
+      "colorPitchClass" : 7,
+      "noteID" : "0.0.10.78.1.1.11.4.0",
+      "point" : {
+        "x" : 432.3848320158104,
+        "y" : 428.38
+      }
+    },
+    {
+      "colorPitchClass" : 5,
+      "noteID" : "0.0.17.139.5.2.4.4.0",
+      "point" : {
+        "x" : 147.9328063241107,
+        "y" : 958.1902173913045
+      }
+    },
+    {
+      "colorPitchClass" : 11,
+      "noteID" : "0.0.18.144.1.1.0.4.3",
+      "point" : {
+        "x" : 200.10671936758894,
+        "y" : 877.0597826086957
+      }
+    },
+    {
+      "colorPitchClass" : 11,
+      "noteID" : "0.0.18.148.5.2.0.4.3",
+      "point" : {
+        "x" : 200.10671936758894,
+        "y" : 950.7554347826087
+      }
+    }
+  ],
   "canvas" : {
     "height" : 1684,
     "width" : 595,
@@ -16542,7 +16584,7 @@
       "text" : "16"
     }
   ],
-  "formatVersion" : 7,
+  "formatVersion" : 8,
   "initialKeySignature" : {
     "fifths" : 0
   },

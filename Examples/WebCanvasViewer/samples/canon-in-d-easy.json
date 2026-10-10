@@ -1,4 +1,22 @@
 {
+  "accidentals" : [
+    {
+      "colorPitchClass" : 0,
+      "noteID" : "0.0.47.442.1.1.2.4.0",
+      "point" : {
+        "x" : 468.1133782114625,
+        "y" : 2216.260869565217
+      }
+    },
+    {
+      "colorPitchClass" : 0,
+      "noteID" : "0.0.47.445.1.1.8.4.0",
+      "point" : {
+        "x" : 502.92348320158106,
+        "y" : 2216.260869565217
+      }
+    }
+  ],
   "canvas" : {
     "height" : 2526,
     "width" : 595,
@@ -36753,7 +36771,7 @@
       "text" : "49"
     }
   ],
-  "formatVersion" : 7,
+  "formatVersion" : 8,
   "initialKeySignature" : {
     "fifths" : 2
   },

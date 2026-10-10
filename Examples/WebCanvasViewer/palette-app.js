@@ -1,4 +1,4 @@
-import { drawScoreCanvas, ensureSMuFLFont } from "./score-canvas.js?v=palette-14";
+import { drawScoreCanvas, ensureSMuFLFont } from "./score-canvas.js?v=palette-15";
 
 // Same defaultEducationalPalette and basic pitch-class grouping as iOS.
 const PITCHES = [
