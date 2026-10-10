@@ -222,6 +222,42 @@ import Testing
     #expect(tupletGaps.allSatisfy { $0 >= 11 })
 }
 
+@Test func webMixedValueMeasureKeepsEighthNoteIntervalsEvenAroundAccidentals() throws {
+    let fixtureURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        .appendingPathComponent("sample/Canon_in_D.mxl")
+    let renderer = DoReMiRenderer()
+    let score = try renderer.parseMXL(data: Data(contentsOf: fixtureURL))
+    let layout = try renderer.layout(
+        score: score,
+        options: renderer.webLayoutOptions(containerWidth: 1_024)
+    )
+    let measure55 = try #require(score.parts.first?.measures.first { $0.number == "55" })
+    let measure60 = try #require(score.parts.first?.measures.first { $0.number == "60" })
+
+    func onsetGaps(in measure: Measure) throws -> [CGFloat] {
+        let representativeNotes = Dictionary(grouping: measure.notes, by: \.onset)
+            .values
+            .compactMap { $0.first }
+            .sorted { $0.onset < $1.onset }
+        let xCoordinates = try representativeNotes.map { note in
+            try #require(layout.noteLayout(for: note.id)).noteheadCenter.x
+        }
+        return zip(xCoordinates, xCoordinates.dropFirst()).map { $1 - $0 }
+    }
+
+    let mixedGaps = try onsetGaps(in: measure55)
+    let referenceGaps = try onsetGaps(in: measure60)
+    let mixedEighthGaps = Array(mixedGaps.prefix(7))
+    let referenceEighthGaps = Array(referenceGaps.prefix(7))
+
+    #expect(mixedEighthGaps.count == 7)
+    #expect(referenceEighthGaps.count == 7)
+    #expect((mixedEighthGaps.max() ?? 0) - (mixedEighthGaps.min() ?? 0) < 0.5)
+    #expect((referenceEighthGaps.max() ?? 0) - (referenceEighthGaps.min() ?? 0) < 0.5)
+    #expect(mixedGaps.last ?? 0 >= 11)
+    #expect(mixedGaps.last ?? 0 < mixedEighthGaps[0])
+}
+
 @Test func webAggressiveShortSpacingKeepsSixteenthRestsOnTheSameGridAsNotes() throws {
     let staffID = StaffID(rawValue: "1")
     func measure(id: String, restsAt: Set<Int>) -> Measure {

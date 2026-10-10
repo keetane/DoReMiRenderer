@@ -1,5 +1,10 @@
 # Changelog
 
+- Keep ordinary eighth-note intervals rhythmically even in Web measures that
+  contain an isolated sixteenth-note subdivision. Accidentals retain compact
+  collision clearance without widening only the preceding interval; Canon in
+  D measure 55 now matches the even eighth-note rhythm visible in measure 60.
+
 - Fix Web accidental palette ownership when a natural/sharp/flat overlaps the
   preceding notehead's anchor area. Render plans now export note-owned
   accidental metadata, and the Canvas recolours only explicit notehead and
