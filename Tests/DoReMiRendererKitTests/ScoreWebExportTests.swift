@@ -7,6 +7,7 @@ import Testing
     let staffID = StaffID(rawValue: "1")
     let noteID = NoteID(rawValue: "web-note")
     let flatNoteID = NoteID(rawValue: "web-flat-note")
+    let naturalNoteID = NoteID(rawValue: "web-natural-note")
     let ledgerNoteID = NoteID(rawValue: "web-ledger-note")
     let score = ScoreDocument(parts: [
         ScorePart(id: "p1", measures: [
@@ -33,9 +34,19 @@ import Testing
                         staffID: staffID
                     ),
                     ScoreNote(
+                        id: naturalNoteID,
+                        pitch: Pitch(step: .c, octave: 5),
+                        onset: MusicalTime(ticks: 8, ticksPerQuarterNote: 4),
+                        duration: MusicalTime(ticks: 4, ticksPerQuarterNote: 4),
+                        noteValueKind: .quarter,
+                        voiceID: VoiceID(rawValue: "1"),
+                        staffID: staffID,
+                        accidental: "natural"
+                    ),
+                    ScoreNote(
                         id: ledgerNoteID,
                         pitch: Pitch(step: .c, octave: 6),
-                        onset: MusicalTime(ticks: 8, ticksPerQuarterNote: 4),
+                        onset: MusicalTime(ticks: 12, ticksPerQuarterNote: 4),
                         duration: MusicalTime(ticks: 4, ticksPerQuarterNote: 4),
                         noteValueKind: .quarter,
                         voiceID: VoiceID(rawValue: "1"),
@@ -74,6 +85,10 @@ import Testing
     #expect(plan.staffLines?.count == layout.staffLines.count)
     #expect(plan.staffLines?.allSatisfy { $0.pitchClass != nil } == true)
     #expect(plan.ledgerLines?.count == layout.ledgerLines.count)
+    let naturalAccidental = try #require(plan.accidentals?.first { $0.noteID == naturalNoteID })
+    let naturalElement = try #require(layout.elements.first { $0.kind == .accidental && $0.noteID == naturalNoteID })
+    #expect(naturalAccidental.point == ScoreWebPoint(x: naturalElement.frame.midX, y: naturalElement.frame.midY))
+    #expect(naturalAccidental.colorPitchClass == 0)
     let ledgerColors = plan.ledgerLines?
         .filter { $0.noteID == ledgerNoteID }
         .map(\.colorPitchClass)

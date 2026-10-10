@@ -1,5 +1,12 @@
 # Changelog
 
+- Fix Web accidental palette ownership when a natural/sharp/flat overlaps the
+  preceding notehead's anchor area. Render plans now export note-owned
+  accidental metadata, and the Canvas recolours only explicit notehead and
+  accidental glyphs instead of classifying every nearby SMuFL glyph as a
+  notehead. Canon in D measure 56 now renders the second note's C-natural sign
+  in the same red as its C notehead.
+
 - Regenerate every GitHub Pages sample render plan with the current SDK. This
   brings Canon in D measure containment, opposite-beam slur placement, and
   system-leading measure numbers in line with the local companion. Pages now

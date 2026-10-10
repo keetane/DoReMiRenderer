@@ -204,6 +204,34 @@ public struct ScoreWebLedgerLine: Hashable, Codable, Sendable {
     }
 }
 
+/// Semantic accidental metadata for browser palette colouring. The point and
+/// note identity come from `ScoreLayout`, so browser consumers never infer an
+/// accidental's owner from proximity to neighbouring noteheads.
+public struct ScoreWebAccidental: Hashable, Codable, Sendable {
+    public let point: ScoreWebPoint
+    public let noteID: NoteID?
+    public let colorPitchClass: Int?
+
+    init(layout: ElementLayout) {
+        point = ScoreWebPoint(CGPoint(x: layout.frame.midX, y: layout.frame.midY))
+        noteID = layout.noteID
+        colorPitchClass = Self.naturalPitchClass(for: layout.pitchClassHint)
+    }
+
+    private static func naturalPitchClass(for hint: PitchClass?) -> Int? {
+        switch hint {
+        case .c: 0
+        case .d: 2
+        case .e: 4
+        case .f: 5
+        case .g: 7
+        case .a: 9
+        case .b: 11
+        case nil: nil
+        }
+    }
+}
+
 /// The bounds of one SDK-laid-out system. This lets browser consumers render a
 /// current-position guide across the complete grand staff instead of attaching
 /// a marker to an individual notehead.
@@ -336,7 +364,7 @@ public struct ScoreWebRenderBundle: Hashable, Codable, Sendable {
 
 /// JSON transport produced by the SDK for browser Canvas rendering.
 public struct ScoreWebRenderPlan: Hashable, Codable, Sendable {
-    public static let formatVersion = 7
+    public static let formatVersion = 8
 
     public let formatVersion: Int
     public let canvas: ScoreWebRect
@@ -347,6 +375,9 @@ public struct ScoreWebRenderPlan: Hashable, Codable, Sendable {
     /// Optional for backwards-compatible decoding of plans generated before
     /// palette-aware ledger-line colouring was added.
     public let ledgerLines: [ScoreWebLedgerLine]?
+    /// Optional for backwards-compatible decoding of plans generated before
+    /// note-owned accidental palette metadata was added.
+    public let accidentals: [ScoreWebAccidental]?
     /// Optional for backwards-compatible decoding of plans generated before
     /// browser playback was added.
     public let playbackEvents: [ScoreWebPlaybackEvent]?
@@ -366,6 +397,7 @@ public struct ScoreWebRenderPlan: Hashable, Codable, Sendable {
         noteAnchors: [ScoreWebNoteAnchor],
         staffLines: [ScoreWebStaffLine]? = nil,
         ledgerLines: [ScoreWebLedgerLine]? = nil,
+        accidentals: [ScoreWebAccidental]? = nil,
         playbackEvents: [ScoreWebPlaybackEvent]? = nil,
         systems: [ScoreWebSystemGuide]? = nil,
         pages: [ScoreWebPage]? = nil,
@@ -377,6 +409,7 @@ public struct ScoreWebRenderPlan: Hashable, Codable, Sendable {
         self.noteAnchors = noteAnchors
         self.staffLines = staffLines
         self.ledgerLines = ledgerLines
+        self.accidentals = accidentals
         self.playbackEvents = playbackEvents
         self.systems = systems
         self.pages = pages
@@ -515,6 +548,9 @@ struct ScoreWebRenderPlanBuilder {
         let ledgerLines = layout.ledgerLines.map { ledgerLine in
             ScoreWebLedgerLine(layout: ledgerLine)
         }
+        let accidentals = layout.elements
+            .filter { $0.kind == .accidental }
+            .map(ScoreWebAccidental.init(layout:))
         let systems = layout.systems.map(ScoreWebSystemGuide.init(layout:))
         let pages = layout.pages.map(ScoreWebPage.init(layout:))
         let initialKeySignature = layout.elements
@@ -534,6 +570,7 @@ struct ScoreWebRenderPlanBuilder {
             noteAnchors: anchors,
             staffLines: staffLines,
             ledgerLines: ledgerLines,
+            accidentals: accidentals,
             playbackEvents: playbackEvents,
             systems: systems,
             pages: pages,
