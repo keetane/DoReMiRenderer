@@ -1,5 +1,20 @@
 # Changelog
 
+- Reorganize the Web colour-palette drawer with transpose controls first, add a
+  mutually exclusive `right / both / left` segmented control for playback,
+  guidance, keyboard state, note colouring, and per-staff score visibility, and
+  remove the C2-C6 colour sample panel. The control defaults to both hands and
+  supports arrow-key navigation.
+- Compact Web one-hand score display by removing the hidden staff's vertical
+  band, trim cross-staff barlines to the visible staff, and preserve click and
+  playback-follow coordinate accuracy after compaction. One-hand system gaps
+  use half the initial compact spacing so more music remains visible at once.
+- Reflow one-hand Web printing onto fixed A4 portrait canvases so the freed
+  staff space provides up to nine systems per page without vertically stretching
+  the score. Use the same A4 pagination on screen, clip cross-staff barlines to
+  the visible five-line staff, and include dynamics, articulations, curves, and
+  other nearby notation in the retained band so `p`/`pp` marks are not cut.
+
 - Keep ordinary eighth-note intervals rhythmically even in Web measures that
   contain an isolated sixteenth-note subdivision. Accidentals retain compact
   collision clearance without widening only the preceding interval; Canon in
