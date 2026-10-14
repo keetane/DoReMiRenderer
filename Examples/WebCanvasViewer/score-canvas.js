@@ -2,6 +2,7 @@ const SMUFL_FONT_FAMILY = "Bravura";
 const SMUFL_PROBE = "\uE0A4";
 const SMUFL_NOTEHEADS = new Set(["\uE0A2", "\uE0A3", "\uE0A4"]);
 const SMUFL_ACCIDENTALS = new Set(["\uE260", "\uE261", "\uE262", "\uE263", "\uE264"]);
+const COMPACT_HAND_SYSTEMS_PER_PAGE = 9;
 
 export async function ensureSMuFLFont() {
   if (!document.fonts) {
@@ -17,9 +18,21 @@ export async function ensureSMuFLFont() {
 }
 
 export function drawScoreCanvas(canvas, plan, options = {}) {
+  if (options.compactPrintPage) {
+    drawCompactHandPrintCanvas(canvas, plan, options);
+    return;
+  }
+  if (shouldUseCompactHandLayout(plan, options)) {
+    drawCompactHandScoreCanvas(canvas, plan, options);
+    return;
+  }
+  drawScoreCanvasStandard(canvas, plan, options);
+}
+
+function drawScoreCanvasStandard(canvas, plan, options = {}) {
   const pageFrame = options.pageFrame ?? plan.canvas;
   const pixelRatio = Math.max(1, window.devicePixelRatio || 1);
-  const cssWidth = canvas.clientWidth || pageFrame.width;
+  const cssWidth = options.cssWidthOverride ?? (canvas.clientWidth || pageFrame.width);
   const layoutScale = cssWidth / pageFrame.width;
   const cssHeight = pageFrame.height * layoutScale;
   canvas.width = Math.round(cssWidth * pixelRatio);
@@ -33,6 +46,8 @@ export function drawScoreCanvas(canvas, plan, options = {}) {
   context.lineCap = "butt";
   context.lineJoin = "miter";
   canvas.dataset.pageIndex = String(options.pageIndex ?? 0);
+  canvas.dataset.compactHandLayout = "false";
+  canvas._scoreVerticalSegments = null;
 
   // Keep page background behind the staff layer. The plan's background fill
   // otherwise covers staff rules if they are pulled out of command order.
@@ -49,6 +64,7 @@ export function drawScoreCanvas(canvas, plan, options = {}) {
   // geometry, so changing their visual treatment cannot move score elements.
   const staffCommandIndexes = staffLineCommandIndexes(plan);
   const ledgerCommandIndexes = ledgerLineCommandIndexes(plan);
+  const compactBarlineBands = crossStaffBarlineCommandBands(plan, options.enabledStaffIDs, pageFrame);
   for (const index of staffCommandIndexes) drawCommand(context, plan.commands[index], cssColor(plan.commands[index].color));
   for (const index of ledgerCommandIndexes) drawCommand(context, plan.commands[index], cssColor(plan.commands[index].color));
   drawPaletteBackground(context, canvas, plan, options);
@@ -59,17 +75,372 @@ export function drawScoreCanvas(canvas, plan, options = {}) {
 
   for (const [commandIndex, command] of plan.commands.entries()) {
     if (backgroundCommandIndexes.has(commandIndex) || staffCommandIndexes.has(commandIndex) || ledgerCommandIndexes.has(commandIndex)) continue;
-    drawCommand(context, command, noteheadColors.get(commandIndex) ?? accidentalColors.get(commandIndex) ?? cssColor(command.color));
+    const color = noteheadColors.get(commandIndex) ?? accidentalColors.get(commandIndex) ?? cssColor(command.color);
+    const visibleBands = compactBarlineBands.get(commandIndex);
+    if (visibleBands) drawVerticalCommandInBands(context, command, visibleBands, color);
+    else drawCommand(context, command, color);
   }
+  drawDisabledStaffMasks(context, canvas, plan, options.enabledStaffIDs, pageFrame);
   // The playback bar intentionally sits above barlines and note ink. A guide
   // behind notation can disappear entirely when an onset coincides with a
   // measure boundary, defeating its navigation purpose.
-  drawSystemGuide(context, canvas, plan, options.currentNoteIDs, {
+  drawSystemGuide(context, canvas, plan, options.currentNoteIDs, options.enabledStaffIDs, {
     color: "#23bdf0", lineWidth: 4, alpha: 0.94, dataset: "currentSystemGuide",
   });
-  drawSystemGuide(context, canvas, plan, options.nextNoteIDs, {
+  drawSystemGuide(context, canvas, plan, options.nextNoteIDs, options.enabledStaffIDs, {
     color: "#76d8f4", lineWidth: 2, alpha: 0.9, dash: [6, 5], dataset: "nextSystemGuide",
   });
+}
+
+function shouldUseCompactHandLayout(plan, options) {
+  if (options.compactHandLayout === false || typeof document === "undefined") return false;
+  const enabledStaffIDs = options.enabledStaffIDs;
+  if (!enabledStaffIDs || !Array.isArray(plan.systems) || !Array.isArray(plan.staffLines)) return false;
+  const availableStaffIDs = new Set((plan.noteAnchors ?? []).map((anchor) => String(anchor.staffID)));
+  return availableStaffIDs.size > 1 && enabledStaffIDs.size < availableStaffIDs.size;
+}
+
+function drawCompactHandScoreCanvas(canvas, plan, options) {
+  const pageFrame = options.pageFrame ?? plan.canvas;
+  const cssWidth = canvas.clientWidth || pageFrame.width;
+  const layoutScale = cssWidth / pageFrame.width;
+  const pixelRatio = Math.max(1, window.devicePixelRatio || 1);
+  const offscreen = document.createElement("canvas");
+  drawScoreCanvasStandard(offscreen, plan, { ...options, cssWidthOverride: cssWidth, compactHandLayout: false });
+
+  const segments = compactHandSegments(plan, pageFrame, options.enabledStaffIDs);
+  if (segments.length === 0) {
+    drawScoreCanvasStandard(canvas, plan, options);
+    return;
+  }
+
+  const bottomPadding = Math.max(24, segments[0].staffSpace * 5);
+  const logicalHeight = Math.max(100, segments.at(-1).destinationBottom - pageFrame.y + bottomPadding);
+  const physicalScale = pixelRatio * layoutScale;
+  canvas.width = Math.round(cssWidth * pixelRatio);
+  canvas.height = Math.round(logicalHeight * physicalScale);
+  canvas.style.height = `${logicalHeight * layoutScale}px`;
+  canvas.dataset.pageIndex = String(options.pageIndex ?? 0);
+  canvas.dataset.compactHandLayout = "true";
+  canvas._scoreVerticalSegments = segments;
+  for (const key of ["paletteNoteCount", "paletteAccidentalCount", "paletteStaffLineCount", "paletteLedgerLineCount", "hiddenStaffCount", "currentSystemGuide", "nextSystemGuide"]) {
+    if (offscreen.dataset[key] != null) canvas.dataset[key] = offscreen.dataset[key];
+  }
+
+  const context = canvas.getContext("2d");
+  context.setTransform(1, 0, 0, 1, 0, 0);
+  context.fillStyle = "#fff";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  const destinationStart = segments[0].destinationTop;
+  const headerHeight = Math.max(0, destinationStart - pageFrame.y);
+  if (headerHeight > 0) {
+    context.drawImage(
+      offscreen,
+      0, 0, offscreen.width, headerHeight * physicalScale,
+      0, 0, canvas.width, headerHeight * physicalScale
+    );
+  }
+  for (const segment of segments) {
+    const sourceY = (segment.sourceTop - pageFrame.y) * physicalScale;
+    const sourceHeight = (segment.sourceBottom - segment.sourceTop) * physicalScale;
+    const destinationY = (segment.destinationTop - pageFrame.y) * physicalScale;
+    context.drawImage(
+      offscreen,
+      0, sourceY, offscreen.width, sourceHeight,
+      0, destinationY, canvas.width, sourceHeight
+    );
+  }
+}
+
+function drawCompactHandPrintCanvas(canvas, plan, options) {
+  const printPage = options.compactPrintPage;
+  const pageFrame = printPage.frame;
+  const cssWidth = canvas.clientWidth || pageFrame.width;
+  const layoutScale = cssWidth / pageFrame.width;
+  const pixelRatio = Math.max(1, window.devicePixelRatio || 1);
+  const physicalScale = pixelRatio * layoutScale;
+  canvas.width = Math.round(cssWidth * pixelRatio);
+  canvas.height = Math.round(pageFrame.height * physicalScale);
+  canvas.style.height = `${pageFrame.height * layoutScale}px`;
+  canvas.dataset.pageIndex = String(options.pageIndex ?? 0);
+  canvas.dataset.compactHandLayout = "print";
+  canvas._scoreVerticalSegments = printPage.segments.map((segment) => ({
+    ...segment,
+    destinationBottom: segment.destinationTop + (segment.sourceBottom - segment.sourceTop),
+  }));
+
+  const context = canvas.getContext("2d");
+  context.setTransform(1, 0, 0, 1, 0, 0);
+  context.fillStyle = "#fff";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  const sourceCanvases = new Map();
+  const sourceCanvas = (sourcePage) => {
+    let offscreen = sourceCanvases.get(sourcePage.index);
+    if (offscreen) return offscreen;
+    offscreen = document.createElement("canvas");
+    drawScoreCanvasStandard(offscreen, plan, {
+      ...options,
+      pageFrame: sourcePage.frame,
+      cssWidthOverride: cssWidth,
+      compactHandLayout: false,
+      compactPrintPage: null,
+    });
+    sourceCanvases.set(sourcePage.index, offscreen);
+    return offscreen;
+  };
+
+  if (printPage.header) {
+    const offscreen = sourceCanvas(printPage.header.sourcePage);
+    const sourceY = (printPage.header.sourceTop - printPage.header.sourcePage.frame.y) * physicalScale;
+    const sourceHeight = (printPage.header.sourceBottom - printPage.header.sourceTop) * physicalScale;
+    context.drawImage(offscreen, 0, sourceY, offscreen.width, sourceHeight, 0, 0, canvas.width, sourceHeight);
+  }
+
+  for (const segment of printPage.segments) {
+    const offscreen = sourceCanvas(segment.sourcePage);
+    const sourceY = (segment.sourceTop - segment.sourcePage.frame.y) * physicalScale;
+    const sourceHeight = (segment.sourceBottom - segment.sourceTop) * physicalScale;
+    const destinationY = segment.destinationTop * physicalScale;
+    context.drawImage(
+      offscreen,
+      0, sourceY, offscreen.width, sourceHeight,
+      0, destinationY, canvas.width, sourceHeight
+    );
+  }
+}
+
+export function compactHandPrintPages(plan, enabledStaffIDs) {
+  const sourcePages = Array.isArray(plan?.pages) && plan.pages.length > 0
+    ? plan.pages
+    : [{ index: 0, frame: plan.canvas, contentFrame: plan.canvas, systemIndices: (plan.systems ?? []).map((system) => system.index) }];
+  if (!enabledStaffIDs || sourcePages.length === 0) return sourcePages;
+
+  const firstSourcePage = sourcePages[0];
+  const pageWidth = firstSourcePage.frame.width;
+  const pageHeight = firstSourcePage.frame.height;
+  const topMargin = Math.max(18, firstSourcePage.contentFrame?.y - firstSourcePage.frame.y || 0);
+  const bottomMargin = Math.max(18, pageHeight - ((firstSourcePage.contentFrame?.y - firstSourcePage.frame.y || 0) + (firstSourcePage.contentFrame?.height || pageHeight)));
+  const entries = [];
+
+  for (const system of [...(plan.systems ?? [])].sort((left, right) => left.frame.y - right.frame.y)) {
+    const sourcePage = sourcePages.find((page) => page.systemIndices?.includes(system.index))
+      ?? sourcePages.find((page) => system.frame.y >= page.frame.y && system.frame.y < page.frame.y + page.frame.height);
+    if (!sourcePage) continue;
+    const bands = staffBandsForSystem(plan, system);
+    const bounds = bands.map((band) => compactHandBandBounds(plan, system, band));
+    for (let index = 0; index < bands.length; index += 1) {
+      const band = bands[index];
+      if (!enabledStaffIDs.has(band.staffID)) continue;
+      entries.push({
+        system,
+        band,
+        sourcePage,
+        sourceTop: Math.max(sourcePage.frame.y, bounds[index].top),
+        sourceBottom: Math.min(sourcePage.frame.y + sourcePage.frame.height, bounds[index].bottom),
+        firstBandTop: bounds[0]?.top ?? band.top,
+      });
+    }
+  }
+  if (entries.length === 0) return sourcePages;
+
+  const firstDestinationTop = Math.max(topMargin, entries[0].firstBandTop - firstSourcePage.frame.y);
+  const header = {
+    sourcePage: firstSourcePage,
+    sourceTop: firstSourcePage.frame.y,
+    sourceBottom: firstSourcePage.frame.y + firstDestinationTop,
+  };
+  return paginateCompactHandEntries(entries, {
+    pageWidth,
+    pageHeight,
+    topMargin,
+    bottomMargin,
+    firstDestinationTop,
+    header,
+  });
+}
+
+function paginateCompactHandEntries(entries, options) {
+  const pages = [];
+  let cursor = 0;
+  while (cursor < entries.length) {
+    const page = makeCompactPrintPage(pages.length, options.pageWidth, options.pageHeight);
+    if (page.index === 0) page.header = options.header;
+    const top = page.index === 0 ? options.firstDestinationTop : options.topMargin;
+    const availableHeight = options.pageHeight - options.bottomMargin - top;
+    let count = Math.min(COMPACT_HAND_SYSTEMS_PER_PAGE, entries.length - cursor);
+    while (count > 1 && compactEntryHeights(entries.slice(cursor, cursor + count)) > availableHeight) count -= 1;
+    const batch = entries.slice(cursor, cursor + count);
+    const height = compactEntryHeights(batch);
+    const preferredGap = batch.length > 1
+      ? Math.min(...batch.slice(1).map((entry) => compactHandSystemGap(entry.band.staffSpace)))
+      : 0;
+    const fittedGap = batch.length > 1 ? Math.max(0, (availableHeight - height) / (batch.length - 1)) : 0;
+    const gap = Math.min(preferredGap, fittedGap);
+    let nextTop = top;
+    for (const entry of batch) {
+      if (page.segments.length > 0) nextTop += gap;
+      page.segments.push({ ...entry, destinationTop: nextTop });
+      page.systemIndices.push(entry.system.index);
+      nextTop += entry.sourceBottom - entry.sourceTop;
+    }
+    pages.push(page);
+    cursor += count;
+  }
+  return pages;
+}
+
+function compactEntryHeights(entries) {
+  return entries.reduce((sum, entry) => sum + entry.sourceBottom - entry.sourceTop, 0);
+}
+
+function makeCompactPrintPage(index, width, height) {
+  return {
+    index,
+    frame: { x: 0, y: 0, width, height },
+    contentFrame: { x: 0, y: 0, width, height },
+    systemIndices: [],
+    segments: [],
+    header: null,
+  };
+}
+
+function compactHandSegments(plan, pageFrame, enabledStaffIDs) {
+  const systems = (plan.systems ?? [])
+    .filter((system) => system.frame.y >= pageFrame.y - 0.01 && system.frame.y < pageFrame.y + pageFrame.height - 0.01)
+    .sort((left, right) => left.frame.y - right.frame.y);
+  const entries = systems.flatMap((system) => {
+    const bands = staffBandsForSystem(plan, system);
+    const compactBounds = bands.map((band) => compactHandBandBounds(plan, system, band));
+    return bands.flatMap((band, index) => (
+      enabledStaffIDs.has(band.staffID)
+        ? [{ system, band, bounds: compactBounds[index], firstBandTop: compactBounds[0]?.top ?? band.top }]
+        : []
+    ));
+  });
+  if (entries.length === 0) return [];
+
+  const firstTop = Math.max(pageFrame.y, entries[0].firstBandTop);
+  let nextTop = firstTop;
+  let previousSystemIndex = null;
+  return entries.map(({ system, band, bounds }) => {
+    if (previousSystemIndex != null) {
+      nextTop += compactHandSystemGap(band.staffSpace, previousSystemIndex === system.index);
+    }
+    const height = bounds.bottom - bounds.top;
+    const segment = {
+      sourceTop: Math.max(pageFrame.y, bounds.top),
+      sourceBottom: Math.min(pageFrame.y + pageFrame.height, bounds.bottom),
+      destinationTop: nextTop,
+      destinationBottom: nextTop + height,
+      staffID: band.staffID,
+      systemIndex: system.index,
+      staffSpace: band.staffSpace,
+    };
+    segment.destinationBottom = segment.destinationTop + (segment.sourceBottom - segment.sourceTop);
+    nextTop = segment.destinationBottom;
+    previousSystemIndex = system.index;
+    return segment;
+  });
+}
+
+function compactHandBandBounds(plan, system, band, margin = null) {
+  const staffTop = band.lines[0].start.y;
+  const staffBottom = band.lines.at(-1).start.y;
+  const bands = staffBandsForSystem(plan, system);
+  const noteFrames = (plan.noteAnchors ?? [])
+    .filter((anchor) => anchor.systemIndex === system.index && String(anchor.staffID) === band.staffID)
+    .map((anchor) => anchor.frame)
+    .filter(Boolean);
+  const commandFrames = notationCommandBoundsForBand(plan, system, band, bands);
+  const inkFrames = [...noteFrames, ...commandFrames];
+  const inkTop = Math.min(staffTop, ...inkFrames.map((frame) => frame.y));
+  const inkBottom = Math.max(staffBottom, ...inkFrames.map((frame) => frame.y + frame.height));
+  const notationClearance = margin ?? Math.max(2, band.staffSpace * 0.6);
+  return {
+    top: inkTop - notationClearance,
+    bottom: inkBottom + notationClearance,
+  };
+}
+
+function notationCommandBoundsForBand(plan, system, band, bands) {
+  const verticalLimit = Math.max(48, band.staffSpace * 12);
+  const systemTop = system.frame.y - band.staffSpace * 10;
+  const systemBottom = system.frame.y + system.frame.height + band.staffSpace * 10;
+  return (plan.commands ?? []).flatMap((command) => {
+    const bounds = scoreCommandBounds(command);
+    const isStructuralVerticalLine = command.kind === "strokeLine"
+      && command.start && command.end
+      && Math.abs(command.start.x - command.end.x) <= 0.01
+      && bounds?.height > band.staffSpace * 6;
+    if (!bounds || bounds.height > verticalLimit
+      || isStructuralVerticalLine
+      || bounds.x + bounds.width < system.frame.x - 1
+      || bounds.x > system.frame.x + system.frame.width + 1
+      || bounds.y + bounds.height < systemTop
+      || bounds.y > systemBottom) return [];
+    const commandCenter = bounds.y + bounds.height / 2;
+    const nearest = bands.reduce((result, candidate) => {
+      const distance = Math.abs(staffCenter(candidate) - commandCenter);
+      return distance < result.distance ? { band: candidate, distance } : result;
+    }, { band: null, distance: Infinity });
+    if (nearest.distance > band.staffSpace * 8) return [];
+    return nearest.band?.staffID === band.staffID ? [bounds] : [];
+  });
+}
+
+function staffCenter(band) {
+  return (band.lines[0].start.y + band.lines.at(-1).start.y) / 2;
+}
+
+function scoreCommandBounds(command) {
+  if (command.rect) return { ...command.rect };
+  if (command.kind === "strokeLine" && command.start && command.end) {
+    return boundsForPoints([command.start, command.end], command.lineWidth || 1);
+  }
+  if (command.kind === "strokeQuadraticCurve" && command.start && command.control && command.end) {
+    return boundsForPoints([command.start, command.control, command.end], command.lineWidth || 1);
+  }
+  if (command.kind === "drawText" && command.point) {
+    const size = command.fontSize || 12;
+    const lines = String(command.text ?? "").split("\n");
+    const width = Math.max(size * 0.8, ...lines.map((line) => line.length * size * 0.7));
+    const height = Math.max(size, lines.length * size);
+    return { x: command.point.x - width / 2, y: command.point.y - height / 2, width, height };
+  }
+  return null;
+}
+
+function boundsForPoints(points, lineWidth) {
+  const inset = Math.max(0.5, lineWidth / 2);
+  const xs = points.map((point) => point.x);
+  const ys = points.map((point) => point.y);
+  const left = Math.min(...xs) - inset;
+  const top = Math.min(...ys) - inset;
+  return {
+    x: left,
+    y: top,
+    width: Math.max(...xs) + inset - left,
+    height: Math.max(...ys) + inset - top,
+  };
+}
+
+export function compactHandSystemGap(staffSpace, sameSystem = false) {
+  return Math.max(10, staffSpace * (sameSystem ? 2 : 3));
+}
+
+export function sourceYForDisplayY(canvas, displayY) {
+  const segment = canvas?._scoreVerticalSegments?.find((item) => (
+    displayY >= item.destinationTop && displayY <= item.destinationBottom
+  ));
+  return segment ? segment.sourceTop + displayY - segment.destinationTop : displayY;
+}
+
+export function displayYForSourceY(canvas, sourceY) {
+  const segment = canvas?._scoreVerticalSegments?.find((item) => (
+    sourceY >= item.sourceTop && sourceY <= item.sourceBottom
+  ));
+  return segment ? segment.destinationTop + sourceY - segment.sourceTop : sourceY;
 }
 
 function isCanvasBackground(command, canvas) {
@@ -156,7 +527,7 @@ function drawLedgerLineColorGuides(context, canvas, plan, colorForPitchClass, en
   canvas.dataset.paletteLedgerLineCount = String(coloredLedgerLineCount);
 }
 
-function drawSystemGuide(context, canvas, plan, noteIDs = new Set(), style) {
+function drawSystemGuide(context, canvas, plan, noteIDs = new Set(), enabledStaffIDs, style) {
   canvas.dataset[style.dataset] = "";
   if (!noteIDs?.size) return;
   const anchor = (plan.noteAnchors ?? []).find((item) => noteIDs.has(item.noteID));
@@ -165,6 +536,15 @@ function drawSystemGuide(context, canvas, plan, noteIDs = new Set(), style) {
   if (!system) return;
   canvas.dataset[style.dataset] = `${anchor.noteID}@${system.index}`;
   const guideX = Math.max(system.frame.x + 3, anchor.frame.x - 5);
+  const bands = staffBandsForSystem(plan, system);
+  const hasHiddenStaff = enabledStaffIDs && bands.some((band) => !enabledStaffIDs.has(band.staffID));
+  const guideBand = hasHiddenStaff ? bands.find((band) => band.staffID === String(anchor.staffID)) : null;
+  const guideTop = guideBand
+    ? guideBand.lines[0].start.y - guideBand.staffSpace * 2
+    : system.frame.y;
+  const guideBottom = guideBand
+    ? guideBand.lines.at(-1).start.y + guideBand.staffSpace * 2
+    : system.frame.y + system.frame.height;
 
   context.save();
   context.globalAlpha = style.alpha;
@@ -172,10 +552,146 @@ function drawSystemGuide(context, canvas, plan, noteIDs = new Set(), style) {
   context.lineWidth = style.lineWidth;
   if (style.dash) context.setLineDash(style.dash);
   context.beginPath();
-  context.moveTo(guideX, system.frame.y);
-  context.lineTo(guideX, system.frame.y + system.frame.height);
+  context.moveTo(guideX, guideTop);
+  context.lineTo(guideX, guideBottom);
   context.stroke();
   context.restore();
+}
+
+function drawDisabledStaffMasks(context, canvas, plan, enabledStaffIDs, pageFrame = plan.canvas) {
+  canvas.dataset.hiddenStaffCount = "0";
+  if (!enabledStaffIDs || !Array.isArray(plan.systems) || !Array.isArray(plan.staffLines)) return;
+  let hiddenCount = 0;
+  const pageBottom = pageFrame.y + pageFrame.height;
+  for (const system of plan.systems.filter((item) => (
+    item.frame.y + item.frame.height >= pageFrame.y && item.frame.y <= pageBottom
+  ))) {
+    const bands = staffBandsForSystem(plan, system);
+    const enabledBounds = bands
+      .filter((band) => enabledStaffIDs.has(band.staffID))
+      .map((band) => ({ band, bounds: compactHandBandBounds(plan, system, band, 0) }));
+    for (const band of bands) {
+      if (enabledStaffIDs.has(band.staffID)) continue;
+      const bounds = compactHandBandBounds(plan, system, band, 0);
+      const center = staffCenter(band);
+      for (const enabled of enabledBounds) {
+        const enabledCenter = staffCenter(enabled.band);
+        if (center > enabledCenter) bounds.top = Math.max(bounds.top, enabled.bounds.bottom);
+        if (center < enabledCenter) bounds.bottom = Math.min(bounds.bottom, enabled.bounds.top);
+      }
+      context.save();
+      context.fillStyle = "#fff";
+      context.fillRect(system.frame.x - 2, bounds.top, system.frame.width + 4, Math.max(0, bounds.bottom - bounds.top));
+      context.restore();
+      hiddenCount += 1;
+    }
+    if (bands.some((band) => !enabledStaffIDs.has(band.staffID))) {
+      replaceGrandStaffBraceWithVisibleStaffBarlines(context, system, bands, enabledStaffIDs);
+    }
+  }
+  canvas.dataset.hiddenStaffCount = String(hiddenCount);
+}
+
+function crossStaffBarlineCommandBands(plan, enabledStaffIDs, pageFrame) {
+  const result = new Map();
+  if (!enabledStaffIDs) return result;
+  const pageBottom = pageFrame.y + pageFrame.height;
+  for (const system of (plan.systems ?? []).filter((item) => (
+    item.frame.y + item.frame.height >= pageFrame.y && item.frame.y <= pageBottom
+  ))) {
+    const bands = staffBandsForSystem(plan, system);
+    if (!bands.some((band) => !enabledStaffIDs.has(band.staffID))) continue;
+    for (const [index, command] of (plan.commands ?? []).entries()) {
+      if (command.kind !== "strokeLine" || !command.start || !command.end
+        || Math.abs(command.start.x - command.end.x) > 0.01
+        || command.start.x < system.frame.x - 1
+        || command.start.x > system.frame.x + system.frame.width + 1) continue;
+      const top = Math.min(command.start.y, command.end.y);
+      const bottom = Math.max(command.start.y, command.end.y);
+      const connectsStaffGap = bands.some((band, bandIndex) => {
+        const nextBand = bands[bandIndex + 1];
+        if (!nextBand) return false;
+        return Math.abs(top - band.lines.at(-1).start.y) <= 0.01
+          && Math.abs(bottom - nextBand.lines[0].start.y) <= 0.01;
+      });
+      if (connectsStaffGap) {
+        result.set(index, []);
+        continue;
+      }
+      const crossedBands = bands.filter((band) => (
+        top <= band.lines[0].start.y + 0.01 && bottom >= band.lines.at(-1).start.y - 0.01
+      ));
+      if (crossedBands.length >= 2) {
+        result.set(index, bands.filter((band) => enabledStaffIDs.has(band.staffID)));
+      }
+    }
+  }
+  return result;
+}
+
+function drawVerticalCommandInBands(context, command, bands, color) {
+  context.save();
+  context.strokeStyle = color;
+  context.lineWidth = command.lineWidth || 1;
+  context.lineCap = "butt";
+  for (const band of bands) {
+    context.beginPath();
+    context.moveTo(command.start.x, band.lines[0].start.y);
+    context.lineTo(command.end.x, band.lines.at(-1).start.y);
+    context.stroke();
+  }
+  context.restore();
+}
+
+function replaceGrandStaffBraceWithVisibleStaffBarlines(context, system, bands, enabledStaffIDs) {
+  const lineStartX = Math.min(...bands.flatMap((band) => band.lines.map((line) => line.start.x)));
+  const staffSpace = bands[0]?.staffSpace ?? 5;
+  context.save();
+  context.fillStyle = "#fff";
+  context.fillRect(
+    lineStartX - Math.max(14, staffSpace * 3),
+    system.frame.y - staffSpace,
+    Math.max(14, staffSpace * 3) + 1,
+    system.frame.height + staffSpace * 2
+  );
+  context.strokeStyle = "#000";
+  context.lineWidth = 1;
+  for (const band of bands) {
+    if (!enabledStaffIDs.has(band.staffID)) continue;
+    context.beginPath();
+    context.moveTo(lineStartX, band.lines[0].start.y);
+    context.lineTo(lineStartX, band.lines.at(-1).start.y);
+    context.stroke();
+  }
+  context.restore();
+}
+
+function staffBandsForSystem(plan, system) {
+  const lineYs = [...new Set((plan.staffLines ?? [])
+    .filter((line) => line.start.y >= system.frame.y - 0.01 && line.start.y <= system.frame.y + system.frame.height + 0.01)
+    .map((line) => Number(line.start.y.toFixed(3))))]
+    .sort((left, right) => left - right);
+  const staffGroups = [];
+  for (let index = 0; index + 4 < lineYs.length; index += 5) {
+    const ys = lineYs.slice(index, index + 5);
+    const lines = ys.map((y) => (plan.staffLines ?? []).find((line) => Math.abs(line.start.y - y) < 0.01));
+    if (lines.some((line) => !line)) continue;
+    staffGroups.push({ center: ys.reduce((sum, value) => sum + value, 0) / ys.length, lines });
+  }
+  if (staffGroups.length === 0) return [];
+  const staffSpace = staffGroups[0].lines.length > 1
+    ? staffGroups[0].lines[1].start.y - staffGroups[0].lines[0].start.y
+    : 5;
+  const outerPadding = Math.max(24, staffSpace * 8);
+  return staffGroups.map((group, index) => ({
+    staffID: String(index + 1),
+    lines: group.lines,
+    staffSpace,
+    top: index === 0 ? system.frame.y - outerPadding : (staffGroups[index - 1].center + group.center) / 2,
+    bottom: index === staffGroups.length - 1
+      ? system.frame.y + system.frame.height + outerPadding
+      : (group.center + staffGroups[index + 1].center) / 2,
+  }));
 }
 
 function drawStaffLineColorGuides(context, canvas, plan, colorForPitchClass, enabledPitchClasses) {
@@ -204,13 +720,15 @@ function drawStaffLineColorGuides(context, canvas, plan, colorForPitchClass, ena
 // glyph proportions, and the distinction between half and whole notes.
 function noteheadCommandColors(plan, options) {
   const enabledPitchClasses = options.enabledPitchClasses ?? new Set();
+  const enabledStaffIDs = options.enabledStaffIDs;
   const colorForPitchClass = options.noteColorForPitchClass ?? (() => null);
   const result = new Map();
 
   if (!options.noteColors) {
     return result;
   }
-  const anchors = (plan.noteAnchors ?? []).filter((anchor) => anchor.midiNumber != null);
+  const anchors = (plan.noteAnchors ?? []).filter((anchor) => anchor.midiNumber != null
+    && (!enabledStaffIDs || enabledStaffIDs.has(String(anchor.staffID))));
   for (const [index, command] of plan.commands.entries()) {
     if (command.kind !== "drawText" || command.fontRole !== "smufl" || !command.point
       || !SMUFL_NOTEHEADS.has(command.text)) continue;
@@ -227,6 +745,7 @@ function noteheadCommandColors(plan, options) {
 
 function accidentalCommandColors(plan, options) {
   const enabledPitchClasses = options.enabledPitchClasses ?? new Set();
+  const enabledStaffIDs = options.enabledStaffIDs;
   const colorForPitchClass = options.noteColorForPitchClass ?? (() => null);
   const result = new Map();
 
@@ -236,6 +755,8 @@ function accidentalCommandColors(plan, options) {
     if (command.kind !== "drawText" || command.fontRole !== "smufl" || !command.point
       || !SMUFL_ACCIDENTALS.has(command.text)) continue;
     const accidental = accidentals.find((item) => pointsMatch(command.point, item.point));
+    const anchor = accidental ? (plan.noteAnchors ?? []).find((item) => item.noteID === accidental.noteID) : null;
+    if (enabledStaffIDs && (!anchor || !enabledStaffIDs.has(String(anchor.staffID)))) continue;
     const pitchClass = accidental?.colorPitchClass;
     if (!Number.isInteger(pitchClass) || !enabledPitchClasses.has(pitchClass)) continue;
     const color = colorForPitchClass(pitchClass);

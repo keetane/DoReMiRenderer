@@ -96,15 +96,18 @@ next-note guide, which is off by default. The next note is a pale circular marke
 in its pitch-class colour, distinct from the filled current-note key. Black-key
 colour bands cover a flat 5% strip at the selected top or bottom edge. Defaults
 match iOS: note and keyboard colours are on, while staff-line colours are off.
-The palette drawer also renders an SDK-generated grand-staff preview containing
-all 49 chromatic pitches from C2 through C6. It uses the same note-colour,
-staff-line-colour, and enabled-pitch-class state as the loaded score, so palette
-changes can be checked without leaving the drawer. The preview is generated from
-`Fixtures/palette-preview-c2-c6.musicxml`; its Canvas consumes only the exported
-ScoreLayout coordinates in `palette-preview-c2-c6.json`.
 
-The palette drawer provides a natural-sign original-scale reset button, compact scale
-labels (`C / Am`, `F / Dm`), and one chromatic octave of transpose choices (`-6...+5`).
+The palette drawer starts with transpose controls: a natural-sign original-scale
+reset button, compact scale labels (`C / Am`, `F / Dm`), and one chromatic octave
+of choices (`-6...+5`). A three-way segmented control (`右手 / 両手 / 左手`)
+follows. `両手` is selected by default; choosing either one-hand mode removes
+the other staff from playback, score guides, keyboard guidance, note colouring,
+and score display. One-hand display
+keeps the SDK's horizontal measure layout but compacts the remaining staff bands
+vertically, trims system-spanning barlines to the visible five-line staff, and
+maps pointer selection and playback follow back to the original SDK coordinates.
+The three modes are mutually exclusive, so the score always retains at least one
+playable staff.
 The main toolbar keeps Play/Stop/Reset, direct measure Jump, and a single `↔`
 button that fits the rendered A4 page width to the score canvas. Previous/Next
 note stepping and manual percentage zoom are intentionally omitted from the Web
@@ -120,7 +123,12 @@ to start the loopback companion on port 8767 and open the app in the default
 browser. The launcher reuses an already-running healthy companion and writes its
 background server log to `/tmp/DoReMiPaletteWeb.log`.
 The printer button opens the browser print dialog using the SDK-exported A4
-portrait pages at 1:1 size. It prints score pages only: the toolbar, palette,
+portrait dimensions at 1:1 size. With both hands visible it uses the SDK pages
+directly. In one-hand mode, both the interactive viewer and print output use the
+same fixed A4 pagination with up to nine systems per page. Staff-adjacent ink,
+including dynamics and articulations, contributes to each retained staff band so
+symbols are not clipped when the hidden staff is removed.
+It prints score pages only: the toolbar, palette,
 keyboard, playback guide, next-note guide, and selected-note highlight are
 excluded. Keep the browser print dialog at A4 portrait and 100% scale; the
 viewer restores its interactive controls and fitted display after printing.

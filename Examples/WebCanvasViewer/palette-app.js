@@ -1,4 +1,11 @@
-import { drawScoreCanvas, ensureSMuFLFont } from "./score-canvas.js?v=palette-15";
+import {
+  compactHandPrintPages,
+  displayYForSourceY,
+  drawScoreCanvas,
+  ensureSMuFLFont,
+  sourceYForDisplayY,
+} from "./score-canvas.js?v=palette-22";
+import { enabledHandStaffIDs, handModeForState, handStateForMode, noteIDsForEnabledStaffs, pitchesForEnabledStaffs } from "./hand-mode.js?v=palette-31";
 
 // Same defaultEducationalPalette and basic pitch-class grouping as iOS.
 const PITCHES = [
@@ -13,10 +20,10 @@ const loopbackCompanionOrigins = ["http://127.0.0.1:8767", "http://127.0.0.1:876
 const state = {
   source: null, plan: null, sourceName: "score-web.json", transpose: 0, scoreZoom: 1,
   noteColors: true, staffColors: false, keyboardColors: true, keyboardColorPosition: "top", nextNoteGuide: false, keyboardVisible: true, enabled: allPitchClasses(),
+  rightHandEnabled: true, leftHandEnabled: true,
   selectedNoteID: null, selectedMidi: null, currentIndex: 0, activeMIDIs: new Set(), nextMIDIs: new Set(), playing: false,
   context: null, audioUnlockPromise: null, nodes: new Set(), nextScheduledIndex: 0, contextStart: 0, timelineStart: 0, baseTempoBPM: 120, tempoBPM: 120, animationFrame: null,
   lastFollowedSystemIndex: null, pageCanvases: new Map(), transposeRequestID: 0, printing: false, samples: null, activeDrawer: null,
-  palettePreviewPlan: null, palettePreviewCanvases: new Map(),
   activeSampleID: null,
   companionOrigin: usesLoopbackCompanion ? location.origin : null,
   hasAppliedInitialFitWidth: false,
@@ -28,9 +35,9 @@ const controls = {
   keyboard: $("#keyboard-button"), dock: $("#keyboard-dock"), file: $("#file-input"), sampleLibraryButton: $("#sample-library-button"), sampleLibrary: $("#sample-library"), sampleList: $("#sample-list"), print: $("#print-button"),
   selected: $("#selected-note"), transpose: $("#transpose-select"), originalScale: $("#original-scale-button"), keyboardElement: $("#keyboard"),
   staffColors: $("#staff-colors"), keyboardColors: $("#keyboard-colors"), keyboardColorPosition: $("#keyboard-color-position"), nextNoteGuide: $("#next-note-guide"), allPitches: $("#all-pitches"),
+  handModes: [...document.querySelectorAll("[data-hand-mode]")],
   tempo: $("#tempo-input"), fitWidth: $("#fit-width-button"), reset: $("#reset-button"), play: $("#play-button"),
   stop: $("#stop-button"), jump: $("#jump-button"), measure: $("#measure-input"), measureStatus: $("#measure-status"),
-  palettePreviewStack: $("#palette-preview-stack"), palettePreviewMessage: $("#palette-preview-message"),
 };
 
 buildPalette();
@@ -42,12 +49,16 @@ controls.drawerClose.addEventListener("click", closeDrawer);
 controls.drawerBackdrop.addEventListener("click", closeDrawer);
 controls.noteColors.addEventListener("click", () => { state.noteColors = !state.noteColors; sync(); redraw(); });
 controls.keyboard.addEventListener("click", () => { state.keyboardVisible = !state.keyboardVisible; sync(); });
-$("#palette-reset").addEventListener("click", () => { state.enabled = allPitchClasses(); state.noteColors = true; state.staffColors = false; state.keyboardColors = true; state.keyboardColorPosition = "top"; state.nextNoteGuide = false; sync(); redraw(); });
+$("#palette-reset").addEventListener("click", () => { state.enabled = allPitchClasses(); state.noteColors = true; state.staffColors = false; state.keyboardColors = true; state.keyboardColorPosition = "top"; state.nextNoteGuide = false; state.rightHandEnabled = true; state.leftHandEnabled = true; sync(); redraw(); });
 controls.staffColors.addEventListener("click", () => { state.staffColors = !state.staffColors; sync(); redraw(); });
 controls.keyboardColors.addEventListener("click", () => { state.keyboardColors = !state.keyboardColors; sync(); updateKeyboard(); });
 controls.keyboardColorPosition.addEventListener("click", () => { state.keyboardColorPosition = state.keyboardColorPosition === "top" ? "bottom" : "top"; sync(); updateKeyboard(); });
 controls.nextNoteGuide.addEventListener("click", () => { state.nextNoteGuide = !state.nextNoteGuide; sync(); redraw(); });
 controls.allPitches.addEventListener("click", () => { state.enabled = state.enabled.size === 12 ? new Set() : allPitchClasses(); sync(); redraw(); });
+for (const button of controls.handModes) {
+  button.addEventListener("click", () => selectHandMode(button.dataset.handMode));
+  button.addEventListener("keydown", moveHandModeSelection);
+}
 controls.file.addEventListener("change", async (event) => { const file = event.target.files?.[0]; if (!file) return; try { await loadFile(file); closeDrawer(); } catch (error) { fail(`スコアを開けません: ${error.message}`); } finally { controls.file.value = ""; } });
 controls.sampleLibraryButton.addEventListener("click", () => { void toggleSampleLibrary(); });
 controls.print.addEventListener("click", printScore);
@@ -75,22 +86,7 @@ try {
   const [response] = await Promise.all([fetch("./score-web.json"), ensureSMuFLFont()]);
   if (!response.ok) throw new Error(`score-web.json (${response.status})`);
   load(await response.json(), "score-web.json");
-  void loadPalettePreview();
 } catch (error) { fail(`Score viewer could not start: ${error.message}`); }
-
-async function loadPalettePreview() {
-  try {
-    const response = await fetch("./palette-preview-c2-c6.json");
-    if (!response.ok) throw new Error(`palette-preview-c2-c6.json (${response.status})`);
-    const plan = await response.json();
-    validate(plan);
-    state.palettePreviewPlan = plan;
-    controls.palettePreviewMessage?.remove();
-    drawPalettePreview();
-  } catch (error) {
-    if (controls.palettePreviewMessage) controls.palettePreviewMessage.textContent = `プレビューを読み込めません: ${error.message}`;
-  }
-}
 
 function load(document, sourceName, activeSampleID = null) {
   stop();
@@ -271,69 +267,39 @@ function events() { return state.source?.events ?? []; }
 function redraw() {
   if (!state.plan) return;
   const event = state.printing ? null : events()[state.currentIndex];
-  const nextEvent = state.printing || !state.nextNoteGuide ? null : events()[state.currentIndex + 1];
-  const pages = pageFrames(state.plan);
+  const nextEvent = state.printing || !state.nextNoteGuide ? null : nextEnabledEvent(state.currentIndex + 1);
+  const enabledStaffIDs = activeStaffIDs();
+  const currentNoteIDs = new Set(activeNoteIDs(event));
+  const nextNoteIDs = new Set(activeNoteIDs(nextEvent));
+  const pages = renderedPageFrames(state.plan, enabledStaffIDs);
   preparePageCanvases(pages);
   applyPageStackWidth(pages);
   for (const page of pages) {
     drawScoreCanvas(state.pageCanvases.get(page.index), state.plan, {
       pageFrame: page.frame, pageIndex: page.index,
       noteColors: state.noteColors, staffColors: state.staffColors, enabledPitchClasses: state.enabled,
+      enabledStaffIDs,
       noteColorForPitchClass: (pitchClass) => COLORS.get(pitchClass),
       staffColorForPitchClass: (pitchClass) => COLORS.get(pitchClass),
       selectedNoteIDs: new Set(!state.printing && state.selectedNoteID ? [state.selectedNoteID] : []),
-      currentNoteIDs: new Set(event?.noteIDs ?? []),
-      nextNoteIDs: new Set(nextEvent?.noteIDs ?? []),
+      currentNoteIDs,
+      nextNoteIDs,
+      compactPrintPage: page.segments ? page : null,
     });
   }
   updateKeyboard();
-  drawPalettePreview();
-}
-
-function drawPalettePreview() {
-  const plan = state.palettePreviewPlan;
-  const stack = controls.palettePreviewStack;
-  if (!plan || !stack || state.activeDrawer !== "palette") return;
-
-  const systems = plan.systems ?? [];
-  const wanted = new Set(systems.map((system) => system.index));
-  for (const [index, canvas] of state.palettePreviewCanvases) {
-    if (!wanted.has(index)) { canvas.remove(); state.palettePreviewCanvases.delete(index); }
-  }
-
-  for (const system of systems) {
-    let canvas = state.palettePreviewCanvases.get(system.index);
-    if (!canvas) {
-      canvas = document.createElement("canvas");
-      canvas.className = "palette-preview-system";
-      canvas.setAttribute("aria-label", `C2からC6のカラープレビュー ${system.index + 1}`);
-      state.palettePreviewCanvases.set(system.index, canvas);
-    }
-    stack.append(canvas);
-    const paddingX = 10;
-    const paddingY = 18;
-    drawScoreCanvas(canvas, plan, {
-      pageFrame: {
-        x: Math.max(plan.canvas.x, system.frame.x - paddingX),
-        y: Math.max(plan.canvas.y, system.frame.y - paddingY),
-        width: Math.min(plan.canvas.width, system.frame.width + paddingX * 2),
-        height: system.frame.height + paddingY * 2,
-      },
-      pageIndex: system.index,
-      noteColors: state.noteColors,
-      staffColors: state.staffColors,
-      enabledPitchClasses: state.enabled,
-      noteColorForPitchClass: (pitchClass) => COLORS.get(pitchClass),
-      staffColorForPitchClass: (pitchClass) => COLORS.get(pitchClass),
-      currentNoteIDs: new Set(),
-      nextNoteIDs: new Set(),
-    });
-  }
 }
 
 function pageFrames(plan) {
   if (Array.isArray(plan?.pages) && plan.pages.length > 0) return plan.pages;
   return [{ index: 0, frame: plan.canvas, contentFrame: plan.canvas, systemIndices: (plan.systems ?? []).map((system) => system.index) }];
+}
+
+function renderedPageFrames(plan, enabledStaffIDs) {
+  if (isSingleHandMode()) {
+    return compactHandPrintPages(plan, enabledStaffIDs);
+  }
+  return pageFrames(plan);
 }
 
 function preparePageCanvases(pages) {
@@ -371,6 +337,13 @@ function sync() {
   syncCheckToggle(controls.keyboardColors, state.keyboardColors);
   syncCheckToggle(controls.nextNoteGuide, state.nextNoteGuide);
   syncCheckToggle(controls.allPitches, state.enabled.size === 12);
+  const handMode = handModeForState(state.rightHandEnabled, state.leftHandEnabled);
+  for (const button of controls.handModes) {
+    const isActive = button.dataset.handMode === handMode;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-checked", String(isActive));
+    button.tabIndex = isActive ? 0 : -1;
+  }
   controls.keyboardColorPosition.textContent = state.keyboardColorPosition === "top" ? "鍵盤色: 上" : "鍵盤色: 下";
   controls.keyboardElement.classList.toggle("color-bottom", state.keyboardColorPosition === "bottom");
   controls.transpose.value = String(state.transpose);
@@ -493,17 +466,19 @@ function updateKeyboard() {
 function selectAnchor(event) {
   if (!state.plan) return;
   const pageCanvas = event.currentTarget;
-  const page = pageFrames(state.plan).find((item) => item.index === Number(pageCanvas.dataset.pageIndex));
+  const page = renderedPageFrames(state.plan, activeStaffIDs()).find((item) => item.index === Number(pageCanvas.dataset.pageIndex));
   if (!page) return;
   const bounds = pageCanvas.getBoundingClientRect();
   const scale = page.frame.width / bounds.width;
   const x = page.frame.x + (event.clientX - bounds.left) * scale;
-  const y = page.frame.y + (event.clientY - bounds.top) * scale;
+  const displayY = page.frame.y + (event.clientY - bounds.top) * scale;
+  const y = sourceYForDisplayY(pageCanvas, displayY);
   const nearest = state.plan.noteAnchors.reduce((result, anchor) => {
     const distance = (anchor.center.x - x) ** 2 + (anchor.center.y - y) ** 2;
     return distance < result.distance ? { anchor, distance } : result;
   }, { anchor: null, distance: Infinity });
   if (!nearest.anchor || Math.sqrt(nearest.distance) > 32) return;
+  if (!activeStaffIDs().has(String(nearest.anchor.staffID))) return;
   const index = events().findIndex((item) => item.noteIDs.includes(nearest.anchor.noteID));
   if (index >= 0) setEvent(index, true);
 }
@@ -518,10 +493,10 @@ function setEvent(index, shouldFollow) {
   if (!timeline.length) { sync(); redraw(); return; }
   state.currentIndex = Math.min(Math.max(index, 0), timeline.length - 1);
   const event = timeline[state.currentIndex];
-  state.selectedNoteID = event.noteIDs[0] ?? null;
+  state.selectedNoteID = activeNoteIDs(event)[0] ?? null;
   state.selectedMidi = transposedPitches(event)[0] ?? null;
   state.activeMIDIs = state.playing ? new Set(transposedPitches(event)) : new Set();
-  state.nextMIDIs = new Set(transposedPitches(timeline[state.currentIndex + 1] ?? { midiPitches: [] }));
+  state.nextMIDIs = new Set(transposedPitches(nextEnabledEvent(state.currentIndex + 1)));
   sync();
   redraw();
   if (shouldFollow) follow(event);
@@ -626,7 +601,7 @@ function schedule(event, elapsed) {
   // receives an 80% base velocity, clamped to the same audible range.
   const velocity = Math.min(1, Math.max(0.08, 0.8 * event.velocityScale));
   const baseGain = velocity * 0.22;
-  for (const sourceMidi of event.midiPitches) {
+  for (const sourceMidi of sourcePitches(event)) {
     const midi = sourceMidi + state.transpose;
     if (midi < 0 || midi > 127) continue;
     const oscillator = state.context.createOscillator();
@@ -698,18 +673,21 @@ function clampTempoBPM(value) { return Math.min(300, Math.max(30, Math.round(Num
 function playbackRate() { return state.tempoBPM / state.baseTempoBPM; }
 
 function follow(event) {
-  const anchor = state.plan?.noteAnchors.find((item) => event.noteIDs.includes(item.noteID));
+  const noteIDs = new Set(activeNoteIDs(event));
+  const anchor = state.plan?.noteAnchors.find((item) => noteIDs.has(item.noteID));
   const systemIndex = anchor?.systemIndex;
   if (!anchor || systemIndex == null || state.lastFollowedSystemIndex === systemIndex) return;
   const system = (state.plan?.systems ?? []).find((item) => item.index === systemIndex);
   if (!system) return;
-  const page = pageFrames(state.plan).find((item) => item.systemIndices?.includes(systemIndex));
+  const page = renderedPageFrames(state.plan, activeStaffIDs()).find((item) => item.systemIndices?.includes(systemIndex));
   const pageCanvas = page ? state.pageCanvases.get(page.index) : null;
   if (!page || !pageCanvas) return;
   const scroll = $("#score-scroll");
   const canvasBounds = pageCanvas.getBoundingClientRect();
   const scrollBounds = scroll.getBoundingClientRect();
-  const localY = (system.frame.y - page.frame.y) / page.frame.height * canvasBounds.height;
+  const displayY = displayYForSourceY(pageCanvas, anchor.center.y);
+  const visualScale = canvasBounds.width / page.frame.width;
+  const localY = (displayY - page.frame.y) * visualScale;
   const position = canvasBounds.top + localY - scrollBounds.top;
   state.lastFollowedSystemIndex = systemIndex;
   scroll.scrollTo({ top: Math.max(0, scroll.scrollTop + position - scrollBounds.height * 0.18), behavior: "smooth" });
@@ -769,7 +747,38 @@ function scaleName(tonic, mode, original) {
   return `${original ? "♪ " : ""}${pair}`;
 }
 
-function transposedPitches(event) { return event.midiPitches.map((midi) => midi + state.transpose).filter((midi) => midi >= 0 && midi <= 127); }
+function activeStaffIDs() { return enabledHandStaffIDs(state.rightHandEnabled, state.leftHandEnabled, state.plan?.noteAnchors); }
+function activeNoteIDs(event) { return noteIDsForEnabledStaffs(event, state.plan?.noteAnchors, activeStaffIDs()); }
+function sourcePitches(event) {
+  if (state.rightHandEnabled && state.leftHandEnabled) return [...(event?.midiPitches ?? [])];
+  return pitchesForEnabledStaffs(event, state.plan?.noteAnchors, activeStaffIDs());
+}
+function transposedPitches(event) { return sourcePitches(event).map((midi) => midi + state.transpose).filter((midi) => midi >= 0 && midi <= 127); }
+function nextEnabledEvent(startIndex) {
+  for (let index = startIndex; index < events().length; index += 1) {
+    if (activeNoteIDs(events()[index]).length > 0) return events()[index];
+  }
+  return null;
+}
+function selectHandMode(mode) {
+  const next = handStateForMode(mode);
+  state.rightHandEnabled = next.rightHandEnabled;
+  state.leftHandEnabled = next.leftHandEnabled;
+  setEvent(state.currentIndex, false);
+}
+function moveHandModeSelection(event) {
+  const direction = ["ArrowRight", "ArrowDown"].includes(event.key) ? 1 : ["ArrowLeft", "ArrowUp"].includes(event.key) ? -1 : 0;
+  let index = controls.handModes.indexOf(event.currentTarget);
+  if (event.key === "Home") index = 0;
+  else if (event.key === "End") index = controls.handModes.length - 1;
+  else if (direction !== 0) index = (index + direction + controls.handModes.length) % controls.handModes.length;
+  else return;
+  event.preventDefault();
+  const button = controls.handModes[index];
+  selectHandMode(button.dataset.handMode);
+  button.focus();
+}
+function isSingleHandMode() { return state.rightHandEnabled !== state.leftHandEnabled; }
 function togglePalette() { setActiveDrawer(state.activeDrawer === "palette" ? null : "palette"); }
 function closeDrawer() { setActiveDrawer(null); }
 function setActiveDrawer(kind) {
@@ -788,7 +797,6 @@ function setActiveDrawer(kind) {
   controls.paletteButton.setAttribute("aria-expanded", String(paletteOpen));
   controls.sampleLibraryButton.setAttribute("aria-expanded", String(samplesOpen));
   controls.drawerTitle.textContent = paletteOpen ? "カラーパレット" : "サンプル曲";
-  if (paletteOpen) requestAnimationFrame(drawPalettePreview);
 }
 function companionAPI(path) {
   return state.companionOrigin ? `${state.companionOrigin}${path}` : path;
