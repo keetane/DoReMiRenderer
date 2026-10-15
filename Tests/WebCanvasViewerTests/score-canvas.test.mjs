@@ -78,6 +78,15 @@ test("one-hand screen and print pages retain A4 frames and pack up to nine syste
   for (const page of compactPages) {
     assert.deepEqual(page.frame, { x: 0, y: 0, width, height });
     assert.ok(page.segments.at(-1).destinationTop + (page.segments.at(-1).sourceBottom - page.segments.at(-1).sourceTop) <= height - 18);
+    if (page.segments.length > 2) {
+      const displayedStaffTops = page.segments.map((segment) => (
+        segment.destinationTop + segment.sourceStaffTop - segment.sourceTop
+      ));
+      const pitches = displayedStaffTops.slice(1).map((staffTop, index) => staffTop - displayedStaffTops[index]);
+      for (const pitch of pitches.slice(1)) {
+        assert.ok(Math.abs(pitch - pitches[0]) < 0.001, "visible one-hand staffs use an even vertical pitch");
+      }
+    }
   }
 });
 
@@ -187,8 +196,9 @@ test("standard renderer masks the lower staff before compact composition", () =>
 });
 
 test("one-hand mode trims cross-staff barlines to the visible staff", () => {
+  const filledRects = [];
   const strokedLines = [];
-  const context = recordingContext([], [], strokedLines);
+  const context = recordingContext([], filledRects, strokedLines);
   const canvas = {
     clientWidth: 100,
     dataset: {},
@@ -220,6 +230,9 @@ test("one-hand mode trims cross-staff barlines to the visible staff", () => {
   assert.ok(!strokedLines.some((line) => line.color === "rgba(0, 0, 0, 1)" && line.x1 === 50 && line.y1 === 70 && line.y2 === 90));
   assert.ok(!strokedLines.some((line) => line.x1 === 60), "the connector between hidden and visible staffs is omitted");
   assert.ok(!strokedLines.some((line) => line.color === "#fff" && line.x1 === 50), "barlines are clipped directly without erase-and-redraw artifacts");
+  const braceMask = filledRects.find((rect) => rect.width < 20 && rect.height > 80);
+  assert.ok(braceMask, "the hidden grand-staff brace is masked");
+  assert.equal(braceMask.x + braceMask.width, 0, "brace masking stops at the staff start so no gap is cut into the five staff lines");
 });
 
 test("compact hand coordinates map between displayed and source score positions", () => {

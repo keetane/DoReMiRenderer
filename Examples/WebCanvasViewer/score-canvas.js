@@ -238,6 +238,7 @@ export function compactHandPrintPages(plan, enabledStaffIDs) {
         sourcePage,
         sourceTop: Math.max(sourcePage.frame.y, bounds[index].top),
         sourceBottom: Math.min(sourcePage.frame.y + sourcePage.frame.height, bounds[index].bottom),
+        sourceStaffTop: band.lines[0].start.y,
         firstBandTop: bounds[0]?.top ?? band.top,
       });
     }
@@ -267,22 +268,15 @@ function paginateCompactHandEntries(entries, options) {
     const page = makeCompactPrintPage(pages.length, options.pageWidth, options.pageHeight);
     if (page.index === 0) page.header = options.header;
     const top = page.index === 0 ? options.firstDestinationTop : options.topMargin;
-    const availableHeight = options.pageHeight - options.bottomMargin - top;
     let count = Math.min(COMPACT_HAND_SYSTEMS_PER_PAGE, entries.length - cursor);
-    while (count > 1 && compactEntryHeights(entries.slice(cursor, cursor + count)) > availableHeight) count -= 1;
+    while (count > 1 && !compactBatchFits(entries.slice(cursor, cursor + count), top, options.pageHeight - options.bottomMargin)) count -= 1;
     const batch = entries.slice(cursor, cursor + count);
-    const height = compactEntryHeights(batch);
-    const preferredGap = batch.length > 1
-      ? Math.min(...batch.slice(1).map((entry) => compactHandSystemGap(entry.band.staffSpace)))
-      : 0;
-    const fittedGap = batch.length > 1 ? Math.max(0, (availableHeight - height) / (batch.length - 1)) : 0;
-    const gap = Math.min(preferredGap, fittedGap);
-    let nextTop = top;
-    for (const entry of batch) {
-      if (page.segments.length > 0) nextTop += gap;
-      page.segments.push({ ...entry, destinationTop: nextTop });
+    const layout = compactBatchLayout(batch, top, options.pageHeight - options.bottomMargin);
+    for (let index = 0; index < batch.length; index += 1) {
+      const entry = batch[index];
+      const destinationTop = layout.firstStaffTop + index * layout.staffPitch - compactEntryTopOverhang(entry);
+      page.segments.push({ ...entry, destinationTop });
       page.systemIndices.push(entry.system.index);
-      nextTop += entry.sourceBottom - entry.sourceTop;
     }
     pages.push(page);
     cursor += count;
@@ -292,6 +286,64 @@ function paginateCompactHandEntries(entries, options) {
 
 function compactEntryHeights(entries) {
   return entries.reduce((sum, entry) => sum + entry.sourceBottom - entry.sourceTop, 0);
+}
+
+function compactBatchFits(entries, top, bottom) {
+  if (entries.length <= 1) return compactEntryHeights(entries) <= bottom - top;
+  const availablePitch = compactAvailableStaffPitch(entries, top, bottom);
+  return availablePitch >= compactMinimumStaffPitch(entries);
+}
+
+function compactBatchLayout(entries, top, bottom) {
+  if (entries.length <= 1) {
+    return { firstStaffTop: top + compactEntryTopOverhang(entries[0]), staffPitch: 0 };
+  }
+  const firstStaffTop = top + compactEntryTopOverhang(entries[0]);
+  const fittedPitch = compactAvailableStaffPitch(entries, top, bottom);
+  const preferredPitch = compactPreferredStaffPitch(entries);
+  const staffSpace = Math.min(...entries.map((entry) => entry.band.staffSpace));
+  const maximumPitch = preferredPitch + Math.max(8, staffSpace * 2.5);
+  return {
+    firstStaffTop,
+    staffPitch: Math.max(compactMinimumStaffPitch(entries), Math.min(fittedPitch, maximumPitch)),
+  };
+}
+
+function compactAvailableStaffPitch(entries, top, bottom) {
+  if (entries.length <= 1) return 0;
+  const firstStaffTop = top + compactEntryTopOverhang(entries[0]);
+  const lastStaffTop = bottom - compactEntryBottomOverhang(entries.at(-1));
+  return Math.max(0, (lastStaffTop - firstStaffTop) / (entries.length - 1));
+}
+
+function compactMinimumStaffPitch(entries) {
+  let pitch = 0;
+  for (let index = 1; index < entries.length; index += 1) {
+    const previous = entries[index - 1];
+    const current = entries[index];
+    const clearance = Math.max(4, Math.min(previous.band.staffSpace, current.band.staffSpace));
+    pitch = Math.max(pitch, compactEntryBottomOverhang(previous) + compactEntryTopOverhang(current) + clearance);
+  }
+  return pitch;
+}
+
+function compactPreferredStaffPitch(entries) {
+  let pitch = 0;
+  for (let index = 1; index < entries.length; index += 1) {
+    const previous = entries[index - 1];
+    const current = entries[index];
+    const clearance = compactHandSystemGap(current.band.staffSpace, previous.system.index === current.system.index);
+    pitch = Math.max(pitch, compactEntryBottomOverhang(previous) + compactEntryTopOverhang(current) + clearance);
+  }
+  return pitch;
+}
+
+function compactEntryTopOverhang(entry) {
+  return entry.sourceStaffTop - entry.sourceTop;
+}
+
+function compactEntryBottomOverhang(entry) {
+  return entry.sourceBottom - entry.sourceStaffTop;
 }
 
 function makeCompactPrintPage(index, width, height) {
@@ -651,7 +703,7 @@ function replaceGrandStaffBraceWithVisibleStaffBarlines(context, system, bands, 
   context.fillRect(
     lineStartX - Math.max(14, staffSpace * 3),
     system.frame.y - staffSpace,
-    Math.max(14, staffSpace * 3) + 1,
+    Math.max(14, staffSpace * 3),
     system.frame.height + staffSpace * 2
   );
   context.strokeStyle = "#000";
