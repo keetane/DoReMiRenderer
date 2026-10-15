@@ -21,7 +21,7 @@ const state = {
   source: null, plan: null, sourceName: "score-web.json", transpose: 0, scoreZoom: 1,
   noteColors: true, staffColors: false, keyboardColors: true, keyboardColorPosition: "top", nextNoteGuide: false, keyboardVisible: true, enabled: allPitchClasses(),
   rightHandEnabled: true, leftHandEnabled: true,
-  selectedNoteID: null, selectedMidi: null, currentIndex: 0, activeMIDIs: new Set(), nextMIDIs: new Set(), playing: false,
+  selectedNoteID: null, selectedMidi: null, selectedMIDIs: new Set(), currentIndex: 0, activeMIDIs: new Set(), nextMIDIs: new Set(), playing: false,
   context: null, audioUnlockPromise: null, nodes: new Set(), nextScheduledIndex: 0, contextStart: 0, timelineStart: 0, baseTempoBPM: 120, tempoBPM: 120, animationFrame: null,
   lastFollowedSystemIndex: null, pageCanvases: new Map(), transposeRequestID: 0, printing: false, samples: null, activeDrawer: null,
   activeSampleID: null,
@@ -70,7 +70,9 @@ controls.fitWidth.addEventListener("click", fitScoreToWidth);
 controls.reset.addEventListener("click", () => setEvent(0, true));
 controls.jump.addEventListener("click", jumpToMeasure);
 controls.measure.addEventListener("keydown", (event) => { if (event.key === "Enter") jumpToMeasure(); });
-controls.measure.addEventListener("blur", sync);
+controls.measure.addEventListener("blur", (event) => {
+  if (event.relatedTarget !== controls.jump) sync();
+});
 // iOS Safari associates Web Audio output permission with the initial touch,
 // not an async continuation of its click handler. Prime the output while that
 // gesture is still active, then let `play` wait for the context to run.
@@ -105,6 +107,7 @@ function load(document, sourceName, activeSampleID = null) {
   state.lastFollowedSystemIndex = null;
   state.selectedNoteID = null;
   state.selectedMidi = null;
+  state.selectedMIDIs = new Set();
   state.nextMIDIs = new Set();
   controls.status.hidden = true;
   syncSampleSelection();
@@ -451,7 +454,7 @@ function updateKeyboard() {
     const pitchClass = mod(midi, 12);
     const scaleColorPitchClass = scaleColors.get(pitchClass);
     const isScalePitch = scaleColorPitchClass != null && state.enabled.has(scaleColorPitchClass);
-    const isActive = state.activeMIDIs.has(midi) || midi === state.selectedMidi;
+    const isActive = state.activeMIDIs.has(midi) || state.selectedMIDIs.has(midi);
     const isNext = state.nextNoteGuide && state.nextMIDIs.has(midi) && !isActive;
     key.style.setProperty("--key-color", COLORS.get(isScalePitch ? scaleColorPitchClass : pitchClass));
     key.classList.toggle("is-colored", state.keyboardColors && isScalePitch);
@@ -494,8 +497,10 @@ function setEvent(index, shouldFollow) {
   state.currentIndex = Math.min(Math.max(index, 0), timeline.length - 1);
   const event = timeline[state.currentIndex];
   state.selectedNoteID = activeNoteIDs(event)[0] ?? null;
-  state.selectedMidi = transposedPitches(event)[0] ?? null;
-  state.activeMIDIs = state.playing ? new Set(transposedPitches(event)) : new Set();
+  const guideMIDIs = transposedPitches(event);
+  state.selectedMidi = guideMIDIs[0] ?? null;
+  state.selectedMIDIs = new Set(guideMIDIs);
+  state.activeMIDIs = state.playing ? new Set(guideMIDIs) : new Set();
   state.nextMIDIs = new Set(transposedPitches(nextEnabledEvent(state.currentIndex + 1)));
   sync();
   redraw();

@@ -1,5 +1,10 @@
 # Changelog
 
+- Evenly place visible five-line staffs on one-hand Web pages while preserving
+  notation overhang and collision clearance. Close the masked-brace gap at the
+  system start, and keep every pitch of the selected chord highlighted on the
+  keyboard in both stopped guidance and playback states.
+
 - Reorganize the Web colour-palette drawer with transpose controls first, add a
   mutually exclusive `right / both / left` segmented control for playback,
   guidance, keyboard state, note colouring, and per-staff score visibility, and
